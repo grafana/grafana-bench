@@ -1,0 +1,17 @@
+- name: Setup Docker
+  hosts: all
+  gather_facts: no
+  become: yes
+  tasks:
+    - name: Install aptitude
+      apt:
+        name: aptitude
+        state: latest
+        update_cache: true
+
+    - name: Install required system packages
+      apt:
+        pkg:
+          - golang-go
+        state: latest
+        update_cache: true
