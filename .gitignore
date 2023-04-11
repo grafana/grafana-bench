@@ -1,3 +1,8 @@
+# ignore repos we depend on
+tests/
+build/
+
+
 # Binaries for programs and plugins
 *.exe
 *.exe~
