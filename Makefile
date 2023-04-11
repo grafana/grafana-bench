@@ -8,13 +8,22 @@
 
 
 COMMIT?=main
+ARCH?=linux/amd64
 
 # resolve branch name to a commit
 resolve-commit:
-ifeq ("main", "main")
+	@echo grafana-get-ref: $(COMMIT)
+ifeq ("$(COMMIT)", "main")
 	$(eval COMMIT :=$(shell git ls-remote https://github.com/grafana/grafana HEAD -c7 | cut -f1))
 	$(eval export COMMIT)
+	@echo main resolved to: $(COMMIT)
 endif
+
+resolve-arch: resolve-commit
+	@echo arch: $(ARCH)
+	$(eval ARTIFACT := grafana-server-$(COMMIT)-$(subst /,-,$(ARCH)))
+	@echo $(ARTIFACT)
+	$(eval ARTIFACT_PATH := artifacts/$(ARTIFACT))
 
 tests: 
 	git clone https://github.com/grafana/grafana-api-tests tests
@@ -26,11 +35,13 @@ update:
 	cd tests && git pull
 	cd build && git pull
 
-build-commit: resolve-commit
-ifeq (,$(wildcard artifacts/grafana-server-$(COMMIT)))
-	cd build && go run ./cmd --verbose --grafana-ref=$(COMMIT) backend build --distro=linux/amd64
-	#cd build && go run ./cmd --verbose --grafana-ref=$(COMMIT) build backend --distro=linux/amd64
-	mv build/bin/linux/amd64/grafana-server artifacts/grafana-server-$(COMMIT)
+build-commit: resolve-arch
+ifeq (,$(wildcard $(ARTIFACT_PATH)))
+	cd build && go run ./cmd --verbose --grafana-ref=$(COMMIT) backend build --distro=$(ARCH)
+	mv build/bin/linux/amd64/grafana-server $(ARTIFACT_PATH)
 endif
 
-run:
+test-commit: resolve-arch
+ifeq (,$(wildcard $(ARTIFACT_PATH)))
+	@MAKE build-commit COMMIT=$(COMMIT) ARCH=$(ARCH)
+endif

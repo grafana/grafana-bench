@@ -1,6 +1,8 @@
 # ignore repos we depend on
 tests/
 build/
+artifacts/
+
 
 
 # Binaries for programs and plugins
