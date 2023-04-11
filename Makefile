@@ -7,10 +7,13 @@
 #  curl -L https://raw.githubusercontent.com/kadwanev/bigboybrew/master/Library/Formula/sshpass.rb > sshpass.rb && brew install sshpass.rb && rm sshpass.rb
 
 
-COMMIT?=main
-ARCH?=linux/amd64
+COMMIT?=main # default to main
 
-# resolve branch name to a commit
+SYS_OS=$(shell uname -s | tr '[:upper:]' '[:lower:]')
+SYS_ARCH=$(shell uname -m | tr '[:upper:]' '[:lower:]')
+ARCH?=$(SYS_OS)/$(SYS_ARCH) #default to system os/platform e.g. darwin/arm64
+
+# resolve main to latest commit
 resolve-commit:
 	@echo grafana-get-ref: $(COMMIT)
 ifeq ("$(COMMIT)", "main")
@@ -23,7 +26,8 @@ resolve-arch: resolve-commit
 	@echo arch: $(ARCH)
 	$(eval ARTIFACT := grafana-server-$(COMMIT)-$(subst /,-,$(ARCH)))
 	@echo $(ARTIFACT)
-	$(eval ARTIFACT_PATH := artifacts/$(ARTIFACT))
+	$(eval ARTIFACT_PATH := ./artifacts/$(ARTIFACT))
+	@echo artifact-path: $(ARTIFACT_PATH)
 
 tests: 
 	git clone https://github.com/grafana/grafana-api-tests tests
@@ -35,13 +39,16 @@ update:
 	cd tests && git pull
 	cd build && git pull
 
-build-commit: resolve-arch
-ifeq (,$(wildcard $(ARTIFACT_PATH)))
-	cd build && go run ./cmd --verbose --grafana-ref=$(COMMIT) backend build --distro=$(ARCH)
-	mv build/bin/linux/amd64/grafana-server $(ARTIFACT_PATH)
-endif
+build-commit: tests build resolve-arch
+	if [ -x "$(ARTIFACT_PATH)" ]; then \
+		echo artifact exists, skipping build: $(ARTIFACT_PATH); \
+	else \
+		cd build && go run ./cmd --verbose --grafana-ref=$(COMMIT) backend build --distro=$(ARCH); \
+		mv build/bin/$(ARCH)/grafana-server $(ARTIFACT_PATH); \
+	fi
 
-test-commit: resolve-arch
-ifeq (,$(wildcard $(ARTIFACT_PATH)))
-	@MAKE build-commit COMMIT=$(COMMIT) ARCH=$(ARCH)
-endif
+test-commit: tests build resolve-arch
+	@echo $(ARTIFACT_PATH)
+	[ -x "$(ARTIFACT_PATH)" ] || make build-commit COMMIT=$(COMMIT) ARCH=$(ARCH)
+	cd tests && k6 run tests/dashboards.js
+
