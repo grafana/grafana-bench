@@ -1,17 +1,14 @@
-- name: Setup Docker
+- name: Setup dependencies
   hosts: all
   gather_facts: no
   become: yes
+  roles:
+  - role: andrewrothstein.go-dev
   tasks:
-    - name: Install aptitude
-      apt:
-        name: aptitude
-        state: latest
-        update_cache: true
-
-    - name: Install required system packages
+    - name: Install git, make
       apt:
         pkg:
-          - golang-go
+          - git
+          - make
         state: latest
         update_cache: true

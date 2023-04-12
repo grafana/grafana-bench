@@ -1,12 +1,17 @@
 # based on
 # https://github.com/takeyamajp/docker-ubuntu-sshd/blob/master/ubuntu22.04/Dockerfile
 
-FROM ubuntu:22.04
+FROM --platform=linux/amd64 ubuntu:22.04
 MAINTAINER "Hiroki Takeyama"
 
 # timezone
-RUN apt update && apt install -y tzdata; \
+RUN apt update && \
+    apt install -y tzdata; \ 
+    apt install -y git openssh-server make curl; \
     apt clean;
+
+# checkout grafana
+RUN git clone https://github.com/grafana/grafana /grafana && chmod 777 /grafana
 
 # sshd
 RUN mkdir /run/sshd; \

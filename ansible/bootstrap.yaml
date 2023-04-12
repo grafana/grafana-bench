@@ -1,2 +1,3 @@
 ---
   - import_playbook: "setup_build_dependencies.yaml"
+  - import_playbook: "setup_grafana.yaml"
