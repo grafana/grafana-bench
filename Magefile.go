@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -16,11 +17,11 @@ import (
 )
 
 var (
-	commit      string
+	commit  string = os.Getenv("COMMIT")
+	iniPath string = os.Getenv("INI")
+
 	projectRoot string = getWorkdir()
 
-	sys_os        string
-	sys_arch      string
 	arch          string
 	artifact_name string
 	artifact_path string
@@ -28,14 +29,8 @@ var (
 	resolved bool = false
 )
 
-// TODO
-// make bootstrap idempotent
-// make update idempotent
-// make ignore resolve<Func> if resolve is complete (use boolean)
-
 // Resolve branch to latest commit of branch
 func ResolveCommit() error {
-	commit = os.Getenv("COMMIT")
 	if commit == "" {
 		commit = "main"
 	}
@@ -85,9 +80,32 @@ func ResolveArch() error {
 	return nil
 }
 
-// Clone test and build repos locally
+func ResolveINI() error {
+	// check if INI is set
+	if iniPath != "" {
+		if !filepath.IsAbs(iniPath) {
+			iniPath = path.Join(projectRoot, iniPath)
+		}
+
+		exists, _ := pathExists(iniPath)
+		if exists {
+			return nil
+		}
+	}
+
+	// check if custom.ini in project root
+	dirIni := path.Join(projectRoot, "custom.ini")
+	exists, _ := pathExists(dirIni)
+	if exists {
+		iniPath = dirIni
+		return nil
+	}
+
+	return nil
+}
+
+// bootstrap clones test and build repos locally
 func Bootstrap() error {
-	//TODO make sure k6 is installed
 
 	// check if test repo is cloned locally
 	exists, err := pathExists("tests")
@@ -113,8 +131,11 @@ func Bootstrap() error {
 		}
 	}
 
-	// get grafana test repo
-	// update it
+	// ensure k6 is installed
+	if err := sh.Run("which", "k6"); err != nil {
+		return fmt.Errorf("K6 not found. Install k6 for your platform. https://k6.io/docs/get-started/installation/")
+	}
+
 	return nil
 }
 
@@ -158,7 +179,13 @@ func SetDependencies() error {
 	if err != nil {
 		return err
 	}
+
 	err = ResolveArch()
+	if err != nil {
+		return err
+	}
+
+	err = ResolveINI()
 	if err != nil {
 		return err
 	}
@@ -167,6 +194,8 @@ func SetDependencies() error {
 	return nil
 }
 
+// BuildCommit builds a grafana binary and stores it in the artifacts folder
+// usage: COMMIT=k8s-proof-of-concept mage buildcommit
 func BuildCommit() error {
 	err := SetDependencies()
 	if err != nil {
@@ -201,6 +230,15 @@ func BuildCommit() error {
 	return nil
 }
 
+// TestCommit tests a commit. If you don't set the commit environment variable,
+// it will default to main and resolve the git hash. You can also set commit to
+// be a branch and it will grab the latest commit for that branch.
+// usage: COMMIT=k8s-proof-of-concept mage testcommit
+//
+// By default we will look for a custom.ini in the project root, however, you
+// can also specify this by environment variable and path.
+//
+// usage: INI=custom.ini mage testcommit
 func TestCommit() error {
 	var err error
 
@@ -227,7 +265,6 @@ func TestCommit() error {
 		return err
 	}
 
-	// TODO cache this in artifacts dir
 	// get default.ini for that commit
 	iniArtifact := fmt.Sprintf("%s_defaults.ini", commit)
 	iniArtifactPath := path.Join(projectRoot, "artifacts", iniArtifact)
@@ -244,6 +281,15 @@ func TestCommit() error {
 	iniWorkPath := path.Join(projectRoot, "work", "conf", "defaults.ini")
 	if err := sh.RunV("cp", iniArtifactPath, iniWorkPath); err != nil {
 		return err
+	}
+
+	// copy custom.ini into work dir
+	if iniPath != "" {
+		fmt.Println("found custom.ini")
+		customIniWorkPath := path.Join(projectRoot, "work", "conf", "custom.ini")
+		if err := sh.Run("cp", iniPath, customIniWorkPath); err != nil {
+			return err
+		}
 	}
 
 	// copy artifact
