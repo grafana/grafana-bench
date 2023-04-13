@@ -38,7 +38,7 @@ func ResolveCommit() error {
 	}
 
 	// resolve branch
-	isCommitHash := len(commit) == 40 || len(commit) == 10
+	isCommitHash := len(commit) == 40
 
 	if !isCommitHash {
 		fmt.Println("no grafana commit specified using branch:", commit)
@@ -256,7 +256,7 @@ func BuildCommit() error {
 //
 // COMMIT=k8s-proof-of-concept mage bench
 //
-// COMMIT=c116545e0b mage bench
+// COMMIT=c116545e0ba005e10e318da96688bdae01439bf5 mage bench
 //
 // By default we will look for a custom.ini in the project root, however, you
 // can also specify this by environment variable and path.
