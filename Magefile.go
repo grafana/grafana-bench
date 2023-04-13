@@ -13,8 +13,8 @@ import (
 )
 
 var (
-	commit  string = "main"
-	workdir string = getWorkdir()
+	commit      string = "main"
+	projectRoot string = getWorkdir()
 
 	sys_os        string
 	sys_arch      string
@@ -25,8 +25,8 @@ var (
 
 // Resolve branch to latest commit of branch
 func ResolveCommit() error {
-	fmt.Println("grafana commit", commit)
 	if commit == "main" {
+		fmt.Println("no grafana commit specified using branch: main")
 		resolved, err := sh.Output("git", "ls-remote", "https://github.com/grafana/grafana", "HEAD", "-c7")
 		if err != nil {
 			return fmt.Errorf("Error resolving git commit %s: %s", commit, err)
@@ -34,7 +34,7 @@ func ResolveCommit() error {
 
 		resolved = strings.Split(resolved, "\t")[0]
 
-		fmt.Printf("grafana commit `%s` resolved to `%s`", commit, resolved)
+		fmt.Printf("main resolved to `%s`\n", resolved)
 		commit = resolved
 	}
 	return nil
@@ -43,20 +43,21 @@ func ResolveCommit() error {
 // Resolve architecture and artifact names
 func ResolveArch() error {
 	if arch == "" {
-		sys_os, err := sh.Output("uname -s")
+		sys_os, err := sh.Output("uname", "-s")
 		if err != nil {
 			return fmt.Errorf("error resolving OS %s", err)
 		}
 
-		sys_arch, err := sh.Output("uname -m")
+		sys_arch, err := sh.Output("uname", "-m")
 		if err != nil {
 			return fmt.Errorf("error resolve architecture %s", err)
 		}
 		arch = fmt.Sprintf("%s/%s", strings.ToLower(sys_os), strings.ToLower(sys_arch))
 	}
+	fmt.Println("arch:", arch)
 
 	artifact_name = fmt.Sprintf("grafana-server-%s-%s", commit, strings.Replace(arch, "/", "-", -1))
-	artifact_path = path.Join("workdir", artifact_name)
+	artifact_path = path.Join("artifacts", artifact_name)
 	return nil
 }
 
@@ -95,7 +96,7 @@ func Bootstrap() error {
 // Update test and clone repos
 func Update() error {
 	// tests
-	err := doInDir(workdir, "tests", func() error {
+	err := doInDir(projectRoot, "tests", func() error {
 		if err := sh.RunV("git", "checkout", "main"); err != nil {
 			return fmt.Errorf("Error checking out grafana test repo %s", err)
 		}
@@ -108,7 +109,7 @@ func Update() error {
 	})
 
 	// build
-	err = doInDir(workdir, "build", func() error {
+	err = doInDir(projectRoot, "build", func() error {
 		if err := sh.RunV("git", "checkout", "main"); err != nil {
 			return fmt.Errorf("Error checking out grafana test repo %s", err)
 		}
@@ -144,10 +145,11 @@ func BuildCommit() error {
 	exists, _ := pathExists(artifact_path)
 	if exists {
 		fmt.Println("build artifact exists, skipping:", artifact_path)
+		return nil
 	}
 
 	// do the build
-	err = doInDir(workdir, "build", func() error {
+	err = doInDir(projectRoot, "build", func() error {
 		ref := fmt.Sprintf("--grafana-ref=%s", commit)
 		distro := fmt.Sprintf("--distro=%s", arch)
 		err := sh.RunV("go", "run", "./cmd", "--verbose", ref, "backend", "build", distro)
@@ -159,7 +161,8 @@ func BuildCommit() error {
 
 	// copy build to artifact path
 	// artifacts grafana, grafana-server, grafana-cli
-	buildPath := path.Join(workdir, "build", "bin", arch, "grafana")
+	fmt.Println("copying executable to:", artifact_path)
+	buildPath := path.Join(projectRoot, "build", "bin", arch, "grafana")
 	if err := sh.RunV("cp", buildPath, artifact_path); err != nil {
 		return err
 	}
@@ -173,50 +176,45 @@ func BootCommit() error {
 		return err
 	}
 
-	// create working directory
-	workPath := path.Join(workdir, "work")
-	if err := sh.RunV("mkdir", "-p", workPath); err != nil {
+	// delete old workdir if exists
+	if err := sh.RunV("rm", "-rf", path.Join(projectRoot, "work")); err != nil {
 		return err
 	}
 
-	// make sure working directory is empty
-	workPathFiles := fmt.Sprintf("%s/*", workPath)
-	if err := sh.RunV("rm", "-r", workPathFiles); err != nil {
+	// copy template directory
+	templateConf := path.Join(projectRoot, "templates")
+	workConfPath := path.Join(projectRoot, "work")
+	if err := sh.RunV("cp", "-r", templateConf, workConfPath); err != nil {
 		return err
 	}
 
-	// copy conf directory
-	confPath := path.Join(workdir, "conf")
-	workConfPath := path.Join(workPath, "conf")
-	if err := sh.RunV("cp", "-r", confPath, workConfPath); err != nil {
-		return err
-	}
-
+	// TODO cache this in artifacts dir
 	// get default.ini for that commit
-	iniUrl := fmt.Sprintf("https://raw.githubusercontent.com/grafana/grafana/$(COMMIT)/conf/defaults.ini")
-	iniDest := path.Join(workdir, "work", "conf", "defaults.ini")
-	if err := sh.RunV("curl", "-s", "-o", iniUrl, iniDest); err != nil {
+	iniArtifact := fmt.Sprintf("%s_defaults.ini", commit)
+	iniArtifactPath := path.Join(projectRoot, "artifacts", iniArtifact)
+	exists, _ := pathExists(iniArtifactPath)
+	if !exists {
+		// get the ini for that commit of grafana if it doesn't exist
+		iniUrl := fmt.Sprintf("https://raw.githubusercontent.com/grafana/grafana/%s/conf/defaults.ini", commit)
+		if err := sh.RunV("curl", iniUrl, "-o", iniArtifactPath); err != nil {
+			return err
+		}
+	}
+
+	// copy ini to workdir
+	iniWorkPath := path.Join(projectRoot, "work", "conf", "defaults.ini")
+	if err := sh.RunV("cp", iniArtifactPath, iniWorkPath); err != nil {
 		return err
 	}
 
 	// copy artifact
-	workExecutable := path.Join(workPath, "grafana")
+	workExecutable := path.Join(projectRoot, "work", "grafana")
 	if err := sh.RunV("cp", artifact_path, workExecutable); err != nil {
 		return err
 	}
 
 	// TODO
-	// start here
-	// verify build commit works
-	// verify boot commit does everything but boot grafana
-
-	// Run grafana
-	//err = doInDir(workdir, workPath, func() error {
-	//if err := sh.RunV(); err != nil {
-	//return err
-	//}
-	//return nil
-	//})
+	// boot grafana
 
 	if err != nil {
 		return err
