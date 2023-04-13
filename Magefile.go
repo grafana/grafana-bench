@@ -24,7 +24,14 @@ var (
 	arch          string
 	artifact_name string
 	artifact_path string
+
+	resolved bool = false
 )
+
+// TODO
+// make bootstrap idempotent
+// make update idempotent
+// make ignore resolve<Func> if resolve is complete (use boolean)
 
 // Resolve branch to latest commit of branch
 func ResolveCommit() error {
@@ -71,7 +78,7 @@ func ResolveArch() error {
 		}
 		arch = fmt.Sprintf("%s/%s", strings.ToLower(sys_os), strings.ToLower(sys_arch))
 	}
-	fmt.Println("arch:", arch)
+	fmt.Println("using arch:", arch)
 
 	artifact_name = fmt.Sprintf("grafana-server-%s-%s", commit, strings.Replace(arch, "/", "-", -1))
 	artifact_path = path.Join("artifacts", artifact_name)
@@ -143,6 +150,10 @@ func Update() error {
 
 // Sets necessary dependencies before real operations
 func SetDependencies() error {
+	if resolved {
+		return nil
+	}
+
 	err := ResolveCommit()
 	if err != nil {
 		return err
@@ -151,6 +162,8 @@ func SetDependencies() error {
 	if err != nil {
 		return err
 	}
+
+	resolved = true
 	return nil
 }
 
@@ -162,7 +175,7 @@ func BuildCommit() error {
 
 	exists, _ := pathExists(artifact_path)
 	if exists {
-		fmt.Println("build artifact exists, skipping:", artifact_path)
+		fmt.Println("build artifacts cached, skipping build")
 		return nil
 	}
 
