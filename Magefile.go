@@ -212,9 +212,9 @@ func SetDependencies() error {
 	return nil
 }
 
-// BuildCommit builds a grafana binary and stores it in the artifacts folder
+// Build builds a grafana binary and stores it in the artifacts folder
 // usage: COMMIT=k8s-proof-of-concept mage buildcommit
-func BuildCommit() error {
+func Build() error {
 	err := SetDependencies()
 	if err != nil {
 		return err
@@ -270,7 +270,7 @@ func Bench() error {
 	}
 
 	// do the build if we need it
-	if err := BuildCommit(); err != nil {
+	if err := Build(); err != nil {
 		return err
 	}
 
