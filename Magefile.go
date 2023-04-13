@@ -4,6 +4,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
 	"os"
@@ -17,12 +18,13 @@ import (
 )
 
 var (
-	commit  string = os.Getenv("COMMIT")
-	iniPath string = os.Getenv("INI")
-
 	projectRoot string = getWorkdir()
 
-	arch          string
+	// config variables
+	commit  string = os.Getenv("COMMIT")
+	arch    string = os.Getenv("ARCH")
+	iniPath string = os.Getenv("INI")
+
 	artifact_name string
 	artifact_path string
 
@@ -71,19 +73,31 @@ func ResolveCommit() error {
 	return nil
 }
 
+func GoEnvInfo() (map[string]string, error) {
+	env := make(map[string]string)
+
+	envJson, err := sh.Output("go", "env", "--json")
+	if err != nil {
+		return env, err
+	}
+
+	err = json.Unmarshal([]byte(envJson), &env)
+	return env, err
+}
+
 // Resolve architecture and artifact names
 func ResolveArch() error {
-	arch = os.Getenv("ARCH")
 	if arch == "" {
-		sys_os, err := sh.Output("uname", "-s")
+
+		goEnv, err := GoEnvInfo()
 		if err != nil {
-			return fmt.Errorf("error resolving OS %s", err)
+			panic(err)
 		}
 
-		sys_arch, err := sh.Output("uname", "-m")
-		if err != nil {
-			return fmt.Errorf("error resolve architecture %s", err)
-		}
+		// TODO maybe handle the case where key is not found
+		sys_os := goEnv["GOOS"]
+		sys_arch := goEnv["GOARCH"]
+
 		arch = fmt.Sprintf("%s/%s", strings.ToLower(sys_os), strings.ToLower(sys_arch))
 	}
 	fmt.Println("using arch:", arch)
