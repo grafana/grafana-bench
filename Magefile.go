@@ -36,7 +36,9 @@ func ResolveCommit() error {
 	}
 
 	// resolve branch
-	if len(commit) != 40 {
+	isCommitHash := len(commit) == 40 || len(commit) == 10
+
+	if !isCommitHash {
 		fmt.Println("no grafana commit specified using branch:", commit)
 		b := commit
 		if commit == "main" {
@@ -47,11 +49,22 @@ func ResolveCommit() error {
 			return fmt.Errorf("Error resolving git commit %s: %s", commit, err)
 		}
 
+		// get first column
+		// e0b2aeffa34ba6ca812ff3db6a08adee7a89b6d4        HEAD
 		resolved = strings.Split(resolved, "\t")[0]
 
-		fmt.Printf("main resolved to `%s`\n", resolved)
+		// get short commit hash
+		// ee7a89b6d4
+		resolved = resolved[len(resolved)-10:]
+
+		fmt.Printf("branch: %s resolved to `%s`\n", commit, resolved)
 		commit = resolved
 		return nil
+	}
+
+	// get short commit hash
+	if len(commit) == 40 {
+		commit = commit[len(commit)-10:]
 	}
 
 	fmt.Println("using commit:", commit)
@@ -230,16 +243,21 @@ func BuildCommit() error {
 	return nil
 }
 
-// TestCommit tests a commit. If you don't set the commit environment variable,
-// it will default to main and resolve the git hash. You can also set commit to
+// BenchCommit load tests a commit.
+// If you don't set the commit environment variable, it will
+// default to main and resolve the git hash. You can also set commit to
 // be a branch and it will grab the latest commit for that branch.
-// usage: COMMIT=k8s-proof-of-concept mage testcommit
+// usage:
+//
+// COMMIT=k8s-proof-of-concept mage bench
+//
+// COMMIT=c116545e0b mage bench
 //
 // By default we will look for a custom.ini in the project root, however, you
 // can also specify this by environment variable and path.
 //
-// usage: INI=custom.ini mage testcommit
-func TestCommit() error {
+// usage: INI=custom.ini mage bench
+func Bench() error {
 	var err error
 
 	if err := SetDependencies(); err != nil {
