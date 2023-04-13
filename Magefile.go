@@ -5,15 +5,18 @@ package main
 
 import (
 	"fmt"
+	"net"
 	"os"
+	"os/exec"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/magefile/mage/sh"
 )
 
 var (
-	commit      string = "main"
+	commit      string
 	projectRoot string = getWorkdir()
 
 	sys_os        string
@@ -25,9 +28,19 @@ var (
 
 // Resolve branch to latest commit of branch
 func ResolveCommit() error {
-	if commit == "main" {
-		fmt.Println("no grafana commit specified using branch: main")
-		resolved, err := sh.Output("git", "ls-remote", "https://github.com/grafana/grafana", "HEAD", "-c7")
+	commit = os.Getenv("COMMIT")
+	if commit == "" {
+		commit = "main"
+	}
+
+	// resolve branch
+	if len(commit) != 40 {
+		fmt.Println("no grafana commit specified using branch:", commit)
+		b := commit
+		if commit == "main" {
+			b = "HEAD"
+		}
+		resolved, err := sh.Output("git", "ls-remote", "https://github.com/grafana/grafana", b, "-c7")
 		if err != nil {
 			return fmt.Errorf("Error resolving git commit %s: %s", commit, err)
 		}
@@ -36,12 +49,16 @@ func ResolveCommit() error {
 
 		fmt.Printf("main resolved to `%s`\n", resolved)
 		commit = resolved
+		return nil
 	}
+
+	fmt.Println("using commit:", commit)
 	return nil
 }
 
 // Resolve architecture and artifact names
 func ResolveArch() error {
+	arch = os.Getenv("ARCH")
 	if arch == "" {
 		sys_os, err := sh.Output("uname", "-s")
 		if err != nil {
@@ -63,6 +80,7 @@ func ResolveArch() error {
 
 // Clone test and build repos locally
 func Bootstrap() error {
+	//TODO make sure k6 is installed
 
 	// check if test repo is cloned locally
 	exists, err := pathExists("tests")
@@ -170,11 +188,19 @@ func BuildCommit() error {
 	return nil
 }
 
-func BootCommit() error {
-	err := SetDependencies()
-	if err != nil {
+func TestCommit() error {
+	var err error
+
+	if err := SetDependencies(); err != nil {
 		return err
 	}
+
+	// do the build if we need it
+	if err := BuildCommit(); err != nil {
+		return err
+	}
+
+	fmt.Println("setting up work directory")
 
 	// delete old workdir if exists
 	if err := sh.RunV("rm", "-rf", path.Join(projectRoot, "work")); err != nil {
@@ -213,14 +239,46 @@ func BootCommit() error {
 		return err
 	}
 
-	// TODO
 	// boot grafana
-
+	fmt.Println("booting grafana")
+	cmd := exec.Command(workExecutable, "server")
+	err = doInDir(projectRoot, "work", func() error {
+		if err := cmd.Start(); err != nil {
+			fmt.Println("Error starting server:", err)
+			return err
+		}
+		return nil
+	})
 	if err != nil {
 		return err
 	}
 
-	return nil
+	// make sure we kill grafana
+	defer func() error {
+		return cmd.Process.Kill()
+	}()
+
+	// Wait for the server to start up
+	for {
+		_, err := net.Dial("tcp", "localhost:3000")
+		if err == nil {
+			fmt.Println("Server is ready!")
+			break
+		}
+		fmt.Println("Waiting for server...")
+		time.Sleep(time.Second)
+	}
+
+	// run k6 tests
+	err = doInDir(projectRoot, "tests", func() error {
+		if err := sh.RunV("k6", "run", "tests/dashboards.js"); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return err
 }
 
 // Do function in a directory
