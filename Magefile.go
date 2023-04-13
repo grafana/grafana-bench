@@ -55,18 +55,9 @@ func ResolveCommit() error {
 		// e0b2aeffa34ba6ca812ff3db6a08adee7a89b6d4        HEAD
 		resolved = strings.Split(resolved, "\t")[0]
 
-		// get short commit hash
-		// ee7a89b6d4
-		resolved = resolved[len(resolved)-10:]
-
 		fmt.Printf("branch: %s resolved to `%s`\n", commit, resolved)
 		commit = resolved
 		return nil
-	}
-
-	// get short commit hash
-	if len(commit) == 40 {
-		commit = commit[len(commit)-10:]
 	}
 
 	fmt.Println("using commit:", commit)
