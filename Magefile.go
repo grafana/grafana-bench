@@ -316,7 +316,7 @@ func Bench() error {
 	}
 
 	// copy artifact
-	workExecutable := path.Join(projectRoot, "work", "grafana")
+	workExecutable := path.Join(projectRoot, "work", artifact_name)
 	if err := sh.RunV("cp", artifact_path, workExecutable); err != nil {
 		return err
 	}
