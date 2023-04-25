@@ -37,6 +37,7 @@ func Bench() error {
 	return Bencher.Bench()
 }
 
+// UpdateDeps updates build and test repos
 func UpdateDeps() error {
 	return Bencher.UpdateDeps()
 }
