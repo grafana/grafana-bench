@@ -2,6 +2,20 @@ package utils
 
 import "os"
 
+// Get working directory
+func GetWorkdir() string {
+	// Use the Getwd function to get the current working directory
+	dir, err := os.Getwd()
+
+	// If there was an error, return it
+	if err != nil {
+		panic(err)
+	}
+
+	// Otherwise, return the current working directory
+	return dir
+}
+
 // Do function in a directory
 func DoInDir(workdir string, operationDir string, fn func() error) error {
 	if err := os.Chdir(operationDir); err != nil {

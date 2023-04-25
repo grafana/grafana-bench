@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/grafana/grafana-bench/pkg/utils"
+	"github.com/grafana/grafana-bench/bench/utils"
 	"github.com/magefile/mage/sh"
 )
 
@@ -17,6 +17,7 @@ func BootstrapTestSuite(projectRoot string) error {
 	}
 
 	if !exists {
+		fmt.Println("Test suite not found. Cloning repo https://github.com/grafana/grafana-api-tests")
 		if err := sh.RunV("git", "clone", "https://github.com/grafana/grafana-api-tests", "tests"); err != nil {
 			return fmt.Errorf("Error checking out grafana test repo %s", err)
 		}
@@ -46,7 +47,7 @@ func UpdateTestSuite(projectRoot string) error {
 
 // ResolveTestSuite ensures we have the correct version of the test suite at
 // runtime
-func ResolveTestSuite(projectRoot, testSuiteVersion string) error {
+func ResolveTestSuite(projectRoot, testSuiteVersion string) (string, error) {
 	if testSuiteVersion == "" {
 		testSuiteVersion = "main"
 	}
@@ -69,5 +70,5 @@ func ResolveTestSuite(projectRoot, testSuiteVersion string) error {
 		return nil
 	})
 
-	return err
+	return testSuiteVersion, err
 }

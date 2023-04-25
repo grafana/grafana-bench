@@ -2,24 +2,9 @@ package utils
 
 import (
 	"encoding/json"
-	"os"
 
 	"github.com/magefile/mage/sh"
 )
-
-// Get working directory
-func GetWorkdir() string {
-	// Use the Getwd function to get the current working directory
-	dir, err := os.Getwd()
-
-	// If there was an error, return it
-	if err != nil {
-		panic(err)
-	}
-
-	// Otherwise, return the current working directory
-	return dir
-}
 
 // GoEnvInfo returns map of go build environment variables
 // More reliable than using uname across operating systems
