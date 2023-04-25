@@ -7,7 +7,7 @@ import (
 	"github.com/grafana/grafana-bench/bench"
 )
 
-// This file is a thin wrapper using mage to get us a quick CLI using mage.
+// This file is a thin wrapper to get us a quick CLI using mage.
 // If you're adding or changing logic, that should happen in the bench/ package
 
 // Initialize config with runtime defaults
@@ -35,6 +35,10 @@ func Build() error {
 // usage: INI=custom.ini mage bench
 func Bench() error {
 	return Bencher.Bench()
+}
+
+func UpdateDeps() error {
+	return Bencher.UpdateDeps()
 }
 
 // Used to test/verify behaviors

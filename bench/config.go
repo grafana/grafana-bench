@@ -38,20 +38,17 @@ func NewBencher() *Config {
 
 }
 
+// ResolveConfig resolves config resolves all environment variables for the config
 func (b *Config) ResolveConfig() error {
 	if b.Resolved {
 		return nil
 	}
 
-	if err := b.ResolveTestSuite(); err != nil {
+	if err := b.ResolveArch(); err != nil {
 		return err
 	}
 
 	if err := b.ResolveGrafanaCommit(); err != nil {
-		return err
-	}
-
-	if err := b.ResolveArch(); err != nil {
 		return err
 	}
 
