@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/grafana/grafana-bench/pkg/utils"
+	"github.com/grafana/grafana-bench/bench/utils"
 	"github.com/magefile/mage/sh"
 )
 
@@ -17,6 +17,7 @@ func BootstrapBuildSuite(projectRoot string) error {
 	}
 
 	if !exists {
+		fmt.Println("Build suite not found. Cloning repo https://github.com/grafana/grafana-build")
 		if err := sh.RunV("git", "clone", "https://github.com/grafana/grafana-build", "build"); err != nil {
 			return fmt.Errorf("Error checking out grafana test repo %s", err)
 		}
