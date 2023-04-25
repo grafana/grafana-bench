@@ -32,8 +32,7 @@ func NewBencher() *Config {
 		GrafanaCommit:    os.Getenv("COMMIT"),
 		GrafanaINIPath:   os.Getenv("INI"),
 		TestSuiteVersion: os.Getenv("TEST_SUITE_VERSION"),
-
-		Resolved: false,
+		Resolved:         false,
 	}
 
 }
