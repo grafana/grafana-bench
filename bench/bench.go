@@ -18,6 +18,10 @@ func (b *Config) Bench() error {
 		return err
 	}
 
+	if err := b.ResolveBuildSuite(); err != nil {
+		return err
+	}
+
 	// do the build if we need it
 	if err := b.Build(); err != nil {
 		return err
