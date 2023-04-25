@@ -8,6 +8,7 @@ import (
 	"github.com/magefile/mage/sh"
 )
 
+// Build handles building a version of Grafana
 func (b *Config) Build() error {
 	if err := b.ResolveConfig(); err != nil {
 		return err

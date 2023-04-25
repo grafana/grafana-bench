@@ -29,10 +29,13 @@ func (b *Config) CheckDeps() error {
 
 // UpdateDeps updates local build and test suite repos
 func (b *Config) UpdateDeps() error {
+	fmt.Println("Updating build suite")
 	if err := deps.UpdateBuildSuite(b.ProjectRoot); err != nil {
 		return err
 	}
 
+	fmt.Println()
+	fmt.Println("Updating test suite")
 	if err := deps.UpdateTestSuite(b.ProjectRoot); err != nil {
 		return err
 	}
