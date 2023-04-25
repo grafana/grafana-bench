@@ -3,8 +3,15 @@
 
 package main
 
+// TODO
+// test using mg.Deps to set BenchConfig on context and retrieve it or set
+
+// embed and test setup functions
+// embed and test dep functions
+// test running suite
+//
+
 import (
-	"encoding/json"
 	"fmt"
 	"net"
 	"os"
@@ -14,222 +21,96 @@ import (
 	"strings"
 	"time"
 
+	//mage:import setup
+	"github.com/grafana/grafana-bench/pkg/deps"
+	"github.com/grafana/grafana-bench/pkg/utils"
 	"github.com/magefile/mage/sh"
 )
 
 var (
-	projectRoot string = getWorkdir()
+	Bencher config.BenchConfig = config.BenchConfig{
+		ProjectRoot: utils.GetWorkdir(),
+		GoEnv:       utils.GetCompilerEnvInfo(),
 
-	// config variables
-	commit  string = os.Getenv("COMMIT")
-	arch    string = os.Getenv("ARCH")
-	iniPath string = os.Getenv("INI")
+		Arch:             os.Getenv("ARCH"),
+		GrafanaCommit:    os.Getenv("COMMIT"),
+		GrafanaINIPath:   os.Getenv("INI"),
+		TestSuiteVersion: os.Getenv("TEST_SUITE_VERSION"),
 
-	artifact_name string
-	artifact_path string
-
-	resolved bool = false
+		Resolved: false,
+	}
 )
-
-// Resolve branch to latest commit of branch
-func ResolveCommit() error {
-	if commit == "" {
-		commit = "main"
-	}
-
-	// resolve branch
-	isCommitHash := len(commit) == 40
-
-	if !isCommitHash {
-		fmt.Println("no grafana commit specified using branch:", commit)
-		b := commit
-		if commit == "main" {
-			b = "HEAD"
-		}
-		resolved, err := sh.Output("git", "ls-remote", "https://github.com/grafana/grafana", b, "-c7")
-		if err != nil {
-			return fmt.Errorf("Error resolving git commit %s: %s", commit, err)
-		}
-
-		// get first column
-		// e0b2aeffa34ba6ca812ff3db6a08adee7a89b6d4        HEAD
-		resolved = strings.Split(resolved, "\t")[0]
-
-		fmt.Printf("branch: %s resolved to `%s`\n", commit, resolved)
-		commit = resolved
-		return nil
-	}
-
-	fmt.Println("using commit:", commit)
-	return nil
-}
-
-func GoEnvInfo() (map[string]string, error) {
-	env := make(map[string]string)
-
-	envJson, err := sh.Output("go", "env", "--json")
-	if err != nil {
-		return env, err
-	}
-
-	err = json.Unmarshal([]byte(envJson), &env)
-	return env, err
-}
 
 // Resolve architecture and artifact names
 func ResolveArch() error {
-	if arch == "" {
-
-		goEnv, err := GoEnvInfo()
-		if err != nil {
-			panic(err)
-		}
-
+	if Bencher.Arch == "" {
 		// TODO maybe handle the case where key is not found
-		sys_os := goEnv["GOOS"]
-		sys_arch := goEnv["GOARCH"]
+		sys_os := Bencher.GoEnv["GOOS"]
+		sys_arch := Bencher.GoEnv["GOARCH"]
 
-		arch = fmt.Sprintf("%s/%s", strings.ToLower(sys_os), strings.ToLower(sys_arch))
+		Bencher.Arch = fmt.Sprintf("%s/%s", strings.ToLower(sys_os), strings.ToLower(sys_arch))
 	}
-	fmt.Println("using arch:", arch)
+	fmt.Println("using arch:", Bencher.Arch)
 
-	artifact_name = fmt.Sprintf("grafana-server-%s-%s", commit, strings.Replace(arch, "/", "-", -1))
-	artifact_path = path.Join("artifacts", artifact_name)
+	Bencher.BuildArtifactName = fmt.Sprintf("grafana-server-%s-%s", Bencher.GrafanaCommit, strings.Replace(Bencher.Arch, "/", "-", -1))
+	Bencher.BuildArtifactPath = path.Join("artifacts", Bencher.BuildArtifactName)
 	return nil
 }
 
-func ResolveINI() error {
-	// check if INI is set
-	if iniPath != "" {
-		if !filepath.IsAbs(iniPath) {
-			iniPath = path.Join(projectRoot, iniPath)
-		}
-
-		exists, _ := pathExists(iniPath)
-		if exists {
-			return nil
-		}
-	}
-
-	// check if custom.ini in project root
-	dirIni := path.Join(projectRoot, "custom.ini")
-	exists, _ := pathExists(dirIni)
-	if exists {
-		iniPath = dirIni
-		return nil
-	}
-
-	return nil
-}
-
-// bootstrap clones test and build repos locally
-func Bootstrap() error {
-
-	// check if test repo is cloned locally
-	exists, err := pathExists("tests")
-	if err != nil {
-		return fmt.Errorf("Issue checking directory path")
-	}
-
-	if !exists {
-		if err := sh.RunV("git", "clone", "https://github.com/grafana/grafana-api-tests", "tests"); err != nil {
-			return fmt.Errorf("Error checking out grafana test repo %s", err)
-		}
-	}
-
-	// check if build repo cloned locally
-	exists, err = pathExists("build")
-	if err != nil {
-		return fmt.Errorf("Issue checking directory path")
-	}
-
-	if !exists {
-		if err := sh.RunV("git", "clone", "https://github.com/grafana/grafana-build", "build"); err != nil {
-			return fmt.Errorf("Error checking out grafana test repo %s", err)
-		}
-	}
-
-	// ensure k6 is installed
-	if err := sh.Run("which", "k6"); err != nil {
-		return fmt.Errorf("K6 not found. Install k6 for your platform. https://k6.io/docs/get-started/installation/")
-	}
-
-	return nil
-}
-
-// Update test and clone repos
-func Update() error {
-	// tests
-	err := doInDir(projectRoot, "tests", func() error {
-		if err := sh.RunV("git", "checkout", "main"); err != nil {
-			return fmt.Errorf("Error checking out grafana test repo %s", err)
-		}
-
-		if err := sh.RunV("git", "pull"); err != nil {
-			return err
-		}
-
-		return nil
-	})
-
-	// build
-	err = doInDir(projectRoot, "build", func() error {
-		if err := sh.RunV("git", "checkout", "main"); err != nil {
-			return fmt.Errorf("Error checking out grafana test repo %s", err)
-		}
-
-		if err := sh.RunV("git", "pull"); err != nil {
-			return err
-		}
-
-		return nil
-	})
-	return err
-}
-
-// Sets necessary dependencies before real operations
+// Resolves dependencies like GrafanaCommit, Architecture, and Custom.ini for
+// running the test suite
+// TODO, not all of these need to run every time. Split these apart when
+// optimizing
 func SetDependencies() error {
-	if resolved {
+	// check context for benchConfig
+	// if there, check for resolved
+	// if resolved, return
+	// handle resolving
+	// add to context
+
+	if Bencher.Resolved {
 		return nil
 	}
 
-	err := ResolveCommit()
-	if err != nil {
+	if err := ResolveGrafanaCommit(Bencher.ProjectRoot); err != nil {
 		return err
 	}
 
-	err = ResolveArch()
-	if err != nil {
+	if err := ResolveArch(); err != nil {
 		return err
 	}
 
-	err = ResolveINI()
-	if err != nil {
+	if err := ResolveINI(); err != nil {
 		return err
 	}
 
-	resolved = true
+	Bencher.Resolved = true
 	return nil
 }
 
 // Build builds a grafana binary and stores it in the artifacts folder
 // usage: COMMIT=k8s-proof-of-concept mage buildcommit
 func Build() error {
-	err := SetDependencies()
-	if err != nil {
+	mg.Deps(SetDependencies)
+
+	if err := SetDependencies(); err != nil {
 		return err
 	}
 
-	exists, _ := pathExists(artifact_path)
+	if err := deps.ResolveTestSuite(Bencher.ProjectRoot, Bencher.TestSuiteVersion); err != nil {
+		return err
+	}
+
+	exists, _ := utils.PathExists(Bencher.BuildArtifactPath)
 	if exists {
 		fmt.Println("build artifacts cached, skipping build")
 		return nil
 	}
 
 	// do the build
-	err = doInDir(projectRoot, "build", func() error {
-		ref := fmt.Sprintf("--grafana-ref=%s", commit)
-		distro := fmt.Sprintf("--distro=%s", arch)
+	err := utils.DoInDir(Bencher.ProjectRoot, "build", func() error {
+		ref := fmt.Sprintf("--grafana-ref=%s", Bencher.GrafanaCommit)
+		distro := fmt.Sprintf("--distro=%s", Bencher.Arch)
 		err := sh.RunV("go", "run", "./cmd", "--verbose", ref, "backend", "build", distro)
 		return err
 	})
@@ -239,9 +120,9 @@ func Build() error {
 
 	// copy build to artifact path
 	// artifacts grafana, grafana-server, grafana-cli
-	fmt.Println("copying executable to:", artifact_path)
-	buildPath := path.Join(projectRoot, "build", "bin", arch, "grafana")
-	if err := sh.RunV("cp", buildPath, artifact_path); err != nil {
+	fmt.Println("copying executable to:", Bencher.BuildArtifactPath)
+	buildPath := path.Join(Bencher.ProjectRoot, "build", "bin", Bencher.Arch, "grafana")
+	if err := sh.RunV("cp", buildPath, Bencher.BuildArtifactPath); err != nil {
 		return err
 	}
 
@@ -277,54 +158,54 @@ func Bench() error {
 	fmt.Println("setting up work directory")
 
 	// delete old workdir if exists
-	if err := sh.RunV("rm", "-rf", path.Join(projectRoot, "work")); err != nil {
+	if err := sh.RunV("rm", "-rf", path.Join(Bencher.ProjectRoot, "work")); err != nil {
 		return err
 	}
 
 	// copy template directory
-	templateConf := path.Join(projectRoot, "templates")
-	workConfPath := path.Join(projectRoot, "work")
+	templateConf := path.Join(Bencher.ProjectRoot, "templates")
+	workConfPath := path.Join(Bencher.ProjectRoot, "work")
 	if err := sh.RunV("cp", "-r", templateConf, workConfPath); err != nil {
 		return err
 	}
 
 	// get default.ini for that commit
-	iniArtifact := fmt.Sprintf("%s_defaults.ini", commit)
-	iniArtifactPath := path.Join(projectRoot, "artifacts", iniArtifact)
-	exists, _ := pathExists(iniArtifactPath)
+	iniArtifact := fmt.Sprintf("%s_defaults.ini", Bencher.GrafanaCommit)
+	iniArtifactPath := path.Join(Bencher.ProjectRoot, "artifacts", iniArtifact)
+	exists, _ := utils.PathExists(iniArtifactPath)
 	if !exists {
 		// get the ini for that commit of grafana if it doesn't exist
-		iniUrl := fmt.Sprintf("https://raw.githubusercontent.com/grafana/grafana/%s/conf/defaults.ini", commit)
+		iniUrl := fmt.Sprintf("https://raw.githubusercontent.com/grafana/grafana/%s/conf/defaults.ini", Bencher.GrafanaCommit)
 		if err := sh.RunV("curl", iniUrl, "-o", iniArtifactPath); err != nil {
 			return err
 		}
 	}
 
 	// copy ini to workdir
-	iniWorkPath := path.Join(projectRoot, "work", "conf", "defaults.ini")
+	iniWorkPath := path.Join(Bencher.ProjectRoot, "work", "conf", "defaults.ini")
 	if err := sh.RunV("cp", iniArtifactPath, iniWorkPath); err != nil {
 		return err
 	}
 
 	// copy custom.ini into work dir
-	if iniPath != "" {
+	if Bencher.GrafanaINIPath != "" {
 		fmt.Println("found custom.ini")
-		customIniWorkPath := path.Join(projectRoot, "work", "conf", "custom.ini")
-		if err := sh.Run("cp", iniPath, customIniWorkPath); err != nil {
+		customIniWorkPath := path.Join(Bencher.ProjectRoot, "work", "conf", "custom.ini")
+		if err := sh.Run("cp", Bencher.GrafanaINIPath, customIniWorkPath); err != nil {
 			return err
 		}
 	}
 
 	// copy artifact
-	workExecutable := path.Join(projectRoot, "work", artifact_name)
-	if err := sh.RunV("cp", artifact_path, workExecutable); err != nil {
+	workExecutable := path.Join(Bencher.ProjectRoot, "work", Bencher.BuildArtifactName)
+	if err := sh.RunV("cp", Bencher.BuildArtifactPath, workExecutable); err != nil {
 		return err
 	}
 
 	// boot grafana
 	fmt.Println("booting grafana")
 	cmd := exec.Command(workExecutable, "server")
-	err = doInDir(projectRoot, "work", func() error {
+	err = utils.DoInDir(Bencher.ProjectRoot, "work", func() error {
 		if err := cmd.Start(); err != nil {
 			fmt.Println("Error starting server:", err)
 			return err
@@ -351,9 +232,13 @@ func Bench() error {
 		time.Sleep(time.Second)
 	}
 
+	// get featureToggles & buildInfo from response /api/frontend/settings
+	// only contains list of things that are turned on
+
 	// run k6 tests
-	err = doInDir(projectRoot, "tests", func() error {
+	err = utils.DoInDir(Bencher.ProjectRoot, "tests", func() error {
 		if err := sh.RunV("k6", "run", "tests/dashboards.js"); err != nil {
+			// k6 run tests/tests/dashboards.js
 			return err
 		}
 
@@ -363,42 +248,51 @@ func Bench() error {
 	return err
 }
 
-// Do function in a directory
-func doInDir(workdir string, operationDir string, fn func() error) error {
-	os.Chdir(operationDir)
-	defer os.Chdir(workdir)
-	return fn()
-}
-
-// Checks for existence of directory
-func pathExists(path string) (bool, error) {
-	// Use the Stat function to check if the directory exists
-	_, err := os.Stat(path)
-
-	// If there is no error, the path exists
-	if err == nil {
-		return true, nil
+// Resolve branch to latest commit of branch
+func ResolveGrafanaCommit(commit string) error {
+	if commit == "" {
+		commit = "main"
 	}
 
-	// If the error is "not exists", the directory does not exist
-	if os.IsNotExist(err) {
-		return false, nil
+	// if already a commit hash, we can just return
+	if utils.IsCommitHash(commit) {
+		fmt.Println("using commit:", commit)
+		return nil
 	}
 
-	// If the error is not "not exists", return the error
-	return false, err
-}
-
-// Get working directory
-func getWorkdir() string {
-	// Use the Getwd function to get the current working directory
-	dir, err := os.Getwd()
-
-	// If there was an error, return it
+	// get latest commit from branch
+	branch := commit
+	fmt.Println("branch:", branch, "specified. Resolving latest commit")
+	commit, err := utils.GetLatestBranchCommit("https://github.com/grafana/grafana", commit)
 	if err != nil {
-		panic(err)
+		return err
+	}
+	fmt.Printf("branch: %s resolved to `%s`\n", branch, commit)
+	return nil
+}
+
+// ResolveINI determines if there is a custom.ini to test a version of grafana
+// with
+func ResolveINI() error {
+	// check if INI is set
+	if Bencher.GrafanaINIPath != "" {
+		if !filepath.IsAbs(Bencher.GrafanaINIPath) {
+			Bencher.GrafanaINIPath = path.Join(Bencher.ProjectRoot, Bencher.GrafanaINIPath)
+		}
+
+		exists, _ := utils.PathExists(Bencher.GrafanaINIPath)
+		if exists {
+			return nil
+		}
 	}
 
-	// Otherwise, return the current working directory
-	return dir
+	// check if custom.ini in project root
+	dirIni := path.Join(Bencher.ProjectRoot, "custom.ini")
+	exists, _ := utils.PathExists(dirIni)
+	if exists {
+		Bencher.GrafanaINIPath = dirIni
+		return nil
+	}
+
+	return nil
 }
