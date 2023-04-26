@@ -45,8 +45,6 @@ func (b *Config) ResolveArch() error {
 	}
 
 	fmt.Println("arch:", b.Arch)
-	b.BuildArtifactName = fmt.Sprintf("grafana-server-%s-%s", b.GrafanaCommit, strings.Replace(b.Arch, "/", "-", -1))
-	b.BuildArtifactPath = path.Join("artifacts", b.BuildArtifactName)
 
 	return nil
 }

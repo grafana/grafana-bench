@@ -14,7 +14,7 @@ func (b *Config) Build() error {
 		return err
 	}
 
-	if err := b.ResolveTestSuite(); err != nil {
+	if err := b.ResolveBuildSuite(); err != nil {
 		return err
 	}
 

@@ -7,37 +7,11 @@ import (
 	"github.com/magefile/mage/sh"
 )
 
-// CheckDeps ensures that k6 is installed, test and build suites cloned
+// CheckDeps ensures that k6 is installed
 func (b *Config) CheckDeps() error {
 	// ensure k6 is installed
 	if err := sh.Run("which", "k6"); err != nil {
 		return fmt.Errorf("K6 not found. Install k6 for your platform. https://k6.io/docs/get-started/installation/")
-	}
-
-	// get build suite
-	if err := deps.BootstrapBuildSuite(b.ProjectRoot); err != nil {
-		return err
-	}
-
-	// get test suite
-	if err := deps.BootstrapTestSuite(b.ProjectRoot); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// UpdateDeps updates local build and test suite repos
-func (b *Config) UpdateDeps() error {
-	fmt.Println("Updating build suite")
-	if err := deps.UpdateBuildSuite(b.ProjectRoot); err != nil {
-		return err
-	}
-
-	fmt.Println()
-	fmt.Println("Updating test suite")
-	if err := deps.UpdateTestSuite(b.ProjectRoot); err != nil {
-		return err
 	}
 
 	return nil
@@ -62,4 +36,20 @@ func (b *Config) ResolveTestSuite() error {
 // ResolveBuildSuite ensures build suite is cloned locally
 func (b *Config) ResolveBuildSuite() error {
 	return deps.BootstrapBuildSuite(b.ProjectRoot)
+}
+
+// UpdateDeps updates local build and test suite repos
+func (b *Config) UpdateDeps() error {
+	fmt.Println("Updating build suite")
+	if err := deps.UpdateBuildSuite(b.ProjectRoot); err != nil {
+		return err
+	}
+
+	fmt.Println()
+	fmt.Println("Updating test suite")
+	if err := deps.UpdateTestSuite(b.ProjectRoot); err != nil {
+		return err
+	}
+
+	return nil
 }
