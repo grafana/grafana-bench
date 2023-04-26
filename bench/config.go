@@ -1,7 +1,10 @@
 package bench
 
 import (
+	"fmt"
 	"os"
+	"path"
+	"strings"
 
 	"github.com/grafana/grafana-bench/bench/utils"
 )
@@ -54,6 +57,10 @@ func (b *Config) ResolveConfig() error {
 	if err := b.ResolveINI(); err != nil {
 		return err
 	}
+
+	// Set artifacts to be used later
+	b.BuildArtifactName = fmt.Sprintf("grafana-server-%s-%s", b.GrafanaCommit, strings.Replace(b.Arch, "/", "-", -1))
+	b.BuildArtifactPath = path.Join("artifacts", b.BuildArtifactName)
 
 	b.Resolved = true
 
