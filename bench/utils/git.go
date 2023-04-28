@@ -25,5 +25,11 @@ func GetLatestBranchCommit(repo, branch string) (string, error) {
 
 	// get first column
 	// e0b2aeffa34ba6ca812ff3db6a08adee7a89b6d4        HEAD
-	return strings.Split(resolved, "\t")[0], nil
+	commit := strings.Split(resolved, "\t")[0]
+
+	if commit == "" {
+		return "", fmt.Errorf("Branch: %s could not be resolve. verify it is a full git ref or branch name", branch)
+	}
+
+	return commit, nil
 }
