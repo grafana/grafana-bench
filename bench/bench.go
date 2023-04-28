@@ -26,7 +26,6 @@ func (b *Config) Bench() error {
 		return err
 	}
 
-	// do the build
 	if err := b.Build(); err != nil {
 		return err
 	}
