@@ -18,10 +18,6 @@ import (
 func (b *Config) Bench() error {
 	var err error
 
-	if err := b.CheckDeps(); err != nil {
-		return err
-	}
-
 	if err := b.ResolveConfig(); err != nil {
 		return err
 	}

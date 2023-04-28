@@ -46,6 +46,10 @@ func (b *Config) ResolveConfig() error {
 		return nil
 	}
 
+	if err := b.CheckDeps(); err != nil {
+		return err
+	}
+
 	if err := b.ResolveArch(); err != nil {
 		return err
 	}
