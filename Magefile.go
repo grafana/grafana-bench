@@ -37,6 +37,11 @@ func Bench() error {
 	return Bencher.Bench()
 }
 
+// Build and run grafana, but wait for input to shutdown
+func Run() error {
+	return Bencher.Run()
+}
+
 // UpdateDeps updates build and test repos
 func UpdateDeps() error {
 	return Bencher.UpdateDeps()
