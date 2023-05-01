@@ -42,6 +42,11 @@ func Run() error {
 	return Bencher.Run()
 }
 
+// Runs test suit on already running instance of grafana
+func Test() error {
+	return Bencher.Test()
+}
+
 // UpdateDeps updates build and test repos
 func UpdateDeps() error {
 	return Bencher.UpdateDeps()
