@@ -5,11 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
-	"os/exec"
 	"path"
-	"time"
 
 	"github.com/grafana/grafana-bench/bench/utils"
 	"github.com/magefile/mage/sh"
@@ -39,58 +36,17 @@ func (b *Config) Bench() error {
 
 	// boot grafana
 	fmt.Println("booting grafana")
-	cmd := exec.Command(executable, "server")
-	err = utils.DoInDir(b.ProjectRoot, "work", func() error {
-		if err := cmd.Start(); err != nil {
-			fmt.Println("Error starting server:", err)
-			return err
-		}
-		return nil
-	})
+	killFunc, err := b.Boot(executable)
 	if err != nil {
 		return err
 	}
-
-	// make sure we kill grafana
-	defer func() {
-		err := cmd.Process.Kill()
-		if err != nil {
-			fmt.Println("ERROR killing grafana PID:", err)
-		}
-	}()
+	defer killFunc()
 
 	// Wait for the server to start up
-	for {
-		_, err := net.Dial("tcp", "localhost:3000")
-		if err == nil {
-			fmt.Println("Server is ready!")
-			break
-		}
-		fmt.Println("Waiting for server...")
-		time.Sleep(time.Second)
-	}
-
-	// get featureToggles & buildInfo from response /api/frontend/settings
-	// only contains list of things that are turned on
-	liveConfig, err := getLiveConfig()
-	if err != nil {
-		fmt.Println("error getting live config from booted grafana:", err)
-	} else {
-		fmt.Println(liveConfig)
-	}
+	waitForLiveGrafana()
 
 	// run k6 tests
-	err = utils.DoInDir(b.ProjectRoot, "tests", func() error {
-		if err := sh.RunV("k6", "run", "tests/dashboards/dashboard_create.js"); err != nil {
-			// k6 run tests/tests/dashboards.js
-			return err
-		}
-
-		return nil
-	})
-
-	return err
-
+	return b.Test()
 }
 
 type LiveConfig struct {
@@ -133,7 +89,8 @@ func getLiveConfig() (LiveConfig, error) {
 	return lc, nil
 }
 
-// setupWorkdir sets up directory with configs needed for testing
+// setupWorkdir sets up directory with configs needed for testing a grafana
+// build
 func setupWorkdir(b *Config) (string, error) {
 	// delete old workdir if exists
 	if err := sh.RunV("rm", "-rf", path.Join(b.ProjectRoot, "work")); err != nil {
@@ -153,6 +110,7 @@ func setupWorkdir(b *Config) (string, error) {
 	exists, _ := utils.PathExists(iniArtifactPath)
 	if !exists {
 		// get the ini for that commit of grafana if it doesn't exist
+		// takes 7 chars to full commit hash
 		iniUrl := fmt.Sprintf("https://raw.githubusercontent.com/grafana/grafana/%s/conf/defaults.ini", b.GrafanaCommit)
 		if err := sh.RunV("curl", iniUrl, "-o", iniArtifactPath); err != nil {
 			return "", err
