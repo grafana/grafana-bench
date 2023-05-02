@@ -54,13 +54,13 @@ func setupWorkdir(b *Config) (string, error) {
 	}
 
 	// get default.ini for that commit
-	iniArtifact := fmt.Sprintf("%s_defaults.ini", b.GrafanaCommit)
+	iniArtifact := fmt.Sprintf("%s_defaults.ini", b.GrafanaRevision)
 	iniArtifactPath := path.Join(b.ProjectRoot, "artifacts", iniArtifact)
 	exists, _ := utils.PathExists(iniArtifactPath)
 	if !exists {
 		// get the ini for that commit of grafana if it doesn't exist
 		// takes 7 chars to full commit hash
-		iniUrl := fmt.Sprintf("https://raw.githubusercontent.com/grafana/grafana/%s/conf/defaults.ini", b.GrafanaCommit)
+		iniUrl := fmt.Sprintf("https://raw.githubusercontent.com/grafana/grafana/%s/conf/defaults.ini", b.GrafanaRevision)
 		if err := sh.RunV("curl", iniUrl, "-o", iniArtifactPath); err != nil {
 			return "", err
 		}

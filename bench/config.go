@@ -15,10 +15,10 @@ type Config struct {
 	GoEnv       map[string]string
 
 	// From environment
-	Arch             string
-	GrafanaCommit    string
-	GrafanaINIPath   string
-	TestSuiteVersion string
+	Arch              string
+	GrafanaRevision   string
+	GrafanaINIPath    string
+	TestSuiteRevision string
 
 	// Artifacts
 	BuildArtifactName string
@@ -30,12 +30,12 @@ type Config struct {
 
 func NewBencher() *Config {
 	return &Config{
-		ProjectRoot:      utils.GetWorkdir(),
-		Arch:             os.Getenv("ARCH"),
-		GrafanaCommit:    os.Getenv("COMMIT"),
-		GrafanaINIPath:   os.Getenv("INI"),
-		TestSuiteVersion: os.Getenv("TEST_SUITE_VERSION"),
-		Resolved:         false,
+		ProjectRoot:       utils.GetWorkdir(),
+		Arch:              os.Getenv("ARCH"),
+		GrafanaRevision:   os.Getenv("GRAFANA_REVISION"),
+		GrafanaINIPath:    os.Getenv("INI"),
+		TestSuiteRevision: os.Getenv("TEST_REVISION"),
+		Resolved:          false,
 	}
 
 }
@@ -63,7 +63,7 @@ func (b *Config) ResolveConfig() error {
 	}
 
 	// Set artifacts to be used later
-	b.BuildArtifactName = fmt.Sprintf("grafana-server-%s-%s", b.GrafanaCommit, strings.Replace(b.Arch, "/", "-", -1))
+	b.BuildArtifactName = fmt.Sprintf("grafana-server-%s-%s", b.GrafanaRevision, strings.Replace(b.Arch, "/", "-", -1))
 	b.BuildArtifactPath = path.Join("artifacts", b.BuildArtifactName)
 
 	b.Resolved = true
