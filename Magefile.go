@@ -52,8 +52,6 @@ func UpdateDeps() error {
 	return Bencher.UpdateDeps()
 }
 
-// Used to test/verify behaviors
-
 // Resolve branch to latest commit of branch
 func ResolveGrafanaCommit() error {
 	return Bencher.ResolveGrafanaCommit()
@@ -66,11 +64,20 @@ func ResolveArch() error {
 
 // ResolveINI determines if there is a custom.ini to test a version of grafana
 // with
-func ResolveINI() error {
-	return Bencher.ResolveINI()
+func ResolveGrafanaINI() error {
+	return Bencher.ResolveGrafanaINI()
 }
 
 // ResolveConfig resolves GrafanaCommit, Architecture, and Custom.ini. Use this
 func ResolveConfig() error {
 	return Bencher.ResolveConfig()
+}
+
+// TODO detail environment variables to set
+func Help() {
+	// ARCH
+	// GRAFANA_REVISION
+	// GRAFANA_CONFIG
+	// TEST_SUITE_REVISION
+	// TEST_SUITE
 }

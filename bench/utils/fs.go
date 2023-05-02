@@ -1,6 +1,9 @@
 package utils
 
-import "os"
+import (
+	"os"
+	"path/filepath"
+)
 
 // Get working directory
 func GetWorkdir() string {
@@ -49,4 +52,18 @@ func PathExists(path string) (bool, error) {
 
 	// If the error is not "not exists", return the error
 	return false, err
+}
+
+// Walks a directory getting a list of all files.
+// ext must include . like .js
+func Glob(dir string, ext string) ([]string, error) {
+	files := []string{}
+	err := filepath.Walk(dir, func(path string, f os.FileInfo, err error) error {
+		if filepath.Ext(path) == ext {
+			files = append(files, path)
+		}
+		return nil
+	})
+
+	return files, err
 }
