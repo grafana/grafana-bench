@@ -1,6 +1,10 @@
 package bench
 
 import (
+	"fmt"
+	"path"
+	"strings"
+
 	"github.com/grafana/grafana-bench/bench/utils"
 	"github.com/magefile/mage/sh"
 )
@@ -36,19 +40,25 @@ func (b *Config) Test() error {
 		envVars["TEST_SUITE_REVISION"] = b.TestSuiteRevision
 
 		// TODO: START HERE
-		// 3. change references of "commit" when referring to test suite or build
-		// suite and use "revision"
-		// 4. start thinking about collection results from test suite
+		// 1. work on getTestSuiteFiles
+		// 2. start thinking about collection results from test suite
 		// file output should come from an env variable but have a default for all
 		// tests
-		// 5. work on getTestSuiteFiles
 
-		tests := getTestSuiteFiles()
+		tests, err := getTestSuiteFiles(b.ProjectRoot, b.TestSuite)
+		if err != nil {
+			return err
+		}
+
+		// run the tests
 		for _, testFile := range tests {
 			// k6 run tests/tests/dashboards.js
-			if err := sh.RunWithV(envVars, "k6", "run", testFile, "-i", "1", "-u", "1"); err != nil {
-				return err
-			}
+
+			// FIXME ignore errors on this as thresholds on k6 may not match and will throw
+			// an error even though we don't care about it. This isn't a GREAT
+			// approach. We should figure out a way to tell k6 not to return an error
+			// if threshold is breached rather than necessarily modifying the test
+			_ = sh.RunWithV(envVars, "k6", "run", testFile, "-i", "1", "-u", "1")
 		}
 
 		return nil
@@ -64,10 +74,37 @@ func (b *Config) Test() error {
 // glob syntax and run each of those.
 // e.g. TestFiles=dashboards will get all files in tests/tests/dashboards/**.*.js
 // e.g. TestFiles=dashboards/dashboard_read.js will only run dashboard_read.js
-func getTestSuiteFiles() []string {
-	//tests := []string{"tests/dashboards/dashboard_update.js"}
-	tests := []string{"tests/summary.js"}
-	return tests
+//
+// TODO further investigate using k6 scenarios - https://k6.io/docs/using-k6/scenarios/
+func getTestSuiteFiles(projectRoot, testSuite string) ([]string, error) {
+	// default to dashboards test suite
+	if testSuite == "" {
+		testSuite = "dashboards"
+	}
+
+	// single file if we have .js extension
+	if strings.Contains(testSuite, ".js") {
+		// verify existence of absolute path
+		p := path.Join(projectRoot, "tests", "tests", testSuite)
+		exists, _ := utils.PathExists(p)
+		if !exists {
+			return []string{}, fmt.Errorf("File %s was not found", p)
+		}
+		return []string{p}, nil
+	}
+
+	d := path.Join(projectRoot, "tests", "tests", testSuite)
+	exists, _ := utils.PathExists(d)
+	if !exists {
+		return []string{}, fmt.Errorf("Path %s was not found", d)
+	}
+
+	files, err := utils.Glob(d, ".js")
+	if err != nil {
+		panic(err)
+	}
+
+	return files, nil
 }
 
 // TODO IMPLEMENT ME

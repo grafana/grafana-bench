@@ -49,7 +49,7 @@ func (b *Config) ResolveArch() error {
 	return nil
 }
 
-func (b *Config) ResolveINI() error {
+func (b *Config) ResolveGrafanaINI() error {
 	// Check if INI environment set and use that
 	// If no INI check to see if local custom.ini in root
 	// else blank

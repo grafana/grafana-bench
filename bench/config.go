@@ -15,16 +15,22 @@ type Config struct {
 	GoEnv       map[string]string
 
 	// From environment
-	Arch              string
-	GrafanaRevision   string
-	GrafanaINIPath    string
+	Arch string
+	// Branch or commit of Grafana to run
+	GrafanaRevision string
+	// Path to custom.ini config to boot grafana with
+	GrafanaINIPath string
+
+	// Branch or commit of the test suite to run
 	TestSuiteRevision string
+	// File or folder name in github.com/grafana/grafana-api-tests/tests/
+	TestSuite string
 
 	// Artifacts
 	BuildArtifactName string
 	BuildArtifactPath string
 
-	// Tells us whether we need to resolve build
+	// Tells us whether we need to resolve config
 	Resolved bool
 }
 
@@ -33,8 +39,9 @@ func NewBencher() *Config {
 		ProjectRoot:       utils.GetWorkdir(),
 		Arch:              os.Getenv("ARCH"),
 		GrafanaRevision:   os.Getenv("GRAFANA_REVISION"),
-		GrafanaINIPath:    os.Getenv("INI"),
+		GrafanaINIPath:    os.Getenv("GRAFANA_CONFIG"),
 		TestSuiteRevision: os.Getenv("TEST_REVISION"),
+		TestSuite:         os.Getenv("TEST_SUITE"),
 		Resolved:          false,
 	}
 
@@ -58,7 +65,7 @@ func (b *Config) ResolveConfig() error {
 		return err
 	}
 
-	if err := b.ResolveINI(); err != nil {
+	if err := b.ResolveGrafanaINI(); err != nil {
 		return err
 	}
 
