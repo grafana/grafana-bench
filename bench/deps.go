@@ -24,12 +24,12 @@ func (b *Config) ResolveTestSuite() error {
 		return err
 	}
 
-	testSuiteVersion, err := deps.ResolveTestSuite(b.ProjectRoot, b.TestSuiteVersion)
+	testSuiteVersion, err := deps.ResolveTestSuite(b.ProjectRoot, b.TestSuiteRevision)
 	if err != nil {
 		return err
 	}
 
-	b.TestSuiteVersion = testSuiteVersion
+	b.TestSuiteRevision = testSuiteVersion
 	return nil
 }
 

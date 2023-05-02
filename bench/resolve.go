@@ -10,26 +10,26 @@ import (
 )
 
 func (b *Config) ResolveGrafanaCommit() error {
-	if b.GrafanaCommit == "" {
-		b.GrafanaCommit = "main"
+	if b.GrafanaRevision == "" {
+		b.GrafanaRevision = "main"
 	}
 
 	// if already a commit hash, we can just return
-	if utils.IsCommitHash(b.GrafanaCommit) {
-		fmt.Println("grafana: commit", b.GrafanaCommit)
+	if utils.IsCommitHash(b.GrafanaRevision) {
+		fmt.Println("grafana: revision", b.GrafanaRevision)
 		return nil
 	}
 
 	// get latest commit from branch
-	branch := b.GrafanaCommit
+	branch := b.GrafanaRevision
 	fmt.Println("grafana: branch", branch, "specified. Resolving latest commit")
-	commit, err := utils.GetLatestBranchCommit("https://github.com/grafana/grafana", b.GrafanaCommit)
+	commit, err := utils.GetLatestBranchCommit("https://github.com/grafana/grafana", b.GrafanaRevision)
 	if err != nil {
 		return err
 	}
 
-	b.GrafanaCommit = commit
-	fmt.Printf("grafana: branch %s resolved to `%s`\n", branch, b.GrafanaCommit)
+	b.GrafanaRevision = commit
+	fmt.Printf("grafana: branch %s resolved to `%s`\n", branch, b.GrafanaRevision)
 	return nil
 }
 

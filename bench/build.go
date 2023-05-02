@@ -26,7 +26,7 @@ func (b *Config) Build() error {
 
 	// do the build
 	err := utils.DoInDir(b.ProjectRoot, "build", func() error {
-		ref := fmt.Sprintf("--grafana-ref=%s", b.GrafanaCommit)
+		ref := fmt.Sprintf("--grafana-ref=%s", b.GrafanaRevision)
 		distro := fmt.Sprintf("--distro=%s", b.Arch)
 		err := sh.RunV("go", "run", "./cmd", "--verbose", ref, "backend", "build", distro)
 		return err
