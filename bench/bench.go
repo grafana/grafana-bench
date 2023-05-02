@@ -1,11 +1,7 @@
 package bench
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"path"
 
 	"github.com/grafana/grafana-bench/bench/utils"
@@ -16,10 +12,6 @@ func (b *Config) Bench() error {
 	var err error
 
 	if err := b.ResolveConfig(); err != nil {
-		return err
-	}
-
-	if err := b.ResolveTestSuite(); err != nil {
 		return err
 	}
 
@@ -42,51 +34,8 @@ func (b *Config) Bench() error {
 	}
 	defer killFunc()
 
-	// Wait for the server to start up
-	waitForLiveGrafana()
-
 	// run k6 tests
 	return b.Test()
-}
-
-type LiveConfig struct {
-	BuildInfo      map[string]string
-	FeatureToggles map[string]string
-}
-
-func getLiveConfig() (LiveConfig, error) {
-	lc := LiveConfig{}
-	url := "http://localhost:3000/api/frontend/settings"
-	client := &http.Client{}
-	// create new request with event bytes
-	req, err := http.NewRequest("GET", url, bytes.NewBuffer(make([]byte, 0)))
-	if err != nil {
-		panic(err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return lc, err
-	}
-
-	// print body
-	defer func() {
-		_ = resp.Body.Close()
-	}()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return lc, err
-	}
-
-	err = json.Unmarshal(body, &lc)
-	if err != nil {
-		return lc, err
-	}
-
-	return lc, nil
 }
 
 // setupWorkdir sets up directory with configs needed for testing a grafana
@@ -140,3 +89,43 @@ func setupWorkdir(b *Config) (string, error) {
 	return workExecutable, nil
 
 }
+
+//type LiveConfig struct {
+//  BuildInfo      map[string]string
+//  FeatureToggles map[string]string
+//}
+
+//func getLiveConfig() (LiveConfig, error) {
+//  lc := LiveConfig{}
+//  url := "http://localhost:3000/api/frontend/settings"
+//  client := &http.Client{}
+//  // create new request with event bytes
+//  req, err := http.NewRequest("GET", url, bytes.NewBuffer(make([]byte, 0)))
+//  if err != nil {
+//    panic(err)
+//  }
+
+//  req.Header.Set("Content-Type", "application/json")
+
+//  resp, err := client.Do(req)
+//  if err != nil {
+//    return lc, err
+//  }
+
+//  // print body
+//  defer func() {
+//    _ = resp.Body.Close()
+//  }()
+
+//  body, err := io.ReadAll(resp.Body)
+//  if err != nil {
+//    return lc, err
+//  }
+
+//  err = json.Unmarshal(body, &lc)
+//  if err != nil {
+//    return lc, err
+//  }
+
+//  return lc, nil
+//}

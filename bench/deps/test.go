@@ -46,12 +46,32 @@ func UpdateTestSuite(projectRoot string) error {
 }
 
 // ResolveTestSuite ensures we have the correct version of the test suite at
-// runtime
+// runtime. Leaving blank will get the sha of the repo as is. testSuiteVersion
+// should be a branch name or sha that can be checked out
 func ResolveTestSuite(projectRoot, testSuiteVersion string) (string, error) {
+
+	// if no test suite provided, get the commit sha from the existing folder
 	if testSuiteVersion == "" {
-		testSuiteVersion = "main"
+		err := utils.DoInDir(projectRoot, "tests", func() error {
+
+			// get the sha
+			sha, err := sh.Output("git", "log", "-n", "1", "--pretty=format:%H")
+			if err != nil {
+				return err
+			}
+
+			//assign to testSuiteVersion
+			testSuiteVersion = sha
+			return nil
+		})
+
+		// exit if we didn't have any errors
+		if err == nil {
+			return testSuiteVersion, nil
+		}
 	}
 
+	// assume testSuiteVersion is a sha, or branch
 	err := utils.DoInDir(projectRoot, "tests", func() error {
 		// TODO add some sort of caching so we don't need to do this all the time
 		// update repo
