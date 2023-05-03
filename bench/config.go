@@ -25,6 +25,8 @@ type Config struct {
 	TestSuiteRevision string
 	// File or folder name in github.com/grafana/grafana-api-tests/tests/
 	TestSuite string
+	// Directory to output files. This should be an absolute path on disk
+	TestSummaryDir string
 
 	// Artifacts
 	BuildArtifactName string
@@ -42,9 +44,9 @@ func NewBencher() *Config {
 		GrafanaINIPath:    os.Getenv("GRAFANA_CONFIG"),
 		TestSuiteRevision: os.Getenv("TEST_REVISION"),
 		TestSuite:         os.Getenv("TEST_SUITE"),
+		TestSummaryDir:    os.Getenv("TEST_SUMMARY_DIR"),
 		Resolved:          false,
 	}
-
 }
 
 // ResolveConfig resolves config resolves all environment variables for the config
@@ -67,6 +69,11 @@ func (b *Config) ResolveConfig() error {
 
 	if err := b.ResolveGrafanaINI(); err != nil {
 		return err
+	}
+
+	// Set default place to output test results
+	if b.TestSummaryDir == "" {
+		b.TestSummaryDir = path.Join(b.ProjectRoot, "summary")
 	}
 
 	// Set artifacts to be used later
