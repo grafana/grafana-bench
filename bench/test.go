@@ -59,6 +59,8 @@ func (b *Config) Test() error {
 			// approach. We should figure out a way to tell k6 not to return an error
 			// if threshold is breached rather than necessarily modifying the test
 			_ = sh.RunWithV(envVars, "k6", "run", testFile, "-i", "1", "-u", "1")
+
+			// collect results
 		}
 
 		return nil
