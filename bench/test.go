@@ -34,10 +34,10 @@ func (b *Config) Test() error {
 
 	// run k6 tests
 	err := utils.DoInDir(b.ProjectRoot, "tests", func() error {
-
 		envVars := make(map[string]string)
 		envVars["MACHINE_SPEC"] = getMachineSpec()
 		envVars["TEST_SUITE_REVISION"] = b.TestSuiteRevision
+		envVars["TEST_SUMMARY_DIR"] = b.TestSummaryDir
 
 		// TODO: START HERE
 		// 1. work on getTestSuiteFiles

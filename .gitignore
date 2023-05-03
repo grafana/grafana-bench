@@ -23,3 +23,5 @@ work/
 # vendor/
 
 custom.ini
+# don't keep anything in the test results output
+summary/*
