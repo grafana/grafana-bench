@@ -43,7 +43,8 @@ func Run() error {
 }
 
 // Runs test suit on already running instance of grafana
-func Test() error {
+func Test(testSuite string) error {
+	Bencher.TestSuite = testSuite
 	return Bencher.Test()
 }
 
