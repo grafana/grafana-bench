@@ -7,29 +7,39 @@ import (
 	"strings"
 
 	"github.com/grafana/grafana-bench/bench/utils"
+	"github.com/grafana/grafana-bench/bench/utils/git"
 )
 
-func (b *Config) ResolveGrafanaCommit() error {
+func (b *Config) ResolveGrafanaRevision() error {
 	if b.GrafanaRevision == "" {
-		b.GrafanaRevision = "main"
+		b.GrafanaRevision = "branch:main"
 	}
 
-	// if already a commit hash, we can just return
-	if utils.IsCommitHash(b.GrafanaRevision) {
-		fmt.Println("grafana: revision", b.GrafanaRevision)
-		return nil
+	pieces := strings.Split(b.GrafanaRevision, ":")
+	if len(pieces) != 2 {
+		return fmt.Errorf("Invalid GrafanaRevision format. Use `commit:e74e7fa` or `branch:main`")
 	}
 
-	// get latest commit from branch
-	branch := b.GrafanaRevision
-	fmt.Println("grafana: branch", branch, "specified. Resolving latest commit")
-	commit, err := utils.GetLatestBranchCommit("https://github.com/grafana/grafana", b.GrafanaRevision)
-	if err != nil {
-		return err
+	t, val := pieces[0], pieces[1]
+
+	var commit string
+	var err error
+	if t == "branch" {
+		fmt.Println("grafana: branch", val, "specified. Resolving latest commit")
+		commit, err = git.ResolveLatestBranchCommit("grafana/grafana", val)
+		if err != nil {
+			return err
+		}
+	} else if t == "commit" {
+		fmt.Println("grafana: commit", val, "specified. Resolving commit")
+		commit, err = git.ResolveFullCommit("grafana/grafana", val)
+		if err != nil {
+			return err
+		}
 	}
 
 	b.GrafanaRevision = commit
-	fmt.Printf("grafana: branch %s resolved to `%s`\n", branch, b.GrafanaRevision)
+	fmt.Println("grafana: revision resolved to:", b.GrafanaRevision)
 	return nil
 }
 
