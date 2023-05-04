@@ -6,6 +6,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/grafana/grafana-bench/bench/buildcache"
 	"github.com/grafana/grafana-bench/bench/utils"
 )
 
@@ -30,6 +31,11 @@ type Config struct {
 	// Directory to output files. This should be an absolute path on disk
 	TestSummaryDir string
 
+	// Credentials to remote build cache
+	RemoteBuildCacheCredentials string
+	RemoteBuildCacheBucket      string
+	RemoteBuildCache            *buildcache.BuildCache
+
 	// Artifacts
 	BuildArtifactName string
 	BuildArtifactPath string
@@ -40,14 +46,16 @@ type Config struct {
 
 func NewBencher() *Config {
 	return &Config{
-		ProjectRoot:       utils.GetWorkdir(),
-		Arch:              os.Getenv("ARCH"),
-		GrafanaRevision:   os.Getenv("GRAFANA_REVISION"),
-		GrafanaINIPath:    os.Getenv("GRAFANA_CONFIG"),
-		TestSuiteRevision: os.Getenv("TEST_REVISION"),
-		TestSuite:         os.Getenv("TEST_SUITE"),
-		TestSummaryDir:    os.Getenv("TEST_SUMMARY_DIR"),
-		Resolved:          false,
+		ProjectRoot:                 utils.GetWorkdir(),
+		Arch:                        os.Getenv("ARCH"),
+		GrafanaRevision:             os.Getenv("GRAFANA_REVISION"),
+		GrafanaINIPath:              os.Getenv("GRAFANA_CONFIG"),
+		TestSuiteRevision:           os.Getenv("TEST_REVISION"),
+		TestSuite:                   os.Getenv("TEST_SUITE"),
+		TestSummaryDir:              os.Getenv("TEST_SUMMARY_DIR"),
+		RemoteBuildCacheCredentials: "GCP-infra-manager-828bbfa6f427.json",
+		RemoteBuildCacheBucket:      "bench-builds",
+		Resolved:                    false,
 	}
 }
 
