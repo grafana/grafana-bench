@@ -1,6 +1,7 @@
 package bench
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"os/exec"
@@ -9,7 +10,7 @@ import (
 	"github.com/grafana/grafana-bench/bench/utils"
 )
 
-func (b *Config) Boot(executable string) (func(), error) {
+func (b *Config) Boot(ctx context.Context, executable string) (func(), error) {
 	cmd := exec.Command(executable, "server")
 
 	// function to return so we can kill the process

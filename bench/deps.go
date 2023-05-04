@@ -1,6 +1,7 @@
 package bench
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/grafana/grafana-bench/bench/deps"
@@ -19,7 +20,7 @@ func (b *Config) CheckDeps() error {
 
 // ResolveTestSuite ensures test suite is cloned locally and set to the correct
 // version
-func (b *Config) ResolveTestSuite() error {
+func (b *Config) ResolveTestSuite(ctx context.Context) error {
 	if err := deps.BootstrapTestSuite(b.ProjectRoot); err != nil {
 		return err
 	}
@@ -34,7 +35,7 @@ func (b *Config) ResolveTestSuite() error {
 }
 
 // ResolveBuildSuite ensures build suite is cloned locally
-func (b *Config) ResolveBuildSuite() error {
+func (b *Config) ResolveBuildSuite(ctx context.Context) error {
 	return deps.BootstrapBuildSuite(b.ProjectRoot)
 }
 

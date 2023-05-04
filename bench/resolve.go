@@ -1,11 +1,13 @@
 package bench
 
 import (
+	"context"
 	"fmt"
 	"path"
 	"path/filepath"
 	"strings"
 
+	"github.com/grafana/grafana-bench/bench/buildcache"
 	"github.com/grafana/grafana-bench/bench/utils"
 	"github.com/grafana/grafana-bench/bench/utils/git"
 )
@@ -89,5 +91,19 @@ func (b *Config) ResolveGrafanaINI() error {
 	}
 
 	fmt.Println("grafana-config: no config specified. using defaults")
+	return nil
+}
+
+func (b *Config) ResolveRemoteBuildCache(ctx context.Context) error {
+	if b.RemoteBuildCacheCredentials != "" && b.RemoteBuildCacheBucket != "" {
+		rbc, err := buildcache.NewBuildCache(ctx, b.RemoteBuildCacheCredentials, b.RemoteBuildCacheBucket)
+		if err != nil {
+			return err
+		}
+		fmt.Println("build-cache: using GCS bucket:", b.RemoteBuildCacheBucket)
+		b.RemoteBuildCache = rbc
+	} else {
+		fmt.Println("build-cache: not configured")
+	}
 	return nil
 }

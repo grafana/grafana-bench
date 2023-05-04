@@ -1,6 +1,7 @@
 package bench
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"os"
@@ -12,14 +13,14 @@ import (
 	"github.com/grafana/grafana-bench/bench/utils"
 )
 
-func (b *Config) Run() error {
+func (b *Config) Run(ctx context.Context) error {
 	var err error
 
-	if err := b.ResolveConfig(); err != nil {
+	if err := b.ResolveConfig(ctx); err != nil {
 		return err
 	}
 
-	if err := b.Build(); err != nil {
+	if err := b.Build(ctx); err != nil {
 		return err
 	}
 

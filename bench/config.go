@@ -1,6 +1,7 @@
 package bench
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path"
@@ -55,12 +56,13 @@ func NewBencher() *Config {
 		TestSummaryDir:              os.Getenv("TEST_SUMMARY_DIR"),
 		RemoteBuildCacheCredentials: "GCP-infra-manager-828bbfa6f427.json",
 		RemoteBuildCacheBucket:      "bench-builds",
+		RemoteBuildCache:            nil,
 		Resolved:                    false,
 	}
 }
 
 // ResolveConfig resolves config resolves all environment variables for the config
-func (b *Config) ResolveConfig() error {
+func (b *Config) ResolveConfig(ctx context.Context) error {
 	if b.Resolved {
 		return nil
 	}
@@ -78,6 +80,10 @@ func (b *Config) ResolveConfig() error {
 	}
 
 	if err := b.ResolveGrafanaINI(); err != nil {
+		return err
+	}
+
+	if err := b.ResolveRemoteBuildCache(ctx); err != nil {
 		return err
 	}
 

@@ -1,6 +1,7 @@
 package bench
 
 import (
+	"context"
 	"fmt"
 	"path"
 	"strings"
@@ -11,26 +12,17 @@ import (
 
 // Run tests runs test on an instance of grafana already available at port 3000.
 // This does not manage booting or stopping the instance
-func (b *Config) Test() error {
-	if err := b.ResolveConfig(); err != nil {
+func (b *Config) Test(ctx context.Context) error {
+	if err := b.ResolveConfig(ctx); err != nil {
 		return err
 	}
 
-	if err := b.ResolveTestSuite(); err != nil {
+	if err := b.ResolveTestSuite(ctx); err != nil {
 		return err
 	}
 
 	// Wait for the server to start up
 	waitForLiveGrafana()
-
-	// get featureToggles & buildInfo from response /api/frontend/settings
-	// only contains list of things that are turned on
-	//liveConfig, err := getLiveConfig()
-	//if err != nil {
-	//  fmt.Println("error getting live config from booted grafana:", err)
-	//} else {
-	//  fmt.Println(liveConfig)
-	//}
 
 	// run k6 tests
 	err := utils.DoInDir(b.ProjectRoot, "tests", func() error {
@@ -38,12 +30,6 @@ func (b *Config) Test() error {
 		envVars["MACHINE_SPEC"] = getMachineSpec()
 		envVars["TEST_SUITE_REVISION"] = b.TestSuiteRevision
 		envVars["TEST_SUMMARY_DIR"] = b.TestSummaryDir
-
-		// TODO: START HERE
-		// 1. work on getTestSuiteFiles
-		// 2. start thinking about collection results from test suite
-		// file output should come from an env variable but have a default for all
-		// tests
 
 		tests, err := getTestSuiteFiles(b.ProjectRoot, b.TestSuite)
 		if err != nil {
@@ -54,13 +40,15 @@ func (b *Config) Test() error {
 		for _, testFile := range tests {
 			// k6 run tests/tests/dashboards.js
 
-			// FIXME ignore errors on this as thresholds on k6 may not match and will throw
+			// TODO figure out how to ignore threshold errors from k6.
+			// The ones in the test may not match what we need and will exist with
+			// non-zero status code resulting in RunWithVar returning an error
 			// an error even though we don't care about it. This isn't a GREAT
 			// approach. We should figure out a way to tell k6 not to return an error
 			// if threshold is breached rather than necessarily modifying the test
 			_ = sh.RunWithV(envVars, "k6", "run", testFile, "-i", "1", "-u", "1")
 
-			// collect results
+			// TODO maybe stdout the location of the test file
 		}
 
 		return nil
@@ -69,7 +57,6 @@ func (b *Config) Test() error {
 	return err
 }
 
-// TODO IMPLEMENT ME
 // GetTestSuiteFiles builds a list of k6 tests to run based on TestFiles
 // environment variable. If the file has an extension, we will try to run that
 // file. If a directory is provided, we will list files in that directory using

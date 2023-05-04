@@ -2,6 +2,7 @@ package buildcache
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 
@@ -24,6 +25,12 @@ func NewBuildCache(ctx context.Context, credPath, bucketName string) (*BuildCach
 		Client: client,
 		Bucket: client.Bucket(bucketName),
 	}, nil
+}
+
+// Returns object path for given artifact name
+func (bc *BuildCache) GetObjectHandleFromGrafanaBuildName(artifactName string) *storage.ObjectHandle {
+	name := fmt.Sprintf("builds/%s", artifactName)
+	return bc.Bucket.Object(name)
 }
 
 //func main() {

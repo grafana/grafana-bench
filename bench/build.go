@@ -1,6 +1,7 @@
 package bench
 
 import (
+	"context"
 	"fmt"
 	"path"
 
@@ -9,8 +10,8 @@ import (
 )
 
 // Build handles building a version of Grafana
-func (b *Config) Build() error {
-	if err := b.ResolveConfig(); err != nil {
+func (b *Config) Build(ctx context.Context) error {
+	if err := b.ResolveConfig(ctx); err != nil {
 		return err
 	}
 
@@ -34,6 +35,8 @@ func (b *Config) Build() error {
 	if err != nil {
 		return err
 	}
+
+	// TODO add option to write remotely if doing a new build
 
 	// copy build to artifact path
 	// artifacts grafana, grafana-server, grafana-cli

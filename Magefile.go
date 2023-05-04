@@ -4,6 +4,8 @@
 package main
 
 import (
+	"context"
+
 	"github.com/grafana/grafana-bench/bench"
 )
 
@@ -15,8 +17,8 @@ var Bencher *bench.Config = bench.NewBencher()
 
 // Build builds a grafana binary and stores it in the artifacts folder
 // usage: GRAFANA_REVISION=branch:k8s-proof-of-concept mage buildcommit
-func Build() error {
-	return Bencher.Build()
+func Build(ctx context.Context) error {
+	return Bencher.Build(ctx)
 }
 
 // BenchCommit load tests a commit.
@@ -33,13 +35,13 @@ func Build() error {
 // can also specify this by environment variable and path.
 //
 // usage: INI=custom.ini mage bench
-func Bench() error {
-	return Bencher.Bench()
+func Bench(ctx context.Context) error {
+	return Bencher.Bench(ctx)
 }
 
 // Build and run grafana, but wait for input to shutdown
-func Run() error {
-	return Bencher.Run()
+func Run(ctx context.Context) error {
+	return Bencher.Run(ctx)
 }
 
 // Runs test suit on already running instance of grafana
@@ -70,8 +72,8 @@ func ResolveGrafanaINI() error {
 }
 
 // ResolveConfig resolves GrafanaCommit, Architecture, and Custom.ini. Use this
-func ResolveConfig() error {
-	return Bencher.ResolveConfig()
+func ResolveConfig(ctx context.Context) error {
+	return Bencher.ResolveConfig(ctx)
 }
 
 // TODO detail environment variables to set
