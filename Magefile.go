@@ -14,7 +14,7 @@ import (
 var Bencher *bench.Config = bench.NewBencher()
 
 // Build builds a grafana binary and stores it in the artifacts folder
-// usage: GRAFANA_REVISION=k8s-proof-of-concept mage buildcommit
+// usage: GRAFANA_REVISION=branch:k8s-proof-of-concept mage buildcommit
 func Build() error {
 	return Bencher.Build()
 }
@@ -25,9 +25,9 @@ func Build() error {
 // be a branch and it will grab the latest commit for that branch.
 // usage:
 //
-// GRAFANA_REVISION=k8s-proof-of-concept mage bench
+// GRAFANA_REVISION=branch:k8s-proof-of-concept mage bench
 //
-// GRAFANA_REVISION=c116545e0ba005e10e318da96688bdae01439bf5 mage bench
+// GRAFANA_REVISION=commit:c116545e0ba005e10e318da96688bdae01439bf5 mage bench
 //
 // By default we will look for a custom.ini in the project root, however, you
 // can also specify this by environment variable and path.
@@ -54,8 +54,8 @@ func UpdateDeps() error {
 }
 
 // Resolve branch to latest commit of branch
-func ResolveGrafanaCommit() error {
-	return Bencher.ResolveGrafanaCommit()
+func ResolveGrafanaRevision() error {
+	return Bencher.ResolveGrafanaRevision()
 }
 
 // Resolve architecture and artifact names

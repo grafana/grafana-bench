@@ -16,7 +16,9 @@ type Config struct {
 
 	// From environment
 	Arch string
-	// Branch or commit of Grafana to run
+	// Branch or commit of Grafana to run. prefix the type that you're going to
+	// provide. e.g. "branch:k8s-proof-of-concept" or "commit:e74e7fa"
+	// commit refs must be 7 characters or longer
 	GrafanaRevision string
 	// Path to custom.ini config to boot grafana with
 	GrafanaINIPath string
@@ -63,7 +65,7 @@ func (b *Config) ResolveConfig() error {
 		return err
 	}
 
-	if err := b.ResolveGrafanaCommit(); err != nil {
+	if err := b.ResolveGrafanaRevision(); err != nil {
 		return err
 	}
 
