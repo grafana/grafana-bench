@@ -25,7 +25,7 @@ func (b *Config) Run(ctx context.Context) error {
 	}
 
 	fmt.Println("setting up work directory")
-	executable, err := setupWorkdir(b)
+	executable, err := b.setupWorkdir(ctx)
 	if err != nil {
 		return err
 	}

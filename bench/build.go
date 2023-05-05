@@ -15,7 +15,7 @@ func (b *Config) Build(ctx context.Context) error {
 		return err
 	}
 
-	if err := b.ResolveBuildSuite(); err != nil {
+	if err := b.ResolveBuildSuite(ctx); err != nil {
 		return err
 	}
 
