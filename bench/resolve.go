@@ -42,6 +42,11 @@ func (b *Config) ResolveGrafanaRevision() error {
 
 	b.GrafanaRevision = commit
 	fmt.Println("grafana: revision resolved to:", b.GrafanaRevision)
+
+	// set artifact names
+	b.BuildArtifactName = fmt.Sprintf("grafana-server-%s-%s", b.GrafanaRevision, strings.Replace(b.Arch, "/", "-", -1))
+	b.BuildArtifactPath = path.Join("artifacts", b.BuildArtifactName)
+
 	return nil
 }
 

@@ -27,7 +27,32 @@ func NewBuildCache(ctx context.Context, credPath, bucketName string) (*BuildCach
 	}, nil
 }
 
-// Returns object path for given artifact name
+// Downloads a grafana build from object store cache
+func (bc *BuildCache) DownloadGrafanaBuild(ctx context.Context, artifactName, diskDestination string) (bool, error) {
+	// attempt to get it from the build cache
+	obj := bc.GetObjectHandleFromGrafanaBuildName(artifactName)
+	fmt.Println("build-cache: checking build cache for artifact:", obj.ObjectName())
+
+	// check to see if it exists
+	exists, err := ObjectExists(ctx, obj)
+	if err != nil {
+		return false, fmt.Errorf("Error contacting build cache: %s", err)
+	}
+	if !exists {
+		fmt.Println("build-cache: object not found:", obj.ObjectName())
+		return false, nil
+	}
+
+	// if exists, download
+	fmt.Println("build-cache: object found, downloading")
+	if err := WriteToLocal(ctx, diskDestination, obj); err != nil {
+		return false, fmt.Errorf("Error retrieving build artifact from bucket: %w", err)
+	}
+
+	return true, nil
+}
+
+// Returns object path for given artifact
 func (bc *BuildCache) GetObjectHandleFromGrafanaBuildName(artifactName string) *storage.ObjectHandle {
 	name := fmt.Sprintf("builds/%s", artifactName)
 	return bc.Bucket.Object(name)

@@ -20,7 +20,7 @@ func (b *Config) Run(ctx context.Context) error {
 		return err
 	}
 
-	if err := b.Build(ctx); err != nil {
+	if err := b.ResolveGrafanaBuild(ctx, true); err != nil {
 		return err
 	}
 

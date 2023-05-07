@@ -19,27 +19,23 @@ func (b *Config) Build(ctx context.Context) error {
 		return err
 	}
 
-	exists, _ := utils.PathExists(b.BuildArtifactPath)
-	if exists {
-		fmt.Println("build artifacts cached, skipping build")
-		return nil
-	}
-
 	// do the build
 	err := utils.DoInDir(b.ProjectRoot, "build", func() error {
-		ref := fmt.Sprintf("--grafana-ref=%s", b.GrafanaRevision)
-		distro := fmt.Sprintf("--distro=%s", b.Arch)
-		err := sh.RunV("go", "run", "./cmd", "--verbose", ref, "backend", "build", distro)
+		// Note, verbose and distro must be provided at the end of the command
+		err := sh.RunV("go", "run", "./cmd", "backend", "build",
+			fmt.Sprintf("--distro=%s", b.Arch),
+			fmt.Sprintf("--grafana-ref=%s", b.GrafanaRevision),
+			"--verbose")
 		return err
 	})
 	if err != nil {
 		return err
 	}
 
-	// TODO add option to write remotely if doing a new build
+	// TODO if remotebuildcache exists, check to see if artifact is there and
+	// upload if not. Do this in a non-blocking way so we can continue
 
-	// copy build to artifact path
-	// artifacts grafana, grafana-server, grafana-cli
+	// copy build to local disk cache
 	fmt.Println("copying executable to:", b.BuildArtifactPath)
 	buildPath := path.Join(b.ProjectRoot, "build", "bin", b.Arch, "grafana")
 	if err := sh.RunV("cp", buildPath, b.BuildArtifactPath); err != nil {

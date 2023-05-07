@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"strings"
 
 	"github.com/grafana/grafana-bench/bench/buildcache"
 	"github.com/grafana/grafana-bench/bench/utils"
@@ -92,11 +91,57 @@ func (b *Config) ResolveConfig(ctx context.Context) error {
 		b.TestSummaryDir = path.Join(b.ProjectRoot, "summary")
 	}
 
-	// Set artifacts to be used later
-	b.BuildArtifactName = fmt.Sprintf("grafana-server-%s-%s", b.GrafanaRevision, strings.Replace(b.Arch, "/", "-", -1))
-	b.BuildArtifactPath = path.Join("artifacts", b.BuildArtifactName)
-
 	b.Resolved = true
 
 	return nil
 }
+
+// TODO START HERE
+// 4. run mage bench and make sure it checks local cache
+// 5. run mage bench and make sure it checks remote cache
+
+// 6. start working on writing builds to buildcache if they don't already
+// exist there
+// 7. add lifecycle policy to buildcache prefix
+
+// ResolveGrafanaBuild will check the local cache and remote cache to for a
+// build. If none exists, it will trigger a build. You can override build
+// behavior by setting build to false.
+func (b *Config) ResolveGrafanaBuild(ctx context.Context, build bool) error {
+	// check if target exists
+	exists, _ := utils.PathExists(b.BuildArtifactPath)
+	if exists {
+		return nil
+	}
+
+	// no build cache configured, build it
+	if b.RemoteBuildCache == nil {
+		fmt.Println("build-cache: artifact not found on disk. No build cache. Building Grafana")
+		if build {
+			return b.Build(ctx)
+		}
+	}
+
+	// download from cache or build
+	fmt.Println("Artifact not found on disk. Checking remote cache")
+	success, err := b.RemoteBuildCache.DownloadGrafanaBuild(ctx, b.BuildArtifactName, b.BuildArtifactPath)
+
+	// downloaded. exit
+	if success {
+		return nil
+	}
+
+	// print the error
+	if err != nil {
+		fmt.Println("build-cache: Error contacting remote build cache:", err)
+	}
+
+	// Do the build
+	fmt.Println("Building Grafana")
+	if build {
+		return b.Build(ctx)
+	}
+	return nil
+}
+
+func (b *Config) getBuildFromCache() {}

@@ -21,20 +21,15 @@ func Build(ctx context.Context) error {
 	return Bencher.Build(ctx)
 }
 
-// BenchCommit load tests a commit.
-// If you don't set the commit environment variable, it will
-// default to main and resolve the git hash. You can also set commit to
-// be a branch and it will grab the latest commit for that branch.
-// usage:
+// Bench handles building, running, and benchmarking a commit.
+// Defaults to using latest commit on Main.
+// You can set the revision yourself. Usage:
+// `GRAFANA_REVISION=branch:k8s-proof-of-concept mage bench`
+// `GRAFANA_REVISION=commit:c116545e0ba005e10e318da96688bdae01439bf5 mage bench`
 //
-// GRAFANA_REVISION=branch:k8s-proof-of-concept mage bench
-//
-// GRAFANA_REVISION=commit:c116545e0ba005e10e318da96688bdae01439bf5 mage bench
-//
-// By default we will look for a custom.ini in the project root, however, you
-// can also specify this by environment variable and path.
-//
-// usage: INI=custom.ini mage bench
+// If you would like to specify a custom configuration, you can either set the
+// GRAFANA_CONFIG variable or place a custom.ini in the bench directory on disk
+// usage: `INI=custom.ini mage bench`
 func Bench(ctx context.Context) error {
 	return Bencher.Bench(ctx)
 }
@@ -45,9 +40,9 @@ func Run(ctx context.Context) error {
 }
 
 // Runs test suit on already running instance of grafana
-func Test(testSuite string) error {
+func Test(ctx context.Context, testSuite string) error {
 	Bencher.TestSuite = testSuite
-	return Bencher.Test()
+	return Bencher.Test(ctx)
 }
 
 // UpdateDeps updates build and test repos
