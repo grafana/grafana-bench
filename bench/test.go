@@ -98,5 +98,6 @@ func getTestSuiteFiles(projectRoot, testSuite string) ([]string, error) {
 
 // TODO IMPLEMENT ME
 func getMachineSpec() string {
-	return "local|m1max|65536|3.2 GHz|arm64|darwin"
+	// provider, process/machine, memory, # cores, clockspeed, architecture, os
+	return "local|m1max|65536|10|3.2 GHz|arm64|darwin"
 }
