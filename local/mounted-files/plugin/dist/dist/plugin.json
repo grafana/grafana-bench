@@ -1,0 +1,42 @@
+{
+  "$schema": "https://raw.githubusercontent.com/grafana/grafana/master/docs/sources/developers/plugins/plugin.schema.json",
+  "backend": true,
+  "dependencies": {
+    "grafanaDependency": "\u003e=7.0.0",
+    "plugins": []
+  },
+  "executable": "gpx_grafana-bench-app",
+  "id": "grafana-bench-app",
+  "includes": [
+    {
+      "addToNav": true,
+      "defaultNav": true,
+      "icon": "",
+      "name": "Todos",
+      "path": "/a/grafana-bench-app/",
+      "role": "Admin",
+      "slug": "grafana-bench",
+      "type": "page",
+      "uid": ""
+    }
+  ],
+  "info": {
+    "author": {
+      "name": "AUTHOR",
+      "url": ""
+    },
+    "description": "",
+    "keywords": [],
+    "links": [],
+    "logos": {
+      "large": "img/logo.svg",
+      "small": "img/logo.svg"
+    },
+    "screenshots": [],
+    "updated": "2023-05-24",
+    "version": "1.0.0"
+  },
+  "metrics": true,
+  "name": "NAME",
+  "type": "app"
+}

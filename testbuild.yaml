@@ -1,0 +1,10 @@
+apiVersion: "grafana-bench-app.ext.grafana.com/v0-0"
+kind: "Build"
+metadata: 
+  name: "testbuild"
+  namespace: "default"
+spec: 
+  gitRepository: "github.com/grafana/grafana"
+  gitRevision: "3edeafa663fafc04aa8773d4eb8e0cf27f4e7e1d"
+  architecture: "arm64"
+  operatingSystem: "darwin"

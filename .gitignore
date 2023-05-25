@@ -30,3 +30,8 @@ summary/*
 *.tfstate
 infra/.terraform/providers
 terraform/
+
+# don't add app-sdk generated
+local/generated
+vendor
+plugin/node_modules/
