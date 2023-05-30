@@ -33,5 +33,5 @@ terraform/
 
 # don't add app-sdk generated
 local/generated
-vendor
+vendor/
 plugin/node_modules/
