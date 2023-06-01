@@ -40,8 +40,12 @@ resource "google_storage_bucket_iam_binding" "build_storage_owner" {
   ]
 }
 
-
 // Create bucket to store VM state
+resource "google_compute_network" "vpc_network" {
+  name                    = "vm-network"
+  auto_create_subnetworks = "true"
+}
+
 resource "google_storage_bucket" "bench_vms" {
   name          = "bench-vms"
   location      = "US"
@@ -99,9 +103,6 @@ resource "google_storage_bucket_iam_binding" "vm_state_owner" {
 #output "example_user_key_path" {
 #  value = google_service_account_key.build_runner.private_key_file
 #}
-
-
-
 
 // Assign runner as manager
 #resource "google_storage_bucket_iam_binding" "build_storage_contributor" {
