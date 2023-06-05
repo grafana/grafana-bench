@@ -61,6 +61,7 @@ name         = "bench-vm-instance-{{ .Identifier }}"
 
   metadata = {
     ssh-keys = "${local.user}:${tls_private_key.ssh_key.public_key_openssh}"
+    startup-script = file("startup.sh") 
   }
 
   network_interface {
@@ -73,24 +74,24 @@ name         = "bench-vm-instance-{{ .Identifier }}"
 
 # IP of the VM
 output "ssh_connection_string" {
-value = "ssh ${local.user}@${google_compute_address.static_ip.address} -i bench_vm_key_{{ .Identifier }}"
+  # extra flags ignore adding key to hosts file
+  value = "ssh ${local.user}@${google_compute_address.static_ip.address} -i {{ .Identifier }}_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 }
 
 # Output VM config
-resource "local_file" "ip_address" {
-  content         = google_compute_address.static_ip.address
-  filename        = "bench_vm/ip_address"
+resource "local_file" "connection_string" {
+content           = "ssh ${local.user}@${google_compute_address.static_ip.address} -i bench_vm_key_{{ .Identifier }}"
+  filename        = "{{ .Identifier }}_ip_address"
 }
 
 resource "local_file" "ssh_private_key" {
   content         = tls_private_key.ssh_key.private_key_openssh
-  filename        = "bench_vm_key_{{ .Identifier }}"
+  filename        = "{{ .Identifier }}_key"
   file_permission = "0600"
 }
 
 resource "local_file" "ssh_public_key" {
   content         = tls_private_key.ssh_key.public_key_openssh
-  filename        = "bench_vm_key_pub_{{ .Identifier }}"
+  filename        = "{{ .Identifier }}_key_pub"
   file_permission = "0600"
 }
-

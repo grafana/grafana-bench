@@ -4,14 +4,20 @@ import (
 	"fmt"
 	"html/template"
 	"os"
+	"os/exec"
 	"path"
 
 	"github.com/google/uuid"
+	"github.com/grafana/grafana-bench/bench/utils"
 )
+
+// FIXME this is hardcoded
+var credentials string = "/Users/jeff/projects/g/bench/GCP-infra-manager-828bbfa6f427.json"
 
 var tfTmpl *template.Template
 
 type VM struct {
+	RootDir       string
 	Credentials   string
 	Identifier    string
 	Workdir       string
@@ -22,7 +28,7 @@ func main() {
 	var err error
 
 	// parse template
-	tmplFile := "vm/terraform.tmpl"
+	tmplFile := path.Join("vm", "terraform.tmpl")
 	tfTmpl, err = template.ParseFiles(tmplFile)
 	if err != nil {
 		panic(err)
@@ -33,7 +39,9 @@ func main() {
 	fmt.Println("identifier", uuid.String())
 
 	vm := VM{
-		Identifier: uuid.String(),
+		Identifier:  uuid.String(),
+		RootDir:     utils.GetWorkdir(),
+		Credentials: credentials,
 	}
 
 	// start here
@@ -76,9 +84,14 @@ func (v *VM) setupTerraformDir() error {
 	}
 	defer outputFile.Close()
 
-	// set global path to credentials
-	// TODO don't hardcode this
-	v.Credentials = path.Join("/Users/jeff/projects/g/bench/GCP-infra-manager-828bbfa6f427.json")
+	// copy startup script
+	err = utils.CopyFile(
+		path.Join("vm", "startup.sh"),
+		path.Join(v.Workdir, "startup.sh"),
+	)
+	if err != nil {
+		return err
+	}
 
 	// write template into directory
 	err = tfTmpl.Execute(outputFile, v)
@@ -90,10 +103,36 @@ func (v *VM) setupTerraformDir() error {
 }
 
 func (v *VM) provision() error {
-	// terraform init
-	// terraform apply
+	err := utils.DoInDir(v.RootDir, v.Workdir, func() error {
+		// terraform init
+		if err := utils.ExecStdout(exec.Command("terraform", "init")); err != nil {
+			return err
+		}
+
+		// terraform apply
+		if err := utils.ExecStdout(exec.Command("terraform", "apply", "-auto-approve")); err != nil {
+			return err
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	// tar the result
+	archiveFilepath := path.Join(v.RootDir, v.Identifier+".tar.gz")
+
+	cmd := exec.Command("tar", "-czvf", archiveFilepath, "--exclude='.terraform'", path.Join(v.Workdir, "*"))
+	return utils.ExecStdout(cmd)
+
 	// upload to gcs bucket
-	return nil
+}
+
+func (v *VM) destroy() error {
+	return utils.DoInDir(v.RootDir, v.Workdir, func() error {
+		return utils.ExecStdout(exec.Command("terraform", "init"))
+	})
 }
 
 func (v *VM) cleanupTerraformDir() error {
