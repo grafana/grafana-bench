@@ -3,8 +3,6 @@ package buildcache
 import (
 	"context"
 	"fmt"
-	"io"
-	"os"
 	"path"
 
 	"cloud.google.com/go/storage"
@@ -17,8 +15,12 @@ type BuildCache struct {
 	Client      *storage.Client
 	Bucket      *storage.BucketHandle
 	LocalDir    string
-	bucketName  string
-	remoteCache bool
+	RemoteCache bool
+}
+
+type Build struct {
+	Location string
+	Name     string
 }
 
 func NewBuildCache(ctx context.Context, localDir, credPath, bucketName string) (*BuildCache, error) {
@@ -28,7 +30,8 @@ func NewBuildCache(ctx context.Context, localDir, credPath, bucketName string) (
 	if bucketName == "" {
 		fmt.Println("build-cache: no remote object store defined:", localDir)
 		return &BuildCache{
-			LocalDir: localDir,
+			LocalDir:    localDir,
+			RemoteCache: false,
 		}, nil
 	}
 
@@ -42,7 +45,7 @@ func NewBuildCache(ctx context.Context, localDir, credPath, bucketName string) (
 		Client:      client,
 		Bucket:      client.Bucket(bucketName),
 		LocalDir:    localDir,
-		remoteCache: bucketName != "",
+		RemoteCache: bucketName != "",
 	}, nil
 }
 
@@ -60,20 +63,22 @@ func (bc *BuildCache) Resolve(ctx context.Context, artifactName string) (bool, e
 	}
 
 	// return if no remote cache
-	if !bc.remoteCache {
+	if !bc.RemoteCache {
 		return false, nil
 	}
 
 	return bc.DownloadRemoteBuild(ctx, artifactName)
 }
 
-func (bc *BuildCache) CacheBuild(ctx context.Context, buildPath, artifactName string) error {
+// Copies build from path specified to local cache and remote cache if
+// configured
+func (bc *BuildCache) Store(ctx context.Context, buildPath, artifactName string) error {
 	fmt.Println("build-cache: caching build")
 	if err := sh.RunV("cp", buildPath, bc.DiskPath(artifactName)); err != nil {
 		return err
 	}
 
-	if bc.remoteCache {
+	if bc.RemoteCache {
 		fmt.Println("build-cache: uploading build to remote cache")
 		return bc.UploadRemoteBuild(ctx, buildPath, artifactName)
 	}
@@ -81,133 +86,36 @@ func (bc *BuildCache) CacheBuild(ctx context.Context, buildPath, artifactName st
 	return nil
 }
 
+// Gets a list of builds from the build cache
+func (bc *BuildCache) List(ctx context.Context) ([]Build, error) {
+	var builds []Build
+
+	// Get local builds
+	localBuilds, err := utils.GlobByPrefix(bc.LocalDir, "grafana-server-")
+	if err != nil {
+		return builds, err
+	}
+	for _, f := range localBuilds {
+		builds = append(builds, Build{Location: "local", Name: f})
+	}
+
+	// Get remote builds if cache enabled
+	if bc.RemoteCache {
+		remoteBuilds, err := bc.ListRemoteBuilds(ctx)
+		if err != nil {
+			return builds, err
+		}
+		for _, b := range remoteBuilds {
+			builds = append(builds, Build{Location: "remote", Name: b})
+		}
+	}
+
+	return builds, nil
+}
+
 // Returns path to artifact on disk
 func (bc *BuildCache) DiskPath(artifactName string) string {
 	return path.Join(bc.LocalDir, artifactName)
-}
-
-// Returns object name in bucket
-func (bc *BuildCache) RemotePath(artifactName string) string {
-	return fmt.Sprintf("builds/%s", artifactName)
-}
-
-// Returns object for given artifactName
-func (bc *BuildCache) GetObjectHandleFromGrafanaBuildName(artifactName string) *storage.ObjectHandle {
-	return bc.Bucket.Object(bc.RemotePath(artifactName))
-}
-
-// Sends a build to remote cache
-func (bc *BuildCache) UploadRemoteBuild(ctx context.Context, buildPath, artifactName string) error {
-	obj := bc.GetObjectHandleFromGrafanaBuildName(artifactName)
-	exists, err := ObjectExists(ctx, obj)
-	if err != nil {
-		return fmt.Errorf("build-cache: Error contacting remote cache: %s", err)
-	}
-
-	if exists {
-		return nil
-	}
-
-	if err := WriteToBucket(ctx, buildPath, obj); err != nil {
-		return fmt.Errorf("build-cache: error writing build to bucket: %w", err)
-	}
-
-	return nil
-}
-
-// Downloads a build from remote cache
-func (bc *BuildCache) DownloadRemoteBuild(ctx context.Context, artifactName string) (bool, error) {
-	// attempt to get it from the build cache
-	obj := bc.GetObjectHandleFromGrafanaBuildName(artifactName)
-
-	// check to see if it exists
-	exists, err := ObjectExists(ctx, obj)
-	if err != nil {
-		return false, fmt.Errorf("Error contacting build cache: %s", err)
-	}
-	if !exists {
-		fmt.Println("build-cache: object not found:", obj.ObjectName())
-		return false, nil
-	}
-
-	// if exists, download
-	fmt.Println("build-cache: object found, downloading")
-	if err := WriteToLocal(ctx, bc.DiskPath(artifactName), obj); err != nil {
-		return false, fmt.Errorf("Error retrieving build artifact from bucket: %w", err)
-	}
-
-	return true, nil
-}
-
-// Wrapper for determining whether object exists
-func ObjectExists(ctx context.Context, obj *storage.ObjectHandle) (bool, error) {
-	_, err := obj.Attrs(ctx)
-	if err == storage.ErrObjectNotExist {
-		return false, nil
-	} else if err != nil {
-		return false, err
-	} else {
-		return true, nil
-	}
-}
-
-// Write file from local to bucket
-func WriteToBucket(ctx context.Context, filepath string, obj *storage.ObjectHandle) error {
-	file, err := os.Open(filepath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	w := obj.NewWriter(ctx)
-
-	if _, err := io.Copy(w, file); err != nil {
-		return err
-	}
-
-	if err := w.Close(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Writes file from bucket to local
-func WriteToLocal(ctx context.Context, filepath string, obj *storage.ObjectHandle) error {
-	r, err := obj.NewReader(ctx)
-	if err != nil {
-		return err
-	}
-	defer r.Close()
-
-	file, err := os.Create(filepath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	if _, err := io.Copy(file, r); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Reads file from bucket into memory as string
-func ReadFromBucket(ctx context.Context, obj *storage.ObjectHandle) (string, error) {
-	r, err := obj.NewReader(ctx)
-	if err != nil {
-		return "", err
-	}
-	defer r.Close()
-
-	// Read the data from the reader into a byte slice
-	data, err := io.ReadAll(r)
-	if err != nil {
-		return "", nil
-	}
-
-	return string(data), nil
 }
 
 //func main() {

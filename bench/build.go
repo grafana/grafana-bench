@@ -9,10 +9,6 @@ import (
 	"github.com/magefile/mage/sh"
 )
 
-// START HERE: test me. get builds working again
-// add lifecycle policy to buildcache prefix in bucket
-// start working on state directory for a run
-
 // Build handles building a version of Grafana
 func (b *BenchRun) Build(ctx context.Context) error {
 	if err := b.ResolveConfig(ctx); err != nil {
@@ -37,9 +33,23 @@ func (b *BenchRun) Build(ctx context.Context) error {
 	}
 
 	buildPath := path.Join(b.ProjectRoot, "build", "bin", b.Arch, "grafana")
-	err = b.BuildCache.CacheBuild(ctx, buildPath, b.BuildArtifactName)
+	err = b.BuildCache.Store(ctx, buildPath, b.BuildArtifactName)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (b *BenchRun) ListBuilds(ctx context.Context) error {
+	builds, err := b.BuildCache.List(ctx)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Builds")
+	for _, b := range builds {
+		fmt.Printf("%s: %s\n", b.Location, b.Name)
 	}
 
 	return nil

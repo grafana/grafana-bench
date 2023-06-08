@@ -34,6 +34,11 @@ func Build(ctx context.Context) error {
 	return b.Build(ctx)
 }
 
+func ListBuilds(ctx context.Context) error {
+	b := bench.NewBenchRun(ctx, CLIServiceDefaults(ctx))
+	return b.ListBuilds(ctx)
+}
+
 // Bench handles building, running, and benchmarking a commit.
 // Defaults to using latest commit on Main.
 // You can set the revision yourself. Usage:

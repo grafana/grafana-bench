@@ -88,7 +88,7 @@ func getTestSuiteFiles(projectRoot, testSuite string) ([]string, error) {
 		return []string{}, fmt.Errorf("Path %s was not found", d)
 	}
 
-	files, err := utils.Glob(d, ".js")
+	files, err := utils.GlobByExtension(d, ".js")
 	if err != nil {
 		panic(err)
 	}

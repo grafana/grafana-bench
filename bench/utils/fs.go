@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // Copy file from one place to another
@@ -78,13 +79,27 @@ func PathExists(path string) (bool, error) {
 	return false, err
 }
 
-// Walks a directory getting a list of all files.
+// Walks a directory getting a list of all files with matching extension
 // ext must include . like .js
-func Glob(dir string, ext string) ([]string, error) {
+func GlobByExtension(dir string, ext string) ([]string, error) {
 	files := []string{}
 	err := filepath.Walk(dir, func(path string, f os.FileInfo, err error) error {
 		if filepath.Ext(path) == ext {
 			files = append(files, path)
+		}
+		return nil
+	})
+
+	return files, err
+}
+
+// Walks a directory getting a list of all files that match a given prefix
+func GlobByPrefix(dir string, prefix string) ([]string, error) {
+	files := []string{}
+	err := filepath.Walk(dir, func(path string, f os.FileInfo, err error) error {
+		base := filepath.Base(path)
+		if strings.HasPrefix(base, prefix) {
+			files = append(files, base)
 		}
 		return nil
 	})
