@@ -9,7 +9,7 @@ import (
 )
 
 // CheckDeps ensures that k6 is installed
-func (b *Config) CheckDeps() error {
+func (b *BenchRun) CheckDeps() error {
 	// ensure k6 is installed
 	if err := sh.Run("which", "k6"); err != nil {
 		return fmt.Errorf("K6 not found. Install k6 for your platform. https://k6.io/docs/get-started/installation/")
@@ -20,7 +20,7 @@ func (b *Config) CheckDeps() error {
 
 // ResolveTestSuite ensures test suite is cloned locally and set to the correct
 // version
-func (b *Config) ResolveTestSuite(ctx context.Context) error {
+func (b *BenchRun) ResolveTestSuite(ctx context.Context) error {
 	if err := deps.BootstrapTestSuite(b.ProjectRoot); err != nil {
 		return err
 	}
@@ -35,12 +35,12 @@ func (b *Config) ResolveTestSuite(ctx context.Context) error {
 }
 
 // ResolveBuildSuite ensures build suite is cloned locally
-func (b *Config) ResolveBuildSuite(ctx context.Context) error {
+func (b *BenchRun) ResolveBuildSuite(ctx context.Context) error {
 	return deps.BootstrapBuildSuite(b.ProjectRoot)
 }
 
 // UpdateDeps updates local build and test suite repos
-func (b *Config) UpdateDeps() error {
+func (b *BenchRun) UpdateDeps() error {
 	fmt.Println("Updating build suite")
 	if err := deps.UpdateBuildSuite(b.ProjectRoot); err != nil {
 		return err

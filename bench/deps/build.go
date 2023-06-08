@@ -8,10 +8,14 @@ import (
 	"github.com/magefile/mage/sh"
 )
 
+func buildDir(projectRoot string) string {
+	return path.Join(projectRoot, "build")
+}
+
 // BootstrapBuildSuite downloads build suite locally
 func BootstrapBuildSuite(projectRoot string) error {
 	// check if build repo cloned locally
-	exists, err := utils.PathExists(path.Join(projectRoot, "build"))
+	exists, err := utils.PathExists(buildDir(projectRoot))
 	if err != nil {
 		return fmt.Errorf("Issue checking directory path")
 	}
@@ -30,7 +34,7 @@ func BootstrapBuildSuite(projectRoot string) error {
 // UpdateBuildSuite updates build suite repo
 func UpdateBuildSuite(projectRoot string) error {
 	// tests
-	err := utils.DoInDir(projectRoot, "tests", func() error {
+	err := utils.DoInDir(projectRoot, buildDir(projectRoot), func() error {
 		if err := sh.RunV("git", "checkout", "main"); err != nil {
 			return fmt.Errorf("Error checking out grafana test repo %s", err)
 		}

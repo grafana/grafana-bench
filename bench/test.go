@@ -12,7 +12,7 @@ import (
 
 // Run tests runs test on an instance of grafana already available at port 3000.
 // This does not manage booting or stopping the instance
-func (b *Config) Test(ctx context.Context) error {
+func (b *BenchRun) Test(ctx context.Context) error {
 	if err := b.ResolveConfig(ctx); err != nil {
 		return err
 	}

@@ -5,20 +5,33 @@ package main
 
 import (
 	"context"
+	"path"
 
 	"github.com/grafana/grafana-bench/bench"
+	"github.com/grafana/grafana-bench/bench/utils"
 )
 
 // This file is a thin wrapper to get us a quick CLI using mage.
 // If you're adding or changing logic, that should happen in the bench/ package
 
-// Initialize config with runtime defaults
-var Bencher *bench.Config = bench.NewBencher()
+// Function to set defaults for CLI.
+func CLIServiceDefaults(ctx context.Context) *bench.BenchService {
+	projectRoot := utils.GetWorkdir()
+	artifactsPath := path.Join(projectRoot, "artifacts")
+	GCSCredPath := path.Join(projectRoot, "GCP-infra-manager-828bbfa6f427.json")
+
+	svc, err := bench.NewBenchService(ctx, projectRoot, artifactsPath, GCSCredPath, "bench-builds")
+	if err != nil {
+		panic(err)
+	}
+	return svc
+}
 
 // Build builds a grafana binary and stores it in the artifacts folder
 // usage: GRAFANA_REVISION=branch:k8s-proof-of-concept mage buildcommit
 func Build(ctx context.Context) error {
-	return Bencher.Build(ctx)
+	b := bench.NewBenchRun(ctx, CLIServiceDefaults(ctx))
+	return b.Build(ctx)
 }
 
 // Bench handles building, running, and benchmarking a commit.
@@ -31,44 +44,52 @@ func Build(ctx context.Context) error {
 // GRAFANA_CONFIG variable or place a custom.ini in the bench directory on disk
 // usage: `INI=custom.ini mage bench`
 func Bench(ctx context.Context) error {
-	return Bencher.Bench(ctx)
+	b := bench.NewBenchRun(ctx, CLIServiceDefaults(ctx))
+	return b.Bench(ctx)
 }
 
 // Build and run grafana, but wait for input to shutdown
 func Run(ctx context.Context) error {
-	return Bencher.Run(ctx)
+	b := bench.NewBenchRun(ctx, CLIServiceDefaults(ctx))
+	return b.Run(ctx)
 }
 
 // Runs test suit on already running instance of grafana
 func Test(ctx context.Context, testSuite string) error {
-	Bencher.TestSuite = testSuite
-	return Bencher.Test(ctx)
+	b := bench.NewBenchRun(ctx, CLIServiceDefaults(ctx))
+	b.TestSuite = testSuite
+	return b.Test(ctx)
 }
 
 // UpdateDeps updates build and test repos
-func UpdateDeps() error {
-	return Bencher.UpdateDeps()
+func UpdateDeps(ctx context.Context) error {
+	b := bench.NewBenchRun(ctx, CLIServiceDefaults(ctx))
+	return b.UpdateDeps()
 }
 
 // Resolve branch to latest commit of branch
-func ResolveGrafanaRevision() error {
-	return Bencher.ResolveGrafanaRevision()
+func ResolveGrafanaRevision(ctx context.Context) error {
+	b := bench.NewBenchRun(ctx, CLIServiceDefaults(ctx))
+	return b.ResolveGrafanaRevision()
 }
 
 // Resolve architecture and artifact names
-func ResolveArch() error {
-	return Bencher.ResolveArch()
+func ResolveArch(ctx context.Context) error {
+	b := bench.NewBenchRun(ctx, CLIServiceDefaults(ctx))
+	return b.ResolveArch()
 }
 
 // ResolveINI determines if there is a custom.ini to test a version of grafana
 // with
-func ResolveGrafanaINI() error {
-	return Bencher.ResolveGrafanaINI()
+func ResolveGrafanaINI(ctx context.Context) error {
+	b := bench.NewBenchRun(ctx, CLIServiceDefaults(ctx))
+	return b.ResolveGrafanaINI()
 }
 
 // ResolveConfig resolves GrafanaCommit, Architecture, and Custom.ini. Use this
 func ResolveConfig(ctx context.Context) error {
-	return Bencher.ResolveConfig(ctx)
+	b := bench.NewBenchRun(ctx, CLIServiceDefaults(ctx))
+	return b.ResolveConfig(ctx)
 }
 
 // TODO detail environment variables to set

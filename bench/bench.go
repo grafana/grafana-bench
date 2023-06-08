@@ -9,7 +9,7 @@ import (
 	"github.com/magefile/mage/sh"
 )
 
-func (b *Config) Bench(ctx context.Context) error {
+func (b *BenchRun) Bench(ctx context.Context) error {
 	var err error
 
 	if err := b.ResolveConfig(ctx); err != nil {
@@ -21,14 +21,14 @@ func (b *Config) Bench(ctx context.Context) error {
 	}
 
 	// setup workdir
-	fmt.Println("setting up work directory")
+	fmt.Println("setup: copying files to working directory")
 	executable, err := b.setupWorkdir(ctx)
 	if err != nil {
 		return err
 	}
 
 	// boot grafana
-	fmt.Println("booting grafana")
+	fmt.Println("setup: booting grafana")
 	killFunc, err := b.Boot(ctx, executable)
 	if err != nil {
 		return err
@@ -41,9 +41,10 @@ func (b *Config) Bench(ctx context.Context) error {
 
 // setupWorkdir sets up directory with configs needed for testing a grafana
 // build. This method expects the BuildArtifactPath to exist on disk.
-func (b *Config) setupWorkdir(ctx context.Context) (string, error) {
+func (b *BenchRun) setupWorkdir(ctx context.Context) (string, error) {
 	// verify executable exists
 
+	// TODO maybe make this a tempfile that we nuke at some point?
 	// delete old workdir if exists
 	if err := sh.RunV("rm", "-rf", path.Join(b.ProjectRoot, "work")); err != nil {
 		return "", err
@@ -77,7 +78,6 @@ func (b *Config) setupWorkdir(ctx context.Context) (string, error) {
 
 	// copy custom.ini into work dir
 	if b.GrafanaINIPath != "" {
-		fmt.Println("found custom.ini")
 		customIniWorkPath := path.Join(b.ProjectRoot, "work", "conf", "custom.ini")
 		if err := sh.Run("cp", b.GrafanaINIPath, customIniWorkPath); err != nil {
 			return "", err
@@ -86,7 +86,7 @@ func (b *Config) setupWorkdir(ctx context.Context) (string, error) {
 
 	// copy artifact
 	workExecutable := path.Join(b.ProjectRoot, "work", b.BuildArtifactName)
-	if err := sh.RunV("cp", b.BuildArtifactPath, workExecutable); err != nil {
+	if err := sh.RunV("cp", b.BuildCache.DiskPath(b.BuildArtifactName), workExecutable); err != nil {
 		return "", err
 	}
 	return workExecutable, nil

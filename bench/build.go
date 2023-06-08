@@ -9,8 +9,12 @@ import (
 	"github.com/magefile/mage/sh"
 )
 
+// START HERE: test me. get builds working again
+// add lifecycle policy to buildcache prefix in bucket
+// start working on state directory for a run
+
 // Build handles building a version of Grafana
-func (b *Config) Build(ctx context.Context) error {
+func (b *BenchRun) Build(ctx context.Context) error {
 	if err := b.ResolveConfig(ctx); err != nil {
 		return err
 	}
@@ -32,13 +36,9 @@ func (b *Config) Build(ctx context.Context) error {
 		return err
 	}
 
-	// TODO if remotebuildcache exists, check to see if artifact is there and
-	// upload if not. Do this in a non-blocking way so we can continue
-
-	// copy build to local disk cache
-	fmt.Println("copying executable to:", b.BuildArtifactPath)
 	buildPath := path.Join(b.ProjectRoot, "build", "bin", b.Arch, "grafana")
-	if err := sh.RunV("cp", buildPath, b.BuildArtifactPath); err != nil {
+	err = b.BuildCache.CacheBuild(ctx, buildPath, b.BuildArtifactName)
+	if err != nil {
 		return err
 	}
 

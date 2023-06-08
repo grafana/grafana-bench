@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"net"
 	"os/exec"
+	"path"
 	"time"
 
 	"github.com/grafana/grafana-bench/bench/utils"
 )
 
-func (b *Config) Boot(ctx context.Context, executable string) (func(), error) {
+func (b *BenchRun) Boot(ctx context.Context, executable string) (func(), error) {
 	cmd := exec.Command(executable, "server")
 
 	// function to return so we can kill the process
@@ -20,6 +21,10 @@ func (b *Config) Boot(ctx context.Context, executable string) (func(), error) {
 			fmt.Println("ERROR killing grafana PID:", err)
 		}
 	}
+
+	fmt.Println(b.ProjectRoot)
+	fmt.Println(path.Join(b.ProjectRoot, "work"))
+	fmt.Println(executable)
 
 	err := utils.DoInDir(b.ProjectRoot, "work", func() error {
 		if err := cmd.Start(); err != nil {

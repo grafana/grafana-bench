@@ -1,18 +1,16 @@
 package bench
 
 import (
-	"context"
 	"fmt"
 	"path"
 	"path/filepath"
 	"strings"
 
-	"github.com/grafana/grafana-bench/bench/buildcache"
 	"github.com/grafana/grafana-bench/bench/utils"
 	"github.com/grafana/grafana-bench/bench/utils/git"
 )
 
-func (b *Config) ResolveGrafanaRevision() error {
+func (b *BenchRun) ResolveGrafanaRevision() error {
 	if b.GrafanaRevision == "" {
 		b.GrafanaRevision = "branch:main"
 	}
@@ -50,7 +48,9 @@ func (b *Config) ResolveGrafanaRevision() error {
 	return nil
 }
 
-func (b *Config) ResolveArch() error {
+// TODO fixme... this won't necessarily be accurate depending on where build is
+// done and system doing the execution
+func (b *BenchRun) ResolveArch() error {
 	// Get GoEnv from system
 	b.GoEnv = utils.GetCompilerEnvInfo()
 
@@ -66,7 +66,7 @@ func (b *Config) ResolveArch() error {
 	return nil
 }
 
-func (b *Config) ResolveGrafanaINI() error {
+func (b *BenchRun) ResolveGrafanaINI() error {
 	// Check if INI environment set and use that
 	// If no INI check to see if local custom.ini in root
 	// else blank
@@ -79,10 +79,10 @@ func (b *Config) ResolveGrafanaINI() error {
 
 		exists, _ := utils.PathExists(b.GrafanaINIPath)
 		if !exists {
-			return fmt.Errorf("grafana-config: error specified config file not found %s", b.GrafanaINIPath)
+			return fmt.Errorf("grafana: error specified config file not found %s", b.GrafanaINIPath)
 		}
 
-		fmt.Println("grafana-config: resolved to", b.GrafanaINIPath)
+		fmt.Println("grafana: resolved to", b.GrafanaINIPath)
 		return nil
 	}
 
@@ -91,24 +91,10 @@ func (b *Config) ResolveGrafanaINI() error {
 	exists, _ := utils.PathExists(dirIni)
 	if exists {
 		b.GrafanaINIPath = dirIni
-		fmt.Println("grafana-config: custom.ini found. using", b.GrafanaINIPath)
+		fmt.Println("grafana: custom.ini found. using", b.GrafanaINIPath)
 		return nil
 	}
 
-	fmt.Println("grafana-config: no config specified. using defaults")
-	return nil
-}
-
-func (b *Config) ResolveRemoteBuildCache(ctx context.Context) error {
-	if b.RemoteBuildCacheCredentials != "" && b.RemoteBuildCacheBucket != "" {
-		rbc, err := buildcache.NewBuildCache(ctx, b.RemoteBuildCacheCredentials, b.RemoteBuildCacheBucket)
-		if err != nil {
-			return err
-		}
-		fmt.Println("build-cache: using GCS bucket:", b.RemoteBuildCacheBucket)
-		b.RemoteBuildCache = rbc
-	} else {
-		fmt.Println("build-cache: not configured")
-	}
+	fmt.Println("grafana: no config specified. using defaults")
 	return nil
 }

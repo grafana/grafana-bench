@@ -3,17 +3,12 @@ package bench
 import (
 	"context"
 	"fmt"
-	"net"
 	"os"
-	"os/exec"
 	"os/signal"
 	"syscall"
-	"time"
-
-	"github.com/grafana/grafana-bench/bench/utils"
 )
 
-func (b *Config) Run(ctx context.Context) error {
+func (b *BenchRun) Run(ctx context.Context) error {
 	var err error
 
 	if err := b.ResolveConfig(ctx); err != nil {
@@ -24,35 +19,21 @@ func (b *Config) Run(ctx context.Context) error {
 		return err
 	}
 
-	fmt.Println("setting up work directory")
+	fmt.Println("setup: copying files to working directory")
 	executable, err := b.setupWorkdir(ctx)
 	if err != nil {
 		return err
 	}
 
-	fmt.Println("booting grafana")
-	cmd := exec.Command(executable, "server")
-	err = utils.DoInDir(b.ProjectRoot, "work", func() error {
-		if err := cmd.Start(); err != nil {
-			fmt.Println("Error starting server:", err)
-			return err
-		}
-		return nil
-	})
+	// boot grafana
+	fmt.Println("setup: booting grafana")
+	killFunc, err := b.Boot(ctx, executable)
 	if err != nil {
 		return err
 	}
+	defer killFunc()
 
-	// Wait for the server to start up
-	for {
-		_, err := net.Dial("tcp", "localhost:3000")
-		if err == nil {
-			fmt.Println("Server is ready!")
-			break
-		}
-		fmt.Println("Waiting for server...")
-		time.Sleep(time.Second)
-	}
+	waitForLiveGrafana()
 
 	// wait for signal to kill grafana
 	sigs := make(chan os.Signal, 1)
