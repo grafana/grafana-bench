@@ -3,6 +3,7 @@ package buildcache
 import (
 	"context"
 	"fmt"
+	"os"
 	"path"
 
 	"cloud.google.com/go/storage"
@@ -12,23 +13,35 @@ import (
 )
 
 type BuildCache struct {
+	LocalDir    string
 	Client      *storage.Client
 	Bucket      *storage.BucketHandle
-	LocalDir    string
 	RemoteCache bool
 }
 
-type Build struct {
+type CacheObjectType string
+
+var (
+	BuildObj CacheObjectType = "build"
+	IniObj   CacheObjectType = "INI"
+)
+
+type BuildRef struct {
 	Location string
 	Name     string
 }
 
 func NewBuildCache(ctx context.Context, localDir, credPath, bucketName string) (*BuildCache, error) {
 	fmt.Println("build-cache: using local directory:", localDir)
+	// ensure build cache directory exists
+	err := os.MkdirAll(localDir, 0755)
+	if err != nil {
+		return nil, err
+	}
 
 	// If we don't have a bucket name, don't use remote object store for build cache
 	if bucketName == "" {
-		fmt.Println("build-cache: no remote object store defined:", localDir)
+		fmt.Println("build-cache: no remote store defined")
 		return &BuildCache{
 			LocalDir:    localDir,
 			RemoteCache: false,
@@ -40,12 +53,12 @@ func NewBuildCache(ctx context.Context, localDir, credPath, bucketName string) (
 		return nil, err
 	}
 
-	fmt.Println("build-cache: object store bucket:", bucketName)
+	fmt.Println("build-cache: using remote store bucket:", bucketName)
 	return &BuildCache{
 		Client:      client,
 		Bucket:      client.Bucket(bucketName),
 		LocalDir:    localDir,
-		RemoteCache: bucketName != "",
+		RemoteCache: true,
 	}, nil
 }
 
@@ -79,7 +92,7 @@ func (bc *BuildCache) Store(ctx context.Context, buildPath, artifactName string)
 	}
 
 	if bc.RemoteCache {
-		fmt.Println("build-cache: uploading build to remote cache")
+		fmt.Println("build-cache: uploading to remote cache")
 		return bc.UploadRemoteBuild(ctx, buildPath, artifactName)
 	}
 
@@ -87,8 +100,8 @@ func (bc *BuildCache) Store(ctx context.Context, buildPath, artifactName string)
 }
 
 // Gets a list of builds from the build cache
-func (bc *BuildCache) List(ctx context.Context) ([]Build, error) {
-	var builds []Build
+func (bc *BuildCache) List(ctx context.Context) ([]BuildRef, error) {
+	var builds []BuildRef
 
 	// Get local builds
 	localBuilds, err := utils.GlobByPrefix(bc.LocalDir, "grafana-server-")
@@ -96,7 +109,7 @@ func (bc *BuildCache) List(ctx context.Context) ([]Build, error) {
 		return builds, err
 	}
 	for _, f := range localBuilds {
-		builds = append(builds, Build{Location: "local", Name: f})
+		builds = append(builds, BuildRef{Location: "local", Name: f})
 	}
 
 	// Get remote builds if cache enabled
@@ -106,7 +119,7 @@ func (bc *BuildCache) List(ctx context.Context) ([]Build, error) {
 			return builds, err
 		}
 		for _, b := range remoteBuilds {
-			builds = append(builds, Build{Location: "remote", Name: b})
+			builds = append(builds, BuildRef{Location: "remote", Name: b})
 		}
 	}
 

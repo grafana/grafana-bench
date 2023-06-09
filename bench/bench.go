@@ -46,13 +46,13 @@ func (b *BenchRun) setupWorkdir(ctx context.Context) (string, error) {
 
 	// TODO maybe make this a tempfile that we nuke at some point?
 	// delete old workdir if exists
-	if err := sh.RunV("rm", "-rf", path.Join(b.ProjectRoot, "work")); err != nil {
+	workConfPath := path.Join(b.ProjectRoot, "work")
+	if err := sh.RunV("rm", "-rf", workConfPath); err != nil {
 		return "", err
 	}
 
 	// copy template directory
 	templateConf := path.Join(b.ProjectRoot, "templates")
-	workConfPath := path.Join(b.ProjectRoot, "work")
 	if err := sh.RunV("cp", "-r", templateConf, workConfPath); err != nil {
 		return "", err
 	}
