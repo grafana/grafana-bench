@@ -8,6 +8,7 @@ import (
 	"path"
 
 	"github.com/grafana/grafana-bench/bench"
+	"github.com/grafana/grafana-bench/bench/builder"
 	"github.com/grafana/grafana-bench/bench/utils"
 )
 
@@ -25,6 +26,29 @@ func CLIServiceDefaults(ctx context.Context) *bench.BenchService {
 		panic(err)
 	}
 	return svc
+}
+
+var BenchService *bench.BenchService = CLIServiceDefaults(context.Background())
+
+func TestME(ctx context.Context) error {
+	// create a build with some defaults
+	// do the build if it's not resolved
+	build, err := builder.NewGrafanaBuild("branch:main", "darwin/arm64")
+	if err != nil {
+		return err
+	}
+	if !build.Resolved {
+		err := BenchService.Builder.Build(build)
+		if err != nil {
+			return err
+		}
+	}
+
+	// provision the build
+
+	// test the build
+
+	return nil
 }
 
 // Build builds a grafana binary and stores it in the artifacts folder

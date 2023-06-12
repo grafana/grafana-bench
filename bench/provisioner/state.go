@@ -3,17 +3,24 @@ package provisioner
 import "context"
 
 type ProvisionState struct {
+	// UUID for the build
 	Identifier string
-	driver     ProvisionDriver
-	Type       ProvisionType
-	WorkDir    string
-	StateDir   string
+
+	driver   ProvisionDriver
+	Type     ProvisionType
+	WorkDir  string
+	StateDir string
 
 	// Temporary. should be refactored to live somewhere else probably
-	GrafanaRevision string
-	GrafanaPath     string
-	TemplateDir     string
+	GrafanaRevision     string
+	GrafanaArtifactName string
+	GrafanaPath         string
 
+	// Custom setup info
+	TemplateDir          string
+	CustomGrafanaINIPath string
+
+	// Results
 	GrafanaAddress string
 	K6Address      string
 }

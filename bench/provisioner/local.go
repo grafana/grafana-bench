@@ -6,6 +6,7 @@ import (
 	"path"
 
 	"github.com/grafana/grafana-bench/bench/buildcache"
+	"github.com/grafana/grafana-bench/bench/provisioner"
 	"github.com/grafana/grafana-bench/bench/utils"
 	"github.com/magefile/mage/sh"
 )
@@ -16,8 +17,8 @@ type LocalDriver struct {
 }
 
 // Provision - provisions Grafana + test runner
-func (p *LocalDriver) Provision(ctx context.Context, ps *ProvisionState) error {
-	executable, err := setupWorkdir(ctx, ps)
+func (l *LocalDriver) Provision(ctx context.Context, ps *ProvisionState) error {
+	executable, err := l.setupWorkdir(ctx, ps)
 	if err != nil {
 		return err
 	}
@@ -28,13 +29,13 @@ func (p *LocalDriver) Provision(ctx context.Context, ps *ProvisionState) error {
 }
 
 // Check - checks if Grafana + test runner are ready
-func (p *LocalDriver) Ready(ctx context.Context, ps *ProvisionState) (bool, error) {
+func (l *LocalDriver) Ready(ctx context.Context, ps *ProvisionState) (bool, error) {
 	// check if grafana is running
 	return false, nil
 }
 
 // Destroy - destroys a provisioned instance of Grafana + test runner
-func (p *LocalDriver) Teardown(ctx context.Context, ps *ProvisionState) error {
+func (l *LocalDriver) Teardown(ctx context.Context, ps *ProvisionState) error {
 	return nil
 }
 
@@ -47,7 +48,7 @@ func (p *LocalDriver) Teardown(ctx context.Context, ps *ProvisionState) error {
 
 // setupWorkdir sets up directory with configs needed for testing a grafana
 // build. This method expects the BuildArtifactPath to exist on disk.
-func setupWorkdir(ctx context.Context, ps *ProvisionState) (string, error) {
+func (l *LocalDriver) setupWorkdir(ctx context.Context, ps *ProvisionState) (string, error) {
 	// verify executable exists
 	exists, _ := utils.PathExists(ps.GrafanaPath)
 	if !exists {
@@ -64,42 +65,54 @@ func setupWorkdir(ctx context.Context, ps *ProvisionState) (string, error) {
 		return "", err
 	}
 
-	err := BuildCache(ctx, ps, ps.WorkDir, ps.GrafanaRevision)
-	if err != nil {
-	}
+	// TODO this should probably be resolved by the time we're doing setup as part
+	// of the build process
+	iniName := provisioner.iniName(ps.GrafanaRevision)
+	iniWorkPath := path.Join(ps.WorkDir, "conf", "defaults.ini")
 
-	// get default.ini for that commit
-	iniArtifact := fmt.Sprintf("%s_defaults.ini", b.GrafanaRevision)
-	iniArtifactPath := path.Join(b.ProjectRoot, "artifacts", iniArtifact)
-	exists, _ := utils.PathExists(iniArtifactPath)
+	exists, err := l.buildCache.Resolve(ctx, buildcache.IniObj, iniName)
+	if err != nil {
+		return "", fmt.Errorf("build-cache: error retrieving ini artifact err: %w", err)
+	}
+	// if doesn't exist, write to workdir and call cache on it.
 	if !exists {
-		// get the ini for that commit of grafana if it doesn't exist
-		// takes 7 chars to full commit hash
-		iniUrl := fmt.Sprintf("https://raw.githubusercontent.com/grafana/grafana/%s/conf/defaults.ini", b.GrafanaRevision)
-		if err := sh.RunV("curl", iniUrl, "-o", iniArtifactPath); err != nil {
+		err := provisioner.GetBuildINI(ctx, ps.GrafanaRevision, iniWorkPath)
+		if err != nil {
+			return err
+		}
+
+		err = l.buildCache.Store(ctx, buildcache.IniObj, iniWorkPath, iniName)
+		if err != nil {
+			fmt.Println("build-cache: error storing ini artifact: ", err)
+		}
+		// get from cache
+	} else {
+		err := l.buildCache.Retrieve(ctx, buildcache.IniObj, iniName, iniWorkPath)
+		if err != nil {
 			return "", err
 		}
 	}
 
-	// copy ini to workdir
-	iniWorkPath := path.Join(b.ProjectRoot, "work", "conf", "defaults.ini")
-	if err := sh.RunV("cp", iniArtifactPath, iniWorkPath); err != nil {
-		return "", err
-	}
-
 	// copy custom.ini into work dir
-	if b.GrafanaINIPath != "" {
-		customIniWorkPath := path.Join(b.ProjectRoot, "work", "conf", "custom.ini")
-		if err := sh.Run("cp", b.GrafanaINIPath, customIniWorkPath); err != nil {
+	if ps.CustomGrafanaINIPath != "" {
+		customIniWorkPath := path.Join(ps.WorkDir, "conf", "custom.ini")
+		if err := sh.Run("cp", ps.CustomGrafanaINIPath, customIniWorkPath); err != nil {
 			return "", err
 		}
 	}
 
 	// copy artifact
+	exists, err = l.buildCache.Resolve(ctx, buildcache.BuildObj, ps.GrafanaArtifactName)
+	if err != nil {
+		return "", fmt.Errorf("build-cache: error retrieving build artifact err: %w", err)
+	}
+	if !exists {
+		return "", fmt.Errorf("build-cache: build artifact does not exist")
+	}
+
 	workExecutable := path.Join(b.ProjectRoot, "work", b.BuildArtifactName)
 	if err := sh.RunV("cp", b.BuildCache.DiskPath(b.BuildArtifactName), workExecutable); err != nil {
 		return "", err
 	}
 	return workExecutable, nil
-
 }

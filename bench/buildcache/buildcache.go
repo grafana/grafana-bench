@@ -19,13 +19,6 @@ type BuildCache struct {
 	RemoteCache bool
 }
 
-type CacheObjectType string
-
-var (
-	BuildObj CacheObjectType = "build"
-	IniObj   CacheObjectType = "INI"
-)
-
 type BuildRef struct {
 	Location string
 	Name     string
@@ -62,12 +55,33 @@ func NewBuildCache(ctx context.Context, localDir, credPath, bucketName string) (
 	}, nil
 }
 
+// Gets an artifact and writes it to destination. Returns an error if artifact is
+// not in cache
+func (bc *BuildCache) Retrieve(ctx context.Context, ct CacheObjectType, artifactName, destination string) error {
+	// resolve the file in the cache
+	resolved, err := bc.Resolve(ctx, ct, artifactName)
+	if err != nil {
+		return err
+	}
+
+	if !resolved {
+		return fmt.Errorf("build-cache: %s, not found in cache", artifactName)
+	}
+
+	// copy file to destination
+	if err := sh.RunV("cp", bc.DiskPath(ct, artifactName), destination); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Resolves a build artifact. Checks local disk and if not found checks remote bucket if defined.
 // If the build is in the remote bucket, it is downloaded to the local artifacts directory and return true.
 // If the build is not found on disk or in the bucket, we return false
-func (bc *BuildCache) Resolve(ctx context.Context, artifactName string) (bool, error) {
+func (bc *BuildCache) Resolve(ctx context.Context, ct CacheObjectType, artifactName string) (bool, error) {
 	// check local
-	exists, err := utils.PathExists(bc.DiskPath(artifactName))
+	exists, err := utils.PathExists(bc.DiskPath(ct, artifactName))
 	if err != nil {
 		return false, err
 	}
@@ -80,27 +94,33 @@ func (bc *BuildCache) Resolve(ctx context.Context, artifactName string) (bool, e
 		return false, nil
 	}
 
-	return bc.DownloadRemoteBuild(ctx, artifactName)
+	return bc.DownloadRemote(ctx, ct, artifactName)
 }
 
 // Copies build from path specified to local cache and remote cache if
 // configured
-func (bc *BuildCache) Store(ctx context.Context, buildPath, artifactName string) error {
+func (bc *BuildCache) Store(ctx context.Context, ct CacheObjectType, diskPath, artifactName string) error {
 	fmt.Println("build-cache: caching build")
-	if err := sh.RunV("cp", buildPath, bc.DiskPath(artifactName)); err != nil {
-		return err
+
+	// Copy to local cache if not already there
+	exists, _ := utils.PathExists(bc.DiskPath(ct, artifactName))
+	if !exists {
+		if err := sh.RunV("cp", diskPath, bc.DiskPath(ct, artifactName)); err != nil {
+			return err
+		}
 	}
 
+	// Copy to remote cache if configured
 	if bc.RemoteCache {
 		fmt.Println("build-cache: uploading to remote cache")
-		return bc.UploadRemoteBuild(ctx, buildPath, artifactName)
+		return bc.UploadRemote(ctx, ct, diskPath, artifactName)
 	}
 
 	return nil
 }
 
 // Gets a list of builds from the build cache
-func (bc *BuildCache) List(ctx context.Context) ([]BuildRef, error) {
+func (bc *BuildCache) List(ctx context.Context, ct CacheObjectType) ([]BuildRef, error) {
 	var builds []BuildRef
 
 	// Get local builds
@@ -114,7 +134,7 @@ func (bc *BuildCache) List(ctx context.Context) ([]BuildRef, error) {
 
 	// Get remote builds if cache enabled
 	if bc.RemoteCache {
-		remoteBuilds, err := bc.ListRemoteBuilds(ctx)
+		remoteBuilds, err := bc.ListRemote(ctx, ct)
 		if err != nil {
 			return builds, err
 		}
@@ -127,8 +147,8 @@ func (bc *BuildCache) List(ctx context.Context) ([]BuildRef, error) {
 }
 
 // Returns path to artifact on disk
-func (bc *BuildCache) DiskPath(artifactName string) string {
-	return path.Join(bc.LocalDir, artifactName)
+func (bc *BuildCache) DiskPath(ct CacheObjectType, artifactName string) string {
+	return path.Join(bc.LocalDir, ct.String(), artifactName)
 }
 
 //func main() {
