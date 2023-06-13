@@ -1,0 +1,81 @@
+package builder
+
+import (
+	"context"
+	"fmt"
+	"path"
+
+	"github.com/grafana/grafana-bench/bench/buildcache"
+	"github.com/grafana/grafana-bench/bench/utils"
+	"github.com/magefile/mage/sh"
+)
+
+// Build represents a build of Grafana.
+// Should be passed to provisioner to deploy Grafana
+type Build struct {
+	*BuilderService
+
+	// UUID for the build
+	Identifier string `json:"identifier"`
+
+	// Destination to store work files for the build
+	WorkDir string
+
+	// Architecture for the build
+	Arch string `json:"arch"`
+
+	// Branch or commit of Grafana to run. prefix the type that you're going to
+	// provide. e.g. "branch:k8s-proof-of-concept" or "commit:e74e7fa"
+	// commit refs must be 7 characters or longer
+	GrafanaRevision string `json:"grafanaRevision"`
+
+	// Short name to reference
+	GrafanaIniPath string `json:"grafanaIni"`
+
+	ArtifactName string
+
+	// Determines whether build is complete
+	Resolved bool `json:"resolved"`
+}
+
+// Synchronous method to build grafana. Checks buildcache and returns nil if build is already
+// resolved.
+func (b *Build) Run(ctx context.Context) error {
+
+	resolved, err := b.BuildCache.Resolve(ctx, buildcache.BuildObj, b.ArtifactName)
+	if err != nil && resolved {
+		b.Resolved = true
+		return nil
+	}
+
+	// ensure build suite exists and up to date
+	if err := b.ResolveBuildSuite(); err != nil {
+		return err
+	}
+
+	// run command
+	err = utils.DoInDir(b.LocalDir, b.buildSuiteDir, func() error {
+		// Note, verbose and distro must be provided at the end of the command
+		err := sh.RunV("go", "run", "./cmd", "backend", "build",
+			fmt.Sprintf("--distro=%s", b.Arch),
+			fmt.Sprintf("--grafana-ref=%s", b.GrafanaRevision),
+			"--verbose")
+		return err
+	})
+	if err != nil {
+		return err
+	}
+
+	// cache the build
+	grafanaExecutablePath := path.Join(b.buildSuiteDir, "bin", b.Arch, "grafana")
+	if err := b.BuildCache.Store(ctx, buildcache.BuildObj, grafanaExecutablePath, b.ArtifactName); err != nil {
+		return err
+	}
+
+	// get the build ini
+
+	// set build to resolved
+	b.Resolved = true
+
+	return nil
+}
