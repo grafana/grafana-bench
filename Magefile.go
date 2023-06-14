@@ -5,15 +5,19 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"path"
 
 	"github.com/grafana/grafana-bench/bench"
-	"github.com/grafana/grafana-bench/bench/builder"
+	"github.com/grafana/grafana-bench/bench/buildcache"
+	"github.com/grafana/grafana-bench/bench/provisioner"
 	"github.com/grafana/grafana-bench/bench/utils"
 )
 
 // This file is a thin wrapper to get us a quick CLI using mage.
 // If you're adding or changing logic, that should happen in the bench/ package
+
+var BenchService *bench.BenchService = CLIServiceDefaults(context.Background())
 
 // Function to set defaults for CLI.
 func CLIServiceDefaults(ctx context.Context) *bench.BenchService {
@@ -28,25 +32,51 @@ func CLIServiceDefaults(ctx context.Context) *bench.BenchService {
 	return svc
 }
 
-var BenchService *bench.BenchService = CLIServiceDefaults(context.Background())
-
 func TestME(ctx context.Context) error {
-	// create a build with some defaults
-	// do the build if it's not resolved
-	build, err := builder.NewGrafanaBuild("branch:main", "darwin/arm64")
+
+	// create a build with some defaults do the build if it's not resolved
+	build, err := BenchService.Builder.New("branch:main", "darwin/arm64")
 	if err != nil {
 		return err
 	}
 	if !build.Resolved {
-		err := BenchService.Builder.Build(build)
+		err := build.Run(ctx)
 		if err != nil {
 			return err
 		}
 	}
 
-	// provision the build
+	// verify build exists in the cache
+	resolved, err := BenchService.BuildCache.Resolve(ctx, buildcache.BuildObj, build.ArtifactName)
+	if err != nil {
+		return err
+	}
+
+	if resolved {
+		fmt.Println("Build Exists")
+	}
+
+	ps, err := BenchService.Provisioner.New(ctx, provisioner.Local, build)
+	if err != nil {
+		return err
+	}
+
+	killFunc, err := ps.Provision(ctx)
+	if err != nil {
+		return err
+	}
+	defer killFunc()
 
 	// test the build
+	test, err := BenchService.Tester.New(ctx, ps)
+	if err != nil {
+		return err
+	}
+
+	err := test.Run(ctx)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

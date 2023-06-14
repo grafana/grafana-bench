@@ -3,10 +3,13 @@ package provisioner
 import (
 	"context"
 	"fmt"
+	"net"
 	"os"
 	"path"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/grafana/grafana-bench/bench/builder"
 )
 
 type ProvisionerService struct {
@@ -30,7 +33,7 @@ func NewProvisioner(ctx context.Context, localDir string, vmEnabled bool, templa
 	}
 }
 
-func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, templateDir, grafanaPath string) (*ProvisionState, error) {
+func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *builder.Build) (*ProvisionState, error) {
 
 	if t == Remote && !p.VMEnabled {
 		return nil, fmt.Errorf("Provisioner does not have VM support enabled")
@@ -40,11 +43,10 @@ func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, templateD
 	fmt.Println("provisioner: new state identifier:", uuid.String())
 
 	state := &ProvisionState{
-		Identifier:   uuid.String(),
-		Type:         t,
-		WorkDir:      path.Join(p.LocalDir, uuid.String(), "work"),
-		GrafanaPath:  grafanaPath,
-		TemplatePath: templateDir,
+		Identifier: uuid.String(),
+		Type:       t,
+		WorkDir:    path.Join(p.LocalDir, uuid.String(), "work"),
+		Build:      build,
 	}
 
 	err := os.MkdirAll(state.WorkDir, 0755)
@@ -61,4 +63,17 @@ func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, templateD
 	}
 
 	return state, nil
+}
+
+// Wait for the server to start up
+func WaitForLiveGrafana(address string) {
+	for {
+		_, err := net.Dial("tcp", address)
+		if err == nil {
+			fmt.Println("Server is ready!")
+			break
+		}
+		fmt.Println("Waiting for server...")
+		time.Sleep(time.Second)
+	}
 }

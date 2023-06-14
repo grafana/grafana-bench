@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path"
 
+	"github.com/grafana/grafana-bench/bench/buildcache"
 	"github.com/grafana/grafana-bench/bench/utils"
 	"github.com/magefile/mage/sh"
 )
@@ -33,7 +34,7 @@ func (b *BenchRun) Build(ctx context.Context) error {
 	}
 
 	buildPath := path.Join(b.ProjectRoot, "build", "bin", b.Arch, "grafana")
-	err = b.BuildCache.Store(ctx, buildPath, b.BuildArtifactName)
+	err = b.BuildCache.Store(ctx, buildcache.BuildObj, buildPath, b.BuildArtifactName)
 	if err != nil {
 		return err
 	}
@@ -42,7 +43,7 @@ func (b *BenchRun) Build(ctx context.Context) error {
 }
 
 func (b *BenchRun) ListBuilds(ctx context.Context) error {
-	builds, err := b.BuildCache.List(ctx)
+	builds, err := b.BuildCache.List(ctx, buildcache.BuildObj)
 	if err != nil {
 		return err
 	}

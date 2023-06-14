@@ -29,7 +29,7 @@ func NewBuildService(localdir string, buildcache *buildcache.BuildCache) *Builde
 }
 
 // Creates a new build ref used to build Grafana
-func (bs BuilderService) New(grafanaRevision, arch string) (*Build, error) {
+func (bs *BuilderService) New(grafanaRevision, arch string) (*Build, error) {
 	gitRef, err := resolveGrafanaRevision(grafanaRevision)
 	if err != nil {
 		return nil, err
@@ -40,6 +40,7 @@ func (bs BuilderService) New(grafanaRevision, arch string) (*Build, error) {
 	// TODO check if build/ini exist in cache and autoresolve
 
 	return &Build{
+		BuilderService:  bs,
 		Arch:            "linux/amd64",
 		GrafanaRevision: gitRef,
 		ArtifactName:    artifactName,

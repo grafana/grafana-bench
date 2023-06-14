@@ -1,6 +1,10 @@
 package provisioner
 
-import "context"
+import (
+	"context"
+
+	"github.com/grafana/grafana-bench/bench/builder"
+)
 
 type ProvisionState struct {
 	// UUID for the build
@@ -10,6 +14,8 @@ type ProvisionState struct {
 	Type     ProvisionType
 	WorkDir  string
 	StateDir string
+
+	Build *builder.Build
 
 	// Temporary. should be refactored to live somewhere else probably
 	GrafanaRevision     string
@@ -25,7 +31,9 @@ type ProvisionState struct {
 	K6Address      string
 }
 
-func (p *ProvisionState) Provision(ctx context.Context) error {
+// Returns a function to shut down grafana. Does not destroy the infrastructure
+// that was provisioned
+func (p *ProvisionState) Provision(ctx context.Context) (func() error, error) {
 	return p.driver.Provision(ctx, p)
 }
 

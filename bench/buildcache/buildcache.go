@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"time"
 
 	"cloud.google.com/go/storage"
 	"github.com/grafana/grafana-bench/bench/utils"
@@ -16,6 +17,7 @@ type BuildCache struct {
 	LocalDir    string
 	Client      *storage.Client
 	Bucket      *storage.BucketHandle
+	BucketName  string
 	RemoteCache bool
 }
 
@@ -50,6 +52,7 @@ func NewBuildCache(ctx context.Context, localDir, credPath, bucketName string) (
 	return &BuildCache{
 		Client:      client,
 		Bucket:      client.Bucket(bucketName),
+		BucketName:  bucketName,
 		LocalDir:    localDir,
 		RemoteCache: true,
 	}, nil
@@ -149,6 +152,22 @@ func (bc *BuildCache) List(ctx context.Context, ct CacheObjectType) ([]BuildRef,
 // Returns path to artifact on disk
 func (bc *BuildCache) DiskPath(ct CacheObjectType, artifactName string) string {
 	return path.Join(bc.LocalDir, ct.String(), artifactName)
+}
+
+// TODO testme
+func (bc *BuildCache) GetPresignedUrl(ctx context.Context, ct CacheObjectType, artifactName string) (string, error) {
+	opts := &storage.SignedURLOptions{
+		Scheme:  storage.SigningSchemeV4,
+		Method:  "GET",
+		Expires: time.Now().Add(15 * time.Minute),
+	}
+
+	url, err := bc.Bucket.SignedURL(bc.RemotePath(ct, artifactName), opts)
+	if err != nil {
+		return "", fmt.Errorf("Bucket(%q).SignedURL: %w", bc.BucketName, err)
+	}
+
+	return url, nil
 }
 
 //func main() {

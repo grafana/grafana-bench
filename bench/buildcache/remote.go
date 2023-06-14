@@ -11,29 +11,11 @@ import (
 	"google.golang.org/api/iterator"
 )
 
-var BuildPrefix string = "builds/"
-var INIPrefix string = "ini/"
-
-// Returns object name in bucket
-func (bc *BuildCache) RemotePath(ct CacheObjectType, artifactName string) string {
-	return fmt.Sprintf("%s/%s", BuildPrefix, artifactName)
-}
-
-// Returns object for given artifactName
-func (bc *BuildCache) GetObjectHandle(ct CacheObjectType, artifactName string) *storage.ObjectHandle {
-	return bc.Bucket.Object(bc.RemotePath(ct, artifactName))
-}
-
 // Gets list of objects from remote cache
-func (bc *BuildCache) ListRemote(ctx context.Context, c CacheObjectType) ([]string, error) {
+func (bc *BuildCache) ListRemote(ctx context.Context, ct CacheObjectType) ([]string, error) {
 	var builds []string
-	query := &storage.Query{}
-
-	var prefix string
-	if c == BuildObj {
-		query.Prefix = BuildPrefix
-	} else if c == IniObj {
-		query.Prefix = INIPrefix
+	query := &storage.Query{
+		Prefix: ct.ObjectStorePrefix(),
 	}
 
 	//query.SetAttrSelection([]string{"Name"})
@@ -46,7 +28,7 @@ func (bc *BuildCache) ListRemote(ctx context.Context, c CacheObjectType) ([]stri
 		if err != nil {
 			return []string{}, fmt.Errorf("Failed to iterate objects: %v\n", err)
 		}
-		name := strings.TrimPrefix(objAttrs.Name, prefix)
+		name := strings.TrimPrefix(objAttrs.Name, ct.ObjectStorePrefix())
 		builds = append(builds, name)
 	}
 	return builds, nil

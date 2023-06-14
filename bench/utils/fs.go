@@ -8,7 +8,28 @@ import (
 	"strings"
 )
 
-// Copy file from one place to another
+// rm -rf path. returns nil if file does not exist
+func Rm(path string) error {
+	info, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+
+	if info.IsDir() {
+		return os.RemoveAll(path)
+	}
+
+	return os.Remove(path)
+}
+
+// cp -r src dst
+func CopyFolder(src, dst string) error {
+	return nil
+}
+
+// cp src dst
 func CopyFile(src, dst string) error {
 	source, err := os.Open(src)
 	if err != nil {

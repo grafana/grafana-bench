@@ -79,3 +79,8 @@ func (b *Build) Run(ctx context.Context) error {
 
 	return nil
 }
+
+// Gets a presigned url for the build
+func (b *Build) GetPresignedUrl(ctx context.Context) (string, error) {
+	return b.BuildCache.GetPresignedUrl(ctx, buildcache.BuildObj, b.ArtifactName)
+}
