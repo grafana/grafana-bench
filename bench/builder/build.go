@@ -81,7 +81,7 @@ func (b *Build) Run(ctx context.Context) error {
 	}
 
 	// cache the ini
-	err = b.BuildCache.StoreText(ctx, buildcache.IniObj, iniString, getIniArtifactName(b.GrafanaRevision))
+	err = b.BuildCache.StoreBytes(ctx, buildcache.IniObj, iniString, getIniArtifactName(b.GrafanaRevision))
 	if err != nil {
 		return err
 	}

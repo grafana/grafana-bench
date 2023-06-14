@@ -9,13 +9,23 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/grafana/grafana-bench/bench/buildcache"
 	"github.com/grafana/grafana-bench/bench/builder"
 )
 
 type ProvisionerService struct {
+	BuildCache  *buildcache.BuildCache
 	LocalDir    string
 	VMEnabled   bool
 	TemplateDir string
+}
+
+func NewProvisioner(ctx context.Context, localDir string, bc *buildcache.BuildCache, vmEnabled bool, templateDir string) *ProvisionerService {
+	return &ProvisionerService{
+		LocalDir:    localDir,
+		VMEnabled:   vmEnabled,
+		TemplateDir: templateDir,
+	}
 }
 
 type ProvisionType string
@@ -24,14 +34,6 @@ const (
 	Local  ProvisionType = "local"
 	Remote ProvisionType = "remote"
 )
-
-func NewProvisioner(ctx context.Context, localDir string, vmEnabled bool, templateDir string) *ProvisionerService {
-	return &ProvisionerService{
-		LocalDir:    localDir,
-		VMEnabled:   vmEnabled,
-		TemplateDir: templateDir,
-	}
-}
 
 func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *builder.Build) (*ProvisionState, error) {
 
@@ -42,10 +44,19 @@ func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *bu
 	uuid := uuid.Must(uuid.NewRandom())
 	fmt.Println("provisioner: new state identifier:", uuid.String())
 
+	workDir := path.Join(p.LocalDir, uuid.String(), "work")
+
+	var driver *LocalDriver
+	switch t {
+	case Local:
+		driver = NewLocalDriver(workDir, p.BuildCache)
+	}
+
 	state := &ProvisionState{
+		driver:     driver,
 		Identifier: uuid.String(),
 		Type:       t,
-		WorkDir:    path.Join(p.LocalDir, uuid.String(), "work"),
+		WorkDir:    workDir,
 		Build:      build,
 	}
 

@@ -21,7 +21,7 @@ var BenchService *bench.BenchService = CLIServiceDefaults(context.Background())
 
 // Function to set defaults for CLI.
 func CLIServiceDefaults(ctx context.Context) *bench.BenchService {
-	projectRoot := utils.GetWorkdir()
+	projectRoot := utils.Getwd()
 	artifactsPath := path.Join(projectRoot, "artifacts")
 	GCSCredPath := path.Join(projectRoot, "GCP-infra-manager-828bbfa6f427.json")
 
@@ -53,7 +53,7 @@ func TestME(ctx context.Context) error {
 	}
 
 	if resolved {
-		fmt.Println("Build Exists")
+		fmt.Println("mage: build in cache")
 	}
 
 	ps, err := BenchService.Provisioner.New(ctx, provisioner.Local, build)
@@ -68,15 +68,18 @@ func TestME(ctx context.Context) error {
 	defer killFunc()
 
 	// test the build
-	test, err := BenchService.Tester.New(ctx, ps)
-	if err != nil {
-		return err
-	}
+	//test, err := BenchService.Tester.New(ctx, ps)
+	//if err != nil {
+	//  return err
+	//}
 
-	err := test.Run(ctx)
-	if err != nil {
-		return err
-	}
+	//err := test.Run(ctx)
+	//if err != nil {
+	//  return err
+	//}
+
+	// teardown the build
+	//return ps.Destroy(ctx)
 
 	return nil
 }

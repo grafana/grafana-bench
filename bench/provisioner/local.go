@@ -16,21 +16,29 @@ type LocalDriver struct {
 	buildCache *buildcache.BuildCache
 }
 
+func NewLocalDriver(localDir string, buildCache *buildcache.BuildCache) *LocalDriver {
+	return &LocalDriver{
+		LocalDir:   localDir,
+		buildCache: buildCache,
+	}
+}
+
 // Provision - provisions Grafana + test runner
-func (l *LocalDriver) Provision(ctx context.Context, ps *ProvisionState) (func(), error) {
+func (l *LocalDriver) Provision(ctx context.Context, ps *ProvisionState) (func() error, error) {
 	executable, err := l.setupWorkdir(ctx, ps)
 	if err != nil {
-		return func() {}, err
+		return func() error { return nil }, err
 	}
 
 	cmd := exec.Command(executable, "server")
 
 	// function to return so we can kill the process
-	killFunc := func() {
+	killFunc := func() error {
 		err := cmd.Process.Kill()
 		if err != nil {
-			fmt.Println("ERROR killing grafana PID:", err)
+			return fmt.Errorf("ERROR killing grafana PID: %w", err)
 		}
+		return nil
 	}
 
 	err = utils.DoInDir(ps.WorkDir, "work", func() error {
@@ -49,13 +57,13 @@ func (l *LocalDriver) Provision(ctx context.Context, ps *ProvisionState) (func()
 }
 
 // Check - checks if Grafana + test runner are ready
-func (l *LocalDriver) Ready(ctx context.Context, ps *ProvisionState) (bool, error) {
+func (l *LocalDriver) Ready(ctx context.Context, ps *ProvisionState) error {
 	// check if grafana is running
-	return false, nil
+	return nil
 }
 
 // Destroy - destroys a provisioned instance of Grafana + test runner
-func (l *LocalDriver) Teardown(ctx context.Context, ps *ProvisionState) error {
+func (l *LocalDriver) Destroy(ctx context.Context, ps *ProvisionState) error {
 	return nil
 }
 
