@@ -67,6 +67,13 @@ func downloadIni(ctx context.Context, grafanaRevision, destination string) error
 }
 
 // generates the name of the build artifact for caching
+// e.g. 6e4fe51fe8f0da7719eb933ef77c6e8b46dae126-darwin-arm64
 func getBuildArtifactName(grafanaGitRef, arch string) string {
-	return fmt.Sprintf("grafana-server-%s-%s", grafanaGitRef, strings.Replace(arch, "/", "-", -1))
+	// darwin/arm64 -> darwin-arm64
+	arch = strings.Replace(arch, "/", "-", -1)
+	return fmt.Sprintf("%s-%s-grafana-server", grafanaGitRef, arch)
+}
+
+func getIniArtifactName(grafanaGitRef string) string {
+	return fmt.Sprintf("%s_defaults.ini", grafanaGitRef)
 }

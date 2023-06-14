@@ -34,7 +34,7 @@ func (b *BenchRun) Build(ctx context.Context) error {
 	}
 
 	buildPath := path.Join(b.ProjectRoot, "build", "bin", b.Arch, "grafana")
-	err = b.BuildCache.Store(ctx, buildcache.BuildObj, buildPath, b.BuildArtifactName)
+	err = b.BuildCache.StoreFile(ctx, buildcache.BuildObj, buildPath, b.BuildArtifactName)
 	if err != nil {
 		return err
 	}

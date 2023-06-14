@@ -25,12 +25,13 @@ func Rm(path string) error {
 }
 
 // cp -r src dst
+// TODO implement me
 func CopyFolder(src, dst string) error {
 	return nil
 }
 
 // cp src dst
-func CopyFile(src, dst string) error {
+func Cp(src, dst string) error {
 	source, err := os.Open(src)
 	if err != nil {
 		return fmt.Errorf("failed to open source file: %w", err)
@@ -52,7 +53,7 @@ func CopyFile(src, dst string) error {
 }
 
 // Get working directory
-func GetWorkdir() string {
+func Getwd() string {
 	// Use the Getwd function to get the current working directory
 	dir, err := os.Getwd()
 

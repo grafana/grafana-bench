@@ -100,7 +100,7 @@ func (l *LocalDriver) setupWorkdir(ctx context.Context, ps *ProvisionState) (str
 			return "", err
 		}
 
-		err = l.buildCache.Store(ctx, buildcache.IniObj, iniWorkPath, iniName)
+		err = l.buildCache.StoreFile(ctx, buildcache.IniObj, iniWorkPath, iniName)
 		if err != nil {
 			fmt.Println("build-cache: error storing ini artifact: ", err)
 		}

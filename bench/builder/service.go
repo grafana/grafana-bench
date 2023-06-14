@@ -58,7 +58,7 @@ func (bs *BuilderService) ResolveBuildSuite() error {
 	if exists {
 		err := utils.DoInDir(bs.LocalDir, bs.buildSuiteDir, func() error {
 			if err := sh.RunV("git", "checkout", "main"); err != nil {
-				return fmt.Errorf("Error checking out grafana test repo %s", err)
+				return fmt.Errorf("build-service: Error checking out grafana build repo %s", err)
 			}
 
 			if err := sh.RunV("git", "pull"); err != nil {

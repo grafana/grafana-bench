@@ -100,17 +100,52 @@ func (bc *BuildCache) Resolve(ctx context.Context, ct CacheObjectType, artifactN
 	return bc.DownloadRemote(ctx, ct, artifactName)
 }
 
-// Copies build from path specified to local cache and remote cache if
-// configured
-func (bc *BuildCache) Store(ctx context.Context, ct CacheObjectType, diskPath, artifactName string) error {
-	fmt.Println("build-cache: caching build")
+// Writes file into local cache and remote cache
+func (bc *BuildCache) StoreFile(ctx context.Context, ct CacheObjectType, srcPath, artifactName string) error {
+	fmt.Println("build-cache: caching artifact ", ct.String(), artifactName)
 
 	// Copy to local cache if not already there
-	exists, _ := utils.PathExists(bc.DiskPath(ct, artifactName))
-	if !exists {
-		if err := sh.RunV("cp", diskPath, bc.DiskPath(ct, artifactName)); err != nil {
-			return err
-		}
+	diskPath := bc.DiskPath(ct, artifactName)
+
+	// Ensure destination folder exists
+	dir := path.Dir(diskPath)
+	err := os.MkdirAll(dir, 0755)
+	if err != nil {
+		return err
+	}
+
+	// write to local cache
+	if err := utils.Cp(srcPath, diskPath); err != nil {
+		return err
+	}
+
+	// Copy to remote cache if configured
+	if bc.RemoteCache {
+		fmt.Println("build-cache: uploading to remote cache")
+		return bc.UploadRemote(ctx, ct, srcPath, artifactName)
+	}
+
+	return nil
+}
+
+// Writes byte array to file in local cache and remote cache
+func (bc *BuildCache) StoreBytes(ctx context.Context, ct CacheObjectType, body []byte, artifactName string) error {
+	fmt.Println("build-cache: caching artifact ", ct.String(), artifactName)
+
+	// Copy to local cache if not already there
+	diskPath := bc.DiskPath(ct, artifactName)
+
+	// Ensure destination folder exists
+	dir := path.Dir(diskPath)
+	err := os.MkdirAll(dir, 0755)
+	if err != nil {
+		return err
+	}
+
+	// write to local cache
+	err = os.WriteFile(diskPath, body, 0755)
+	if err != nil {
+		return err
 	}
 
 	// Copy to remote cache if configured
@@ -147,11 +182,6 @@ func (bc *BuildCache) List(ctx context.Context, ct CacheObjectType) ([]BuildRef,
 	}
 
 	return builds, nil
-}
-
-// Returns path to artifact on disk
-func (bc *BuildCache) DiskPath(ct CacheObjectType, artifactName string) string {
-	return path.Join(bc.LocalDir, ct.String(), artifactName)
 }
 
 // TODO testme

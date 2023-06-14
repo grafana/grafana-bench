@@ -1,7 +1,7 @@
 package buildcache
 
 import (
-	"fmt"
+	"path"
 	"strings"
 
 	"cloud.google.com/go/storage"
@@ -25,15 +25,20 @@ func (ct CacheObjectType) String() string {
 	}
 }
 
-// Returns prefix used to organize object types in bucket
-func (ct CacheObjectType) ObjectStorePrefix() string {
-	// build -> builds/
-	return strings.ToLower(ct.String()) + "s/"
+// Returns prefix used to organize object types on disk or in bucket
+func (ct CacheObjectType) StorePrefix() string {
+	// build -> builds
+	return strings.ToLower(ct.String()) + "s"
 }
 
 // Returns object name in bucket
 func (bc *BuildCache) RemotePath(ct CacheObjectType, artifactName string) string {
-	return fmt.Sprintf("%s/%s", ct.ObjectStorePrefix(), artifactName)
+	return path.Join(ct.StorePrefix(), artifactName)
+}
+
+// Returns path to artifact on disk
+func (bc *BuildCache) DiskPath(ct CacheObjectType, artifactName string) string {
+	return path.Join(bc.LocalDir, ct.StorePrefix(), artifactName)
 }
 
 // Returns object handle for given artifactName

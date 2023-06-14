@@ -15,7 +15,7 @@ import (
 func (bc *BuildCache) ListRemote(ctx context.Context, ct CacheObjectType) ([]string, error) {
 	var builds []string
 	query := &storage.Query{
-		Prefix: ct.ObjectStorePrefix(),
+		Prefix: ct.StorePrefix(),
 	}
 
 	//query.SetAttrSelection([]string{"Name"})
@@ -28,7 +28,7 @@ func (bc *BuildCache) ListRemote(ctx context.Context, ct CacheObjectType) ([]str
 		if err != nil {
 			return []string{}, fmt.Errorf("Failed to iterate objects: %v\n", err)
 		}
-		name := strings.TrimPrefix(objAttrs.Name, ct.ObjectStorePrefix())
+		name := strings.TrimPrefix(objAttrs.Name, ct.StorePrefix())
 		builds = append(builds, name)
 	}
 	return builds, nil

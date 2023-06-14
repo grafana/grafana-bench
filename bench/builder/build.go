@@ -3,6 +3,8 @@ package builder
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"path"
 
 	"github.com/grafana/grafana-bench/bench/buildcache"
@@ -68,11 +70,21 @@ func (b *Build) Run(ctx context.Context) error {
 
 	// cache the build
 	grafanaExecutablePath := path.Join(b.buildSuiteDir, "bin", b.Arch, "grafana")
-	if err := b.BuildCache.Store(ctx, buildcache.BuildObj, grafanaExecutablePath, b.ArtifactName); err != nil {
+	if err := b.BuildCache.StoreFile(ctx, buildcache.BuildObj, grafanaExecutablePath, b.ArtifactName); err != nil {
 		return err
 	}
 
-	// get the build ini
+	// get the default.ini
+	iniString, err := b.GetDefaultINI(ctx)
+	if err != nil {
+		return err
+	}
+
+	// cache the ini
+	err = b.BuildCache.StoreText(ctx, buildcache.IniObj, iniString, getIniArtifactName(b.GrafanaRevision))
+	if err != nil {
+		return err
+	}
 
 	// set build to resolved
 	b.Resolved = true
@@ -83,4 +95,23 @@ func (b *Build) Run(ctx context.Context) error {
 // Gets a presigned url for the build
 func (b *Build) GetPresignedUrl(ctx context.Context) (string, error) {
 	return b.BuildCache.GetPresignedUrl(ctx, buildcache.BuildObj, b.ArtifactName)
+}
+
+func (b *Build) GetDefaultINI(ctx context.Context) ([]byte, error) {
+	// get the ini for that commit of grafana if it doesn't exist
+	// takes 7 chars to full commit hash
+	url := fmt.Sprintf("https://raw.githubusercontent.com/grafana/grafana/%s/conf/defaults.ini", b.GrafanaRevision)
+
+	response, err := http.Get(url)
+	if err != nil {
+		return []byte{}, err
+	}
+	defer response.Body.Close()
+
+	body, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	return body, nil
 }
