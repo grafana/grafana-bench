@@ -63,7 +63,7 @@ func (bs *BuilderService) New(ctx context.Context, grafanaRevision, arch string)
 
 // Resolves build suite. Always updates to latest version
 // TODO: it might make sense to clone this for each build in the future, but for
-// now we're just going to linnk the build suite to the service.
+// now we're just going to link the build suite to the service.
 func (bs *BuilderService) ResolveBuildSuite() error {
 	exists, _ := utils.PathExists(bs.buildSuiteDir)
 

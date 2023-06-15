@@ -64,7 +64,7 @@ func (bc *BuildCache) DownloadRemote(ctx context.Context, ct CacheObjectType, ar
 		return false, fmt.Errorf("Error contacting cache: %s", err)
 	}
 	if !exists {
-		fmt.Println("build-cache: object not found:", obj.ObjectName())
+		//fmt.Println("build-cache: object not found:", obj.ObjectName())
 		return false, nil
 	}
 

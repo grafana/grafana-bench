@@ -3,9 +3,10 @@ package builder
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"path"
+	"strings"
 
 	"github.com/grafana/grafana-bench/bench/buildcache"
 	"github.com/grafana/grafana-bench/bench/utils"
@@ -41,28 +42,28 @@ type Build struct {
 	Resolved bool `json:"resolved"`
 }
 
-// Synchronous method to build grafana. Checks buildcache and returns nil if build is already
-// resolved.
+// Synchronous method to build grafana.
+// Creating a new build checks if build is in the cache. We don't check here in
+// the event that we want to redo a build
 func (b *Build) Run(ctx context.Context) error {
-
-	resolved, err := b.BuildCache.Resolve(ctx, buildcache.TypeBuild, b.ArtifactBuildName)
-	if err != nil && resolved {
-		b.Resolved = true
-		return nil
-	}
-
 	// ensure build suite exists and up to date
 	if err := b.ResolveBuildSuite(); err != nil {
 		return err
 	}
 
-	// run command
-	err = utils.DoInDir(b.LocalDir, b.buildSuiteDir, func() error {
-		// Note, verbose and distro must be provided at the end of the command
-		err := sh.RunV("go", "run", "./cmd", "backend", "build",
+	// do the build
+	err := utils.DoInDir(b.LocalDir, b.buildSuiteDir, func() error {
+
+		// cmd - note, verbose and distro must be provided at the end of the command
+		cmd := []string{"run", "./cmd", "backend", "build",
 			fmt.Sprintf("--distro=%s", b.Arch),
 			fmt.Sprintf("--grafana-ref=%s", b.GrafanaRevision),
-			"--verbose")
+			"--verbose",
+		}
+
+		fmt.Println("builder: running command go", strings.Join(cmd, ""))
+
+		err := sh.RunV("go", cmd...)
 		return err
 	})
 	if err != nil {
@@ -109,7 +110,7 @@ func (b *Build) GetDefaultINI(ctx context.Context) ([]byte, error) {
 	}
 	defer response.Body.Close()
 
-	body, err := ioutil.ReadAll(response.Body)
+	body, err := io.ReadAll(response.Body)
 	if err != nil {
 		return []byte{}, err
 	}
