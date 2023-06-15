@@ -37,8 +37,8 @@ func (p *ProvisionState) Provision(ctx context.Context) (func() error, error) {
 	return p.driver.Provision(ctx, p)
 }
 
-func (p *ProvisionState) Check(ctx context.Context) error {
-	return p.driver.Ready(ctx, p)
+func (p *ProvisionState) WaitForReady(ctx context.Context) {
+	p.driver.WaitForReady(ctx, p)
 }
 
 func (p *ProvisionState) Destroy(ctx context.Context) error {

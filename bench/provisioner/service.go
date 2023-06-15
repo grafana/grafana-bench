@@ -94,12 +94,20 @@ func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *bu
 // Wait for the server to start up
 func WaitForLiveGrafana(address string) {
 	for {
-		_, err := net.Dial("tcp", address)
-		if err == nil {
+		if IsLive(address) {
 			fmt.Println("Server is ready!")
 			break
 		}
-		fmt.Println("Waiting for server...")
+		fmt.Printf("Waiting for server on %s...\n", address)
 		time.Sleep(time.Second)
 	}
+}
+
+func IsLive(address string) bool {
+	_, err := net.Dial("tcp", address)
+	if err == nil {
+		return true
+	}
+
+	return false
 }

@@ -8,7 +8,6 @@ import (
 
 	"github.com/grafana/grafana-bench/bench/buildcache"
 	"github.com/grafana/grafana-bench/bench/utils"
-	"github.com/magefile/mage/sh"
 )
 
 type LocalDriver struct {
@@ -41,7 +40,10 @@ func (l *LocalDriver) Provision(ctx context.Context, ps *ProvisionState) (func()
 		return nil
 	}
 
-	err = utils.DoInDir(ps.WorkDir, "work", func() error {
+	fmt.Println(utils.Getwd())
+	fmt.Println(ps.WorkDir)
+
+	err = utils.DoInDir(utils.Getwd(), ps.WorkDir, func() error {
 		if err := cmd.Start(); err != nil {
 			fmt.Println("Error starting server:", err)
 			return err
@@ -53,26 +55,25 @@ func (l *LocalDriver) Provision(ctx context.Context, ps *ProvisionState) (func()
 		return killFunc, err
 	}
 
+	// TODO figure out how to get this info
+	ps.GrafanaAddress = "localhost:3000"
+
 	return killFunc, nil
 }
 
+func (l *LocalDriver) WaitForReady(ctx context.Context, ps *ProvisionState) {
+	WaitForLiveGrafana(ps.GrafanaAddress)
+}
+
 // Check - checks if Grafana + test runner are ready
-func (l *LocalDriver) Ready(ctx context.Context, ps *ProvisionState) error {
-	// check if grafana is running
-	return nil
+func (l *LocalDriver) Ready(ctx context.Context, ps *ProvisionState) bool {
+	return IsLive(ps.GrafanaAddress)
 }
 
 // Destroy - destroys a provisioned instance of Grafana + test runner
 func (l *LocalDriver) Destroy(ctx context.Context, ps *ProvisionState) error {
 	return nil
 }
-
-// START HERE
-// reworking the buildcache to work with ini + builds. this will probably break
-// the CLI as is but it will allow us to use the build cache when provisioning.
-// 1. finish getting local provisioner plumbed
-// 2. fix cli so that we can test it
-// 3. start working on making the cli use the provisioner
 
 // setupWorkdir sets up directory with configs needed for testing a grafana
 // build. This method expects the BuildArtifactPath to exist on disk.
@@ -120,7 +121,7 @@ func (l *LocalDriver) setupWorkdir(ctx context.Context, ps *ProvisionState) (str
 	// copy custom.ini into work dir
 	if ps.CustomGrafanaINIPath != "" {
 		customIniWorkPath := path.Join(ps.WorkDir, "conf", "custom.ini")
-		if err := sh.Run("cp", ps.CustomGrafanaINIPath, customIniWorkPath); err != nil {
+		if err := utils.Cp(ps.CustomGrafanaINIPath, customIniWorkPath); err != nil {
 			return "", err
 		}
 	}

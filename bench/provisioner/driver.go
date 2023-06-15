@@ -8,8 +8,11 @@ type ProvisionDriver interface {
 	// Provision provisions the required resources.
 	Provision(ctx context.Context, ps *ProvisionState) (func() error, error)
 
-	// Check performs a health check on the provisioned resources.
-	Ready(ctx context.Context, ps *ProvisionState) error
+	// Blocking operation that waits for ProvisionState.GrafanaAddress to become responsive
+	WaitForReady(ctx context.Context, ps *ProvisionState)
+
+	// Checks to see if Grafana server is running on ProvisionState.GrafanaAddress
+	Ready(ctx context.Context, ps *ProvisionState) bool
 
 	// Destroy tears down the provisioned resources.
 	Destroy(ctx context.Context, ps *ProvisionState) error

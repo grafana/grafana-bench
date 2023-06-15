@@ -6,7 +6,11 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/signal"
 	"path"
+	"strings"
+	"syscall"
 
 	"github.com/grafana/grafana-bench/bench"
 	"github.com/grafana/grafana-bench/bench/buildcache"
@@ -18,6 +22,9 @@ import (
 // If you're adding or changing logic, that should happen in the bench/ package
 
 var BenchService *bench.BenchService = CLIServiceDefaults(context.Background())
+
+// Get GoEnv from system running mage
+var goEnv = utils.GetCompilerEnvInfo()
 
 // Function to set defaults for CLI.
 func CLIServiceDefaults(ctx context.Context) *bench.BenchService {
@@ -32,10 +39,29 @@ func CLIServiceDefaults(ctx context.Context) *bench.BenchService {
 	return svc
 }
 
+// Gets the architecture of the machine running Bench
+func defaultArch() string {
+	sys_os := goEnv["GOOS"]
+	sys_arch := goEnv["GOARCH"]
+	return fmt.Sprintf("%s/%s", strings.ToLower(sys_os), strings.ToLower(sys_arch))
+}
+
+// Get environment variable or default
+func envOrDefault(environmentVarName, defaultValue string) string {
+	v := os.Getenv(environmentVarName)
+	if v == "" {
+		return defaultValue
+	}
+
+	return v
+}
+
 func TestME(ctx context.Context) error {
+	grafanaRevision := envOrDefault("GRAFANA_REVISION", "branch:main")
+	grafanaArch := envOrDefault("GRAFANA_ARCH", defaultArch())
 
 	// create a build with some defaults do the build if it's not resolved
-	build, err := BenchService.Builder.New(ctx, "branch:main", "darwin/arm64")
+	build, err := BenchService.Builder.New(ctx, grafanaRevision, grafanaArch)
 	if err != nil {
 		return err
 	}
@@ -67,6 +93,20 @@ func TestME(ctx context.Context) error {
 	}
 	defer killFunc()
 
+	ps.WaitForReady(ctx)
+
+	// START HERE
+	// start moving test logic over to test service
+	// run the test
+	// defer KillFunc should handle teardown of grafana once test is complete
+
+	// wait for signal to kill grafana
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	<-sigs
+	fmt.Println("Shutting down grafana process")
+	return nil
+
 	// test the build
 	//test, err := BenchService.Tester.New(ctx, ps)
 	//if err != nil {
@@ -81,7 +121,6 @@ func TestME(ctx context.Context) error {
 	// teardown the build
 	//return ps.Destroy(ctx)
 
-	return nil
 }
 
 // Build builds a grafana binary and stores it in the artifacts folder
