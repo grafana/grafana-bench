@@ -51,8 +51,9 @@ func (bs *BuilderService) New(ctx context.Context, grafanaRevision, arch string)
 	resolved := iniResolved && buildResolved
 
 	return &Build{
-		BuilderService:    bs,
-		Arch:              "linux/amd64",
+		BuilderService: bs,
+		// TODO fix this to get the arch
+		Arch:              "darwin/arm64",
 		GrafanaRevision:   gitRef,
 		ArtifactBuildName: artifactBuildName,
 		ArtifactININame:   artifactININame,

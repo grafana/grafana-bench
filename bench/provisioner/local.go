@@ -92,44 +92,17 @@ func (l *LocalDriver) setupWorkdir(ctx context.Context, ps *ProvisionState) (str
 		return "", fmt.Errorf("build-cache: error checking for defaults.ini: %w", err)
 	}
 	if !resolved {
-		return "", fmt.Errorf("build-cache: defaults.ini not found: %s", ps.Build.ArtifactBuildName)
+		return "", fmt.Errorf("build-cache: defaults.ini not found: %s", ps.Build.ArtifactININame)
 	}
 
 	// delete old workdir if exists
 	if err := utils.Rm(ps.WorkDir); err != nil {
-		return "", err
+		return "", fmt.Errorf("provisioner: error deleting workdir: %w", err)
 	}
 
 	// copy template directory
 	if err := utils.Cp(ps.TemplateDir, ps.WorkDir); err != nil {
-		return "", err
-	}
-
-	// TODO Move all of the logic to get the INI into the build
-	iniName := IniFilename(ps.GrafanaRevision)
-	iniWorkPath := path.Join(ps.WorkDir, "conf", "defaults.ini")
-
-	exists, err := l.buildCache.Resolve(ctx, buildcache.TypeINI, iniName)
-	if err != nil {
-		return "", fmt.Errorf("build-cache: error retrieving ini artifact err: %w", err)
-	}
-	// if doesn't exist, write to workdir and call cache on it.
-	if !exists {
-		err := GetBuildINI(ctx, ps.GrafanaRevision, iniWorkPath)
-		if err != nil {
-			return "", err
-		}
-
-		err = l.buildCache.StoreFile(ctx, buildcache.TypeINI, iniWorkPath, iniName)
-		if err != nil {
-			fmt.Println("build-cache: error storing ini artifact: ", err)
-		}
-		// get from cache
-	} else {
-		err := l.buildCache.Retrieve(ctx, buildcache.TypeINI, iniName, iniWorkPath)
-		if err != nil {
-			return "", err
-		}
+		return "", fmt.Errorf("provisioner: error copying template directory: %s - %w", ps.TemplateDir, err)
 	}
 
 	// Copy executable into work dir

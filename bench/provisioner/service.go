@@ -20,12 +20,26 @@ type ProvisionerService struct {
 	TemplateDir string
 }
 
-func NewProvisioner(ctx context.Context, localDir string, bc *buildcache.BuildCache, vmEnabled bool, templateDir string) *ProvisionerService {
+func NewProvisioner(ctx context.Context, localDir string, bc *buildcache.BuildCache, vmEnabled bool, templateDir string) (*ProvisionerService, error) {
+
+	if localDir == "" {
+		return nil, fmt.Errorf("provisioner: local directory cannot be empty")
+	}
+
+	if bc == nil {
+		return nil, fmt.Errorf("provisioner: build cache cannot be nil")
+	}
+
+	if templateDir == "" {
+		return nil, fmt.Errorf("provisioner: template directory cannot be empty")
+	}
+
 	return &ProvisionerService{
 		LocalDir:    localDir,
 		VMEnabled:   vmEnabled,
 		TemplateDir: templateDir,
-	}
+		BuildCache:  bc,
+	}, nil
 }
 
 type ProvisionType string
@@ -53,11 +67,12 @@ func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *bu
 	}
 
 	state := &ProvisionState{
-		driver:     driver,
-		Identifier: uuid.String(),
-		Type:       t,
-		WorkDir:    workDir,
-		Build:      build,
+		driver:      driver,
+		Identifier:  uuid.String(),
+		Type:        t,
+		WorkDir:     workDir,
+		TemplateDir: p.TemplateDir,
+		Build:       build,
 	}
 
 	err := os.MkdirAll(state.WorkDir, 0755)
