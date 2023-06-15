@@ -77,19 +77,31 @@ func (l *LocalDriver) Destroy(ctx context.Context, ps *ProvisionState) error {
 // setupWorkdir sets up directory with configs needed for testing a grafana
 // build. This method expects the BuildArtifactPath to exist on disk.
 func (l *LocalDriver) setupWorkdir(ctx context.Context, ps *ProvisionState) (string, error) {
-	// verify executable exists
-	exists, _ := utils.PathExists(ps.GrafanaPath)
-	if !exists {
-		return "", fmt.Errorf("grafana executable does not exist at %s", ps.GrafanaPath)
+	// verify build artifact exists in the buildcache
+	resolved, err := l.buildCache.Resolve(ctx, buildcache.TypeBuild, ps.Build.ArtifactBuildName)
+	if err != nil {
+		return "", fmt.Errorf("build-cache: error checking for grafana executable : %w", err)
+	}
+	if !resolved {
+		return "", fmt.Errorf("build-cache: grafana executable not found: %s", ps.Build.ArtifactBuildName)
+	}
+
+	// verify defaults.ini exists in the buildcache
+	resolved, err = l.buildCache.Resolve(ctx, buildcache.TypeINI, ps.Build.ArtifactININame)
+	if err != nil {
+		return "", fmt.Errorf("build-cache: error checking for defaults.ini: %w", err)
+	}
+	if !resolved {
+		return "", fmt.Errorf("build-cache: defaults.ini not found: %s", ps.Build.ArtifactBuildName)
 	}
 
 	// delete old workdir if exists
-	if err := sh.RunV("rm", "-rf", path.Join(ps.WorkDir)); err != nil {
+	if err := utils.Rm(ps.WorkDir); err != nil {
 		return "", err
 	}
 
 	// copy template directory
-	if err := sh.RunV("cp", "-r", ps.TemplateDir, ps.WorkDir); err != nil {
+	if err := utils.Cp(ps.TemplateDir, ps.WorkDir); err != nil {
 		return "", err
 	}
 
@@ -97,7 +109,7 @@ func (l *LocalDriver) setupWorkdir(ctx context.Context, ps *ProvisionState) (str
 	iniName := IniFilename(ps.GrafanaRevision)
 	iniWorkPath := path.Join(ps.WorkDir, "conf", "defaults.ini")
 
-	exists, err := l.buildCache.Resolve(ctx, buildcache.IniObj, iniName)
+	exists, err := l.buildCache.Resolve(ctx, buildcache.TypeINI, iniName)
 	if err != nil {
 		return "", fmt.Errorf("build-cache: error retrieving ini artifact err: %w", err)
 	}
@@ -108,16 +120,28 @@ func (l *LocalDriver) setupWorkdir(ctx context.Context, ps *ProvisionState) (str
 			return "", err
 		}
 
-		err = l.buildCache.StoreFile(ctx, buildcache.IniObj, iniWorkPath, iniName)
+		err = l.buildCache.StoreFile(ctx, buildcache.TypeINI, iniWorkPath, iniName)
 		if err != nil {
 			fmt.Println("build-cache: error storing ini artifact: ", err)
 		}
 		// get from cache
 	} else {
-		err := l.buildCache.Retrieve(ctx, buildcache.IniObj, iniName, iniWorkPath)
+		err := l.buildCache.Retrieve(ctx, buildcache.TypeINI, iniName, iniWorkPath)
 		if err != nil {
 			return "", err
 		}
+	}
+
+	// Copy executable into work dir
+	executableDestination := path.Join(ps.WorkDir, ps.Build.ArtifactBuildName)
+	if err := l.buildCache.Retrieve(ctx, buildcache.TypeBuild, ps.Build.ArtifactBuildName, executableDestination); err != nil {
+		return "", err
+	}
+
+	// copy defaults.ini into work dir
+	iniDestination := path.Join(ps.WorkDir, "conf", "defaults.ini")
+	if err := l.buildCache.Retrieve(ctx, buildcache.TypeINI, ps.Build.ArtifactININame, iniDestination); err != nil {
+		return "", err
 	}
 
 	// copy custom.ini into work dir
@@ -126,11 +150,6 @@ func (l *LocalDriver) setupWorkdir(ctx context.Context, ps *ProvisionState) (str
 		if err := sh.Run("cp", ps.CustomGrafanaINIPath, customIniWorkPath); err != nil {
 			return "", err
 		}
-	}
-
-	executableDestination := path.Join(ps.WorkDir, ps.Build.ArtifactName)
-	if err := l.buildCache.Retrieve(ctx, buildcache.BuildObj, ps.Build.ArtifactName, executableDestination); err != nil {
-		return "", err
 	}
 
 	return executableDestination, nil

@@ -37,7 +37,7 @@ func NewBenchService(ctx context.Context, projectRoot, artifactsPath, GCSCredPat
 	// configure provisioner
 	provisionDir := path.Join(projectRoot, "provision")
 	templateDir := path.Join(projectRoot, "templates")
-	p := provisioner.NewProvisioner(ctx, provisionDir, false, templateDir)
+	p := provisioner.NewProvisioner(ctx, provisionDir, buildCache, false, templateDir)
 
 	// configure tester
 	testDir := path.Join(projectRoot, "tests")

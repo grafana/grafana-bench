@@ -34,7 +34,8 @@ type Build struct {
 	// Short name to reference
 	GrafanaIniPath string `json:"grafanaIni"`
 
-	ArtifactName string
+	ArtifactBuildName string `json:"artifactBuildName"`
+	ArtifactININame   string `json:"ArtifactININame"`
 
 	// Determines whether build is complete
 	Resolved bool `json:"resolved"`
@@ -44,7 +45,7 @@ type Build struct {
 // resolved.
 func (b *Build) Run(ctx context.Context) error {
 
-	resolved, err := b.BuildCache.Resolve(ctx, buildcache.BuildObj, b.ArtifactName)
+	resolved, err := b.BuildCache.Resolve(ctx, buildcache.TypeBuild, b.ArtifactBuildName)
 	if err != nil && resolved {
 		b.Resolved = true
 		return nil
@@ -70,7 +71,7 @@ func (b *Build) Run(ctx context.Context) error {
 
 	// cache the build
 	grafanaExecutablePath := path.Join(b.buildSuiteDir, "bin", b.Arch, "grafana")
-	if err := b.BuildCache.StoreFile(ctx, buildcache.BuildObj, grafanaExecutablePath, b.ArtifactName); err != nil {
+	if err := b.BuildCache.StoreFile(ctx, buildcache.TypeBuild, grafanaExecutablePath, b.ArtifactBuildName); err != nil {
 		return err
 	}
 
@@ -81,7 +82,7 @@ func (b *Build) Run(ctx context.Context) error {
 	}
 
 	// cache the ini
-	err = b.BuildCache.StoreBytes(ctx, buildcache.IniObj, iniString, getIniArtifactName(b.GrafanaRevision))
+	err = b.BuildCache.StoreBytes(ctx, buildcache.TypeINI, iniString, getArtifactININame(b.GrafanaRevision))
 	if err != nil {
 		return err
 	}
@@ -94,7 +95,7 @@ func (b *Build) Run(ctx context.Context) error {
 
 // Gets a presigned url for the build
 func (b *Build) GetPresignedUrl(ctx context.Context) (string, error) {
-	return b.BuildCache.GetPresignedUrl(ctx, buildcache.BuildObj, b.ArtifactName)
+	return b.BuildCache.GetPresignedUrl(ctx, buildcache.TypeBuild, b.ArtifactBuildName)
 }
 
 func (b *Build) GetDefaultINI(ctx context.Context) ([]byte, error) {

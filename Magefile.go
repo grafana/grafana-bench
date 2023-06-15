@@ -35,7 +35,7 @@ func CLIServiceDefaults(ctx context.Context) *bench.BenchService {
 func TestME(ctx context.Context) error {
 
 	// create a build with some defaults do the build if it's not resolved
-	build, err := BenchService.Builder.New("branch:main", "darwin/arm64")
+	build, err := BenchService.Builder.New(ctx, "branch:main", "darwin/arm64")
 	if err != nil {
 		return err
 	}
@@ -47,7 +47,7 @@ func TestME(ctx context.Context) error {
 	}
 
 	// verify build exists in the cache
-	resolved, err := BenchService.BuildCache.Resolve(ctx, buildcache.BuildObj, build.ArtifactName)
+	resolved, err := BenchService.BuildCache.Resolve(ctx, buildcache.TypeBuild, build.ArtifactBuildName)
 	if err != nil {
 		return err
 	}

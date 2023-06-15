@@ -1,6 +1,7 @@
 package builder
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -29,22 +30,33 @@ func NewBuildService(localdir string, buildcache *buildcache.BuildCache) *Builde
 }
 
 // Creates a new build ref used to build Grafana
-func (bs *BuilderService) New(grafanaRevision, arch string) (*Build, error) {
+func (bs *BuilderService) New(ctx context.Context, grafanaRevision, arch string) (*Build, error) {
 	gitRef, err := resolveGrafanaRevision(grafanaRevision)
 	if err != nil {
 		return nil, err
 	}
 
-	artifactName := getBuildArtifactName(gitRef, arch)
+	artifactBuildName := getArtifactBuildName(gitRef, arch)
+	buildResolved, err := bs.BuildCache.Resolve(ctx, buildcache.TypeBuild, artifactBuildName)
+	if err != nil {
+		return nil, fmt.Errorf("build-service: could not resolve build: %w", err)
+	}
 
-	// TODO check if build/ini exist in cache and autoresolve
+	artifactININame := getArtifactININame(gitRef)
+	iniResolved, err := bs.BuildCache.Resolve(ctx, buildcache.TypeINI, artifactININame)
+	if err != nil {
+		return nil, fmt.Errorf("build-service: could not resolve build: %w", err)
+	}
+
+	resolved := iniResolved && buildResolved
 
 	return &Build{
-		BuilderService:  bs,
-		Arch:            "linux/amd64",
-		GrafanaRevision: gitRef,
-		ArtifactName:    artifactName,
-		Resolved:        false,
+		BuilderService:    bs,
+		Arch:              "linux/amd64",
+		GrafanaRevision:   gitRef,
+		ArtifactBuildName: artifactBuildName,
+		ArtifactININame:   artifactININame,
+		Resolved:          resolved,
 	}, nil
 }
 

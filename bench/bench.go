@@ -87,7 +87,7 @@ func (b *BenchRun) setupWorkdir(ctx context.Context) (string, error) {
 
 	// copy artifact
 	workExecutable := path.Join(b.ProjectRoot, "work", b.BuildArtifactName)
-	if err := sh.RunV("cp", b.BuildCache.DiskPath(buildcache.BuildObj, b.BuildArtifactName), workExecutable); err != nil {
+	if err := sh.RunV("cp", b.BuildCache.DiskPath(buildcache.TypeBuild, b.BuildArtifactName), workExecutable); err != nil {
 		return "", err
 	}
 	return workExecutable, nil

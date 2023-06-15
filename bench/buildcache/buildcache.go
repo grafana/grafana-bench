@@ -102,7 +102,7 @@ func (bc *BuildCache) Resolve(ctx context.Context, ct CacheObjectType, artifactN
 
 // Writes file into local cache and remote cache
 func (bc *BuildCache) StoreFile(ctx context.Context, ct CacheObjectType, srcPath, artifactName string) error {
-	fmt.Println("build-cache: caching artifact ", ct.String(), artifactName)
+	fmt.Println("build-cache: caching artifact", ct.String(), artifactName)
 
 	// Copy to local cache if not already there
 	diskPath := bc.DiskPath(ct, artifactName)
@@ -130,7 +130,7 @@ func (bc *BuildCache) StoreFile(ctx context.Context, ct CacheObjectType, srcPath
 
 // Writes byte array to file in local cache and remote cache
 func (bc *BuildCache) StoreBytes(ctx context.Context, ct CacheObjectType, body []byte, artifactName string) error {
-	fmt.Println("build-cache: caching artifact ", ct.String(), artifactName)
+	fmt.Println("build-cache: caching artifact", ct.String(), artifactName)
 
 	// Copy to local cache if not already there
 	diskPath := bc.DiskPath(ct, artifactName)

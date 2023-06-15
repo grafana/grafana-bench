@@ -96,7 +96,7 @@ func (b *BenchRun) ResolveConfig(ctx context.Context) error {
 // behavior by setting build to false.
 func (b *BenchRun) ResolveGrafanaBuild(ctx context.Context, build bool) error {
 	fmt.Println("build-cache: resolving grafana build")
-	exists, err := b.BuildCache.Resolve(ctx, buildcache.BuildObj, b.BuildArtifactName)
+	exists, err := b.BuildCache.Resolve(ctx, buildcache.TypeBuild, b.BuildArtifactName)
 	if err != nil {
 		fmt.Println("build-cache: error resolving build:", err)
 	}

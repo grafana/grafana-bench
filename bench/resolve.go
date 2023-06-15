@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/grafana/grafana-bench/bench/builder/git"
 	"github.com/grafana/grafana-bench/bench/utils"
-	"github.com/grafana/grafana-bench/bench/utils/git"
 )
 
 func (b *BenchRun) ResolveGrafanaRevision() error {

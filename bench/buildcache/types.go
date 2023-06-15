@@ -10,15 +10,15 @@ import (
 type CacheObjectType string
 
 var (
-	BuildObj CacheObjectType = "build"
-	IniObj   CacheObjectType = "INI"
+	TypeBuild CacheObjectType = "build"
+	TypeINI   CacheObjectType = "INI"
 )
 
 func (ct CacheObjectType) String() string {
 	switch ct {
-	case BuildObj:
+	case TypeBuild:
 		return "build"
-	case IniObj:
+	case TypeINI:
 		return "ini"
 	default:
 		return "Unknown"

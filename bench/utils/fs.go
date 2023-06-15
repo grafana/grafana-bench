@@ -1,56 +1,11 @@
 package utils
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 )
-
-// rm -rf path. returns nil if file does not exist
-func Rm(path string) error {
-	info, err := os.Stat(path)
-	if os.IsNotExist(err) {
-		return nil
-	} else if err != nil {
-		return err
-	}
-
-	if info.IsDir() {
-		return os.RemoveAll(path)
-	}
-
-	return os.Remove(path)
-}
-
-// cp -r src dst
-// TODO implement me
-func CopyFolder(src, dst string) error {
-	return nil
-}
-
-// cp src dst
-func Cp(src, dst string) error {
-	source, err := os.Open(src)
-	if err != nil {
-		return fmt.Errorf("failed to open source file: %w", err)
-	}
-	defer source.Close()
-
-	destination, err := os.Create(dst)
-	if err != nil {
-		return fmt.Errorf("failed to create destination file: %w", err)
-	}
-	defer destination.Close()
-
-	_, err = io.Copy(destination, source)
-	if err != nil {
-		return fmt.Errorf("failed to copy file: %w", err)
-	}
-
-	return nil
-}
 
 // Get working directory
 func Getwd() string {
@@ -128,3 +83,108 @@ func GlobByPrefix(dir string, prefix string) ([]string, error) {
 
 	return files, err
 }
+
+// rm -rf path
+// returns nil if file does not exist
+func Rm(path string) error {
+	info, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+
+	if info.IsDir() {
+		return os.RemoveAll(path)
+	}
+
+	return os.Remove(path)
+}
+
+// cp -r src dest
+// keeps permissions in-tact
+func Cp(src, dest string) error {
+	err := filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Get the new file or directory path in the destination
+		relativePath, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+		destPath := filepath.Join(dest, relativePath)
+
+		if info.IsDir() {
+			// Create the corresponding directory in the destination
+			err = os.MkdirAll(destPath, info.Mode())
+			if err != nil {
+				return err
+			}
+		} else {
+			// Copy the file from source to destination
+			err = copyFile(path, destPath, info.Mode())
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+
+	return err
+}
+
+func copyFile(sourcePath, destPath string, mode os.FileMode) error {
+	sourceFile, err := os.Open(sourcePath)
+	if err != nil {
+		return err
+	}
+	defer sourceFile.Close()
+
+	destFile, err := os.Create(destPath)
+	if err != nil {
+		return err
+	}
+	defer destFile.Close()
+
+	_, err = io.Copy(destFile, sourceFile)
+	if err != nil {
+		return err
+	}
+
+	err = destFile.Sync()
+	if err != nil {
+		return err
+	}
+
+	err = os.Chmod(destPath, mode)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// cp src dst
+//func Cp(src, dst string) error {
+//  source, err := os.Open(src)
+//  if err != nil {
+//    return fmt.Errorf("failed to open source file: %w", err)
+//  }
+//  defer source.Close()
+
+//  destination, err := os.Create(dst)
+//  if err != nil {
+//    return fmt.Errorf("failed to create destination file: %w", err)
+//  }
+//  defer destination.Close()
+
+//  _, err = io.Copy(destination, source)
+//  if err != nil {
+//    return fmt.Errorf("failed to copy file: %w", err)
+//  }
+
+//  return nil
+//}
