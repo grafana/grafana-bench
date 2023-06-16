@@ -105,9 +105,5 @@ func WaitForLiveGrafana(address string) {
 
 func IsLive(address string) bool {
 	_, err := net.Dial("tcp", address)
-	if err == nil {
-		return true
-	}
-
-	return false
+	return err == nil
 }

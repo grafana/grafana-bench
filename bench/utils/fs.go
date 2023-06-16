@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -24,7 +25,7 @@ func Getwd() string {
 // Do function in a directory
 func DoInDir(workdir string, operationDir string, fn func() error) error {
 	if err := os.Chdir(operationDir); err != nil {
-		return err
+		return fmt.Errorf("utils: changing director <%s>: %w", operationDir, err)
 	}
 
 	// TODO find a more graceful way to log error and alert

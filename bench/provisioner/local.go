@@ -7,8 +7,12 @@ import (
 	"path"
 
 	"github.com/grafana/grafana-bench/bench/buildcache"
+	"github.com/grafana/grafana-bench/bench/tester"
 	"github.com/grafana/grafana-bench/bench/utils"
+	"github.com/magefile/mage/sh"
 )
+
+var _ ProvisionDriver = (*LocalDriver)(nil)
 
 type LocalDriver struct {
 	LocalDir   string
@@ -22,39 +26,30 @@ func NewLocalDriver(localDir string, buildCache *buildcache.BuildCache) *LocalDr
 	}
 }
 
+// Stubbed function to return when something goes wrong provisioning
+func NilFunc() error {
+	return nil
+}
+
 // Provision - provisions Grafana + test runner
 func (l *LocalDriver) Provision(ctx context.Context, ps *ProvisionState) (func() error, error) {
-	executable, err := l.setupWorkdir(ctx, ps)
+
+	// setup the directory structure
+	executable, err := l.setupGrafanaWorkdir(ctx, ps)
 	if err != nil {
-		return func() error { return nil }, err
+		return NilFunc, err
 	}
 
-	cmd := exec.Command(executable, "server")
-
-	// function to return so we can kill the process
-	killFunc := func() error {
-		err := cmd.Process.Kill()
-		if err != nil {
-			return fmt.Errorf("ERROR killing grafana PID: %w", err)
-		}
-		return nil
-	}
-
-	fmt.Println(utils.Getwd())
-	fmt.Println(ps.WorkDir)
-
-	err = utils.DoInDir(utils.Getwd(), ps.WorkDir, func() error {
-		if err := cmd.Start(); err != nil {
-			fmt.Println("Error starting server:", err)
-			return err
-		}
-		return nil
-	})
-
+	// boot grafana
+	killFunc, err := boot(ctx, ps, executable)
 	if err != nil {
-		return killFunc, err
+		return NilFunc, err
 	}
 
+	// setup test runner
+	//err = setupTestWorkdir(ctx, ps)
+
+	// Setup update provision state
 	// TODO figure out how to get this info
 	ps.GrafanaAddress = "localhost:3000"
 
@@ -72,12 +67,83 @@ func (l *LocalDriver) Ready(ctx context.Context, ps *ProvisionState) bool {
 
 // Destroy - destroys a provisioned instance of Grafana + test runner
 func (l *LocalDriver) Destroy(ctx context.Context, ps *ProvisionState) error {
+	// TODO implement me
 	return nil
 }
 
-// setupWorkdir sets up directory with configs needed for testing a grafana
+// Runs tests against a provisioned instance of Grafana
+func (l *LocalDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.TestRun) error {
+	// TODO implement me
+
+	// resolve test suite
+	err := tr.ResolveTestSuite()
+	if err != nil {
+		return fmt.Errorf("provisioner: error running test suite: %w", err)
+	}
+
+	// run k6 tests
+	err = utils.DoInDir(utils.Getwd(), tr.TestSuiteDir, func() error {
+		envVars := make(map[string]string)
+		envVars["MACHINE_SPEC"] = getMachineSpec()
+		envVars["TEST_SUITE_REVISION"] = tr.SuiteRevision
+		envVars["TEST_SUMMARY_DIR"] = tr.SummaryDir
+
+		tests, err := tr.GetTestSuiteFiles()
+		if err != nil {
+			return err
+		}
+
+		// run the tests
+		for _, testFile := range tests {
+			// k6 run tests/tests/dashboards.js
+
+			// TODO figure out how to ignore threshold errors from k6.
+			// The ones in the test may not match what we need and will exist with
+			// non-zero status code resulting in RunWithVar returning an error
+			// an error even though we don't care about it. This isn't a GREAT
+			// approach. We should figure out a way to tell k6 not to return an error
+			// if threshold is breached rather than necessarily modifying the test
+			_ = sh.RunWithV(envVars, "k6", "run", testFile, "-i", "1", "-u", "1")
+
+			// TODO maybe stdout the location of the test file
+		}
+
+		return nil
+	})
+
+	return err
+}
+
+// Boots grafana on provisioned instance of Grafana
+func boot(ctx context.Context, ps *ProvisionState, executable string) (func() error, error) {
+	cmd := exec.Command(executable, "server")
+
+	// function to return so we can kill the process
+	killFunc := func() error {
+		err := cmd.Process.Kill()
+		if err != nil {
+			return fmt.Errorf("ERROR killing grafana PID: %w", err)
+		}
+		return nil
+	}
+
+	err := utils.DoInDir(utils.Getwd(), ps.WorkDir, func() error {
+		if err := cmd.Start(); err != nil {
+			fmt.Println("Error starting server:", err)
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return NilFunc, err
+	}
+
+	return killFunc, nil
+}
+
+// Sets up directory with configs needed for testing a grafana
 // build. This method expects the BuildArtifactPath to exist on disk.
-func (l *LocalDriver) setupWorkdir(ctx context.Context, ps *ProvisionState) (string, error) {
+func (l *LocalDriver) setupGrafanaWorkdir(ctx context.Context, ps *ProvisionState) (string, error) {
 	// verify build artifact exists in the buildcache
 	resolved, err := l.buildCache.Resolve(ctx, buildcache.TypeBuild, ps.Build.ArtifactBuildName)
 	if err != nil {
@@ -127,4 +193,16 @@ func (l *LocalDriver) setupWorkdir(ctx context.Context, ps *ProvisionState) (str
 	}
 
 	return executableDestination, nil
+}
+
+// Sets up directory and ensures repo is up to date
+func setupTestWorkdir(ctx context.Context) error {
+	return nil
+}
+
+// Gets machine spec for provisioned machine
+// TODO IMPLEMENT ME
+func getMachineSpec() string {
+	// provider, process/machine, memory, # cores, clockspeed, architecture, os
+	return "local|m1max|65536|10|3.2 GHz|arm64|darwin"
 }

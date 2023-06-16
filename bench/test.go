@@ -27,7 +27,8 @@ func (b *BenchRun) Test(ctx context.Context) error {
 	// run k6 tests
 	err := utils.DoInDir(b.ProjectRoot, "tests", func() error {
 		envVars := make(map[string]string)
-		envVars["MACHINE_SPEC"] = getMachineSpec()
+		// provider, process/machine, memory, # cores, clockspeed, architecture, os
+		envVars["MACHINE_SPEC"] = "local|m1max|65536|10|3.2 GHz|arm64|darwin"
 		envVars["TEST_SUITE_REVISION"] = b.TestSuiteRevision
 		envVars["TEST_SUMMARY_DIR"] = b.TestSummaryDir
 
@@ -94,10 +95,4 @@ func getTestSuiteFiles(projectRoot, testSuite string) ([]string, error) {
 	}
 
 	return files, nil
-}
-
-// TODO IMPLEMENT ME
-func getMachineSpec() string {
-	// provider, process/machine, memory, # cores, clockspeed, architecture, os
-	return "local|m1max|65536|10|3.2 GHz|arm64|darwin"
 }

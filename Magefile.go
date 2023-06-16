@@ -7,10 +7,8 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/signal"
 	"path"
 	"strings"
-	"syscall"
 
 	"github.com/grafana/grafana-bench/bench"
 	"github.com/grafana/grafana-bench/bench/buildcache"
@@ -101,17 +99,23 @@ func TestME(ctx context.Context) error {
 	// defer KillFunc should handle teardown of grafana once test is complete
 
 	// wait for signal to kill grafana
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-	<-sigs
-	fmt.Println("Shutting down grafana process")
-	return nil
+	//sigs := make(chan os.Signal, 1)
+	//signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	//<-sigs
+	//fmt.Println("Shutting down grafana process")
+	//return nil
 
 	// test the build
-	//test, err := BenchService.Tester.New(ctx, ps)
-	//if err != nil {
-	//  return err
-	//}
+	test, err := BenchService.Tester.New(ctx)
+	if err != nil {
+		return err
+	}
+
+	// run the tests
+	err = ps.RunTests(ctx, test)
+	if err != nil {
+		return err
+	}
 
 	//err := test.Run(ctx)
 	//if err != nil {
@@ -119,7 +123,7 @@ func TestME(ctx context.Context) error {
 	//}
 
 	// teardown the build
-	//return ps.Destroy(ctx)
+	return ps.Destroy(ctx)
 
 }
 

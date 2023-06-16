@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/grafana/grafana-bench/bench/builder"
+	"github.com/grafana/grafana-bench/bench/tester"
 )
 
 type ProvisionState struct {
@@ -43,4 +44,8 @@ func (p *ProvisionState) WaitForReady(ctx context.Context) {
 
 func (p *ProvisionState) Destroy(ctx context.Context) error {
 	return p.driver.Destroy(ctx, p)
+}
+
+func (p *ProvisionState) RunTests(ctx context.Context, tr *tester.TestRun) error {
+	return p.driver.RunTests(ctx, p, tr)
 }
