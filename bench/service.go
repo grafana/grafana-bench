@@ -2,7 +2,6 @@ package bench
 
 import (
 	"context"
-	"fmt"
 	"path"
 
 	"github.com/grafana/grafana-bench/bench/buildcache"
@@ -38,7 +37,6 @@ func NewBenchService(ctx context.Context, projectRoot, artifactsPath, GCSCredPat
 	// configure provisioner
 	provisionDir := path.Join(projectRoot, "provision")
 	templateDir := path.Join(projectRoot, "templates")
-	fmt.Println(templateDir)
 	p, err := provisioner.NewProvisioner(ctx, provisionDir, buildCache, false, templateDir)
 	if err != nil {
 		return nil, err

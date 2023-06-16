@@ -2,10 +2,12 @@ package tester
 
 import (
 	"fmt"
+	"os"
 	"path"
 	"strings"
 
 	"github.com/grafana/grafana-bench/bench/utils"
+	"github.com/magefile/mage/sh"
 )
 
 type TestRun struct {
@@ -16,9 +18,47 @@ type TestRun struct {
 
 	// git hash of the test suite
 	SuiteRevision string
+}
 
-	// output directory for test results
-	SummaryDir string
+// Resolves test suite for the test run
+// TODO: it might make sense to clone this for each build in the future, but for
+// now we're just going to linnk the build suite to the service.
+// This could probably be optimized for less checkouts/etc later
+func (tr *TestRun) ResolveTestSuite() error {
+	// create the summary dir
+	err := os.MkdirAll(tr.SummaryDir, 0755)
+	if err != nil {
+		return fmt.Errorf("test-run: could not clone build suite: %w", err)
+	}
+
+	// clone repo if doesn't exist
+	exists, _ := utils.PathExists(tr.TestSuiteDir)
+	if !exists {
+		fmt.Println("test-run: cloning build suite")
+		if err := sh.RunV("git", "clone", "https://github.com/grafana/grafana-api-tests", tr.TestSuiteDir); err != nil {
+			return fmt.Errorf("test-run: Error checking out grafana test repo %s", err)
+		}
+	}
+
+	// update repo + checkout branch
+	err = utils.DoInDir(tr.LocalDir, tr.TestSuiteDir, func() error {
+		if err := sh.RunV("git", "checkout", "main"); err != nil {
+			return fmt.Errorf("test-run: Error checking out grafana test repo %s", err)
+		}
+
+		if err := sh.RunV("git", "pull"); err != nil {
+			return err
+		}
+
+		// checkout if not main
+		if tr.SuiteRevision != "main" {
+			return sh.RunV("git", "checkout", tr.SuiteRevision)
+		}
+
+		return nil
+	})
+
+	return err
 }
 
 // GetTestSuiteFiles builds a list of k6 tests to run based on TestFiles
@@ -41,7 +81,7 @@ func (tr *TestRun) GetTestSuiteFiles() ([]string, error) {
 		p := path.Join(tr.TestSuiteDir, "tests", tr.testSuite)
 		exists, _ := utils.PathExists(p)
 		if !exists {
-			return []string{}, fmt.Errorf("tester: File %s was not found", p)
+			return []string{}, fmt.Errorf("test-run: File %s was not found", p)
 		}
 		return []string{p}, nil
 	}
@@ -49,7 +89,7 @@ func (tr *TestRun) GetTestSuiteFiles() ([]string, error) {
 	d := path.Join(tr.TestSuiteDir, "tests", tr.testSuite)
 	exists, _ := utils.PathExists(d)
 	if !exists {
-		return []string{}, fmt.Errorf("tester: Path %s was not found", d)
+		return []string{}, fmt.Errorf("test-run: Path %s was not found", d)
 	}
 
 	files, err := utils.GlobByExtension(d, ".js")

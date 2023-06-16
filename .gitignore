@@ -1,5 +1,6 @@
 # ignore repos we depend on
 tests/
+test/
 build/
 artifacts/
 work/

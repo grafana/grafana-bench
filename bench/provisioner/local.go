@@ -95,6 +95,8 @@ func (l *LocalDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *test
 
 		// run the tests
 		for _, testFile := range tests {
+			fmt.Println("provisioner: running test file:", testFile)
+
 			// k6 run tests/tests/dashboards.js
 
 			// TODO figure out how to ignore threshold errors from k6.
@@ -122,8 +124,9 @@ func boot(ctx context.Context, ps *ProvisionState, executable string) (func() er
 	killFunc := func() error {
 		err := cmd.Process.Kill()
 		if err != nil {
-			return fmt.Errorf("ERROR killing grafana PID: %w", err)
+			return fmt.Errorf("provisioner: ERROR killing grafana PID: %w", err)
 		}
+		fmt.Println("provisioner: shutdown grafana pid ", cmd.Process.Pid)
 		return nil
 	}
 

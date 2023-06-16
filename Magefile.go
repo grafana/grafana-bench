@@ -44,7 +44,7 @@ func defaultArch() string {
 	return fmt.Sprintf("%s/%s", strings.ToLower(sys_os), strings.ToLower(sys_arch))
 }
 
-// Get environment variable or default
+// Get environment variable or use default value
 func envOrDefault(environmentVarName, defaultValue string) string {
 	v := os.Getenv(environmentVarName)
 	if v == "" {
@@ -106,13 +106,16 @@ func TestME(ctx context.Context) error {
 	//return nil
 
 	// test the build
-	test, err := BenchService.Tester.New(ctx)
+	testRun, err := BenchService.Tester.New(ctx, "jalevin/test")
 	if err != nil {
 		return err
 	}
 
+	fmt.Printf("%#v\n", testRun)
+	fmt.Printf("%#v\n", testRun.TesterService)
+
 	// run the tests
-	err = ps.RunTests(ctx, test)
+	err = ps.RunTests(ctx, testRun)
 	if err != nil {
 		return err
 	}
