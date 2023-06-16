@@ -93,26 +93,11 @@ func TestME(ctx context.Context) error {
 
 	ps.WaitForReady(ctx)
 
-	// START HERE
-	// start moving test logic over to test service
-	// run the test
-	// defer KillFunc should handle teardown of grafana once test is complete
-
-	// wait for signal to kill grafana
-	//sigs := make(chan os.Signal, 1)
-	//signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-	//<-sigs
-	//fmt.Println("Shutting down grafana process")
-	//return nil
-
 	// test the build
-	testRun, err := BenchService.Tester.New(ctx, "jalevin/test")
+	testRun, err := BenchService.Tester.New(ctx, "jalevin/test", "dashboards/dashboard_create.js")
 	if err != nil {
 		return err
 	}
-
-	fmt.Printf("%#v\n", testRun)
-	fmt.Printf("%#v\n", testRun.TesterService)
 
 	// run the tests
 	err = ps.RunTests(ctx, testRun)
@@ -120,14 +105,8 @@ func TestME(ctx context.Context) error {
 		return err
 	}
 
-	//err := test.Run(ctx)
-	//if err != nil {
-	//  return err
-	//}
-
 	// teardown the build
 	return ps.Destroy(ctx)
-
 }
 
 // Build builds a grafana binary and stores it in the artifacts folder

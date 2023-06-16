@@ -23,12 +23,10 @@ func NewTester(ctx context.Context, localDir string) *TesterService {
 	}
 }
 
-func (t *TesterService) New(ctx context.Context, suiteRevision string) (*TestRun, error) {
-	defaultTestSuite := "dashboards"
-
+func (t *TesterService) New(ctx context.Context, suiteRevision, tests string) (*TestRun, error) {
 	return &TestRun{
 		TesterService: t,
 		SuiteRevision: suiteRevision,
-		testSuite:     defaultTestSuite,
+		Tests:         tests,
 	}, nil
 }

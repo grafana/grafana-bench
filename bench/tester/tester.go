@@ -13,8 +13,8 @@ import (
 type TestRun struct {
 	*TesterService
 
-	// folder in the test suite to run
-	testSuite string
+	// relative path to file or folder to run in the test suite
+	Tests string
 
 	// git hash of the test suite
 	SuiteRevision string
@@ -71,14 +71,14 @@ func (tr *TestRun) ResolveTestSuite() error {
 // TODO further investigate using k6 scenarios - https://k6.io/docs/using-k6/scenarios/
 func (tr *TestRun) GetTestSuiteFiles() ([]string, error) {
 	// default to dashboards test suite
-	if tr.testSuite == "" {
-		tr.testSuite = "dashboards"
+	if tr.Tests == "" {
+		tr.Tests = "dashboards"
 	}
 
 	// single file if we have .js extension
-	if strings.Contains(tr.testSuite, ".js") {
+	if strings.Contains(tr.Tests, ".js") {
 		// verify existence of absolute path
-		p := path.Join(tr.TestSuiteDir, "tests", tr.testSuite)
+		p := path.Join(tr.TestSuiteDir, "tests", tr.Tests)
 		exists, _ := utils.PathExists(p)
 		if !exists {
 			return []string{}, fmt.Errorf("test-run: File %s was not found", p)
@@ -86,7 +86,7 @@ func (tr *TestRun) GetTestSuiteFiles() ([]string, error) {
 		return []string{p}, nil
 	}
 
-	d := path.Join(tr.TestSuiteDir, "tests", tr.testSuite)
+	d := path.Join(tr.TestSuiteDir, "tests", tr.Tests)
 	exists, _ := utils.PathExists(d)
 	if !exists {
 		return []string{}, fmt.Errorf("test-run: Path %s was not found", d)
