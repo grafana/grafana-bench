@@ -26,11 +26,6 @@ func NewLocalDriver(localDir string, buildCache *buildcache.BuildCache) *LocalDr
 	}
 }
 
-// Stubbed function to return when something goes wrong provisioning
-func NilFunc() error {
-	return nil
-}
-
 // Provision - provisions Grafana + test runner
 func (l *LocalDriver) Provision(ctx context.Context, ps *ProvisionState) (func() error, error) {
 
@@ -56,6 +51,7 @@ func (l *LocalDriver) Provision(ctx context.Context, ps *ProvisionState) (func()
 	return killFunc, nil
 }
 
+// Blocking call that waits for grafana to become ready
 func (l *LocalDriver) WaitForReady(ctx context.Context, ps *ProvisionState) {
 	WaitForLiveGrafana(ps.GrafanaAddress)
 }
@@ -67,14 +63,20 @@ func (l *LocalDriver) Ready(ctx context.Context, ps *ProvisionState) bool {
 
 // Destroy - destroys a provisioned instance of Grafana + test runner
 func (l *LocalDriver) Destroy(ctx context.Context, ps *ProvisionState) error {
-	// TODO implement me
-	return nil
+	// kill the process
+	err := ps.killFunc()
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("removing state directory:", ps.LocalDir)
+
+	// remove the state directory
+	return utils.Rm(ps.LocalDir)
 }
 
 // Runs tests against a provisioned instance of Grafana
 func (l *LocalDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.TestRun) error {
-	// TODO implement me
-
 	// resolve test suite
 	err := tr.ResolveTestSuite()
 	if err != nil {
@@ -87,6 +89,9 @@ func (l *LocalDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *test
 		envVars["MACHINE_SPEC"] = getMachineSpec()
 		envVars["TEST_SUITE_REVISION"] = tr.SuiteRevision
 		envVars["TEST_SUMMARY_DIR"] = tr.SummaryDir
+
+		// set port number
+		//GF_SERVER_HTTP_PORT=9191
 
 		tests, err := tr.GetTestSuiteFiles()
 		if err != nil {
@@ -196,11 +201,6 @@ func (l *LocalDriver) setupGrafanaWorkdir(ctx context.Context, ps *ProvisionStat
 	}
 
 	return executableDestination, nil
-}
-
-// Sets up directory and ensures repo is up to date
-func setupTestWorkdir(ctx context.Context) error {
-	return nil
 }
 
 // Gets machine spec for provisioned machine

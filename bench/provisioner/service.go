@@ -58,7 +58,11 @@ func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *bu
 	uuid := uuid.Must(uuid.NewRandom())
 	fmt.Println("provisioner: new state identifier:", uuid.String())
 
-	workDir := path.Join(p.LocalDir, uuid.String(), "work")
+	localDir := path.Join(p.LocalDir, uuid.String())
+	workDir := path.Join(localDir, "work")
+	stateDir := path.Join(localDir, "state")
+
+	fmt.Println("provisioner: local path:", localDir)
 
 	var driver *LocalDriver
 	switch t {
@@ -70,7 +74,9 @@ func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *bu
 		driver:      driver,
 		Identifier:  uuid.String(),
 		Type:        t,
+		LocalDir:    localDir,
 		WorkDir:     workDir,
+		StateDir:    stateDir,
 		TemplateDir: p.TemplateDir,
 		Build:       build,
 	}

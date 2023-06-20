@@ -24,3 +24,8 @@ type ProvisionDriver interface {
 	// Destroy tears down the provisioned resources.
 	Destroy(ctx context.Context, ps *ProvisionState) error
 }
+
+// Stubbed function to return when something goes wrong provisioning
+func NilFunc() error {
+	return nil
+}
