@@ -14,6 +14,7 @@ import (
 // node
 type BenchService struct {
 	// Configured at runtime
+	// TODO deprecate once we've removed mage functions
 	ProjectRoot string
 	BuildCache  *buildcache.BuildCache
 
@@ -22,7 +23,7 @@ type BenchService struct {
 	Tester      *tester.TesterService
 }
 
-func NewBenchService(ctx context.Context, projectRoot, artifactsPath, GCSCredPath, bucketName string) (*BenchService, error) {
+func NewBenchService(ctx context.Context, workPath, artifactsPath, GCSCredPath, bucketName string) (*BenchService, error) {
 
 	// configure the cache
 	buildCache, err := buildcache.NewBuildCache(ctx, artifactsPath, GCSCredPath, bucketName)
@@ -31,23 +32,24 @@ func NewBenchService(ctx context.Context, projectRoot, artifactsPath, GCSCredPat
 	}
 
 	// configure builder
-	buildDir := path.Join(projectRoot, "build")
+	buildDir := path.Join(workPath, "build")
 	b := builder.NewBuildService(buildDir, buildCache)
 
 	// configure provisioner
-	provisionDir := path.Join(projectRoot, "provision")
-	templateDir := path.Join(projectRoot, "templates")
-	p, err := provisioner.NewProvisioner(ctx, provisionDir, buildCache, false, templateDir)
+	provisionDir := path.Join(workPath, "provision")
+	grafanaTemplateDir := path.Join(workPath, "grafanaTemplate")
+	p, err := provisioner.NewProvisioner(ctx, provisionDir, buildCache, false, grafanaTemplateDir)
 	if err != nil {
 		return nil, err
 	}
 
 	// configure tester
-	testDir := path.Join(projectRoot, "test")
+	testDir := path.Join(workPath, "test")
 	t := tester.NewTester(ctx, testDir)
 
 	return &BenchService{
-		ProjectRoot: projectRoot,
+		// deprecate
+		ProjectRoot: workPath,
 		BuildCache:  buildCache,
 		Builder:     b,
 		Provisioner: p,

@@ -26,11 +26,13 @@ var goEnv = utils.GetCompilerEnvInfo()
 
 // Function to set defaults for CLI.
 func CLIServiceDefaults(ctx context.Context) *bench.BenchService {
-	projectRoot := utils.Getwd()
-	artifactsPath := path.Join(projectRoot, "artifacts")
-	GCSCredPath := path.Join(projectRoot, "GCP-infra-manager-828bbfa6f427.json")
+	execRoot := utils.Getwd()
 
-	svc, err := bench.NewBenchService(ctx, projectRoot, artifactsPath, GCSCredPath, "bench-builds")
+	workPath := path.Join(execRoot, "work")
+	GCSCredPath := path.Join(execRoot, "creds", "GCP-infra-manager-828bbfa6f427.json")
+	artifactsPath := path.Join(workPath, "buildcache")
+
+	svc, err := bench.NewBenchService(ctx, workPath, artifactsPath, GCSCredPath, "bench-builds")
 	if err != nil {
 		panic(err)
 	}
@@ -104,9 +106,10 @@ func TestME(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	return nil
 
 	// teardown the build
-	return ps.Destroy(ctx)
+	//return ps.Destroy(ctx)
 }
 
 // Build builds a grafana binary and stores it in the artifacts folder

@@ -5,11 +5,18 @@ import (
 	"path"
 )
 
+// 1. move test repo into uuid dir
+// 2. move results into results directory
+// 3. upload results to bucket
+
 type TesterService struct {
 	LocalDir string
 
 	// location of the test suite in the workdir
 	TestSuiteDir string
+
+	// location of the test results
+	ResultsDir string
 
 	// location to output test results
 	SummaryDir string

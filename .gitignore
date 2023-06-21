@@ -1,9 +1,6 @@
-# ignore repos we depend on
-tests/
-test/
-build/
-artifacts/
-work/
+# ignore directory where we're doing all the work and setting stuff up
+!work/grafanaTemplate/
+work
 
 
 
