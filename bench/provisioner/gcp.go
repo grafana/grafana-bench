@@ -13,7 +13,7 @@ import (
 )
 
 // TODO don't hardcode credentials
-var credentials string = "/Users/jeff/projects/g/bench/GCP-infra-manager-828bbfa6f427.json"
+var credentials string = "/Users/jeff/projects/g/bench/creds/GCP-infra-manager-828bbfa6f427.json"
 
 var _ ProvisionDriver = (*GCPDriver)(nil)
 

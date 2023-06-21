@@ -7,10 +7,6 @@ import (
 	"path"
 )
 
-// 1. move test repo into uuid dir
-// 2. move results into results directory
-// 3. upload results to bucket
-
 type TesterService struct {
 	LocalDir string
 

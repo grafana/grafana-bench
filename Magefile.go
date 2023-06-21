@@ -106,10 +106,9 @@ func TestME(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	return nil
 
-	// teardown the build
-	//return ps.Destroy(ctx)
+	// remove the build artifacts
+	return ps.Destroy(ctx)
 }
 
 // Build builds a grafana binary and stores it in the artifacts folder

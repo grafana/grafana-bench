@@ -1,5 +1,5 @@
 provider "google" {
-  credentials = file("../GCP-infra-manager-828bbfa6f427.json")
+  credentials = file("../creds/GCP-infra-manager-828bbfa6f427.json")
   project = "grafana-bench"
   region  = "us-central1"
   zone    = "us-central1-c"
