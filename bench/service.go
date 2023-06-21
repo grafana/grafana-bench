@@ -44,8 +44,9 @@ func NewBenchService(ctx context.Context, workPath, artifactsPath, GCSCredPath, 
 	}
 
 	// configure tester
+	resultsDir := path.Join(workPath, "results")
 	testDir := path.Join(workPath, "test")
-	t := tester.NewTester(ctx, testDir)
+	t := tester.NewTester(ctx, testDir, resultsDir)
 
 	return &BenchService{
 		// deprecate

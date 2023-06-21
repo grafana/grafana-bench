@@ -2,9 +2,9 @@ package tester
 
 import (
 	"fmt"
-	"os"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/grafana/grafana-bench/bench/utils"
 	"github.com/magefile/mage/sh"
@@ -20,17 +20,25 @@ type TestRun struct {
 	SuiteRevision string
 }
 
+// ResultsDirectory gets the directory to output results for a specific run
+// Takes the uuid identifier
+// results/2023-06-21/12:00:00-6a50a8b1-8dbf-46ee-a179-86b2598ffeee/
+func (tr *TestRun) ResultsDirectory(provisionStateIdentifier string) string {
+	formattedTime := time.Now().Format("2006-01-02|15-04-05")
+	parts := strings.Split(formattedTime, "|")
+	date, time := parts[0], parts[1]
+
+	// 12:00:00-uuid
+	runIdentifier := fmt.Sprintf("%s-%s", time, provisionStateIdentifier)
+
+	return path.Join(tr.resultsDir, date, runIdentifier)
+}
+
 // Resolves test suite for the test run
 // TODO: it might make sense to clone this for each build in the future, but for
-// now we're just going to linnk the build suite to the service.
+// now we're just going to link the build suite to the service.
 // This could probably be optimized for less checkouts/etc later
 func (tr *TestRun) ResolveTestSuite() error {
-	// create the summary dir
-	err := os.MkdirAll(tr.SummaryDir, 0755)
-	if err != nil {
-		return fmt.Errorf("test-run: could not clone build suite: %w", err)
-	}
-
 	// clone repo if doesn't exist
 	exists, _ := utils.PathExists(tr.TestSuiteDir)
 	if !exists {
@@ -41,7 +49,7 @@ func (tr *TestRun) ResolveTestSuite() error {
 	}
 
 	// update repo + checkout branch
-	err = utils.DoInDir(tr.LocalDir, tr.TestSuiteDir, func() error {
+	err := utils.DoInDir(tr.LocalDir, tr.TestSuiteDir, func() error {
 		if err := sh.RunV("git", "checkout", "main"); err != nil {
 			return fmt.Errorf("test-run: Error checking out grafana test repo %s", err)
 		}

@@ -3,6 +3,7 @@ package provisioner
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"path"
 
@@ -83,10 +84,16 @@ func (l *LocalDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *test
 
 	// run k6 tests
 	err = utils.DoInDir(utils.Getwd(), tr.TestSuiteDir, func() error {
+		resultsDir := tr.ResultsDirectory(ps.Identifier)
+		err := os.MkdirAll(resultsDir, 0755)
+		if err != nil {
+			return err
+		}
+
 		envVars := make(map[string]string)
 		envVars["MACHINE_SPEC"] = getMachineSpec()
 		envVars["TEST_SUITE_REVISION"] = tr.SuiteRevision
-		envVars["TEST_SUMMARY_DIR"] = tr.SummaryDir
+		envVars["TEST_SUMMARY_DIR"] = resultsDir
 
 		// set port number
 		//GF_SERVER_HTTP_PORT=9191

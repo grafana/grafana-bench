@@ -2,6 +2,8 @@ package tester
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"path"
 )
 
@@ -16,17 +18,26 @@ type TesterService struct {
 	TestSuiteDir string
 
 	// location of the test results
-	ResultsDir string
-
-	// location to output test results
-	SummaryDir string
+	resultsDir string
 }
 
-func NewTester(ctx context.Context, localDir string) *TesterService {
+func NewTester(ctx context.Context, localDir, resultsDir string) *TesterService {
+	testSuiteDir := path.Join(localDir, "suite")
+
+	err := os.MkdirAll(testSuiteDir, 0755)
+	if err != nil {
+		panic(fmt.Errorf("tester: error creating test suite directory: %w", err))
+	}
+
+	err = os.MkdirAll(resultsDir, 0755)
+	if err != nil {
+		panic(fmt.Errorf("tester: error creating test suite directory: %w", err))
+	}
+
 	return &TesterService{
 		LocalDir:     localDir,
-		TestSuiteDir: path.Join(localDir, "suite"),
-		SummaryDir:   path.Join(localDir, "results"),
+		TestSuiteDir: testSuiteDir,
+		resultsDir:   resultsDir,
 	}
 }
 
