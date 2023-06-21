@@ -1,0 +1,98 @@
+provider "google" {
+credentials = file("{{ .Credentials }}")
+  project = "grafana-bench"
+  region  = "us-central1"
+  zone    = "us-central1-c"
+}
+
+provider "tls" {}
+
+# my identity
+data "google_client_openid_userinfo" "me" {}
+locals { 
+  # infra-manager@xxx -> infra-manager
+  user = "${split("@", data.google_client_openid_userinfo.me.email)[0]}"
+  vpc_name = data.google_compute_network.existing_network.name
+}
+
+# network
+data "google_compute_network" "existing_network" {
+  name = "vm-network"
+}
+
+resource "google_compute_address" "static_ip" {
+  name = "bench-vm-instance-{{ .Identifier }}"
+}
+
+resource "google_compute_firewall" "ssh-rule" {
+  name = "bench-ssh-instance-{{ .Identifier }}"
+  network = local.vpc_name
+  target_tags = ["bench-vm-instance-{{ .Identifier }}"]
+  source_ranges = ["0.0.0.0/0"]
+
+  allow {
+    protocol = "tcp"
+    ports = ["22"]
+  }
+
+  allow {
+    protocol = "icmp"
+  }
+}
+
+# ssh 
+resource "tls_private_key" "ssh_key" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+# vm
+resource "google_compute_instance" "vm_instance" {
+name         = "bench-vm-instance-{{ .Identifier }}"
+  machine_type = "e2-micro"
+
+  tags = ["bench-vm-instance-{{ .Identifier }}"]
+
+  boot_disk {
+    initialize_params {
+      image = "debian-cloud/debian-11"
+    }
+  }
+
+  metadata = {
+    ssh-keys = "${local.user}:${tls_private_key.ssh_key.public_key_openssh}"
+    startup-script = file("startup.sh") 
+  }
+
+  network_interface {
+    network = local.vpc_name
+    access_config {
+      nat_ip = google_compute_address.static_ip.address
+    }
+  }
+}
+
+# IP of the VM
+output "ssh_connection_string" {
+  # extra flags ignore adding key to hosts file
+  value = "ssh ${local.user}@${google_compute_address.static_ip.address} -i {{ .Identifier }}_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+}
+
+# Output VM config
+resource "local_file" "connection_string" {
+content           = "ssh ${local.user}@${google_compute_address.static_ip.address} -i bench_vm_key_{{ .Identifier }}"
+  filename        = "{{ .Identifier }}_ip_address"
+}
+
+resource "local_file" "ssh_private_key" {
+  content         = tls_private_key.ssh_key.private_key_openssh
+  filename        = "{{ .Identifier }}_key"
+  file_permission = "0600"
+}
+
+resource "local_file" "ssh_public_key" {
+  content         = tls_private_key.ssh_key.public_key_openssh
+  filename        = "{{ .Identifier }}_key_pub"
+  file_permission = "0600"
+}
+

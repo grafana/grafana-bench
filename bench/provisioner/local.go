@@ -15,13 +15,11 @@ import (
 var _ ProvisionDriver = (*LocalDriver)(nil)
 
 type LocalDriver struct {
-	LocalDir   string
 	buildCache *buildcache.BuildCache
 }
 
-func NewLocalDriver(localDir string, buildCache *buildcache.BuildCache) *LocalDriver {
+func NewLocalDriver(buildCache *buildcache.BuildCache) *LocalDriver {
 	return &LocalDriver{
-		LocalDir:   localDir,
 		buildCache: buildCache,
 	}
 }

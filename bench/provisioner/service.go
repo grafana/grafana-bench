@@ -3,6 +3,7 @@ package provisioner
 import (
 	"context"
 	"fmt"
+	"html/template"
 	"net"
 	"os"
 	"path"
@@ -14,13 +15,14 @@ import (
 )
 
 type ProvisionerService struct {
-	BuildCache  *buildcache.BuildCache
-	LocalDir    string
-	VMEnabled   bool
-	TemplateDir string
+	BuildCache             *buildcache.BuildCache
+	TerraformTemplates     map[string]*template.Template
+	LocalDir               string
+	VMEnabled              bool
+	GrafanaWorkDirTemplate string
 }
 
-func NewProvisioner(ctx context.Context, localDir string, bc *buildcache.BuildCache, vmEnabled bool, templateDir string) (*ProvisionerService, error) {
+func NewProvisioner(ctx context.Context, localDir string, bc *buildcache.BuildCache, vmEnabled bool, grafanaWorkDirTemplate string) (*ProvisionerService, error) {
 
 	if localDir == "" {
 		return nil, fmt.Errorf("provisioner: local directory cannot be empty")
@@ -30,28 +32,34 @@ func NewProvisioner(ctx context.Context, localDir string, bc *buildcache.BuildCa
 		return nil, fmt.Errorf("provisioner: build cache cannot be nil")
 	}
 
-	if templateDir == "" {
+	if grafanaWorkDirTemplate == "" {
 		return nil, fmt.Errorf("provisioner: template directory cannot be empty")
 	}
 
+	templates, err := loadTerraformTemplates()
+	if err != nil {
+		return nil, fmt.Errorf("provisioner: error loading template: %w", err)
+	}
+
 	return &ProvisionerService{
-		LocalDir:    localDir,
-		VMEnabled:   vmEnabled,
-		TemplateDir: templateDir,
-		BuildCache:  bc,
+		LocalDir:               localDir,
+		VMEnabled:              vmEnabled,
+		TerraformTemplates:     templates,
+		GrafanaWorkDirTemplate: grafanaWorkDirTemplate,
+		BuildCache:             bc,
 	}, nil
 }
 
 type ProvisionType string
 
 const (
-	Local  ProvisionType = "local"
-	Remote ProvisionType = "remote"
+	Local ProvisionType = "local"
+	GCP   ProvisionType = "gcp"
 )
 
 func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *builder.Build) (*ProvisionState, error) {
 
-	if t == Remote && !p.VMEnabled {
+	if t != Local && !p.VMEnabled {
 		return nil, fmt.Errorf("Provisioner does not have VM support enabled")
 	}
 
@@ -64,10 +72,12 @@ func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *bu
 
 	fmt.Println("provisioner: local path:", localDir)
 
-	var driver *LocalDriver
+	var driver ProvisionDriver
 	switch t {
 	case Local:
-		driver = NewLocalDriver(workDir, p.BuildCache)
+		driver = NewLocalDriver(p.BuildCache)
+	case GCP:
+		driver = NewGCPDriver(p.BuildCache, p.TerraformTemplates)
 	}
 
 	state := &ProvisionState{
@@ -75,9 +85,9 @@ func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *bu
 		Identifier:  uuid.String(),
 		Type:        t,
 		LocalDir:    localDir,
-		WorkDir:     workDir,
 		StateDir:    stateDir,
-		TemplateDir: p.TemplateDir,
+		WorkDir:     workDir,
+		TemplateDir: p.GrafanaWorkDirTemplate,
 		Build:       build,
 	}
 
@@ -86,12 +96,9 @@ func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *bu
 		return nil, err
 	}
 
-	if t == Remote {
-		state.StateDir = path.Join(p.LocalDir, uuid.String(), "state")
-		err := os.MkdirAll(state.StateDir, 0755)
-		if err != nil {
-			return nil, err
-		}
+	err = os.MkdirAll(state.StateDir, 0755)
+	if err != nil {
+		return nil, err
 	}
 
 	return state, nil
