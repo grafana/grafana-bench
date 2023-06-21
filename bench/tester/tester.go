@@ -18,6 +18,9 @@ type TestRun struct {
 
 	// git hash of the test suite
 	SuiteRevision string
+
+	// report results to k6 cloud instead of locally
+	ReportToK6Cloud bool
 }
 
 // ResultsDirectory gets the directory to output results for a specific run

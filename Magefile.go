@@ -29,10 +29,12 @@ func CLIServiceDefaults(ctx context.Context) *bench.BenchService {
 	execRoot := utils.Getwd()
 
 	workPath := path.Join(execRoot, "work")
-	GCSCredPath := path.Join(execRoot, "creds", "GCP-infra-manager-828bbfa6f427.json")
-	artifactsPath := path.Join(workPath, "buildcache")
+	buildCachePath := path.Join(workPath, "buildcache")
 
-	svc, err := bench.NewBenchService(ctx, workPath, artifactsPath, GCSCredPath, "bench-builds")
+	GCSCredPath := path.Join(execRoot, "creds", "GCP-infra-manager-828bbfa6f427.json")
+	K6CloudTokenPath := path.Join(execRoot, "creds", "k6cloud_jefflevinslunch_grafana_net")
+
+	svc, err := bench.NewBenchService(ctx, workPath, buildCachePath, GCSCredPath, K6CloudTokenPath, "bench-builds")
 	if err != nil {
 		panic(err)
 	}
@@ -96,7 +98,7 @@ func TestME(ctx context.Context) error {
 	ps.WaitForReady(ctx)
 
 	// test the build
-	testRun, err := BenchService.Tester.New(ctx, "jalevin/test", "dashboards/dashboard_create.js")
+	testRun, err := BenchService.Tester.New(ctx, "jalevin/test", "dashboards/dashboard_create.js", true)
 	if err != nil {
 		return err
 	}

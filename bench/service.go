@@ -2,6 +2,7 @@ package bench
 
 import (
 	"context"
+	"os"
 	"path"
 
 	"github.com/grafana/grafana-bench/bench/buildcache"
@@ -23,7 +24,7 @@ type BenchService struct {
 	Tester      *tester.TesterService
 }
 
-func NewBenchService(ctx context.Context, workPath, artifactsPath, GCSCredPath, bucketName string) (*BenchService, error) {
+func NewBenchService(ctx context.Context, workPath, artifactsPath, GCSCredPath, k6CloudCredPath, bucketName string) (*BenchService, error) {
 
 	// configure the cache
 	buildCache, err := buildcache.NewBuildCache(ctx, artifactsPath, GCSCredPath, bucketName)
@@ -46,7 +47,16 @@ func NewBenchService(ctx context.Context, workPath, artifactsPath, GCSCredPath, 
 	// configure tester
 	resultsDir := path.Join(workPath, "results")
 	testDir := path.Join(workPath, "test")
-	t := tester.NewTester(ctx, testDir, resultsDir)
+	k6cloudtoken := ""
+	if k6CloudCredPath != "" {
+		tokenBytes, err := os.ReadFile(k6CloudCredPath)
+		if err != nil {
+			return nil, err
+		}
+		k6cloudtoken = string(tokenBytes)
+	}
+
+	t := tester.NewTester(ctx, testDir, resultsDir, k6cloudtoken)
 
 	return &BenchService{
 		// deprecate

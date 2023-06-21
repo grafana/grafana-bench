@@ -95,6 +95,16 @@ func (l *LocalDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *test
 		envVars["TEST_SUITE_REVISION"] = tr.SuiteRevision
 		envVars["TEST_SUMMARY_DIR"] = resultsDir
 
+		// START HERE
+		// just plumbed the token into the tester service
+		// need to finish plumbing to get the key to HERE
+		// and change the command to include --out cloud if it's a cloud run
+		if tr.ReportToK6Cloud {
+			// TODO introduce an argument to enable or disable k6cloud
+			envVars["K6_CLOUD_TOKEN"] = tr.k6CloudToken
+		}
+
+		//K6_CLOUD_TOKEN=<YOUR_API_TOKEN>
 		// set port number
 		//GF_SERVER_HTTP_PORT=9191
 
