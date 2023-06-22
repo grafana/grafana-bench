@@ -7,8 +7,10 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/signal"
 	"path"
 	"strings"
+	"syscall"
 
 	"github.com/grafana/grafana-bench/bench"
 	"github.com/grafana/grafana-bench/bench/buildcache"
@@ -141,8 +143,52 @@ func Bench(ctx context.Context) error {
 
 // Build and run grafana, but wait for input to shutdown
 func Run(ctx context.Context) error {
-	b := bench.NewBenchRun(ctx, CLIServiceDefaults(ctx))
-	return b.Run(ctx)
+	grafanaRevision := envOrDefault("GRAFANA_REVISION", "branch:main")
+	grafanaArch := envOrDefault("GRAFANA_ARCH", defaultArch())
+
+	// create a build with some defaults do the build if it's not resolved
+	build, err := BenchService.Builder.New(ctx, grafanaRevision, grafanaArch)
+	if err != nil {
+		return err
+	}
+	if !build.Resolved {
+		err := build.Run(ctx)
+		if err != nil {
+			return err
+		}
+	}
+
+	// verify build exists in the cache
+	resolved, err := BenchService.BuildCache.Resolve(ctx, buildcache.TypeBuild, build.ArtifactBuildName)
+	if err != nil {
+		return err
+	}
+
+	if resolved {
+		fmt.Println("mage: build in cache")
+	}
+
+	ps, err := BenchService.Provisioner.New(ctx, provisioner.Local, build)
+	if err != nil {
+		return err
+	}
+
+	killFunc, err := ps.Provision(ctx)
+	if err != nil {
+		return err
+	}
+	defer killFunc()
+
+	ps.WaitForReady(ctx)
+
+	// wait for signal to kill grafana
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	<-sigs
+	fmt.Println("Shutting down grafana process")
+	return nil
+	//b := bench.NewBenchRun(ctx, CLIServiceDefaults(ctx))
+	//return b.Run(ctx)
 }
 
 // Runs test suit on already running instance of grafana

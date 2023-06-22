@@ -10,7 +10,6 @@ import (
 	"github.com/grafana/grafana-bench/bench/buildcache"
 	"github.com/grafana/grafana-bench/bench/tester"
 	"github.com/grafana/grafana-bench/bench/utils"
-	"github.com/magefile/mage/sh"
 )
 
 var _ ProvisionDriver = (*LocalDriver)(nil)
@@ -90,23 +89,18 @@ func (l *LocalDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *test
 			return err
 		}
 
-		envVars := make(map[string]string)
-		envVars["MACHINE_SPEC"] = getMachineSpec()
-		envVars["TEST_SUITE_REVISION"] = tr.SuiteRevision
-		envVars["TEST_SUMMARY_DIR"] = resultsDir
-
-		// START HERE
-		// just plumbed the token into the tester service
-		// need to finish plumbing to get the key to HERE
-		// and change the command to include --out cloud if it's a cloud run
-		if tr.ReportToK6Cloud {
-			// TODO introduce an argument to enable or disable k6cloud
-			envVars["K6_CLOUD_TOKEN"] = tr.k6CloudToken
+		envVars := map[string]string{
+			"MACHINE_SPEC":        getMachineSpec(),
+			"TEST_SUITE_REVISION": tr.SuiteRevision,
+			"TEST_SUMMARY_DIR":    resultsDir,
+			// set port number
+			//GF_SERVER_HTTP_PORT=9191
 		}
 
-		//K6_CLOUD_TOKEN=<YOUR_API_TOKEN>
-		// set port number
-		//GF_SERVER_HTTP_PORT=9191
+		if tr.ReportToK6Cloud {
+			envVars["k6_CLOUD_TOKEN"] = tr.K6CloudToken
+			//envVars["k6_CLOUD_PROJECT_ID"] = tr.K6CloudProjectID
+		}
 
 		tests, err := tr.GetTestSuiteFiles()
 		if err != nil {
@@ -117,17 +111,22 @@ func (l *LocalDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *test
 		for _, testFile := range tests {
 			fmt.Println("provisioner: running test file:", testFile)
 
-			// k6 run tests/tests/dashboards.js
+			var cmd *exec.Cmd
+			if tr.ReportToK6Cloud {
+				cmd = exec.Command("k6", "run", testFile, "-i", "1", "-u", "1", "-o", "cloud")
+			} else {
+				cmd = exec.Command("k6", "run", testFile, "-i", "1", "-u", "1", "-o", "cloud")
+			}
 
-			// TODO figure out how to ignore threshold errors from k6.
+			// TODO figure out what to do with threshold errors from k6.
 			// The ones in the test may not match what we need and will exist with
 			// non-zero status code resulting in RunWithVar returning an error
 			// an error even though we don't care about it. This isn't a GREAT
 			// approach. We should figure out a way to tell k6 not to return an error
 			// if threshold is breached rather than necessarily modifying the test
-			_ = sh.RunWithV(envVars, "k6", "run", testFile, "-i", "1", "-u", "1")
 
-			// TODO maybe stdout the location of the test file
+			// k6 run tests/tests/dashboards.js -i 1 -u 1 -o cloud
+			_ = utils.ExecStdoutWithEnv(cmd, envVars)
 		}
 
 		return nil

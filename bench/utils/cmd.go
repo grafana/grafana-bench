@@ -7,6 +7,14 @@ import (
 	"os/exec"
 )
 
+func ExecStdoutWithEnv(cmd *exec.Cmd, env map[string]string) error {
+	for key, value := range env {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", key, value))
+	}
+
+	return ExecStdout(cmd)
+}
+
 func ExecStdout(cmd *exec.Cmd) error {
 	// Set up stdout pipe
 	stdout, err := cmd.StdoutPipe()
