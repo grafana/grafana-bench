@@ -20,16 +20,17 @@ type ProvisionerService struct {
 	LocalDir               string
 	VMEnabled              bool
 	GrafanaWorkDirTemplate string
+	GCPCredentialsPath     string
 }
 
-func NewProvisioner(ctx context.Context, localDir string, bc *buildcache.BuildCache, vmEnabled bool, grafanaWorkDirTemplate string) (*ProvisionerService, error) {
-
-	if localDir == "" {
-		return nil, fmt.Errorf("provisioner: local directory cannot be empty")
-	}
+func NewProvisioner(ctx context.Context, localDir string, bc *buildcache.BuildCache, vmEnabled bool, gcpCredentialsPath, grafanaWorkDirTemplate string) (*ProvisionerService, error) {
 
 	if bc == nil {
 		return nil, fmt.Errorf("provisioner: build cache cannot be nil")
+	}
+
+	if localDir == "" {
+		return nil, fmt.Errorf("provisioner: local directory cannot be empty")
 	}
 
 	if grafanaWorkDirTemplate == "" {
@@ -46,6 +47,7 @@ func NewProvisioner(ctx context.Context, localDir string, bc *buildcache.BuildCa
 		VMEnabled:              vmEnabled,
 		TerraformTemplates:     templates,
 		GrafanaWorkDirTemplate: grafanaWorkDirTemplate,
+		GCPCredentialsPath:     gcpCredentialsPath,
 		BuildCache:             bc,
 	}, nil
 }
@@ -77,7 +79,7 @@ func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *bu
 	case Local:
 		driver = NewLocalDriver(p.BuildCache)
 	case GCP:
-		driver = NewGCPDriver(p.BuildCache, p.TerraformTemplates)
+		driver = NewGCPDriver(p.BuildCache, p.TerraformTemplates, p.GCPCredentialsPath)
 	}
 
 	state := &ProvisionState{

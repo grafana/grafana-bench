@@ -162,6 +162,7 @@ func (bc *BuildCache) List(ctx context.Context, ct CacheObjectType) ([]BuildRef,
 	var builds []BuildRef
 
 	// Get local builds
+	// TODO fix this to just list files in local cache
 	localBuilds, err := utils.GlobByPrefix(bc.LocalDir, "grafana-server-")
 	if err != nil {
 		return builds, err

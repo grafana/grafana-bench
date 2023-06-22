@@ -2,46 +2,63 @@ package provisioner
 
 import (
 	"context"
+	"fmt"
 	"html/template"
 	"os"
 	"os/exec"
 	"path"
+	"strings"
 
 	"github.com/grafana/grafana-bench/bench/buildcache"
 	"github.com/grafana/grafana-bench/bench/tester"
 	"github.com/grafana/grafana-bench/bench/utils"
 )
 
-// TODO don't hardcode credentials
-var credentials string = "/Users/jeff/projects/g/bench/creds/GCP-infra-manager-828bbfa6f427.json"
-
 var _ ProvisionDriver = (*GCPDriver)(nil)
 
 type GCPDriver struct {
 	terraformTemplates map[string]*template.Template
 	buildCache         *buildcache.BuildCache
+	credentialsPath    string
 }
 
-func NewGCPDriver(buildCache *buildcache.BuildCache, terraformTemplates map[string]*template.Template) *GCPDriver {
+func NewGCPDriver(buildCache *buildcache.BuildCache, terraformTemplates map[string]*template.Template, credentialsPath string) *GCPDriver {
 	return &GCPDriver{
 		terraformTemplates: terraformTemplates,
 		buildCache:         buildCache,
+		credentialsPath:    credentialsPath,
 	}
 }
 
 func (d *GCPDriver) Provision(ctx context.Context, ps *ProvisionState) (func() error, error) {
 
 	// TODO START HERE
-	// figure out what building the directory and shipping to build cache looks
-	// like
-	// 1. what should we name the bundle?
-	// 2. what should the artifact type be?
-	// 3. should we request a presigned url separately or return in this function
-	presignedUrl, err := d.prepareBundle(ctx, ps)
+
+	// 5. tf apply
+	// 6. get destroy working
+	// 7. figure out how to run tests
+
+	// prepare bundle
+	bundlePath, err := d.prepareBundle(ctx, ps)
 	if err != nil {
 		return NilFunc, err
 	}
 
+	// cache the bundle
+	artifactName := getBundleName(ps.Build.GrafanaRevision, ps.Build.Arch)
+	err = d.buildCache.StoreFile(ctx, buildcache.TypeBundle, bundlePath, artifactName)
+	if err != nil {
+		return NilFunc, err
+	}
+
+	// get presigned url for bundle
+	presignedUrl, err := d.buildCache.GetPresignedUrl(ctx, buildcache.TypeBundle, artifactName)
+	if err != nil {
+		return NilFunc, err
+	}
+
+	// write templates to state dir
+	// what struct do I actually need here?
 	err = d.writeTemplates(ctx, ps, presignedUrl)
 	if err != nil {
 		return NilFunc, err
@@ -65,48 +82,88 @@ func (d *GCPDriver) Provision(ctx context.Context, ps *ProvisionState) (func() e
 		return NilFunc, err
 	}
 
-	// tar the result
-	//archiveFilepath := path.Join(v.RootDir, v.Identifier+".tar.gz")
+	// read grafana instance from the state dir
+	vm, err := readVM(ps.StateDir, ps.Identifier, "grafana")
+	if err != nil {
+		return NilFunc, err
+	}
 
-	//cmd := exec.Command("tar", "-czvf", archiveFilepath, "--exclude='.terraform'", path.Join(v.Workdir, "*"))
-	//return utils.ExecStdout(cmd)
+	// TODO read the test vm instance
 
-	// upload to gcs bucket
-
-	// get the script to run
-	// run terraform apply
-
-	// what should killFunc do?
+	// get grafana server info
 
 	return NilFunc, nil
 }
 
 // Blocking call that waits for grafana to become ready
 func (d *GCPDriver) WaitForReady(ctx context.Context, ps *ProvisionState) {
-	WaitForLiveGrafana(ps.GrafanaAddress)
+	WaitForLiveGrafana(ps.GrafanaInstance.ServiceAddress())
 }
 
 // Check - checks if Grafana + test runner are ready
 func (d *GCPDriver) Ready(ctx context.Context, ps *ProvisionState) bool {
-	return IsLive(ps.GrafanaAddress)
+	return IsLive(ps.GrafanaInstance.ServiceAddress())
 }
 
 // Destroy - destroys a provisioned instance of Grafana + test runner
 func (d *GCPDriver) Destroy(ctx context.Context, ps *ProvisionState) error {
-	return nil
+	err := utils.DoInDir(utils.Getwd(), ps.StateDir, func() error {
+		// terraform init
+		if err := utils.ExecStdout(exec.Command("terraform", "init")); err != nil {
+			return err
+		}
+
+		// terraform destroy
+		if err := utils.ExecStdout(exec.Command("terraform", "destroy")); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	// remove the local dir and all state and workdir
+	return utils.Rm(ps.LocalDir)
 }
 
 func (d *GCPDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.TestRun) error {
 	return nil
 }
 
-// create a package to be uploaded to the instance
+// create a package to be uploaded to cache and downloaded on instance
+// returns path to bundle
 func (d *GCPDriver) prepareBundle(ctx context.Context, ps *ProvisionState) (string, error) {
-	return "", nil
+	_, err := setupGrafanaWorkdir(ctx, d.buildCache, ps)
+	if err != nil {
+		return "", err
+	}
+
+	// compress the folder
+	bundlePath := path.Join(ps.LocalDir, getBundleName(ps.Build.GrafanaRevision, ps.Build.Arch))
+	err = utils.CompressFolder(ps.WorkDir, bundlePath)
+	if err != nil {
+		return "", err
+	}
+
+	return bundlePath, nil
 }
 
 // writes state files to disk
-func (d *GCPDriver) writeTemplates(ctx context.Context, ps *ProvisionState, presignedUrl string) error {
+func (d *GCPDriver) writeTemplates(ctx context.Context, ps *ProvisionState, presignedBundleUrl string) error {
+
+	templateData := struct {
+		Credentials        string
+		Identifier         string
+		PresignedBundleUrl string
+	}{
+		Credentials:        d.credentialsPath,
+		Identifier:         ps.Identifier,
+		PresignedBundleUrl: presignedBundleUrl,
+	}
+
 	// write terraform template
 	terraformPlanFile, err := os.Create(path.Join(ps.StateDir, "main.tf"))
 	if err != nil {
@@ -114,7 +171,7 @@ func (d *GCPDriver) writeTemplates(ctx context.Context, ps *ProvisionState, pres
 	}
 	defer terraformPlanFile.Close()
 
-	err = d.terraformTemplates["gcp_basic.tmpl"].Execute(terraformPlanFile, ps)
+	err = d.terraformTemplates["gcp_basic.tmpl"].Execute(terraformPlanFile, templateData)
 	if err != nil {
 		return err
 	}
@@ -125,6 +182,15 @@ func (d *GCPDriver) writeTemplates(ctx context.Context, ps *ProvisionState, pres
 		return err
 	}
 
-	return d.terraformTemplates["gcp_startup.sh.tmpl"].Execute(startupScriptFile, ps)
+	return d.terraformTemplates["gcp_startup.sh.tmpl"].Execute(startupScriptFile, templateData)
+}
 
+func (d *GCPDriver) readVM(ctx context.Context, stateDir string) *VMInstance {
+}
+
+// generates the name of the bundle
+// e.g. 6e4fe51fe8f0da7719eb933ef77c6e8b46dae126_defaults-darwin-arm64-bundle.tar.gz
+func getBundleName(grafanaGitRef, arch string) string {
+	arch = strings.Replace(arch, "/", "-", -1)
+	return fmt.Sprintf("%s-%s-bundle.tar.gz", grafanaGitRef, arch)
 }

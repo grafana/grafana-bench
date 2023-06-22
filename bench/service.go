@@ -15,7 +15,7 @@ import (
 // node
 type BenchService struct {
 	// Configured at runtime
-	// TODO deprecate once we've removed mage functions
+	// TODO deprecate ProjectRoot once we've removed mage functions
 	ProjectRoot string
 	BuildCache  *buildcache.BuildCache
 
@@ -24,10 +24,10 @@ type BenchService struct {
 	Tester      *tester.TesterService
 }
 
-func NewBenchService(ctx context.Context, workPath, artifactsPath, GCSCredPath, k6CloudCredPath, bucketName string) (*BenchService, error) {
+func NewBenchService(ctx context.Context, workPath, artifactsPath, GCPCredPath, k6CloudCredPath, bucketName string) (*BenchService, error) {
 
 	// configure the cache
-	buildCache, err := buildcache.NewBuildCache(ctx, artifactsPath, GCSCredPath, bucketName)
+	buildCache, err := buildcache.NewBuildCache(ctx, artifactsPath, GCPCredPath, bucketName)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +39,8 @@ func NewBenchService(ctx context.Context, workPath, artifactsPath, GCSCredPath, 
 	// configure provisioner
 	provisionDir := path.Join(workPath, "provision")
 	grafanaTemplateDir := path.Join(workPath, "grafanaTemplate")
-	p, err := provisioner.NewProvisioner(ctx, provisionDir, buildCache, false, grafanaTemplateDir)
+	vmEnabled := GCPCredPath != ""
+	p, err := provisioner.NewProvisioner(ctx, provisionDir, buildCache, vmEnabled, GCPCredPath, grafanaTemplateDir)
 	if err != nil {
 		return nil, err
 	}

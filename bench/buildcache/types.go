@@ -10,8 +10,12 @@ import (
 type CacheObjectType string
 
 var (
+	// A grafana executable
 	TypeBuild CacheObjectType = "build"
-	TypeINI   CacheObjectType = "INI"
+	// A default.ini file required to boot a build of Grafana
+	TypeINI CacheObjectType = "INI"
+	// A bundle used to provision grafana to a VM
+	TypeBundle CacheObjectType = "bundle"
 )
 
 func (ct CacheObjectType) String() string {
@@ -20,6 +24,8 @@ func (ct CacheObjectType) String() string {
 		return "build"
 	case TypeINI:
 		return "ini"
+	case TypeBundle:
+		return "bundle"
 	default:
 		return "Unknown"
 	}

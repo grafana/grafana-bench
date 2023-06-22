@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path"
 
 	"github.com/grafana/grafana-bench/bench/buildcache"
 	"github.com/grafana/grafana-bench/bench/tester"
@@ -28,7 +27,7 @@ func NewLocalDriver(buildCache *buildcache.BuildCache) *LocalDriver {
 func (l *LocalDriver) Provision(ctx context.Context, ps *ProvisionState) (func() error, error) {
 
 	// setup the directory structure
-	executable, err := l.setupGrafanaWorkdir(ctx, ps)
+	executable, err := setupGrafanaWorkdir(ctx, l.buildCache, ps)
 	if err != nil {
 		return NilFunc, err
 	}
@@ -39,24 +38,23 @@ func (l *LocalDriver) Provision(ctx context.Context, ps *ProvisionState) (func()
 		return NilFunc, err
 	}
 
-	// setup test runner
-	//err = setupTestWorkdir(ctx, ps)
-
-	// Setup update provision state
-	// TODO figure out how to get this info
-	ps.GrafanaAddress = "localhost:3000"
+	// TODO figure out how to get this from ENV or custom.ini
+	ps.GrafanaInstance = &VMInstance{
+		IPAddress:   "localhost",
+		ServicePort: "3000",
+	}
 
 	return killFunc, nil
 }
 
 // Blocking call that waits for grafana to become ready
 func (l *LocalDriver) WaitForReady(ctx context.Context, ps *ProvisionState) {
-	WaitForLiveGrafana(ps.GrafanaAddress)
+	WaitForLiveGrafana(ps.GrafanaInstance.ServiceAddress())
 }
 
 // Check - checks if Grafana + test runner are ready
 func (l *LocalDriver) Ready(ctx context.Context, ps *ProvisionState) bool {
-	return IsLive(ps.GrafanaAddress)
+	return IsLive(ps.GrafanaInstance.ServiceAddress())
 }
 
 // Destroy - destroys a provisioned instance of Grafana + test runner
@@ -161,60 +159,6 @@ func boot(ctx context.Context, ps *ProvisionState, executable string) (func() er
 	}
 
 	return killFunc, nil
-}
-
-// Sets up directory with configs needed for testing a grafana
-// build. This method expects the BuildArtifactPath to exist on disk.
-func (l *LocalDriver) setupGrafanaWorkdir(ctx context.Context, ps *ProvisionState) (string, error) {
-	// verify build artifact exists in the buildcache
-	resolved, err := l.buildCache.Resolve(ctx, buildcache.TypeBuild, ps.Build.ArtifactBuildName)
-	if err != nil {
-		return "", fmt.Errorf("build-cache: error checking for grafana executable : %w", err)
-	}
-	if !resolved {
-		return "", fmt.Errorf("build-cache: grafana executable not found: %s", ps.Build.ArtifactBuildName)
-	}
-
-	// verify defaults.ini exists in the buildcache
-	resolved, err = l.buildCache.Resolve(ctx, buildcache.TypeINI, ps.Build.ArtifactININame)
-	if err != nil {
-		return "", fmt.Errorf("build-cache: error checking for defaults.ini: %w", err)
-	}
-	if !resolved {
-		return "", fmt.Errorf("build-cache: defaults.ini not found: %s", ps.Build.ArtifactININame)
-	}
-
-	// delete old workdir if exists
-	if err := utils.Rm(ps.WorkDir); err != nil {
-		return "", fmt.Errorf("provisioner: error deleting workdir: %w", err)
-	}
-
-	// copy template directory
-	if err := utils.Cp(ps.TemplateDir, ps.WorkDir); err != nil {
-		return "", fmt.Errorf("provisioner: error copying template directory: %s - %w", ps.TemplateDir, err)
-	}
-
-	// Copy executable into work dir
-	executableDestination := path.Join(ps.WorkDir, ps.Build.ArtifactBuildName)
-	if err := l.buildCache.Retrieve(ctx, buildcache.TypeBuild, ps.Build.ArtifactBuildName, executableDestination); err != nil {
-		return "", err
-	}
-
-	// copy defaults.ini into work dir
-	iniDestination := path.Join(ps.WorkDir, "conf", "defaults.ini")
-	if err := l.buildCache.Retrieve(ctx, buildcache.TypeINI, ps.Build.ArtifactININame, iniDestination); err != nil {
-		return "", err
-	}
-
-	// copy custom.ini into work dir
-	if ps.CustomGrafanaINIPath != "" {
-		customIniWorkPath := path.Join(ps.WorkDir, "conf", "custom.ini")
-		if err := utils.Cp(ps.CustomGrafanaINIPath, customIniWorkPath); err != nil {
-			return "", err
-		}
-	}
-
-	return executableDestination, nil
 }
 
 // Gets machine spec for provisioned machine

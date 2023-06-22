@@ -75,24 +75,25 @@ name         = "bench-vm-instance-{{ .Identifier }}"
 # IP of the VM
 output "ssh_connection_string" {
   # extra flags ignore adding key to hosts file
-  value = "ssh ${local.user}@${google_compute_address.static_ip.address} -i {{ .Identifier }}_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+  value = "ssh ${local.user}@${google_compute_address.static_ip.address} -i
+  grafana/{{ .Identifier }}_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 }
 
 # Output VM config
 resource "local_file" "connection_string" {
 content           = "ssh ${local.user}@${google_compute_address.static_ip.address} -i bench_vm_key_{{ .Identifier }}"
-  filename        = "{{ .Identifier }}_ip_address"
+  filename        = "grafana/{{ .Identifier }}_ip_address"
 }
 
 resource "local_file" "ssh_private_key" {
   content         = tls_private_key.ssh_key.private_key_openssh
-  filename        = "{{ .Identifier }}_key"
+  filename        = "grafana/{{ .Identifier }}_key"
   file_permission = "0600"
 }
 
 resource "local_file" "ssh_public_key" {
   content         = tls_private_key.ssh_key.public_key_openssh
-  filename        = "{{ .Identifier }}_key_pub"
+  filename        = "grafana/{{ .Identifier }}_key_pub"
   file_permission = "0600"
 }
 

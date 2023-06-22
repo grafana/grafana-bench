@@ -99,9 +99,9 @@ func (b *Build) GetPresignedUrl(ctx context.Context) (string, error) {
 	return b.BuildCache.GetPresignedUrl(ctx, buildcache.TypeBuild, b.ArtifactBuildName)
 }
 
+// Gets the ini for that commit of grafana if it doesn't exist
+// takes 7 chars to full commit hash
 func (b *Build) GetDefaultINI(ctx context.Context) ([]byte, error) {
-	// get the ini for that commit of grafana if it doesn't exist
-	// takes 7 chars to full commit hash
 	url := fmt.Sprintf("https://raw.githubusercontent.com/grafana/grafana/%s/conf/defaults.ini", b.GrafanaRevision)
 
 	response, err := http.Get(url)

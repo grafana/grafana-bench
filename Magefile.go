@@ -64,6 +64,9 @@ func TestME(ctx context.Context) error {
 	grafanaRevision := envOrDefault("GRAFANA_REVISION", "branch:main")
 	grafanaArch := envOrDefault("GRAFANA_ARCH", defaultArch())
 
+	// TODO allow set provision type via cmd line
+	//provisionDriver := envOrDefault("PROVISION_DRIVER", "local")
+
 	// create a build with some defaults do the build if it's not resolved
 	build, err := BenchService.Builder.New(ctx, grafanaRevision, grafanaArch)
 	if err != nil {
@@ -86,7 +89,7 @@ func TestME(ctx context.Context) error {
 		fmt.Println("mage: build in cache")
 	}
 
-	ps, err := BenchService.Provisioner.New(ctx, provisioner.Local, build)
+	ps, err := BenchService.Provisioner.New(ctx, provisioner.GCP, build)
 	if err != nil {
 		return err
 	}

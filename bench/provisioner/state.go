@@ -15,10 +15,10 @@ type ProvisionState struct {
 	// Identifies what type of provision is used, vm, local, or hosted grafana
 	Type ProvisionType
 
-	// Directory containing state and work directories
+	// Directory where the provisioner will store everything needed to provision
+	// and boot a Grafana server
 	LocalDir string
-	// Directory where the provisioner will store everything needed to boot
-	// Grafana
+	// Directory containing files to boot grafana executable
 	WorkDir string
 	// Directory containing state information
 	StateDir string
@@ -26,19 +26,16 @@ type ProvisionState struct {
 	// Grafana build the provision is based on
 	Build *builder.Build
 
-	// Temporary. should be refactored to live somewhere else probably
-	GrafanaRevision     string
-	GrafanaArtifactName string
-	GrafanaPath         string
-
 	// Custom setup info
 	TemplateDir          string
 	CustomGrafanaINIPath string
 
-	// Results
-	GrafanaAddress string
-	K6Address      string
-	killFunc       func() error
+	// Grafana instance create on provision
+	GrafanaInstance *VMInstance
+
+	// K6 instance, only created when using a non-local driver
+	K6VM     *VMInstance
+	killFunc func() error
 }
 
 // Returns a function to shut down grafana. Does not destroy the infrastructure
