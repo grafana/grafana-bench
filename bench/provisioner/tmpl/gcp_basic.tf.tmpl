@@ -48,7 +48,7 @@ resource "tls_private_key" "ssh_key" {
 
 # vm
 resource "google_compute_instance" "vm_instance" {
-name         = "bench-vm-instance-{{ .Identifier }}"
+  name         = "bench-vm-instance-{{ .Identifier }}"
   machine_type = "e2-micro"
 
   tags = ["bench-vm-instance-{{ .Identifier }}"]
@@ -75,14 +75,13 @@ name         = "bench-vm-instance-{{ .Identifier }}"
 # IP of the VM
 output "ssh_connection_string" {
   # extra flags ignore adding key to hosts file
-  value = "ssh ${local.user}@${google_compute_address.static_ip.address} -i
-  grafana/{{ .Identifier }}_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+  value = "ssh ${local.user}@${google_compute_address.static_ip.address} -i grafana/{{ .Identifier }}_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 }
 
 # Output VM config
 resource "local_file" "connection_string" {
-content           = "ssh ${local.user}@${google_compute_address.static_ip.address} -i bench_vm_key_{{ .Identifier }}"
-  filename        = "grafana/{{ .Identifier }}_ip_address"
+  content           = "ssh ${local.user}@${google_compute_address.static_ip.address} -i bench_vm_key_{{ .Identifier }}"
+  filename          = "grafana/{{ .Identifier }}_ip_address"
 }
 
 resource "local_file" "ssh_private_key" {

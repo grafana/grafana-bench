@@ -99,23 +99,24 @@ func TestME(ctx context.Context) error {
 		return err
 	}
 	defer killFunc()
+	return nil
 
-	ps.WaitForReady(ctx)
+	//ps.WaitForReady(ctx)
 
-	// test the build
-	testRun, err := BenchService.Tester.New(ctx, "jalevin/test", "dashboards/dashboard_create.js", true)
-	if err != nil {
-		return err
-	}
+	//// test the build
+	//testRun, err := BenchService.Tester.New(ctx, "jalevin/test", "dashboards/dashboard_create.js", true)
+	//if err != nil {
+	//  return err
+	//}
 
-	// run the tests
-	err = ps.RunTests(ctx, testRun)
-	if err != nil {
-		return err
-	}
+	//// run the tests
+	//err = ps.RunTests(ctx, testRun)
+	//if err != nil {
+	//  return err
+	//}
 
-	// remove the build artifacts
-	return ps.Destroy(ctx)
+	//// remove the build artifacts
+	//return ps.Destroy(ctx)
 }
 
 // Build builds a grafana binary and stores it in the artifacts folder

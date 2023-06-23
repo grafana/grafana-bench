@@ -35,8 +35,10 @@ type Build struct {
 	// Short name to reference
 	GrafanaIniPath string `json:"grafanaIni"`
 
+	// Deprecate me
 	ArtifactBuildName string `json:"artifactBuildName"`
-	ArtifactININame   string `json:"ArtifactININame"`
+	// Deprecate
+	ArtifactININame string `json:"ArtifactININame"`
 
 	// Determines whether build is complete
 	Resolved bool `json:"resolved"`

@@ -113,7 +113,7 @@ func (l *LocalDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *test
 			if tr.ReportToK6Cloud {
 				cmd = exec.Command("k6", "run", testFile, "-i", "1", "-u", "1", "-o", "cloud")
 			} else {
-				cmd = exec.Command("k6", "run", testFile, "-i", "1", "-u", "1", "-o", "cloud")
+				cmd = exec.Command("k6", "run", testFile, "-i", "1", "-u", "1")
 			}
 
 			// TODO figure out what to do with threshold errors from k6.

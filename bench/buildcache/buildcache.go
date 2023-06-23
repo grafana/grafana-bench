@@ -187,16 +187,25 @@ func (bc *BuildCache) List(ctx context.Context, ct CacheObjectType) ([]BuildRef,
 
 // TODO testme
 func (bc *BuildCache) GetPresignedUrl(ctx context.Context, ct CacheObjectType, artifactName string) (string, error) {
-	opts := &storage.SignedURLOptions{
+	objectUrl := bc.RemotePath(ct, artifactName)
+
+	fmt.Println("build-cache: generating presigned url for:", bc.BucketName, objectUrl)
+
+	url, err := bc.Bucket.SignedURL(objectUrl, &storage.SignedURLOptions{
 		Scheme:  storage.SigningSchemeV4,
 		Method:  "GET",
-		Expires: time.Now().Add(15 * time.Minute),
-	}
+		Expires: time.Now().Add(30 * time.Minute),
+	})
 
-	url, err := bc.Bucket.SignedURL(bc.RemotePath(ct, artifactName), opts)
 	if err != nil {
 		return "", fmt.Errorf("Bucket(%q).SignedURL: %w", bc.BucketName, err)
 	}
+
+	fmt.Println("build-cache: signed url:", url)
+
+	cmdString := fmt.Sprintf("curl \"%s\" -o ./presign.tar.gz", url)
+	fmt.Println(cmdString)
+	//panic("stop")
 
 	return url, nil
 }

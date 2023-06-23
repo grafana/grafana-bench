@@ -34,8 +34,8 @@ type ProvisionState struct {
 	GrafanaInstance *VMInstance
 
 	// K6 instance, only created when using a non-local driver
-	K6VM     *VMInstance
-	killFunc func() error
+	K6Instance *VMInstance
+	killFunc   func() error
 }
 
 // Returns a function to shut down grafana. Does not destroy the infrastructure

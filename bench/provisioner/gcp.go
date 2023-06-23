@@ -3,11 +3,11 @@ package provisioner
 import (
 	"context"
 	"fmt"
-	"html/template"
 	"os"
 	"os/exec"
 	"path"
 	"strings"
+	"text/template"
 
 	"github.com/grafana/grafana-bench/bench/buildcache"
 	"github.com/grafana/grafana-bench/bench/tester"
@@ -31,12 +31,6 @@ func NewGCPDriver(buildCache *buildcache.BuildCache, terraformTemplates map[stri
 }
 
 func (d *GCPDriver) Provision(ctx context.Context, ps *ProvisionState) (func() error, error) {
-
-	// TODO START HERE
-
-	// 5. tf apply
-	// 6. get destroy working
-	// 7. figure out how to run tests
 
 	// prepare bundle
 	bundlePath, err := d.prepareBundle(ctx, ps)
@@ -67,12 +61,12 @@ func (d *GCPDriver) Provision(ctx context.Context, ps *ProvisionState) (func() e
 	err = utils.DoInDir(utils.Getwd(), ps.StateDir, func() error {
 		// terraform init
 		if err := utils.ExecStdout(exec.Command("terraform", "init")); err != nil {
-			return err
+			return fmt.Errorf("provisioner: GCPDriver terraform init err: %w", err)
 		}
 
 		// terraform apply
 		if err := utils.ExecStdout(exec.Command("terraform", "apply", "-auto-approve")); err != nil {
-			return err
+			return fmt.Errorf("provisioner: GCPDriver terraform apply err: %w", err)
 		}
 
 		return nil
@@ -83,14 +77,12 @@ func (d *GCPDriver) Provision(ctx context.Context, ps *ProvisionState) (func() e
 	}
 
 	// read grafana instance from the state dir
-	vm, err := readVM(ps.StateDir, ps.Identifier, "grafana")
+	ps.GrafanaInstance, err = readVM(ps.StateDir, ps.Identifier, "grafana")
 	if err != nil {
 		return NilFunc, err
 	}
 
 	// TODO read the test vm instance
-
-	// get grafana server info
 
 	return NilFunc, nil
 }
@@ -141,6 +133,14 @@ func (d *GCPDriver) prepareBundle(ctx context.Context, ps *ProvisionState) (stri
 		return "", err
 	}
 
+	// TODO start here
+	// figure out why archive is the wrong type
+	// then continue manually testing booting grafana
+	// 1. boot
+	// 2. check to see if port is open
+	// 3. think about some kind of tag for the VM to mark it to be deleted in 24
+	// hours
+
 	// compress the folder
 	bundlePath := path.Join(ps.LocalDir, getBundleName(ps.Build.GrafanaRevision, ps.Build.Arch))
 	err = utils.CompressFolder(ps.WorkDir, bundlePath)
@@ -152,16 +152,18 @@ func (d *GCPDriver) prepareBundle(ctx context.Context, ps *ProvisionState) (stri
 }
 
 // writes state files to disk
-func (d *GCPDriver) writeTemplates(ctx context.Context, ps *ProvisionState, presignedBundleUrl string) error {
+func (d *GCPDriver) writeTemplates(ctx context.Context, ps *ProvisionState, grafanaBundleUrl string) error {
 
 	templateData := struct {
-		Credentials        string
-		Identifier         string
-		PresignedBundleUrl string
+		Credentials      string
+		Identifier       string
+		GrafanaBundleUrl string
+		GrafanaBinary    string
 	}{
-		Credentials:        d.credentialsPath,
-		Identifier:         ps.Identifier,
-		PresignedBundleUrl: presignedBundleUrl,
+		Credentials:      d.credentialsPath,
+		Identifier:       ps.Identifier,
+		GrafanaBundleUrl: grafanaBundleUrl,
+		//TestBundleUrl:    testBundleUrl,
 	}
 
 	// write terraform template
@@ -171,7 +173,7 @@ func (d *GCPDriver) writeTemplates(ctx context.Context, ps *ProvisionState, pres
 	}
 	defer terraformPlanFile.Close()
 
-	err = d.terraformTemplates["gcp_basic.tmpl"].Execute(terraformPlanFile, templateData)
+	err = d.terraformTemplates["gcp_basic.tf.tmpl"].Execute(terraformPlanFile, templateData)
 	if err != nil {
 		return err
 	}
@@ -182,10 +184,7 @@ func (d *GCPDriver) writeTemplates(ctx context.Context, ps *ProvisionState, pres
 		return err
 	}
 
-	return d.terraformTemplates["gcp_startup.sh.tmpl"].Execute(startupScriptFile, templateData)
-}
-
-func (d *GCPDriver) readVM(ctx context.Context, stateDir string) *VMInstance {
+	return d.terraformTemplates["grafana_startup.sh.tmpl"].Execute(startupScriptFile, templateData)
 }
 
 // generates the name of the bundle

@@ -53,7 +53,7 @@ func (bs *BuilderService) New(ctx context.Context, grafanaRevision, arch string)
 	return &Build{
 		BuilderService: bs,
 		// TODO fix this to get the arch
-		Arch:              "darwin/arm64",
+		Arch:              arch,
 		GrafanaRevision:   gitRef,
 		ArtifactBuildName: artifactBuildName,
 		ArtifactININame:   artifactININame,

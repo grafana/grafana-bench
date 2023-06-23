@@ -32,5 +32,5 @@ func readVM(stateDir, identifier, instanceName string) (*VMInstance, error) {
 
 // Returns
 func (v *VMInstance) ServiceAddress() string {
-	return v.IPAddress + ":" + v.Port
+	return v.IPAddress + ":" + v.ServicePort
 }

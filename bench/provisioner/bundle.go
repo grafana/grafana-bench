@@ -41,7 +41,7 @@ func setupGrafanaWorkdir(ctx context.Context, bc *buildcache.BuildCache, ps *Pro
 	}
 
 	// Copy executable into work dir
-	executableDestination := path.Join(ps.WorkDir, ps.Build.ArtifactBuildName)
+	executableDestination := path.Join(ps.WorkDir, "grafana")
 	if err := bc.Retrieve(ctx, buildcache.TypeBuild, ps.Build.ArtifactBuildName, executableDestination); err != nil {
 		return "", err
 	}

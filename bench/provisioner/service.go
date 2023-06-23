@@ -3,10 +3,10 @@ package provisioner
 import (
 	"context"
 	"fmt"
-	"html/template"
 	"net"
 	"os"
 	"path"
+	"text/template"
 	"time"
 
 	"github.com/google/uuid"

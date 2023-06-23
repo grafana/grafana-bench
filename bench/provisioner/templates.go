@@ -2,8 +2,8 @@ package provisioner
 
 import (
 	"embed"
-	"html/template"
 	"io/fs"
+	"text/template"
 )
 
 var (
