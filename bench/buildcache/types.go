@@ -16,6 +16,8 @@ var (
 	TypeINI CacheObjectType = "INI"
 	// A bundle used to provision grafana to a VM
 	TypeBundle CacheObjectType = "bundle"
+	// A test suite executed on remote k6 vm
+	TypeTestBundle CacheObjectType = "testBundle"
 )
 
 func (ct CacheObjectType) String() string {
@@ -26,6 +28,8 @@ func (ct CacheObjectType) String() string {
 		return "ini"
 	case TypeBundle:
 		return "bundle"
+	case TypeTestBundle:
+		return "testBundle"
 	default:
 		return "Unknown"
 	}

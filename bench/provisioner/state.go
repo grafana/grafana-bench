@@ -15,8 +15,8 @@ type ProvisionState struct {
 	// Identifies what type of provision is used, vm, local, or hosted grafana
 	Type ProvisionType
 
-	// Directory where the provisioner will store everything needed to provision
-	// and boot a Grafana server
+	// Directory where the provisioner will store state, bundle, and work
+	// directory needed to provision and boot a Grafana server
 	LocalDir string
 	// Directory containing files to boot grafana executable
 	WorkDir string

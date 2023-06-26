@@ -32,7 +32,7 @@ resource "google_compute_firewall" "ssh-rule" {
 
   allow {
     protocol = "tcp"
-    ports = ["22"]
+    ports = ["22", "3000"]
   }
 
   allow {
@@ -79,8 +79,8 @@ output "ssh_connection_string" {
 }
 
 # Output VM config
-resource "local_file" "connection_string" {
-  content           = "ssh ${local.user}@${google_compute_address.static_ip.address} -i bench_vm_key_{{ .Identifier }}"
+resource "local_file" "ip_address" {
+  content           = google_compute_address.static_ip.address
   filename          = "grafana/{{ .Identifier }}_ip_address"
 }
 

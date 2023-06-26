@@ -24,16 +24,16 @@ func NewLocalDriver(buildCache *buildcache.BuildCache) *LocalDriver {
 }
 
 // Provision - provisions Grafana + test runner
-func (l *LocalDriver) Provision(ctx context.Context, ps *ProvisionState) (func() error, error) {
+func (d *LocalDriver) Provision(ctx context.Context, ps *ProvisionState) (func() error, error) {
 
 	// setup the directory structure
-	executable, err := setupGrafanaWorkdir(ctx, l.buildCache, ps)
+	executable, err := setupGrafanaWorkdir(ctx, d.buildCache, ps)
 	if err != nil {
 		return NilFunc, err
 	}
 
 	// boot grafana
-	killFunc, err := boot(ctx, ps, executable)
+	killFunc, err := d.boot(ctx, ps, executable)
 	if err != nil {
 		return NilFunc, err
 	}
@@ -48,17 +48,17 @@ func (l *LocalDriver) Provision(ctx context.Context, ps *ProvisionState) (func()
 }
 
 // Blocking call that waits for grafana to become ready
-func (l *LocalDriver) WaitForReady(ctx context.Context, ps *ProvisionState) {
+func (d *LocalDriver) WaitForReady(ctx context.Context, ps *ProvisionState) {
 	WaitForLiveGrafana(ps.GrafanaInstance.ServiceAddress())
 }
 
 // Check - checks if Grafana + test runner are ready
-func (l *LocalDriver) Ready(ctx context.Context, ps *ProvisionState) bool {
+func (d *LocalDriver) Ready(ctx context.Context, ps *ProvisionState) bool {
 	return IsLive(ps.GrafanaInstance.ServiceAddress())
 }
 
 // Destroy - destroys a provisioned instance of Grafana + test runner
-func (l *LocalDriver) Destroy(ctx context.Context, ps *ProvisionState) error {
+func (d *LocalDriver) Destroy(ctx context.Context, ps *ProvisionState) error {
 	// kill the process
 	err := ps.killFunc()
 	if err != nil {
@@ -72,7 +72,7 @@ func (l *LocalDriver) Destroy(ctx context.Context, ps *ProvisionState) error {
 }
 
 // Runs tests against a provisioned instance of Grafana
-func (l *LocalDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.TestRun) error {
+func (d *LocalDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.TestRun) error {
 	// resolve test suite
 	err := tr.ResolveTestSuite()
 	if err != nil {
@@ -87,12 +87,16 @@ func (l *LocalDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *test
 			return err
 		}
 
+		machineSpec, err := d.GetMachineSpec(ctx, ps)
+		if err != nil {
+			return err
+		}
+
 		envVars := map[string]string{
-			"MACHINE_SPEC":        getMachineSpec(),
+			"MACHINE_SPEC":        machineSpec,
 			"TEST_SUITE_REVISION": tr.SuiteRevision,
 			"TEST_SUMMARY_DIR":    resultsDir,
-			// set port number
-			//GF_SERVER_HTTP_PORT=9191
+			"GT_URL":              ps.GrafanaInstance.ServiceAddress(),
 		}
 
 		if tr.ReportToK6Cloud {
@@ -134,7 +138,9 @@ func (l *LocalDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *test
 }
 
 // Boots grafana on provisioned instance of Grafana
-func boot(ctx context.Context, ps *ProvisionState, executable string) (func() error, error) {
+func (d *LocalDriver) boot(ctx context.Context, ps *ProvisionState, executable string) (func() error, error) {
+	// set port number
+	//GF_SERVER_HTTP_PORT=9191
 	cmd := exec.Command(executable, "server")
 
 	// function to return so we can kill the process
@@ -163,7 +169,7 @@ func boot(ctx context.Context, ps *ProvisionState, executable string) (func() er
 
 // Gets machine spec for provisioned machine
 // TODO IMPLEMENT ME
-func getMachineSpec() string {
-	// provider, process/machine, memory, # cores, clockspeed, architecture, os
-	return "local|m1max|65536|10|3.2 GHz|arm64|darwin"
+func (d *LocalDriver) GetMachineSpec(ctx context.Context, ps *ProvisionState) (string, error) {
+	// driver, process/machine, memory, # cores, clockspeed, architecture, os
+	return "local|m1max|65536|10|3.2 GHz|arm64|darwin", nil
 }

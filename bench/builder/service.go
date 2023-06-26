@@ -31,6 +31,9 @@ func NewBuildService(localdir string, buildcache *buildcache.BuildCache) *Builde
 
 // Creates a new build ref used to build Grafana
 func (bs *BuilderService) New(ctx context.Context, grafanaRevision, arch string) (*Build, error) {
+
+	// TODO validate arch
+
 	gitRef, err := resolveGrafanaRevision(grafanaRevision)
 	if err != nil {
 		return nil, err
@@ -51,8 +54,7 @@ func (bs *BuilderService) New(ctx context.Context, grafanaRevision, arch string)
 	resolved := iniResolved && buildResolved
 
 	return &Build{
-		BuilderService: bs,
-		// TODO fix this to get the arch
+		BuilderService:    bs,
 		Arch:              arch,
 		GrafanaRevision:   gitRef,
 		ArtifactBuildName: artifactBuildName,

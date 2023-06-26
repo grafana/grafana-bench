@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path"
+	"strings"
 
 	"github.com/grafana/grafana-bench/bench/buildcache"
 	"github.com/grafana/grafana-bench/bench/utils"
@@ -61,4 +62,17 @@ func setupGrafanaWorkdir(ctx context.Context, bc *buildcache.BuildCache, ps *Pro
 	}
 
 	return executableDestination, nil
+}
+
+// generates the name of the grafana bundle
+// e.g. 6e4fe51fe8f0da7719eb933ef77c6e8b46dae126_defaults-darwin-arm64-bundle.tar.gz
+func getGrafanaBundleName(grafanaGitRef, arch string) string {
+	arch = strings.Replace(arch, "/", "-", -1)
+	return fmt.Sprintf("%s-%s-bundle.tar.gz", grafanaGitRef, arch)
+}
+
+// generates the name of the test suite bundle
+// e.g. 6e4fe51fe8f0da7719eb933ef77c6e8b46dae126_testsuite.tar.gz
+func getTestBundleName(testSuiteGitRef string) string {
+	return testSuiteGitRef + "_testsuite.tar.gz"
 }

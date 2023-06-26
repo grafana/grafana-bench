@@ -110,3 +110,8 @@ func (tr *TestRun) GetTestSuiteFiles() ([]string, error) {
 
 	return files, nil
 }
+
+// BundleTestSuite bundles the test suite into a tarball
+func (tr *TestRun) PrepareTestBundle(bundlePath string) error {
+	return utils.CompressFolder(tr.TestSuiteDir, bundlePath)
+}

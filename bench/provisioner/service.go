@@ -3,11 +3,9 @@ package provisioner
 import (
 	"context"
 	"fmt"
-	"net"
 	"os"
 	"path"
 	"text/template"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/grafana/grafana-bench/bench/buildcache"
@@ -104,21 +102,4 @@ func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *bu
 	}
 
 	return state, nil
-}
-
-// Wait for the server to start up
-func WaitForLiveGrafana(address string) {
-	for {
-		if IsLive(address) {
-			fmt.Println("Server is ready!")
-			break
-		}
-		fmt.Printf("Waiting for server on %s...\n", address)
-		time.Sleep(time.Second)
-	}
-}
-
-func IsLive(address string) bool {
-	_, err := net.Dial("tcp", address)
-	return err == nil
 }
