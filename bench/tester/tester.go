@@ -2,6 +2,7 @@ package tester
 
 import (
 	"fmt"
+	"os/exec"
 	"path"
 	"strings"
 	"time"
@@ -53,20 +54,27 @@ func (tr *TestRun) ResolveTestSuite() error {
 
 	// update repo + checkout branch
 	err := utils.DoInDir(tr.LocalDir, tr.TestSuiteDir, func() error {
-		if err := sh.RunV("git", "checkout", "main"); err != nil {
+		if err := utils.ExecStdout(exec.Command("git", "checkout", "main")); err != nil {
 			return fmt.Errorf("test-run: Error checking out grafana test repo %s", err)
 		}
 
-		if err := sh.RunV("git", "pull"); err != nil {
+		if err := utils.ExecStdout(exec.Command("git", "pull")); err != nil {
 			return err
 		}
 
 		// checkout if not main
+		var err error
 		if tr.SuiteRevision != "main" {
-			return sh.RunV("git", "checkout", tr.SuiteRevision)
+			err = utils.ExecStdout(exec.Command("git", "checkout", tr.SuiteRevision))
 		}
 
-		return nil
+		// get the commit hash
+		cmd := exec.Command("git", "log", "-1", "--pretty=format:%H")
+		hash, err := cmd.CombinedOutput()
+
+		tr.SuiteRevision = string(hash)
+
+		return err
 	})
 
 	return err
@@ -111,7 +119,28 @@ func (tr *TestRun) GetTestSuiteFiles() ([]string, error) {
 	return files, nil
 }
 
+// Gets test suite files with the path to file changed to remotePath
+// <testSuiteDir>/tests/dashboards/dashboard_read.js to
+// <remotePath>/tests/dashboards/dashboard_read.js
+func (tr *TestRun) GetRemoteTestSuiteFiles(remotePath string) ([]string, error) {
+	// get all the files
+	files, err := tr.GetTestSuiteFiles()
+	if err != nil {
+		return []string{}, err
+	}
+
+	remoteFiles := []string{}
+	for _, v := range files {
+		relativeFile := strings.Replace(v, tr.TestSuiteDir, remotePath, -1)
+		remoteFiles = append(remoteFiles, relativeFile)
+	}
+
+	return remoteFiles, nil
+}
+
 // BundleTestSuite bundles the test suite into a tarball
+// TODO verify we're only bundling what we need and strip down extra files
 func (tr *TestRun) PrepareTestBundle(bundlePath string) error {
+	fmt.Println("provisioner: compressing test bundle")
 	return utils.CompressFolder(tr.TestSuiteDir, bundlePath)
 }

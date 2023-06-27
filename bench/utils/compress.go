@@ -3,7 +3,6 @@ package utils
 import (
 	"archive/tar"
 	"compress/gzip"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -65,6 +64,5 @@ func CompressFolder(sourceFolder string, tarGzFileName string) error {
 		return err
 	}
 
-	fmt.Printf("Folder %s compressed to %s\n", sourceFolder, tarGzFileName)
 	return nil
 }

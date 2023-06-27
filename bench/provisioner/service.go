@@ -2,6 +2,7 @@ package provisioner
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path"
@@ -72,13 +73,7 @@ func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *bu
 
 	fmt.Println("provisioner: local path:", localDir)
 
-	var driver ProvisionDriver
-	switch t {
-	case Local:
-		driver = NewLocalDriver(p.BuildCache)
-	case GCP:
-		driver = NewGCPDriver(p.BuildCache, p.TerraformTemplates, p.GCPCredentialsPath)
-	}
+	driver := p.InitDriver(t)
 
 	state := &ProvisionState{
 		driver:      driver,
@@ -102,4 +97,48 @@ func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *bu
 	}
 
 	return state, nil
+}
+
+func (p *ProvisionerService) InitDriver(t ProvisionType) ProvisionDriver {
+	switch t {
+	case Local:
+		return NewLocalDriver(p.BuildCache)
+	case GCP:
+		return NewGCPDriver(p.BuildCache, p.TerraformTemplates, p.GCPCredentialsPath)
+	default:
+		panic(fmt.Errorf("provisioner: unknown provision type: %s", t))
+	}
+}
+
+// Reads statefile from directory
+func (p *ProvisionerService) ReadStateFile(stateIdentifier string) (*ProvisionState, error) {
+	stateFile := path.Join(p.LocalDir, stateIdentifier, "state", "provision_state.json")
+	fmt.Println("provisioner: reading statefile:", stateFile)
+	file, err := os.Open(stateFile)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	decoder := json.NewDecoder(file)
+	var ps ProvisionState
+	err = decoder.Decode(&ps)
+	if err != nil {
+		return nil, err
+	}
+
+	ps.driver = p.InitDriver(ps.Type)
+
+	// TODO the rest of this is dependent on the driver. offload this part to the
+	// driver that handled the provisioning
+	ps.GrafanaInstance, err = readVM(ps.StateDir, "grafana")
+	if err != nil {
+		return nil, err
+	}
+
+	ps.K6Instance, err = readVM(ps.StateDir, "k6")
+	if err != nil {
+		return nil, err
+	}
+
+	return &ps, nil
 }

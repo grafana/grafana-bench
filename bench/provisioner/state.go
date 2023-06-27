@@ -2,6 +2,10 @@ package provisioner
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"os"
+	"path"
 
 	"github.com/grafana/grafana-bench/bench/builder"
 	"github.com/grafana/grafana-bench/bench/tester"
@@ -9,32 +13,32 @@ import (
 
 type ProvisionState struct {
 	// UUID for the build
-	Identifier string
-	driver     ProvisionDriver
+	Identifier string          `json:"identifier"`
+	driver     ProvisionDriver `json:"driver"`
 
 	// Identifies what type of provision is used, vm, local, or hosted grafana
-	Type ProvisionType
+	Type ProvisionType `json:"type"`
 
 	// Directory where the provisioner will store state, bundle, and work
 	// directory needed to provision and boot a Grafana server
-	LocalDir string
+	LocalDir string `json:"localDir"`
 	// Directory containing files to boot grafana executable
-	WorkDir string
+	WorkDir string `json:"workDir"`
 	// Directory containing state information
-	StateDir string
+	StateDir string `json:"stateDir"`
 
 	// Grafana build the provision is based on
-	Build *builder.Build
+	Build *builder.Build `json:"build"`
 
 	// Custom setup info
-	TemplateDir          string
-	CustomGrafanaINIPath string
+	TemplateDir          string `json:"templateDir"`
+	CustomGrafanaINIPath string `json:"customGrafanaINIPath"`
 
 	// Grafana instance create on provision
-	GrafanaInstance *VMInstance
+	GrafanaInstance *VMInstance `json:"grafanaInstance"`
 
 	// K6 instance, only created when using a non-local driver
-	K6Instance *VMInstance
+	K6Instance *VMInstance `json:"k6Instance"`
 	killFunc   func() error
 }
 
@@ -42,7 +46,15 @@ type ProvisionState struct {
 // that was provisioned
 func (p *ProvisionState) Provision(ctx context.Context) (func() error, error) {
 	var err error
+
+	// do the provisioning
 	p.killFunc, err = p.driver.Provision(ctx, p)
+	if err != nil {
+		return nil, err
+	}
+
+	// write the statefile to dir
+	err = p.WriteStateFile()
 	return p.killFunc, err
 }
 
@@ -56,4 +68,25 @@ func (p *ProvisionState) Destroy(ctx context.Context) error {
 
 func (p *ProvisionState) RunTests(ctx context.Context, tr *tester.TestRun) error {
 	return p.driver.RunTests(ctx, p, tr)
+}
+
+// write statefile to state directory
+func (p *ProvisionState) WriteStateFile() error {
+
+	stateFile := path.Join(p.StateDir, "provision_state.json")
+	fmt.Println("provisioner: writing statefile:", stateFile)
+
+	file, err := os.Create(stateFile)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+	err = encoder.Encode(p)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

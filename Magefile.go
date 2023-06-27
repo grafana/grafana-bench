@@ -99,25 +99,87 @@ func TestME(ctx context.Context) error {
 		return err
 	}
 	defer killFunc()
-	//return nil
+
+	// TODO maybe on cancellation we destroy?
 
 	ps.WaitForReady(ctx)
 
-	//return nil
+	return nil
+	// test the build
+	//testRun, err := BenchService.Tester.New(ctx, "jalevin/test", "dashboards/dashboard_create.js", true)
+	//if err != nil {
+	//  return err
+	//}
+
+	////// run the tests
+	//err = ps.RunTests(ctx, testRun)
+	//if err != nil {
+	//  return err
+	//}
+
+	//// remove the build artifacts
+	//return ps.Destroy(ctx)
+}
+
+func ContinueTest(ctx context.Context) error {
+	state := os.Getenv("STATE")
+	if state == "" {
+		return fmt.Errorf("invalid state: \"%s\"", state)
+	}
+
+	ps, err := BenchService.Provisioner.ReadStateFile(state)
+	if err != nil {
+		return err
+	}
+
+	ps.WaitForReady(ctx)
+
+	//ps.RunTests()
+
+	return nil
+}
+
+// Destroy looks up the state and tears down a provision state
+func Destroy(ctx context.Context) error {
+	state := os.Getenv("STATE")
+	if state == "" {
+		return fmt.Errorf("invalid state: \"%s\"", state)
+	}
+	ps, err := BenchService.Provisioner.ReadStateFile(state)
+	if err != nil {
+		return err
+	}
+
+	return ps.Destroy(ctx)
+}
+
+// Runs test suit on already running instance of grafana
+func Test(ctx context.Context) error {
+	state := os.Getenv("STATE")
+
+	if state == "" {
+		return fmt.Errorf("invalid state: \"%s\"", state)
+	}
+
+	ps, err := BenchService.Provisioner.ReadStateFile(state)
+	if err != nil {
+		return err
+	}
+
+	// TODO START HERE
+	// 1. test ensuring k6 instance can communicate with grafana instance
+	// 2. figure out why first test command is failing!
+	// 3. test executing tests on k6 instance
+	// 4. test executing a different bundle
+
 	// test the build
 	testRun, err := BenchService.Tester.New(ctx, "jalevin/test", "dashboards/dashboard_create.js", true)
 	if err != nil {
 		return err
 	}
 
-	//// run the tests
-	err = ps.RunTests(ctx, testRun)
-	if err != nil {
-		return err
-	}
-
-	//// remove the build artifacts
-	return ps.Destroy(ctx)
+	// run the tests
+	return ps.RunTests(ctx, testRun)
 }
 
 // Build builds a grafana binary and stores it in the artifacts folder
@@ -194,44 +256,6 @@ func Run(ctx context.Context) error {
 	return nil
 	//b := bench.NewBenchRun(ctx, CLIServiceDefaults(ctx))
 	//return b.Run(ctx)
-}
-
-// Runs test suit on already running instance of grafana
-func Test(ctx context.Context, testSuite string) error {
-	b := bench.NewBenchRun(ctx, CLIServiceDefaults(ctx))
-	b.TestSuite = testSuite
-	return b.Test(ctx)
-}
-
-// UpdateDeps updates build and test repos
-func UpdateDeps(ctx context.Context) error {
-	b := bench.NewBenchRun(ctx, CLIServiceDefaults(ctx))
-	return b.UpdateDeps()
-}
-
-// Resolve branch to latest commit of branch
-func ResolveGrafanaRevision(ctx context.Context) error {
-	b := bench.NewBenchRun(ctx, CLIServiceDefaults(ctx))
-	return b.ResolveGrafanaRevision()
-}
-
-// Resolve architecture and artifact names
-func ResolveArch(ctx context.Context) error {
-	b := bench.NewBenchRun(ctx, CLIServiceDefaults(ctx))
-	return b.ResolveArch()
-}
-
-// ResolveINI determines if there is a custom.ini to test a version of grafana
-// with
-func ResolveGrafanaINI(ctx context.Context) error {
-	b := bench.NewBenchRun(ctx, CLIServiceDefaults(ctx))
-	return b.ResolveGrafanaINI()
-}
-
-// ResolveConfig resolves GrafanaCommit, Architecture, and Custom.ini. Use this
-func ResolveConfig(ctx context.Context) error {
-	b := bench.NewBenchRun(ctx, CLIServiceDefaults(ctx))
-	return b.ResolveConfig(ctx)
 }
 
 // TODO detail environment variables to set

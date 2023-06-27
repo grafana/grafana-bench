@@ -79,6 +79,12 @@ func (bc *BuildCache) Retrieve(ctx context.Context, ct CacheObjectType, artifact
 	return nil
 }
 
+// Exists checks if the object is in the remote cache
+func (bc *BuildCache) RemoteExists(ctx context.Context, ct CacheObjectType, artifactName string) (bool, error) {
+	obj := bc.GetObjectHandle(ct, artifactName)
+	return ObjectExists(ctx, obj)
+}
+
 // Resolves a build artifact. Checks local disk and if not found checks remote bucket if defined.
 // If the build is in the remote bucket, it is downloaded to the local artifacts directory and return true.
 // If the build is not found on disk or in the bucket, we return false
@@ -157,6 +163,25 @@ func (bc *BuildCache) StoreBytes(ctx context.Context, ct CacheObjectType, body [
 	return nil
 }
 
+// Gets presigned url for the object
+func (bc *BuildCache) GetPresignedUrl(ctx context.Context, ct CacheObjectType, artifactName string) (string, error) {
+	objectUrl := bc.RemotePath(ct, artifactName)
+
+	fmt.Println("build-cache: generating presigned url for:", bc.BucketName, objectUrl)
+
+	url, err := bc.Bucket.SignedURL(objectUrl, &storage.SignedURLOptions{
+		Scheme:  storage.SigningSchemeV4,
+		Method:  "GET",
+		Expires: time.Now().Add(30 * time.Minute),
+	})
+
+	if err != nil {
+		return "", fmt.Errorf("Bucket(%q).SignedURL: %w", bc.BucketName, err)
+	}
+
+	return url, nil
+}
+
 // Gets a list of builds from the build cache
 func (bc *BuildCache) List(ctx context.Context, ct CacheObjectType) ([]BuildRef, error) {
 	var builds []BuildRef
@@ -183,29 +208,4 @@ func (bc *BuildCache) List(ctx context.Context, ct CacheObjectType) ([]BuildRef,
 	}
 
 	return builds, nil
-}
-
-// TODO testme
-func (bc *BuildCache) GetPresignedUrl(ctx context.Context, ct CacheObjectType, artifactName string) (string, error) {
-	objectUrl := bc.RemotePath(ct, artifactName)
-
-	fmt.Println("build-cache: generating presigned url for:", bc.BucketName, objectUrl)
-
-	url, err := bc.Bucket.SignedURL(objectUrl, &storage.SignedURLOptions{
-		Scheme:  storage.SigningSchemeV4,
-		Method:  "GET",
-		Expires: time.Now().Add(30 * time.Minute),
-	})
-
-	if err != nil {
-		return "", fmt.Errorf("Bucket(%q).SignedURL: %w", bc.BucketName, err)
-	}
-
-	fmt.Println("build-cache: signed url:", url)
-
-	cmdString := fmt.Sprintf("curl \"%s\" -o ./presign.tar.gz", url)
-	fmt.Println(cmdString)
-	//panic("stop")
-
-	return url, nil
 }

@@ -4,16 +4,17 @@ import (
 	"os"
 	"path"
 
+	"github.com/grafana/grafana-bench/bench/utils"
 	"golang.org/x/crypto/ssh"
 )
 
 type VMInstance struct {
-	User          string
-	IPAddress     string
-	ServicePort   string
-	SSHPort       string
-	SSHKeyPath    string
-	SSHKeyPubPath string
+	User          string `json:"user"`
+	IPAddress     string `json:"ipAddress"`
+	ServicePort   string `json:"servicePort"`
+	SSHPort       string `json:"sshPort"`
+	SSHKeyPath    string `json:"sshKeyPath"`
+	SSHKeyPubPath string `json:"sshKeyPubPath"`
 }
 
 // ReadVM is called after terraform apply. It reads the VM info from the state
@@ -21,16 +22,34 @@ type VMInstance struct {
 // e.g. <stateDir>/grafana and <stateDir>/k6
 // This assumes a file named, ip_address, sshkey, sshkeypub
 // terraform outputs data into. eac
-func readVM(stateDir, identifier, instanceName string) (*VMInstance, error) {
+func readVM(stateDir, instanceName string) (*VMInstance, error) {
 	ipBytes, err := os.ReadFile(path.Join(stateDir, instanceName, "ip_address"))
+	if err != nil {
+		return nil, err
+	}
+
+	servicePort := ""
+	exists, _ := utils.PathExists(path.Join(stateDir, instanceName, "service_port"))
+	if exists {
+		p, err := os.ReadFile(path.Join(stateDir, instanceName, "service_port"))
+		if err != nil {
+			return nil, err
+		}
+		servicePort = string(p)
+	}
+
+	userBytes, err := os.ReadFile(path.Join(stateDir, instanceName, "user"))
 	if err != nil {
 		return nil, err
 	}
 
 	return &VMInstance{
 		IPAddress:     string(ipBytes),
-		SSHKeyPath:    path.Join(stateDir, instanceName, "ssh_key"),
-		SSHKeyPubPath: path.Join(stateDir, instanceName, "ssh_key_pub"),
+		ServicePort:   servicePort,
+		User:          string(userBytes),
+		SSHPort:       "22",
+		SSHKeyPath:    path.Join(stateDir, instanceName, "key"),
+		SSHKeyPubPath: path.Join(stateDir, instanceName, "key_pub"),
 	}, nil
 }
 
@@ -95,4 +114,13 @@ func (v *VMInstance) Run(connection *ssh.Client, cmd string) error {
 
 	// Download the test suite on remote machine
 	return session.Run(cmd)
+}
+
+// formats map[string]string environment vars into FOO=bar FOO2=bar2 format
+func formatEnv(env map[string]string) string {
+	envVars := ""
+	for k, v := range env {
+		envVars += k + "=" + v + " "
+	}
+	return envVars
 }
