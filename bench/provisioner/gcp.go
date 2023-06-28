@@ -209,12 +209,12 @@ func (d *GCPDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester
 		"MACHINE_SPEC":        machineSpec,
 		"TEST_SUITE_REVISION": tr.SuiteRevision,
 		"TEST_SUMMARY_DIR":    resultsDir,
-		"GT_URL":              ps.GrafanaInstance.HttpsServiceAddress(),
+		"GT_URL":              ps.GrafanaInstance.HttpServiceAddress(),
 	}
 
 	if tr.ReportToK6Cloud {
-		envVars["k6_CLOUD_TOKEN"] = tr.K6CloudToken
-		//envVars["k6_CLOUD_PROJECT_ID"] = tr.K6CloudProjectID
+		envVars["K6_CLOUD_TOKEN"] = tr.K6CloudToken
+		envVars["K6_CLOUD_PROJECT_ID"] = "3641403"
 	}
 
 	for _, testFile := range tests {
@@ -261,7 +261,6 @@ func (d *GCPDriver) writeTemplates(ctx context.Context, ps *ProvisionState, graf
 		Credentials:      d.credentialsPath,
 		Identifier:       ps.Identifier,
 		GrafanaBundleUrl: grafanaBundleUrl,
-		//TestBundleUrl:    testBundleUrl,
 	}
 
 	// TODO
@@ -280,13 +279,24 @@ func (d *GCPDriver) writeTemplates(ctx context.Context, ps *ProvisionState, graf
 		return err
 	}
 
-	// write startup script
-	startupScriptFile, err := os.Create(path.Join(ps.StateDir, "startup.sh"))
+	// write grafana startup script
+	grafanaStartupScriptFile, err := os.Create(path.Join(ps.StateDir, "grafana_startup.sh"))
+	if err != nil {
+		return err
+	}
+	err = d.terraformTemplates["grafana_startup.sh.tmpl"].Execute(grafanaStartupScriptFile, templateData)
 	if err != nil {
 		return err
 	}
 
-	return d.terraformTemplates["grafana_startup.sh.tmpl"].Execute(startupScriptFile, templateData)
+	// write k6 startup script
+	k6StartupScriptFile, err := os.Create(path.Join(ps.StateDir, "k6_startup.sh"))
+	if err != nil {
+		return err
+	}
+	err = d.terraformTemplates["k6_startup.sh.tmpl"].Execute(k6StartupScriptFile, templateData)
+
+	return err
 }
 
 // Gets machine spec for provisioned machine

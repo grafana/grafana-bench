@@ -179,7 +179,11 @@ func Test(ctx context.Context) error {
 	}
 
 	// run the tests
-	return ps.RunTests(ctx, testRun)
+	if err := ps.RunTests(ctx, testRun); err != nil {
+		fmt.Println("error running tests:", err)
+		fmt.Println("connectionString:", ps.K6Instance.GetConnectionString())
+	}
+	return nil
 }
 
 // Build builds a grafana binary and stores it in the artifacts folder

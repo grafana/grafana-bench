@@ -61,7 +61,7 @@ resource "google_compute_instance" "grafana_instance" {
 
   metadata = {
     ssh-keys = "${local.user}:${tls_private_key.grafana_ssh_key.public_key_openssh}"
-    startup-script = file("startup.sh") 
+    startup-script = file("grafana_startup.sh") 
   }
 
   network_interface {
@@ -127,7 +127,7 @@ resource "google_compute_instance" "k6_instance" {
 
   metadata = {
     ssh-keys = "${local.user}:${tls_private_key.k6_ssh_key.public_key_openssh}"
-    startup-script = file("startup.sh") 
+    startup-script = file("k6_startup.sh") 
   }
 
   network_interface {
