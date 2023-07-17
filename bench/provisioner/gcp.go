@@ -219,7 +219,8 @@ func (d *GCPDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester
 
 	for _, testFile := range tests {
 		fmt.Println("provisioner: running test file:", testFile)
-		cmd := fmt.Sprintf("%s k6 run %s -i 1 -u 1 --out cloud", formatEnv(envVars), testFile)
+		cmd := fmt.Sprintf("%s k6 run %s --out cloud", formatEnv(envVars), testFile)
+		//cmd := fmt.Sprintf("%s k6 run %s -i 1 -u 1 --out cloud", formatEnv(envVars), testFile)
 		fmt.Println(cmd)
 		err := ps.K6Instance.Run(connection, cmd)
 		if err != nil {

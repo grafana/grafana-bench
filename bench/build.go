@@ -41,17 +41,3 @@ func (b *BenchRun) Build(ctx context.Context) error {
 
 	return nil
 }
-
-func (b *BenchRun) ListBuilds(ctx context.Context) error {
-	builds, err := b.BuildCache.List(ctx, buildcache.TypeBuild)
-	if err != nil {
-		return err
-	}
-
-	fmt.Println("Builds")
-	for _, b := range builds {
-		fmt.Printf("%s: %s\n", b.Location, b.Name)
-	}
-
-	return nil
-}

@@ -98,3 +98,18 @@ func (bs *BuilderService) ResolveBuildSuite() error {
 
 	return nil
 }
+
+func (bs *BuilderService) ListBuilds(ctx context.Context) error {
+	builds, err := bs.BuildCache.List(ctx, buildcache.TypeBuild)
+
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Builds")
+	for _, b := range builds {
+		fmt.Printf("%s: %s\n", b.Location, b.Name)
+	}
+
+	return nil
+}

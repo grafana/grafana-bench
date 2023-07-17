@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -83,6 +84,23 @@ func GlobByPrefix(dir string, prefix string) ([]string, error) {
 	})
 
 	return files, err
+}
+
+func List(path string) ([]string, error) {
+	fileList := []string{}
+
+	files, err := ioutil.ReadDir(path)
+	if err != nil {
+		return fileList, err
+	}
+
+	for _, file := range files {
+		if file.Mode().IsRegular() {
+			fileList = append(fileList, filepath.Join(path, file.Name()))
+		}
+	}
+
+	return fileList, nil
 }
 
 // rm -rf path

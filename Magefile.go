@@ -21,43 +21,30 @@ import (
 // This file is a thin wrapper to get us a quick CLI using mage.
 // If you're adding or changing logic, that should happen in the bench/ package
 
+// Setup bench service with defaults for CLI
 var BenchService *bench.BenchService = CLIServiceDefaults(context.Background())
 
 // Get GoEnv from system running mage
 var goEnv = utils.GetCompilerEnvInfo()
 
-// Function to set defaults for CLI.
-func CLIServiceDefaults(ctx context.Context) *bench.BenchService {
-	execRoot := utils.Getwd()
+// Build builds a grafana binary and stores it in the artifacts folder
+// usage: GRAFANA_REVISION=branch:k8s-proof-of-concept mage buildcommit
+func Build(ctx context.Context) error {
+	grafanaRevision := envOrDefault("GRAFANA_REVISION", "branch:main")
+	grafanaArch := envOrDefault("GRAFANA_ARCH", defaultArch())
 
-	workPath := path.Join(execRoot, "work")
-	buildCachePath := path.Join(workPath, "buildcache")
-
-	GCSCredPath := path.Join(execRoot, "creds", "GCP-infra-manager-828bbfa6f427.json")
-	K6CloudTokenPath := path.Join(execRoot, "creds", "k6cloud_jefflevinslunch_grafana_net")
-
-	svc, err := bench.NewBenchService(ctx, workPath, buildCachePath, GCSCredPath, K6CloudTokenPath, "bench-builds")
+	build, err := BenchService.Builder.New(ctx, grafanaRevision, grafanaArch)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	return svc
-}
-
-// Gets the architecture of the machine running Bench
-func defaultArch() string {
-	sys_os := goEnv["GOOS"]
-	sys_arch := goEnv["GOARCH"]
-	return fmt.Sprintf("%s/%s", strings.ToLower(sys_os), strings.ToLower(sys_arch))
-}
-
-// Get environment variable or use default value
-func envOrDefault(environmentVarName, defaultValue string) string {
-	v := os.Getenv(environmentVarName)
-	if v == "" {
-		return defaultValue
+	if !build.Resolved {
+		err := build.Run(ctx)
+		if err != nil {
+			return err
+		}
 	}
 
-	return v
+	return nil
 }
 
 func TestME(ctx context.Context) error {
@@ -100,25 +87,23 @@ func TestME(ctx context.Context) error {
 	}
 	defer killFunc()
 
-	// TODO maybe on cancellation we destroy?
-
 	ps.WaitForReady(ctx)
 
-	return nil
+	//return nil
 	// test the build
-	//testRun, err := BenchService.Tester.New(ctx, "jalevin/test", "dashboards/dashboard_create.js", true)
-	//if err != nil {
-	//  return err
-	//}
+	testRun, err := BenchService.Tester.New(ctx, "jalevin/test", "dashboards/dashboard_read.js", true)
+	if err != nil {
+		return err
+	}
 
-	////// run the tests
-	//err = ps.RunTests(ctx, testRun)
-	//if err != nil {
-	//  return err
-	//}
+	// run the tests
+	err = ps.RunTests(ctx, testRun)
+	if err != nil {
+		return err
+	}
 
-	//// remove the build artifacts
-	//return ps.Destroy(ctx)
+	// remove the build artifacts
+	return ps.Destroy(ctx)
 }
 
 func ContinueTest(ctx context.Context) error {
@@ -153,7 +138,8 @@ func Destroy(ctx context.Context) error {
 	return ps.Destroy(ctx)
 }
 
-// Runs test suit on already running instance of grafana
+// Runs test suite on already running instance of grafana. Requires state for
+// operation
 func Test(ctx context.Context) error {
 	state := os.Getenv("STATE")
 
@@ -166,14 +152,8 @@ func Test(ctx context.Context) error {
 		return err
 	}
 
-	// TODO START HERE
-	// 1. test ensuring k6 instance can communicate with grafana instance
-	// 2. figure out why first test command is failing!
-	// 3. test executing tests on k6 instance
-	// 4. test executing a different bundle
-
 	// test the build
-	testRun, err := BenchService.Tester.New(ctx, "jalevin/test", "dashboards/dashboard_create.js", true)
+	testRun, err := BenchService.Tester.New(ctx, "jalevin/test", "dashboards/dashboard_read.js", true)
 	if err != nil {
 		return err
 	}
@@ -186,16 +166,9 @@ func Test(ctx context.Context) error {
 	return nil
 }
 
-// Build builds a grafana binary and stores it in the artifacts folder
-// usage: GRAFANA_REVISION=branch:k8s-proof-of-concept mage buildcommit
-func Build(ctx context.Context) error {
-	b := bench.NewBenchRun(ctx, CLIServiceDefaults(ctx))
-	return b.Build(ctx)
-}
-
+// Lists builds in cache
 func ListBuilds(ctx context.Context) error {
-	b := bench.NewBenchRun(ctx, CLIServiceDefaults(ctx))
-	return b.ListBuilds(ctx)
+	return BenchService.Builder.ListBuilds(ctx)
 }
 
 // Bench handles building, running, and benchmarking a commit.
@@ -212,7 +185,7 @@ func Bench(ctx context.Context) error {
 	return b.Bench(ctx)
 }
 
-// Build and run grafana, but wait for input to shutdown
+// Build and run grafana, but wait for input to shutdown.
 func Run(ctx context.Context) error {
 	grafanaRevision := envOrDefault("GRAFANA_REVISION", "branch:main")
 	grafanaArch := envOrDefault("GRAFANA_ARCH", defaultArch())
@@ -258,15 +231,38 @@ func Run(ctx context.Context) error {
 	<-sigs
 	fmt.Println("Shutting down grafana process")
 	return nil
-	//b := bench.NewBenchRun(ctx, CLIServiceDefaults(ctx))
-	//return b.Run(ctx)
 }
 
-// TODO detail environment variables to set
-func Help() {
-	// ARCH
-	// GRAFANA_REVISION
-	// GRAFANA_CONFIG
-	// TEST_SUITE_REVISION
-	// TEST_SUITE
+// Function to set defaults for CLI.
+func CLIServiceDefaults(ctx context.Context) *bench.BenchService {
+	execRoot := utils.Getwd()
+
+	workPath := path.Join(execRoot, "work")
+	buildCachePath := path.Join(workPath, "buildcache")
+
+	GCSCredPath := path.Join(execRoot, "creds", "GCP-infra-manager-828bbfa6f427.json")
+	K6CloudTokenPath := path.Join(execRoot, "creds", "k6cloud_jefflevinslunch_grafana_net")
+
+	svc, err := bench.NewBenchService(ctx, workPath, buildCachePath, GCSCredPath, K6CloudTokenPath, "bench-builds")
+	if err != nil {
+		panic(err)
+	}
+	return svc
+}
+
+// Gets the architecture of the machine running Bench
+func defaultArch() string {
+	sys_os := goEnv["GOOS"]
+	sys_arch := goEnv["GOARCH"]
+	return fmt.Sprintf("%s/%s", strings.ToLower(sys_os), strings.ToLower(sys_arch))
+}
+
+// Get environment variable or use default value
+func envOrDefault(environmentVarName, defaultValue string) string {
+	v := os.Getenv(environmentVarName)
+	if v == "" {
+		return defaultValue
+	}
+
+	return v
 }

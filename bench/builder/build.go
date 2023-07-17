@@ -14,7 +14,7 @@ import (
 )
 
 // Build represents a build of Grafana.
-// Should be passed to provisioner to deploy Grafana
+// Passed to provisioner to deploy Grafana
 type Build struct {
 	*BuilderService
 

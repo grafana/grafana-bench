@@ -51,6 +51,11 @@ func (bc *BuildCache) DiskPath(ct CacheObjectType, artifactName string) string {
 	return path.Join(bc.LocalDir, ct.StorePrefix(), artifactName)
 }
 
+// Returns directory on disk where cacheObjectType is stored
+func (bc *BuildCache) DiskDirectory(ct CacheObjectType) string {
+	return path.Join(bc.LocalDir, ct.StorePrefix())
+}
+
 // Returns object handle for given artifactName
 func (bc *BuildCache) GetObjectHandle(ct CacheObjectType, artifactName string) *storage.ObjectHandle {
 	return bc.Bucket.Object(bc.RemotePath(ct, artifactName))
