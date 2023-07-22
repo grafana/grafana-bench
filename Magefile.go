@@ -18,17 +18,6 @@ import (
 	"github.com/grafana/grafana-bench/bench/utils"
 )
 
-// START HERE
-// 1. test run command with local and GCP
-// 2. test bench command with local and GCP
-// 3. remove all original mage functions
-// 4. make all test runs upload a new bundle
-// 5. only compress the test directory in the test bundle
-// 6. handle when k6 test fails.. add error message or something about cleaning
-// up.
-
-// 6. look into tagging for instances to mark them for deletion after 24 hours
-
 // This file is a thin wrapper to get us a quick CLI using mage.
 // If you're adding or changing logic, that should happen in the bench/ package
 

@@ -13,8 +13,8 @@ import (
 
 type ProvisionState struct {
 	// UUID for the build
-	Identifier string          `json:"identifier"`
-	driver     ProvisionDriver `json:"driver"`
+	Identifier string `json:"identifier"`
+	driver     ProvisionDriver
 
 	// Identifies what type of provision is used, vm, local, or hosted grafana
 	Type ProvisionType `json:"type"`

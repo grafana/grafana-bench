@@ -15,9 +15,7 @@ import (
 // node
 type BenchService struct {
 	// Configured at runtime
-	// TODO deprecate ProjectRoot once we've removed mage functions
-	ProjectRoot string
-	BuildCache  *buildcache.BuildCache
+	BuildCache *buildcache.BuildCache
 
 	Builder     *builder.BuilderService
 	Provisioner *provisioner.ProvisionerService
@@ -60,8 +58,6 @@ func NewBenchService(ctx context.Context, workPath, artifactsPath, GCPCredPath, 
 	t := tester.NewTester(ctx, testDir, resultsDir, k6cloudtoken)
 
 	return &BenchService{
-		// deprecate
-		ProjectRoot: workPath,
 		BuildCache:  buildCache,
 		Builder:     b,
 		Provisioner: p,

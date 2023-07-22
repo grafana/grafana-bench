@@ -27,6 +27,7 @@ custom.ini
 # don't keep anything in the test results output
 summary/*
 *.tfstate
+*.tfstate.backup
 infra/.terraform/providers
 terraform/
 

@@ -5,15 +5,61 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path"
 	"strings"
 	"time"
 
 	"google.golang.org/api/compute/v1"
+	"google.golang.org/api/option"
 )
+
+type GCPConfig struct {
+	ProjectID string
+	Region    string
+	Zone      string
+}
+
+// used to run locally
+func main() {
+	gcpConfig := GCPConfig{
+		ProjectID: "grafana-bench",
+		Region:    "us-central1",
+		Zone:      "us-central1-c",
+	}
+
+	ctx := context.Background()
+	creds := path.Join(Getwd(), "..", "..", "creds", "GCP-infra-manager-828bbfa6f427.json")
+	computeService, err := compute.NewService(ctx, option.WithCredentialsFile(creds))
+
+	if err != nil {
+		panic(fmt.Sprintf("Error configuring compute service %s", err))
+	}
+
+	err = cleanup(ctx, computeService, gcpConfig)
+
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println("Successfully ran cleanup")
+	}
+}
 
 // http handler for cloudfunction entrypoint
 func RunClean(w http.ResponseWriter, r *http.Request) {
-	err := cleanup()
+	gcpConfig := GCPConfig{
+		ProjectID: os.Getenv("PROJECT_ID"),
+		Region:    os.Getenv("REGION"),
+		Zone:      os.Getenv("ZONE"),
+	}
+
+	ctx := context.Background()
+	computeService, err := compute.NewService(ctx)
+
+	if err != nil {
+		fmt.Println("Error configuring compute service %w", err)
+	}
+
+	err = cleanup(ctx, computeService, gcpConfig)
 
 	if err != nil {
 		fmt.Println(err)
@@ -25,19 +71,9 @@ func RunClean(w http.ResponseWriter, r *http.Request) {
 }
 
 // Does the cleanup
-func cleanup() error {
-	projectID := os.Getenv("PROJECT_ID")
-	region := os.Getenv("REGION")
-	zone := os.Getenv("ZONE")
+func cleanup(ctx context.Context, computeService *compute.Service, gcpConfig GCPConfig) error {
 
-	ctx := context.Background()
-	computeService, err := compute.NewService(ctx)
-
-	if err != nil {
-		return fmt.Errorf("Error configuring compute service %w", err)
-	}
-
-	expiredInstances, err := getExpiredGrafanaInstances(context.Background(), computeService, projectID, zone)
+	expiredInstances, err := getExpiredGrafanaInstances(context.Background(), computeService, gcpConfig.ProjectID, gcpConfig.Zone)
 	if err != nil {
 		return err
 	}
@@ -47,7 +83,7 @@ func cleanup() error {
 	}
 
 	for _, instance := range expiredInstances {
-		err := removeBenchStateAssets(ctx, computeService, projectID, region, zone, instance.Name)
+		err := removeBenchStateAssets(ctx, computeService, gcpConfig.ProjectID, gcpConfig.Region, gcpConfig.Zone, instance.Name)
 		if err != nil {
 			fmt.Println("error deleting assets for instance:", instance.Name, err)
 		} else {
@@ -172,4 +208,18 @@ func instanceExpired(currentDate time.Time, instance *compute.Instance) (bool, e
 		}
 	}
 	return false, nil
+}
+
+// Get working directory
+func Getwd() string {
+	// Use the Getwd function to get the current working directory
+	dir, err := os.Getwd()
+
+	// If there was an error, return it
+	if err != nil {
+		panic(err)
+	}
+
+	// Otherwise, return the current working directory
+	return dir
 }

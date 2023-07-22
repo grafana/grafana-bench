@@ -138,20 +138,22 @@ func (d *GCPDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester
 
 	// bundle test suite
 	testBundleName := getTestBundleName(tr.SuiteRevision)
-	exists, err := d.buildCache.RemoteExists(ctx, buildcache.TypeTestBundle, testBundleName)
-	if !exists {
-		testBundlePath := path.Join(ps.LocalDir, testBundleName)
-		err = tr.PrepareTestBundle(testBundlePath)
-		if err != nil {
-			return err
-		}
 
-		// ship to buildcache
-		err = d.buildCache.StoreFile(ctx, buildcache.TypeTestBundle, testBundlePath, testBundleName)
-		if err != nil {
-			return err
-		}
+	// don't cache test suite
+	//exists, err := d.buildCache.RemoteExists(ctx, buildcache.TypeTestBundle, testBundleName)
+	//if !exists {
+	testBundlePath := path.Join(ps.LocalDir, testBundleName)
+	err = tr.PrepareTestBundle(testBundlePath)
+	if err != nil {
+		return err
 	}
+
+	// ship to buildcache
+	err = d.buildCache.StoreFile(ctx, buildcache.TypeTestBundle, testBundlePath, testBundleName)
+	if err != nil {
+		return err
+	}
+	//}
 
 	// get presigned url to download bundle
 	bundleUrl, err := d.buildCache.GetPresignedUrl(ctx, buildcache.TypeTestBundle, testBundleName)

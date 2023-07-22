@@ -22,7 +22,7 @@ resource "google_storage_bucket_object" "archive" {
 resource "google_cloudfunctions_function" "cleanup_function" {
   available_memory_mb = 128
   entry_point         = "RunClean"
-  ingress_settings    = "ALLOW_ALL"
+  ingress_settings    = "ALLOW_INTERNAL_ONLY"
 
   environment_variables = {
     "PROJECT_ID" = local.project_id
@@ -61,8 +61,8 @@ resource "google_service_account" "cleanup_function_service_account" {
 resource "google_cloud_scheduler_job" "cleanup_job" {
   name             = "cleanup-job-schedule"
   description      = "Trigger the ${google_cloudfunctions_function.cleanup_function.name} hourly"
-  schedule         = "* * * * *" # every minute
-  #schedule         = "1 0 * * *" # daily at 12:01am
+  #schedule         = "* * * * *" # every minute
+  schedule         = "1 0 * * *" # daily at 12:01am
   time_zone        = "America/Anchorage"
   attempt_deadline = "320s"
 

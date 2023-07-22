@@ -139,7 +139,7 @@ func (tr *TestRun) GetRemoteTestSuiteFiles(remotePath string) ([]string, error) 
 }
 
 // BundleTestSuite bundles the test suite into a tarball
-// TODO verify we're only bundling what we need and strip down extra files
+// TODO only ship lib and tests dir from suite directory
 func (tr *TestRun) PrepareTestBundle(bundlePath string) error {
 	fmt.Println("provisioner: compressing test bundle")
 	return utils.CompressFolder(tr.TestSuiteDir, bundlePath)
