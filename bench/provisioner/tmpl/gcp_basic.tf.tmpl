@@ -1,0 +1,166 @@
+provider "google" {
+credentials = file("{{ .Credentials }}")
+  project = "grafana-bench"
+  region  = "us-central1"
+  zone    = "us-central1-c"
+}
+
+provider "tls" {}
+
+# network
+data "google_compute_network" "existing_network" {
+  name = "vm-network"
+}
+
+# my identity
+data "google_client_openid_userinfo" "me" {}
+locals { 
+  # infra-manager@xxx -> infra-manager
+  user = "${split("@", data.google_client_openid_userinfo.me.email)[0]}"
+  vpc_name = data.google_compute_network.existing_network.name
+}
+
+
+# allow ssh and grafana default port
+resource "google_compute_firewall" "ssh-rule" {
+  name = "bench-grafana-instance-{{ .Identifier }}"
+  network = local.vpc_name
+  target_tags = [
+    "bench-grafana-instance-{{ .Identifier }}",
+    "bench-k6-instance-{{ .Identifier }}",
+    "expire-date-{{ .ExpireDate }}"
+    ]
+  source_ranges = ["0.0.0.0/0"]
+
+  allow {
+    protocol = "tcp"
+    ports = ["22", "3000"]
+  }
+
+  allow {
+    protocol = "icmp"
+  }
+}
+
+
+# grafana instance
+resource "google_compute_address" "grafana_static_ip" {
+  name = "bench-grafana-instance-{{ .Identifier }}"
+}
+
+resource "tls_private_key" "grafana_ssh_key" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+resource "google_compute_instance" "grafana_instance" {
+  name         = "bench-grafana-instance-{{ .Identifier }}"
+  machine_type = "e2-micro"
+
+  tags = ["bench-grafana-instance-{{ .Identifier }}", "expire-date-{{ .ExpireDate }}"]
+
+  boot_disk {
+    initialize_params {
+      image = "debian-cloud/debian-11"
+    }
+  }
+
+  metadata = {
+    ssh-keys = "${local.user}:${tls_private_key.grafana_ssh_key.public_key_openssh}"
+    startup-script = file("grafana_startup.sh") 
+  }
+
+  network_interface {
+    network = local.vpc_name
+    access_config {
+      nat_ip = google_compute_address.grafana_static_ip.address
+    }
+  }
+}
+
+resource "local_file" "grafana_user" {
+  content           = local.user
+  filename          = "grafana/user"
+}
+
+resource "local_file" "grafana_port" {
+  content           = "3000"
+  filename          = "grafana/service_port"
+}
+
+resource "local_file" "grafana_ip_address" {
+  content           = google_compute_address.grafana_static_ip.address
+  filename          = "grafana/ip_address"
+}
+
+resource "local_file" "grafana_ssh_private_key" {
+  content         = tls_private_key.grafana_ssh_key.private_key_openssh
+  filename        = "grafana/key"
+  file_permission = "0600"
+}
+
+resource "local_file" "grafana_ssh_public_key" {
+  content         = tls_private_key.grafana_ssh_key.public_key_openssh
+  filename        = "grafana/key_pub"
+  file_permission = "0600"
+}
+
+
+output "ssh_connection_string" {
+  # extra flags ignore adding key to hosts file
+  value = "ssh ${local.user}@${google_compute_address.grafana_static_ip.address} -i grafana/key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+}
+
+# k6 instance
+resource "google_compute_address" "k6_static_ip" {
+  name = "bench-k6-instance-{{ .Identifier }}"
+}
+resource "tls_private_key" "k6_ssh_key" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+resource "google_compute_instance" "k6_instance" {
+  name         = "bench-k6-instance-{{ .Identifier }}"
+  machine_type = "e2-micro"
+
+  tags = ["bench-k6-instance-{{ .Identifier }}", "expire-date-{{ .ExpireDate }}"]
+
+  boot_disk {
+    initialize_params {
+      image = "debian-cloud/debian-11"
+    }
+  }
+
+  metadata = {
+    ssh-keys = "${local.user}:${tls_private_key.k6_ssh_key.public_key_openssh}"
+    startup-script = file("k6_startup.sh") 
+  }
+
+  network_interface {
+    network = local.vpc_name
+    access_config {
+      nat_ip = google_compute_address.k6_static_ip.address
+    }
+  }
+}
+
+resource "local_file" "k6_user" {
+  content           = local.user
+  filename          = "k6/user"
+}
+
+resource "local_file" "k6_ip_address" {
+  content           = google_compute_address.k6_static_ip.address
+  filename          = "k6/ip_address"
+}
+
+resource "local_file" "k6_ssh_private_key" {
+  content         = tls_private_key.k6_ssh_key.private_key_openssh
+  filename        = "k6/key"
+  file_permission = "0600"
+}
+
+resource "local_file" "k6_ssh_public_key" {
+  content         = tls_private_key.k6_ssh_key.public_key_openssh
+  filename        = "k6/key_pub"
+  file_permission = "0600"
+}
