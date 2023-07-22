@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path"
 	"text/template"
+	"time"
 
 	"github.com/grafana/grafana-bench/bench/buildcache"
 	"github.com/grafana/grafana-bench/bench/tester"
@@ -258,10 +259,12 @@ func (d *GCPDriver) writeTemplates(ctx context.Context, ps *ProvisionState, graf
 		Identifier       string
 		GrafanaBundleUrl string
 		GrafanaBinary    string
+		ExpireDate       string
 	}{
 		Credentials:      d.credentialsPath,
 		Identifier:       ps.Identifier,
 		GrafanaBundleUrl: grafanaBundleUrl,
+		ExpireDate:       time.Now().AddDate(0, 0, 1).Format("2006-01-02"),
 	}
 
 	// TODO

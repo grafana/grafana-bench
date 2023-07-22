@@ -60,6 +60,8 @@ const (
 
 func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *builder.Build) (*ProvisionState, error) {
 
+	fmt.Printf("provisioner: using driver %s\n", t)
+
 	if t != Local && !p.VMEnabled {
 		return nil, fmt.Errorf("Provisioner does not have VM support enabled")
 	}

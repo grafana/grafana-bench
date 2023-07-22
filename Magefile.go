@@ -18,6 +18,17 @@ import (
 	"github.com/grafana/grafana-bench/bench/utils"
 )
 
+// START HERE
+// 1. test run command with local and GCP
+// 2. test bench command with local and GCP
+// 3. remove all original mage functions
+// 4. make all test runs upload a new bundle
+// 5. only compress the test directory in the test bundle
+// 6. handle when k6 test fails.. add error message or something about cleaning
+// up.
+
+// 6. look into tagging for instances to mark them for deletion after 24 hours
+
 // This file is a thin wrapper to get us a quick CLI using mage.
 // If you're adding or changing logic, that should happen in the bench/ package
 
@@ -31,7 +42,7 @@ var goEnv = utils.GetCompilerEnvInfo()
 // usage: GRAFANA_REVISION=branch:k8s-proof-of-concept mage buildcommit
 func Build(ctx context.Context) error {
 	grafanaRevision := envOrDefault("GRAFANA_REVISION", "branch:main")
-	grafanaArch := envOrDefault("GRAFANA_ARCH", defaultArch())
+	grafanaArch := envOrDefault("GRAFANA_ARCH", getLocalArch())
 
 	build, err := BenchService.Builder.New(ctx, grafanaRevision, grafanaArch)
 	if err != nil {
@@ -47,12 +58,18 @@ func Build(ctx context.Context) error {
 	return nil
 }
 
-func TestME(ctx context.Context) error {
+// Run a build of grafana. If the build is not in the cache, it will
+// authmatically do the build.
+// If you use this command with the environment variable PROVISION=local this
+// will block until you exit which will shut down the local grafana process.
+func Run(ctx context.Context) error {
 	grafanaRevision := envOrDefault("GRAFANA_REVISION", "branch:main")
-	grafanaArch := envOrDefault("GRAFANA_ARCH", defaultArch())
-
-	// TODO allow set provision type via cmd line
-	//provisionDriver := envOrDefault("PROVISION_DRIVER", "local")
+	grafanaArch := envOrDefault("GRAFANA_ARCH", getLocalArch())
+	provisionDriver := getProvisionDriver()
+	if provisionDriver != provisioner.Local {
+		fmt.Println("Provision driver is not local, defaulting to linux/amd64")
+		grafanaArch = "linux/amd64"
+	}
 
 	// create a build with some defaults do the build if it's not resolved
 	build, err := BenchService.Builder.New(ctx, grafanaRevision, grafanaArch)
@@ -76,7 +93,71 @@ func TestME(ctx context.Context) error {
 		fmt.Println("mage: build in cache")
 	}
 
-	ps, err := BenchService.Provisioner.New(ctx, provisioner.GCP, build)
+	ps, err := BenchService.Provisioner.New(ctx, provisionDriver, build)
+	if err != nil {
+		return err
+	}
+
+	killFunc, err := ps.Provision(ctx)
+	if err != nil {
+		return err
+	}
+	defer killFunc()
+
+	ps.WaitForReady(ctx)
+
+	// Wait for signal to kill grafana if we're using the local driver
+	if provisionDriver == provisioner.Local {
+		sigs := make(chan os.Signal, 1)
+		signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+		<-sigs
+		fmt.Println("Shutting down grafana process")
+	}
+
+	return nil
+}
+
+// Bench handles building, running, and benchmarking a commit.
+// Defaults to using latest commit on Main.
+// You can set the revision yourself. Usage:
+// `GRAFANA_REVISION=branch:k8s-proof-of-concept mage bench`
+// `GRAFANA_REVISION=commit:c116545e0ba005e10e318da96688bdae01439bf5 mage bench`
+//
+// If you would like to specify a custom configuration, you can either set the
+// GRAFANA_CONFIG variable or place a custom.ini in the bench directory on disk
+// usage: `INI=custom.ini mage bench`
+func Bench(ctx context.Context) error {
+	grafanaRevision := envOrDefault("GRAFANA_REVISION", "branch:main")
+	grafanaArch := envOrDefault("GRAFANA_ARCH", getLocalArch())
+	provisionDriver := getProvisionDriver()
+	if provisionDriver != provisioner.Local {
+		fmt.Println("Provision driver is not local, defaulting to linux/amd64")
+		grafanaArch = "linux/amd64"
+	}
+
+	// create a build with some defaults do the build if it's not resolved
+	build, err := BenchService.Builder.New(ctx, grafanaRevision, grafanaArch)
+	if err != nil {
+		return err
+	}
+	if !build.Resolved {
+		err := build.Run(ctx)
+		if err != nil {
+			return err
+		}
+	}
+
+	// verify build exists in the cache
+	resolved, err := BenchService.BuildCache.Resolve(ctx, buildcache.TypeBuild, build.ArtifactBuildName)
+	if err != nil {
+		return err
+	}
+
+	if resolved {
+		fmt.Println("mage: build in cache")
+	}
+
+	ps, err := BenchService.Provisioner.New(ctx, provisionDriver, build)
 	if err != nil {
 		return err
 	}
@@ -103,38 +184,6 @@ func TestME(ctx context.Context) error {
 	}
 
 	// remove the build artifacts
-	return ps.Destroy(ctx)
-}
-
-func ContinueTest(ctx context.Context) error {
-	state := os.Getenv("STATE")
-	if state == "" {
-		return fmt.Errorf("invalid state: \"%s\"", state)
-	}
-
-	ps, err := BenchService.Provisioner.ReadStateFile(state)
-	if err != nil {
-		return err
-	}
-
-	ps.WaitForReady(ctx)
-
-	//ps.RunTests()
-
-	return nil
-}
-
-// Destroy looks up the state and tears down a provision state
-func Destroy(ctx context.Context) error {
-	state := os.Getenv("STATE")
-	if state == "" {
-		return fmt.Errorf("invalid state: \"%s\"", state)
-	}
-	ps, err := BenchService.Provisioner.ReadStateFile(state)
-	if err != nil {
-		return err
-	}
-
 	return ps.Destroy(ctx)
 }
 
@@ -166,71 +215,41 @@ func Test(ctx context.Context) error {
 	return nil
 }
 
+//func ContinueTest(ctx context.Context) error {
+//  state := os.Getenv("STATE")
+//  if state == "" {
+//    return fmt.Errorf("invalid state: \"%s\"", state)
+//  }
+
+//  ps, err := BenchService.Provisioner.ReadStateFile(state)
+//  if err != nil {
+//    return err
+//  }
+
+//  ps.WaitForReady(ctx)
+
+//  //ps.RunTests()
+
+//  return nil
+//}
+
+// Destroy looks up the state and tears down a provision state
+func Destroy(ctx context.Context) error {
+	state := os.Getenv("STATE")
+	if state == "" {
+		return fmt.Errorf("invalid state: \"%s\"", state)
+	}
+	ps, err := BenchService.Provisioner.ReadStateFile(state)
+	if err != nil {
+		return err
+	}
+
+	return ps.Destroy(ctx)
+}
+
 // Lists builds in cache
 func ListBuilds(ctx context.Context) error {
 	return BenchService.Builder.ListBuilds(ctx)
-}
-
-// Bench handles building, running, and benchmarking a commit.
-// Defaults to using latest commit on Main.
-// You can set the revision yourself. Usage:
-// `GRAFANA_REVISION=branch:k8s-proof-of-concept mage bench`
-// `GRAFANA_REVISION=commit:c116545e0ba005e10e318da96688bdae01439bf5 mage bench`
-//
-// If you would like to specify a custom configuration, you can either set the
-// GRAFANA_CONFIG variable or place a custom.ini in the bench directory on disk
-// usage: `INI=custom.ini mage bench`
-func Bench(ctx context.Context) error {
-	b := bench.NewBenchRun(ctx, CLIServiceDefaults(ctx))
-	return b.Bench(ctx)
-}
-
-// Build and run grafana, but wait for input to shutdown.
-func Run(ctx context.Context) error {
-	grafanaRevision := envOrDefault("GRAFANA_REVISION", "branch:main")
-	grafanaArch := envOrDefault("GRAFANA_ARCH", defaultArch())
-
-	// create a build with some defaults do the build if it's not resolved
-	build, err := BenchService.Builder.New(ctx, grafanaRevision, grafanaArch)
-	if err != nil {
-		return err
-	}
-	if !build.Resolved {
-		err := build.Run(ctx)
-		if err != nil {
-			return err
-		}
-	}
-
-	// verify build exists in the cache
-	resolved, err := BenchService.BuildCache.Resolve(ctx, buildcache.TypeBuild, build.ArtifactBuildName)
-	if err != nil {
-		return err
-	}
-
-	if resolved {
-		fmt.Println("mage: build in cache")
-	}
-
-	ps, err := BenchService.Provisioner.New(ctx, provisioner.Local, build)
-	if err != nil {
-		return err
-	}
-
-	killFunc, err := ps.Provision(ctx)
-	if err != nil {
-		return err
-	}
-	defer killFunc()
-
-	ps.WaitForReady(ctx)
-
-	// wait for signal to kill grafana
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-	<-sigs
-	fmt.Println("Shutting down grafana process")
-	return nil
 }
 
 // Function to set defaults for CLI.
@@ -251,7 +270,7 @@ func CLIServiceDefaults(ctx context.Context) *bench.BenchService {
 }
 
 // Gets the architecture of the machine running Bench
-func defaultArch() string {
+func getLocalArch() string {
 	sys_os := goEnv["GOOS"]
 	sys_arch := goEnv["GOARCH"]
 	return fmt.Sprintf("%s/%s", strings.ToLower(sys_os), strings.ToLower(sys_arch))
@@ -265,4 +284,19 @@ func envOrDefault(environmentVarName, defaultValue string) string {
 	}
 
 	return v
+}
+
+// Determines which provision driver to use based on PROVISION environment
+// variable
+func getProvisionDriver() provisioner.ProvisionType {
+	provisionString := strings.ToLower(envOrDefault("PROVISION", "local"))
+
+	switch provisionString {
+	case "local":
+		return provisioner.Local
+	case "gcp":
+		return provisioner.GCP
+	default:
+		panic(fmt.Errorf("provisioner: unknown provision type: %s", provisionString))
+	}
 }

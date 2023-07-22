@@ -25,7 +25,11 @@ locals {
 resource "google_compute_firewall" "ssh-rule" {
   name = "bench-grafana-instance-{{ .Identifier }}"
   network = local.vpc_name
-  target_tags = ["bench-grafana-instance-{{ .Identifier }}", "bench-k6-instance-{{ .Identifier }}"]
+  target_tags = [
+    "bench-grafana-instance-{{ .Identifier }}",
+    "bench-k6-instance-{{ .Identifier }}",
+    "expire-date-{{ .ExpireDate }}"
+    ]
   source_ranges = ["0.0.0.0/0"]
 
   allow {
@@ -43,6 +47,7 @@ resource "google_compute_firewall" "ssh-rule" {
 resource "google_compute_address" "grafana_static_ip" {
   name = "bench-grafana-instance-{{ .Identifier }}"
 }
+
 resource "tls_private_key" "grafana_ssh_key" {
   algorithm = "RSA"
   rsa_bits  = 4096
@@ -51,7 +56,7 @@ resource "google_compute_instance" "grafana_instance" {
   name         = "bench-grafana-instance-{{ .Identifier }}"
   machine_type = "e2-micro"
 
-  tags = ["bench-grafana-instance-{{ .Identifier }}"]
+  tags = ["bench-grafana-instance-{{ .Identifier }}", "expire-date-{{ .ExpireDate }}"]
 
   boot_disk {
     initialize_params {
@@ -117,7 +122,7 @@ resource "google_compute_instance" "k6_instance" {
   name         = "bench-k6-instance-{{ .Identifier }}"
   machine_type = "e2-micro"
 
-  tags = ["bench-k6-instance-{{ .Identifier }}"]
+  tags = ["bench-k6-instance-{{ .Identifier }}", "expire-date-{{ .ExpireDate }}"]
 
   boot_disk {
     initialize_params {
