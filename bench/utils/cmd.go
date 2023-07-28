@@ -12,6 +12,7 @@ func ExecStdoutWithEnv(cmd *exec.Cmd, env map[string]string) error {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", key, value))
 	}
 
+	fmt.Println(cmd.Env)
 	return ExecStdout(cmd)
 }
 

@@ -217,13 +217,19 @@ func (d *GCPDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester
 
 	if tr.ReportToK6Cloud {
 		envVars["K6_CLOUD_TOKEN"] = tr.K6CloudToken
-		envVars["K6_CLOUD_PROJECT_ID"] = "3641403"
+		envVars["K6_CLOUD_PROJECT_ID"] = tr.K6CloudProjectId
 	}
 
 	for _, testFile := range tests {
 		fmt.Println("provisioner: running test file:", testFile)
-		cmd := fmt.Sprintf("%s k6 run %s --out cloud", formatEnv(envVars), testFile)
-		//cmd := fmt.Sprintf("%s k6 run %s -i 1 -u 1 --out cloud", formatEnv(envVars), testFile)
+		cmd := ""
+
+		if tr.ReportToK6Cloud {
+			cmd = fmt.Sprintf("%s k6 run %s --out cloud", formatEnv(envVars), testFile)
+		} else {
+			cmd = fmt.Sprintf("%s k6 run %s", formatEnv(envVars), testFile)
+		}
+
 		fmt.Println(cmd)
 		err := ps.K6Instance.Run(connection, cmd)
 		if err != nil {

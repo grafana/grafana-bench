@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"path"
+	"strconv"
 	"strings"
 	"syscall"
 
@@ -26,6 +27,24 @@ var BenchService *bench.BenchService = CLIServiceDefaults(context.Background())
 
 // Get GoEnv from system running mage
 var goEnv = utils.GetCompilerEnvInfo()
+
+// CLIServiceDefaults setups up defaults for running bench
+func CLIServiceDefaults(ctx context.Context) *bench.BenchService {
+	execRoot := utils.Getwd()
+
+	workPath := path.Join(execRoot, "work")
+	buildCachePath := path.Join(workPath, "buildcache")
+
+	GCSCredPath := path.Join(execRoot, "creds", "GCP-infra-manager-828bbfa6f427.json")
+	K6CloudTokenPath := path.Join(execRoot, "creds", "k6cloud_jefflevinslunch_grafana_net")
+	K6CloudProjectID := "3641403"
+
+	svc, err := bench.NewBenchService(ctx, workPath, buildCachePath, GCSCredPath, K6CloudTokenPath, K6CloudProjectID, "bench-builds")
+	if err != nil {
+		panic(err)
+	}
+	return svc
+}
 
 // Build builds a grafana binary and stores it in the artifacts folder
 // usage: GRAFANA_REVISION=branch:k8s-proof-of-concept mage buildcommit
@@ -115,7 +134,7 @@ func Run(ctx context.Context) error {
 // If you would like to specify a custom configuration, you can either set the
 // GRAFANA_CONFIG variable or place a custom.ini in the bench directory on disk
 // usage: `INI=custom.ini mage bench`
-func Bench(ctx context.Context) error {
+func Bench(ctx context.Context, testSuite string) error {
 	grafanaRevision := envOrDefault("GRAFANA_REVISION", "branch:main")
 	grafanaArch := envOrDefault("GRAFANA_ARCH", getLocalArch())
 	provisionDriver := getProvisionDriver()
@@ -159,9 +178,9 @@ func Bench(ctx context.Context) error {
 
 	ps.WaitForReady(ctx)
 
-	//return nil
 	// test the build
-	testRun, err := BenchService.Tester.New(ctx, "jalevin/test", "dashboards/dashboard_read.js", true)
+	reportCloud, _ := strconv.ParseBool(envOrDefault("REPORT_CLOUD", "false"))
+	testRun, err := BenchService.Tester.New(ctx, "", testSuite, reportCloud)
 	if err != nil {
 		return err
 	}
@@ -169,16 +188,19 @@ func Bench(ctx context.Context) error {
 	// run the tests
 	err = ps.RunTests(ctx, testRun)
 	if err != nil {
-		return err
+		fmt.Println("error running tests:", err)
+		fmt.Println("connectionString:", ps.K6Instance.GetConnectionString())
 	}
 
+	return err
+
 	// remove the build artifacts
-	return ps.Destroy(ctx)
+	//return ps.Destroy(ctx)
 }
 
 // Runs test suite on already running instance of grafana. Requires state for
 // operation
-func Test(ctx context.Context) error {
+func Test(ctx context.Context, testSuite string) error {
 	state := os.Getenv("STATE")
 
 	if state == "" {
@@ -191,7 +213,8 @@ func Test(ctx context.Context) error {
 	}
 
 	// test the build
-	testRun, err := BenchService.Tester.New(ctx, "jalevin/test", "dashboards/dashboard_read.js", true)
+	reportCloud, _ := strconv.ParseBool(envOrDefault("REPORT_CLOUD", "false"))
+	testRun, err := BenchService.Tester.New(ctx, "", testSuite, reportCloud)
 	if err != nil {
 		return err
 	}
@@ -203,24 +226,6 @@ func Test(ctx context.Context) error {
 	}
 	return nil
 }
-
-//func ContinueTest(ctx context.Context) error {
-//  state := os.Getenv("STATE")
-//  if state == "" {
-//    return fmt.Errorf("invalid state: \"%s\"", state)
-//  }
-
-//  ps, err := BenchService.Provisioner.ReadStateFile(state)
-//  if err != nil {
-//    return err
-//  }
-
-//  ps.WaitForReady(ctx)
-
-//  //ps.RunTests()
-
-//  return nil
-//}
 
 // Destroy looks up the state and tears down a provision state
 func Destroy(ctx context.Context) error {
@@ -239,23 +244,6 @@ func Destroy(ctx context.Context) error {
 // Lists builds in cache
 func ListBuilds(ctx context.Context) error {
 	return BenchService.Builder.ListBuilds(ctx)
-}
-
-// Function to set defaults for CLI.
-func CLIServiceDefaults(ctx context.Context) *bench.BenchService {
-	execRoot := utils.Getwd()
-
-	workPath := path.Join(execRoot, "work")
-	buildCachePath := path.Join(workPath, "buildcache")
-
-	GCSCredPath := path.Join(execRoot, "creds", "GCP-infra-manager-828bbfa6f427.json")
-	K6CloudTokenPath := path.Join(execRoot, "creds", "k6cloud_jefflevinslunch_grafana_net")
-
-	svc, err := bench.NewBenchService(ctx, workPath, buildCachePath, GCSCredPath, K6CloudTokenPath, "bench-builds")
-	if err != nil {
-		panic(err)
-	}
-	return svc
 }
 
 // Gets the architecture of the machine running Bench
