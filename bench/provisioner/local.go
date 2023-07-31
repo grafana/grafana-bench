@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/grafana/grafana-bench/bench/buildcache"
 	"github.com/grafana/grafana-bench/bench/tester"
@@ -100,8 +101,8 @@ func (d *LocalDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *test
 		}
 
 		if tr.ReportToK6Cloud {
-			envVars["K6_CLOUD_TOKEN"] = tr.K6CloudToken
-			envVars["K6_CLOUD_PROJECT_ID"] = tr.K6CloudProjectId
+			envVars["K6_CLOUD_TOKEN"] = strings.TrimSpace(tr.K6CloudToken)
+			envVars["K6_CLOUD_PROJECT_ID"] = strings.TrimSpace(tr.K6CloudProjectId)
 		}
 
 		tests, err := tr.GetTestSuiteFiles()
@@ -114,17 +115,6 @@ func (d *LocalDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *test
 			fmt.Println("provisioner: running test file:", testFile)
 
 			var cmd *exec.Cmd
-
-			// TODO START HERE
-			// REPORT_CLOUD=true GRAFANA_REVISION=commit:b963defa44ef264a88e3dd862b9e91d026102e5c mage bench dashboards/dashboard_create.js
-			// creates the error
-			// time="2023-07-27T17:16:19-08:00" level=error msg="Post \"https://ingest.k6.io/v1/tests\": net/http: invalid header field value for \"Authorization\""
-			//
-			// so far the only difference is that in gcp driver we build a whole
-			// string to execute as a command rather than splitting out the
-			// environment variables. As far as I can tell, environment variables are
-			// set correctly here, however, it doesn't appear k6 is getting the proper
-			// headers
 			if tr.ReportToK6Cloud {
 				cmd = exec.Command("k6", "run", testFile, "-o", "cloud")
 			} else {

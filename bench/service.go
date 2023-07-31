@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/grafana/grafana-bench/bench/buildcache"
 	"github.com/grafana/grafana-bench/bench/builder"
@@ -52,7 +53,7 @@ func NewBenchService(ctx context.Context, workPath, artifactsPath, GCPCredPath, 
 		if err != nil {
 			return nil, err
 		}
-		k6cloudtoken = string(tokenBytes)
+		k6cloudtoken = strings.TrimSpace(string(tokenBytes))
 	}
 
 	t := tester.NewTester(ctx, testDir, resultsDir, k6cloudtoken, k6CloudProjectID)
