@@ -130,16 +130,18 @@ func (p *ProvisionerService) ReadStateFile(stateIdentifier string) (*ProvisionSt
 
 	ps.driver = p.InitDriver(ps.Type)
 
-	// TODO the rest of this is dependent on the driver. offload this part to the
-	// driver that handled the provisioning
-	ps.GrafanaInstance, err = readVM(ps.StateDir, "grafana")
-	if err != nil {
-		return nil, err
-	}
+	// TODO the rest of this is dependent on the driver.
+	// offload this part to the driver that handled the provisioning
+	if ps.Type != Local {
+		ps.GrafanaInstance, err = readVM(ps.StateDir, "grafana")
+		if err != nil {
+			return nil, err
+		}
 
-	ps.K6Instance, err = readVM(ps.StateDir, "k6")
-	if err != nil {
-		return nil, err
+		ps.K6Instance, err = readVM(ps.StateDir, "k6")
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &ps, nil

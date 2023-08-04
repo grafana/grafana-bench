@@ -5,11 +5,12 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 func ExecStdoutWithEnv(cmd *exec.Cmd, env map[string]string) error {
 	for key, value := range env {
-		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", key, value))
+		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", strings.ToUpper(key), strings.TrimSpace(value)))
 	}
 
 	return ExecStdout(cmd)
