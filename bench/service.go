@@ -3,7 +3,6 @@ package bench
 import (
 	"context"
 	"path"
-	"strings"
 
 	"github.com/grafana/grafana-bench/bench/buildcache"
 	"github.com/grafana/grafana-bench/bench/builder"

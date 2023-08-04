@@ -59,24 +59,6 @@ func CLIServiceDefaults(ctx context.Context) *bench.BenchService {
 	return svc
 }
 
-// CLIServiceDefaults setups up defaults for running bench
-func CLIServiceDefaults(ctx context.Context) *bench.BenchService {
-	execRoot := utils.Getwd()
-
-	workPath := path.Join(execRoot, "work")
-	buildCachePath := path.Join(workPath, "buildcache")
-
-	GCSCredPath := path.Join(execRoot, "creds", "GCP-infra-manager-828bbfa6f427.json")
-	K6CloudTokenPath := path.Join(execRoot, "creds", "k6cloud_jefflevinslunch_grafana_net")
-	K6CloudProjectID := "3641403"
-
-	svc, err := bench.NewBenchService(ctx, workPath, buildCachePath, GCSCredPath, K6CloudTokenPath, K6CloudProjectID, "bench-builds")
-	if err != nil {
-		panic(err)
-	}
-	return svc
-}
-
 // Build builds a grafana binary and stores it in the artifacts folder
 // usage: GRAFANA_REVISION=branch:k8s-proof-of-concept mage buildcommit
 func Build(ctx context.Context) error {
