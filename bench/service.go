@@ -3,6 +3,7 @@ package bench
 import (
 	"context"
 	"path"
+	"strings"
 
 	"github.com/grafana/grafana-bench/bench/buildcache"
 	"github.com/grafana/grafana-bench/bench/builder"
@@ -22,7 +23,6 @@ type BenchService struct {
 }
 
 func NewBenchService(ctx context.Context, workPath, artifactsPath, GCPCredPath, k6CloudToken, k6CloudProjectID, bucketName string) (*BenchService, error) {
-
 	// configure the cache
 	buildCache, err := buildcache.NewBuildCache(ctx, artifactsPath, GCPCredPath, bucketName)
 	if err != nil {
@@ -45,7 +45,6 @@ func NewBenchService(ctx context.Context, workPath, artifactsPath, GCPCredPath, 
 	// configure tester
 	resultsDir := path.Join(workPath, "results")
 	testDir := path.Join(workPath, "test")
-
 	t := tester.NewTester(ctx, testDir, resultsDir, k6CloudToken, k6CloudProjectID)
 
 	return &BenchService{
