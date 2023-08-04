@@ -2,7 +2,6 @@ package bench
 
 import (
 	"context"
-	"os"
 	"path"
 	"strings"
 
@@ -23,8 +22,7 @@ type BenchService struct {
 	Tester      *tester.TesterService
 }
 
-func NewBenchService(ctx context.Context, workPath, artifactsPath, GCPCredPath, k6CloudCredPath, k6CloudProjectID, bucketName string) (*BenchService, error) {
-
+func NewBenchService(ctx context.Context, workPath, artifactsPath, GCPCredPath, k6CloudToken, k6CloudProjectID, bucketName string) (*BenchService, error) {
 	// configure the cache
 	buildCache, err := buildcache.NewBuildCache(ctx, artifactsPath, GCPCredPath, bucketName)
 	if err != nil {
@@ -47,16 +45,7 @@ func NewBenchService(ctx context.Context, workPath, artifactsPath, GCPCredPath, 
 	// configure tester
 	resultsDir := path.Join(workPath, "results")
 	testDir := path.Join(workPath, "test")
-	k6cloudtoken := ""
-	if k6CloudCredPath != "" {
-		tokenBytes, err := os.ReadFile(k6CloudCredPath)
-		if err != nil {
-			return nil, err
-		}
-		k6cloudtoken = strings.TrimSpace(string(tokenBytes))
-	}
-
-	t := tester.NewTester(ctx, testDir, resultsDir, k6cloudtoken, k6CloudProjectID)
+	t := tester.NewTester(ctx, testDir, resultsDir, k6CloudToken, k6CloudProjectID)
 
 	return &BenchService{
 		BuildCache:  buildCache,

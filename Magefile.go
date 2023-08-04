@@ -22,11 +22,42 @@ import (
 // This file is a thin wrapper to get us a quick CLI using mage.
 // If you're adding or changing logic, that should happen in the bench/ package
 
-// Setup bench service with defaults for CLI
-var BenchService *bench.BenchService = CLIServiceDefaults(context.Background())
+var (
+	// execRoot is the root of the repo or binary execution
+	execRoot = utils.Getwd()
 
-// Get GoEnv from system running mage
-var goEnv = utils.GetCompilerEnvInfo()
+	// Get GoEnv from system running mage
+	goEnv           = utils.GetCompilerEnvInfo()
+	grafanaRevision = envOrDefault("GRAFANA_REVISION", "branch:main")
+	grafanaArch     = envOrDefault("GRAFANA_ARCH", getLocalArch())
+	provisionDriver = getProvisionDriver()
+	provisionState  = os.Getenv("STATE")
+	reportCloud     = envOrDefaultBool("REPORT_CLOUD", "false")
+
+	// default k6 cloud token to jefflevinslunch instance
+	k6CloudTokenPath = envOrDefault("K6_CLOUD_TOKEN_PATH", readK6Token(reportCloud, path.Join(execRoot, "creds", "k6cloud_ops_grafana_ops_net")))
+
+	// default k6 cloud project: https://jefflevinslunch.grafana.net/a/k6-app/projects/3641403
+	k6CloudProjectID = envOrDefault("K6_CLOUD_PROJECT", "3641403")
+
+	// default to infra manager cred file
+	gcsCredPath = path.Join(execRoot, "creds", "GCP-infra-manager-828bbfa6f427.json")
+
+	// Setup bench service with defaults for CLI
+	BenchService *bench.BenchService = CLIServiceDefaults(context.Background())
+)
+
+// CLIServiceDefaults setups up defaults for running bench
+func CLIServiceDefaults(ctx context.Context) *bench.BenchService {
+	workPath := path.Join(execRoot, "work")
+	buildCachePath := path.Join(workPath, "buildcache")
+
+	svc, err := bench.NewBenchService(ctx, workPath, buildCachePath, gcsCredPath, k6CloudTokenPath, k6CloudProjectID, "bench-builds")
+	if err != nil {
+		panic(err)
+	}
+	return svc
+}
 
 // CLIServiceDefaults setups up defaults for running bench
 func CLIServiceDefaults(ctx context.Context) *bench.BenchService {
@@ -49,9 +80,6 @@ func CLIServiceDefaults(ctx context.Context) *bench.BenchService {
 // Build builds a grafana binary and stores it in the artifacts folder
 // usage: GRAFANA_REVISION=branch:k8s-proof-of-concept mage buildcommit
 func Build(ctx context.Context) error {
-	grafanaRevision := envOrDefault("GRAFANA_REVISION", "branch:main")
-	grafanaArch := envOrDefault("GRAFANA_ARCH", getLocalArch())
-
 	build, err := BenchService.Builder.New(ctx, grafanaRevision, grafanaArch)
 	if err != nil {
 		return err
@@ -71,9 +99,6 @@ func Build(ctx context.Context) error {
 // If you use this command with the environment variable PROVISION=local this
 // will block until you exit which will shut down the local grafana process.
 func Run(ctx context.Context) error {
-	grafanaRevision := envOrDefault("GRAFANA_REVISION", "branch:main")
-	grafanaArch := envOrDefault("GRAFANA_ARCH", getLocalArch())
-	provisionDriver := getProvisionDriver()
 	if provisionDriver != provisioner.Local {
 		fmt.Println("Provision driver is not local, defaulting to linux/amd64")
 		grafanaArch = "linux/amd64"
@@ -135,9 +160,6 @@ func Run(ctx context.Context) error {
 // GRAFANA_CONFIG variable or place a custom.ini in the bench directory on disk
 // usage: `INI=custom.ini mage bench`
 func Bench(ctx context.Context, testSuite string) error {
-	grafanaRevision := envOrDefault("GRAFANA_REVISION", "branch:main")
-	grafanaArch := envOrDefault("GRAFANA_ARCH", getLocalArch())
-	provisionDriver := getProvisionDriver()
 	if provisionDriver != provisioner.Local {
 		fmt.Println("Provision driver is not local, defaulting to linux/amd64")
 		grafanaArch = "linux/amd64"
@@ -179,7 +201,6 @@ func Bench(ctx context.Context, testSuite string) error {
 	ps.WaitForReady(ctx)
 
 	// test the build
-	reportCloud, _ := strconv.ParseBool(envOrDefault("REPORT_CLOUD", "false"))
 	testRun, err := BenchService.Tester.New(ctx, "", testSuite, reportCloud)
 	if err != nil {
 		return err
@@ -201,19 +222,16 @@ func Bench(ctx context.Context, testSuite string) error {
 // Runs test suite on already running instance of grafana. Requires state for
 // operation
 func Test(ctx context.Context, testSuite string) error {
-	state := os.Getenv("STATE")
-
-	if state == "" {
-		return fmt.Errorf("invalid state: \"%s\"", state)
+	if provisionState == "" {
+		return fmt.Errorf("invalid state: \"%s\"", provisionState)
 	}
 
-	ps, err := BenchService.Provisioner.ReadStateFile(state)
+	ps, err := BenchService.Provisioner.ReadStateFile(provisionState)
 	if err != nil {
 		return err
 	}
 
 	// test the build
-	reportCloud, _ := strconv.ParseBool(envOrDefault("REPORT_CLOUD", "false"))
 	testRun, err := BenchService.Tester.New(ctx, "", testSuite, reportCloud)
 	if err != nil {
 		return err
@@ -229,11 +247,10 @@ func Test(ctx context.Context, testSuite string) error {
 
 // Destroy looks up the state and tears down a provision state
 func Destroy(ctx context.Context) error {
-	state := os.Getenv("STATE")
-	if state == "" {
-		return fmt.Errorf("invalid state: \"%s\"", state)
+	if provisionState == "" {
+		return fmt.Errorf("invalid state: \"%s\"", provisionState)
 	}
-	ps, err := BenchService.Provisioner.ReadStateFile(state)
+	ps, err := BenchService.Provisioner.ReadStateFile(provisionState)
 	if err != nil {
 		return err
 	}
@@ -263,6 +280,15 @@ func envOrDefault(environmentVarName, defaultValue string) string {
 	return v
 }
 
+// Get boolean environment variable. panics if there's an issue with conversion
+func envOrDefaultBool(environmentVarName, defaultValue string) bool {
+	bool, err := strconv.ParseBool(envOrDefault("REPORT_CLOUD", "false"))
+	if err != nil {
+		panic(fmt.Sprintf("error reading bool env variable %s: %s", environmentVarName, err))
+	}
+	return bool
+}
+
 // Determines which provision driver to use based on PROVISION environment
 // variable
 func getProvisionDriver() provisioner.ProvisionType {
@@ -276,4 +302,18 @@ func getProvisionDriver() provisioner.ProvisionType {
 	default:
 		panic(fmt.Errorf("provisioner: unknown provision type: %s", provisionString))
 	}
+}
+
+// reads a k6 token from a file if REPORT_CLOUD is true. Panics if there is a problem.
+func readK6Token(reportCloud bool, path string) string {
+	if !reportCloud || path == "" {
+		return ""
+	}
+
+	// read in file
+	tokenBytes, err := os.ReadFile(path)
+	if err != nil {
+		panic(fmt.Sprintf("Error reading k6 cloud token: %s", err))
+	}
+	return strings.TrimSpace(string(tokenBytes))
 }
