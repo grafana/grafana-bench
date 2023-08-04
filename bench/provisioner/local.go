@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/grafana/grafana-bench/bench/buildcache"
 	"github.com/grafana/grafana-bench/bench/tester"
@@ -96,12 +97,12 @@ func (d *LocalDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *test
 			"MACHINE_SPEC":        machineSpec,
 			"TEST_SUITE_REVISION": tr.SuiteRevision,
 			"TEST_SUMMARY_DIR":    resultsDir,
-			"GT_URL":              ps.GrafanaInstance.ServiceAddress(),
+			"GT_URL":              ps.GrafanaInstance.HttpServiceAddress(),
 		}
 
 		if tr.ReportToK6Cloud {
-			envVars["k6_CLOUD_TOKEN"] = tr.K6CloudToken
-			//envVars["k6_CLOUD_PROJECT_ID"] = tr.K6CloudProjectID
+			envVars["K6_CLOUD_TOKEN"] = strings.TrimSpace(tr.K6CloudToken)
+			envVars["K6_CLOUD_PROJECT_ID"] = strings.TrimSpace(tr.K6CloudProjectId)
 		}
 
 		tests, err := tr.GetTestSuiteFiles()
@@ -115,9 +116,9 @@ func (d *LocalDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *test
 
 			var cmd *exec.Cmd
 			if tr.ReportToK6Cloud {
-				cmd = exec.Command("k6", "run", testFile, "-i", "1", "-u", "1", "-o", "cloud")
+				cmd = exec.Command("k6", "run", testFile, "-o", "cloud")
 			} else {
-				cmd = exec.Command("k6", "run", testFile, "-i", "1", "-u", "1")
+				cmd = exec.Command("k6", "run", testFile)
 			}
 
 			// TODO figure out what to do with threshold errors from k6.
@@ -127,7 +128,7 @@ func (d *LocalDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *test
 			// approach. We should figure out a way to tell k6 not to return an error
 			// if threshold is breached rather than necessarily modifying the test
 
-			// k6 run tests/tests/dashboards.js -i 1 -u 1 -o cloud
+			// k6 run tests/tests/dashboards.js -o cloud
 			_ = utils.ExecStdoutWithEnv(cmd, envVars)
 		}
 

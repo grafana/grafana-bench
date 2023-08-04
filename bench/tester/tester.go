@@ -43,6 +43,7 @@ func (tr *TestRun) ResultsDirectory(provisionStateIdentifier string) string {
 // now we're just going to link the build suite to the service.
 // This could probably be optimized for less checkouts/etc later
 func (tr *TestRun) ResolveTestSuite() error {
+
 	// clone repo if doesn't exist
 	exists, _ := utils.PathExists(tr.TestSuiteDir)
 	if !exists {
@@ -54,6 +55,13 @@ func (tr *TestRun) ResolveTestSuite() error {
 
 	// update repo + checkout branch
 	err := utils.DoInDir(tr.LocalDir, tr.TestSuiteDir, func() error {
+
+		// if we don't specify a revision, assume we want to run exactly what is
+		// there. e.g. local development
+		if tr.SuiteRevision == "" {
+			return nil
+		}
+
 		if err := utils.ExecStdout(exec.Command("git", "checkout", "main")); err != nil {
 			return fmt.Errorf("test-run: Error checking out grafana test repo %s", err)
 		}
@@ -66,6 +74,9 @@ func (tr *TestRun) ResolveTestSuite() error {
 		var err error
 		if tr.SuiteRevision != "main" {
 			err = utils.ExecStdout(exec.Command("git", "checkout", tr.SuiteRevision))
+			if err != nil {
+				return err
+			}
 		}
 
 		// get the commit hash
