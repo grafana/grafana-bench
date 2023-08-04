@@ -22,11 +22,17 @@ import (
 // This file is a thin wrapper to get us a quick CLI using mage.
 // If you're adding or changing logic, that should happen in the bench/ package
 
-// Setup bench service with defaults for CLI
-var BenchService *bench.BenchService = CLIServiceDefaults(context.Background())
+var (
+	// Get GoEnv from system running mage
+	goEnv           = utils.GetCompilerEnvInfo()
+	grafanaRevision = envOrDefault("GRAFANA_REVISION", "branch:main")
+	grafanaArch     = envOrDefault("GRAFANA_ARCH", getLocalArch())
+	provisionDriver = getProvisionDriver()
+	provisionState  = os.Getenv("STATE")
 
-// Get GoEnv from system running mage
-var goEnv = utils.GetCompilerEnvInfo()
+	// Setup bench service with defaults for CLI
+	BenchService *bench.BenchService = CLIServiceDefaults(context.Background())
+)
 
 // CLIServiceDefaults setups up defaults for running bench
 func CLIServiceDefaults(ctx context.Context) *bench.BenchService {
@@ -36,8 +42,8 @@ func CLIServiceDefaults(ctx context.Context) *bench.BenchService {
 	buildCachePath := path.Join(workPath, "buildcache")
 
 	GCSCredPath := path.Join(execRoot, "creds", "GCP-infra-manager-828bbfa6f427.json")
-	K6CloudTokenPath := path.Join(execRoot, "creds", "k6cloud_jefflevinslunch_grafana_net")
-	K6CloudProjectID := "3641403"
+	K6CloudTokenPath := path.Join(execRoot, "creds", "k6cloud_ops_grafana_ops_net")
+	K6CloudProjectID := "3652536"
 
 	svc, err := bench.NewBenchService(ctx, workPath, buildCachePath, GCSCredPath, K6CloudTokenPath, K6CloudProjectID, "bench-builds")
 	if err != nil {
@@ -49,9 +55,6 @@ func CLIServiceDefaults(ctx context.Context) *bench.BenchService {
 // Build builds a grafana binary and stores it in the artifacts folder
 // usage: GRAFANA_REVISION=branch:k8s-proof-of-concept mage buildcommit
 func Build(ctx context.Context) error {
-	grafanaRevision := envOrDefault("GRAFANA_REVISION", "branch:main")
-	grafanaArch := envOrDefault("GRAFANA_ARCH", getLocalArch())
-
 	build, err := BenchService.Builder.New(ctx, grafanaRevision, grafanaArch)
 	if err != nil {
 		return err
@@ -71,9 +74,6 @@ func Build(ctx context.Context) error {
 // If you use this command with the environment variable PROVISION=local this
 // will block until you exit which will shut down the local grafana process.
 func Run(ctx context.Context) error {
-	grafanaRevision := envOrDefault("GRAFANA_REVISION", "branch:main")
-	grafanaArch := envOrDefault("GRAFANA_ARCH", getLocalArch())
-	provisionDriver := getProvisionDriver()
 	if provisionDriver != provisioner.Local {
 		fmt.Println("Provision driver is not local, defaulting to linux/amd64")
 		grafanaArch = "linux/amd64"
@@ -135,9 +135,6 @@ func Run(ctx context.Context) error {
 // GRAFANA_CONFIG variable or place a custom.ini in the bench directory on disk
 // usage: `INI=custom.ini mage bench`
 func Bench(ctx context.Context, testSuite string) error {
-	grafanaRevision := envOrDefault("GRAFANA_REVISION", "branch:main")
-	grafanaArch := envOrDefault("GRAFANA_ARCH", getLocalArch())
-	provisionDriver := getProvisionDriver()
 	if provisionDriver != provisioner.Local {
 		fmt.Println("Provision driver is not local, defaulting to linux/amd64")
 		grafanaArch = "linux/amd64"
@@ -201,13 +198,11 @@ func Bench(ctx context.Context, testSuite string) error {
 // Runs test suite on already running instance of grafana. Requires state for
 // operation
 func Test(ctx context.Context, testSuite string) error {
-	state := os.Getenv("STATE")
-
-	if state == "" {
-		return fmt.Errorf("invalid state: \"%s\"", state)
+	if provisionState == "" {
+		return fmt.Errorf("invalid state: \"%s\"", provisionState)
 	}
 
-	ps, err := BenchService.Provisioner.ReadStateFile(state)
+	ps, err := BenchService.Provisioner.ReadStateFile(provisionState)
 	if err != nil {
 		return err
 	}
@@ -229,11 +224,10 @@ func Test(ctx context.Context, testSuite string) error {
 
 // Destroy looks up the state and tears down a provision state
 func Destroy(ctx context.Context) error {
-	state := os.Getenv("STATE")
-	if state == "" {
-		return fmt.Errorf("invalid state: \"%s\"", state)
+	if provisionState == "" {
+		return fmt.Errorf("invalid state: \"%s\"", provisionState)
 	}
-	ps, err := BenchService.Provisioner.ReadStateFile(state)
+	ps, err := BenchService.Provisioner.ReadStateFile(provisionState)
 	if err != nil {
 		return err
 	}

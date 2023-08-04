@@ -43,7 +43,6 @@ func (tr *TestRun) ResultsDirectory(provisionStateIdentifier string) string {
 // now we're just going to link the build suite to the service.
 // This could probably be optimized for less checkouts/etc later
 func (tr *TestRun) ResolveTestSuite() error {
-
 	// clone repo if doesn't exist
 	exists, _ := utils.PathExists(tr.TestSuiteDir)
 	if !exists {
@@ -62,10 +61,26 @@ func (tr *TestRun) ResolveTestSuite() error {
 			return nil
 		}
 
+		// check current branch. Don't do anything if it's the same as what is
+		// currently there.
+		// TODO: this logic may not make sense in scenarios where it's set to main
+		// but someone hasn't checked out in a while and wants to update. That would
+		// require a manual update. perhaps check the git sha. review later.
+		cm := exec.Command("git", "branch", "--show-current")
+		branch, err2 := cm.CombinedOutput()
+		if err2 != nil {
+			panic(fmt.Sprintf("error getting current branch %s", err2))
+		}
+		if strings.TrimSpace(string(branch)) == tr.SuiteRevision {
+			return nil
+		}
+
+		// get latest main
 		if err := utils.ExecStdout(exec.Command("git", "checkout", "main")); err != nil {
 			return fmt.Errorf("test-run: Error checking out grafana test repo %s", err)
 		}
 
+		// update
 		if err := utils.ExecStdout(exec.Command("git", "pull")); err != nil {
 			return err
 		}
