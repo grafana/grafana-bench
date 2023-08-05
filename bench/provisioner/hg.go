@@ -58,7 +58,7 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 
 		// START HERE
 		// Ship test suite run to k6 cloud
-		// test trigger, time of day, machine info, build version, duration??
+		// {test trigger, time of day, machine info, build version, duration??}
 
 		// run the tests
 		for _, testFile := range tests {
