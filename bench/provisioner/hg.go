@@ -56,6 +56,10 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 			return err
 		}
 
+		// START HERE
+		// Ship test suite run to k6 cloud
+		// test trigger, time of day, machine info, build version, duration??
+
 		// run the tests
 		for _, testFile := range tests {
 
@@ -82,15 +86,21 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 
 			// get cloud run url and annotate json data
 			cloudOutputUrl := getCloudRunURL(bytes)
-			err := processJsonData(cloudOutputUrl, jsonFile)
-			panic(err)
+			processedData, err := processTestJson(cloudOutputUrl, jsonFile)
+			if err != nil {
+				panic(err)
+			}
 
-			// ship to loki
-
+			err = shipToLoki(processedData)
+			if err != nil {
+				panic(err)
+			}
 		}
 
 		return nil
 	})
+
+	// TODO maybe ship a finish time to loki?
 
 	return err
 }
@@ -141,7 +151,7 @@ func getCloudRunURL(b []byte) string {
 	if len(match) >= 2 {
 		// The URL is captured in the second element of the match
 		url := string(match[1])
-		fmt.Println("provisioner: Found k6 cloud output urlURL:", url)
+		fmt.Println("provisioner: Found k6 cloud output url:", url)
 		return url
 	} else {
 		fmt.Println("provisioner: URL not found.")
@@ -149,5 +159,14 @@ func getCloudRunURL(b []byte) string {
 	}
 }
 
-func processJsonData(cloudRunUrl, jsonFile string) error {
+// TODO implement me
+func processTestJson(cloudRunUrl, jsonFile string) (any, error) {
+	// url:{url}, iterations:{iterations}, testFolder:{folder}, testName:
+	// {testName}, duration:{duration in seconds}
+	return nil, nil
+}
+
+func shipToLoki(data any) error {
+	// TODO implement me
+	return nil
 }
