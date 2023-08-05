@@ -25,12 +25,16 @@ import (
 var (
 	// execRoot is the root of the repo or binary execution
 	execRoot = utils.Getwd()
+	// workpath is where all nested services will do their work
+	workPath = path.Join(execRoot, "work")
+	// buildcache is the location for the local buildcache
+	buildCachePath = path.Join(workPath, "buildcache")
 
 	// Get GoEnv from system running mage
 	goEnv           = utils.GetCompilerEnvInfo()
 	grafanaRevision = envOrDefault("GRAFANA_REVISION", "branch:main")
 	grafanaArch     = envOrDefault("GRAFANA_ARCH", getLocalArch())
-	provisionDriver = getProvisionDriver()
+	provisionDriver = provisioner.ProvisionDriverFromString(envOrDefault("PROVISION", "local"))
 	provisionState  = os.Getenv("STATE")
 	reportCloud     = envOrDefaultBool("REPORT_CLOUD", "false")
 
@@ -49,8 +53,6 @@ var (
 
 // CLIServiceDefaults setups up defaults for running bench
 func CLIServiceDefaults(ctx context.Context) *bench.BenchService {
-	workPath := path.Join(execRoot, "work")
-	buildCachePath := path.Join(workPath, "buildcache")
 
 	svc, err := bench.NewBenchService(ctx, workPath, buildCachePath, gcsCredPath, k6CloudTokenPath, k6CloudProjectID, "bench-builds")
 	if err != nil {
@@ -108,7 +110,7 @@ func Run(ctx context.Context) error {
 		fmt.Println("mage: build in cache")
 	}
 
-	ps, err := BenchService.Provisioner.New(ctx, provisionDriver, build)
+	ps, err := BenchService.Provisioner.New(ctx, provisionDriver, build, true)
 	if err != nil {
 		return err
 	}
@@ -169,7 +171,7 @@ func Bench(ctx context.Context, testSuite string) error {
 		fmt.Println("mage: build in cache")
 	}
 
-	ps, err := BenchService.Provisioner.New(ctx, provisionDriver, build)
+	ps, err := BenchService.Provisioner.New(ctx, provisionDriver, build, false)
 	if err != nil {
 		return err
 	}
@@ -271,21 +273,6 @@ func envOrDefaultBool(environmentVarName, defaultValue string) bool {
 	return bool
 }
 
-// Determines which provision driver to use based on PROVISION environment
-// variable
-func getProvisionDriver() provisioner.ProvisionType {
-	provisionString := strings.ToLower(envOrDefault("PROVISION", "local"))
-
-	switch provisionString {
-	case "local":
-		return provisioner.Local
-	case "gcp":
-		return provisioner.GCP
-	default:
-		panic(fmt.Errorf("provisioner: unknown provision type: %s", provisionString))
-	}
-}
-
 // reads a k6 token from a file if REPORT_CLOUD is true. Panics if there is a problem.
 func readK6Token(reportCloud bool, path string) string {
 	if !reportCloud || path == "" {
@@ -298,4 +285,43 @@ func readK6Token(reportCloud bool, path string) string {
 		panic(fmt.Sprintf("Error reading k6 cloud token: %s", err))
 	}
 	return strings.TrimSpace(string(tokenBytes))
+}
+
+func HGTest(ctx context.Context, address, port, username, password, tests string) error {
+	// create a new state
+	provisionDriver = provisioner.HG
+	ps, err := BenchService.Provisioner.New(ctx, provisionDriver, nil, false)
+	if err != nil {
+		return err
+	}
+
+	// populate grafana vm
+	ps.GrafanaInstance = &provisioner.VMInstance{
+		Address:         address,
+		ServicePort:     port,
+		GrafanaUser:     username,
+		GrafanaPassword: password,
+	}
+
+	ps.WaitForReady(ctx)
+
+	// set project id to https://jefflevinslunch.grafana.net/a/k6-app/projects/3653020
+	BenchService.Tester.K6CloudProjectId = "3653020"
+	// set token to jefflevinslunch
+	BenchService.Tester.K6CloudToken = readK6Token(true, path.Join("creds", "k6cloud_jefflevinslunch_grafana_net"))
+
+	// Hosted Grafana driver won't resolve. It will just make sure tests exist
+	// where they're supposed to
+	testRun, err := BenchService.Tester.New(ctx, "jalevin/test", tests, true)
+	if err != nil {
+		return err
+	}
+
+	// run the tests
+	if err := ps.RunTests(ctx, testRun); err != nil {
+		fmt.Println("error running tests:", err)
+		fmt.Println("connectionString:", ps.K6Instance.GetConnectionString())
+	}
+
+	return nil
 }

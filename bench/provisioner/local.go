@@ -41,7 +41,7 @@ func (d *LocalDriver) Provision(ctx context.Context, ps *ProvisionState) (func()
 
 	// TODO figure out how to get this from ENV or custom.ini
 	ps.GrafanaInstance = &VMInstance{
-		IPAddress:   "localhost",
+		Address:     "localhost",
 		ServicePort: "3000",
 	}
 
@@ -51,11 +51,6 @@ func (d *LocalDriver) Provision(ctx context.Context, ps *ProvisionState) (func()
 // Blocking call that waits for grafana to become ready
 func (d *LocalDriver) WaitForReady(ctx context.Context, ps *ProvisionState) {
 	WaitForLiveGrafana(ps.GrafanaInstance.ServiceAddress())
-}
-
-// Check - checks if Grafana + test runner are ready
-func (d *LocalDriver) Ready(ctx context.Context, ps *ProvisionState) bool {
-	return IsLive(ps.GrafanaInstance.ServiceAddress())
 }
 
 // Destroy - destroys a provisioned instance of Grafana + test runner

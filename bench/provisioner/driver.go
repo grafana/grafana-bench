@@ -18,9 +18,6 @@ type ProvisionDriver interface {
 	// Blocking operation that waits for ProvisionState.GrafanaAddress to become responsive
 	WaitForReady(ctx context.Context, ps *ProvisionState)
 
-	// Checks to see if Grafana server is running on ProvisionState.GrafanaAddress
-	Ready(ctx context.Context, ps *ProvisionState) bool
-
 	// Uses driver to run the test suite against instance of Grafana
 	RunTests(ctx context.Context, ps *ProvisionState, tr *tester.TestRun) error
 

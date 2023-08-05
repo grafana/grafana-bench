@@ -96,11 +96,6 @@ func (d *GCPDriver) WaitForReady(ctx context.Context, ps *ProvisionState) {
 	WaitForLiveGrafana(ps.GrafanaInstance.ServiceAddress())
 }
 
-// Check - checks if Grafana + test runner are ready
-func (d *GCPDriver) Ready(ctx context.Context, ps *ProvisionState) bool {
-	return IsLive(ps.GrafanaInstance.ServiceAddress())
-}
-
 // Destroy - destroys a provisioned instance of Grafana and K6 test runner
 // removing all state after
 func (d *GCPDriver) Destroy(ctx context.Context, ps *ProvisionState) error {

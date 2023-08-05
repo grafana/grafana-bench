@@ -6,11 +6,20 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strings"
 	"text/template"
 
 	"github.com/google/uuid"
 	"github.com/grafana/grafana-bench/bench/buildcache"
 	"github.com/grafana/grafana-bench/bench/builder"
+)
+
+type ProvisionType string
+
+const (
+	Local ProvisionType = "local"
+	GCP   ProvisionType = "gcp"
+	HG    ProvisionType = "hg"
 )
 
 type ProvisionerService struct {
@@ -51,15 +60,7 @@ func NewProvisioner(ctx context.Context, localDir string, bc *buildcache.BuildCa
 	}, nil
 }
 
-type ProvisionType string
-
-const (
-	Local ProvisionType = "local"
-	GCP   ProvisionType = "gcp"
-)
-
-func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *builder.Build) (*ProvisionState, error) {
-
+func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *builder.Build, writeState bool) (*ProvisionState, error) {
 	fmt.Printf("provisioner: using driver %s\n", t)
 
 	if t != Local && !p.VMEnabled {
@@ -88,6 +89,12 @@ func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *bu
 		Build:       build,
 	}
 
+	// exit if not writing state
+	if !writeState {
+		fmt.Println("provisioner: writeState set to false. skip writing to disk")
+		return state, nil
+	}
+
 	err := os.MkdirAll(state.WorkDir, 0755)
 	if err != nil {
 		return nil, err
@@ -101,14 +108,31 @@ func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *bu
 	return state, nil
 }
 
+// Initializes provision driver from ProvisionType
 func (p *ProvisionerService) InitDriver(t ProvisionType) ProvisionDriver {
 	switch t {
 	case Local:
 		return NewLocalDriver(p.BuildCache)
 	case GCP:
 		return NewGCPDriver(p.BuildCache, p.TerraformTemplates, p.GCPCredentialsPath)
+	case HG:
+		return NewHGDriver()
 	default:
 		panic(fmt.Errorf("provisioner: unknown provision type: %s", t))
+	}
+}
+
+func ProvisionDriverFromString(driverString string) ProvisionType {
+	driverString = strings.ToLower(driverString)
+	switch driverString {
+	case "local":
+		return Local
+	case "gcp":
+		return GCP
+	case "hg":
+		return HG
+	default:
+		panic(fmt.Errorf("provisioner: unknown provision type: %s", driverString))
 	}
 }
 

@@ -127,7 +127,7 @@ func (tr *TestRun) GetTestSuiteFiles() ([]string, error) {
 		p := path.Join(tr.TestSuiteDir, "tests", tr.Tests)
 		exists, _ := utils.PathExists(p)
 		if !exists {
-			return []string{}, fmt.Errorf("test-run: File %s was not found", p)
+			return []string{}, fmt.Errorf("test-run: File %s was not found. double check you passed the correct argument when creating test run", p)
 		}
 		return []string{p}, nil
 	}
@@ -135,7 +135,7 @@ func (tr *TestRun) GetTestSuiteFiles() ([]string, error) {
 	d := path.Join(tr.TestSuiteDir, "tests", tr.Tests)
 	exists, _ := utils.PathExists(d)
 	if !exists {
-		return []string{}, fmt.Errorf("test-run: Path %s was not found", d)
+		return []string{}, fmt.Errorf("test-run: Path %s was not found. double check you passed the correct argument when creating test run", d)
 	}
 
 	files, err := utils.GlobByExtension(d, ".js")
