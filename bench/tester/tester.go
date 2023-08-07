@@ -43,7 +43,6 @@ func (tr *TestRun) ResultsDirectory(provisionStateIdentifier string) string {
 // now we're just going to link the build suite to the service.
 // This could probably be optimized for less checkouts/etc later
 func (tr *TestRun) ResolveTestSuite() error {
-
 	// clone repo if doesn't exist
 	exists, _ := utils.PathExists(tr.TestSuiteDir)
 	if !exists {

@@ -30,11 +30,9 @@ type TesterService struct {
 }
 
 func NewTester(ctx context.Context, localDir, resultsDir, grafanaTestRepo, k6CloudToken, k6CloudProjectId string) *TesterService {
-	testSuiteDir := path.Join(localDir, "suite")
-
-	err := os.MkdirAll(testSuiteDir, 0755)
+	err := os.MkdirAll(localDir, 0755)
 	if err != nil {
-		panic(fmt.Errorf("tester: error creating test suite directory: %w", err))
+		panic(fmt.Errorf("tester: could not create test service working directory: %w", err))
 	}
 
 	err = os.MkdirAll(resultsDir, 0755)
@@ -44,7 +42,7 @@ func NewTester(ctx context.Context, localDir, resultsDir, grafanaTestRepo, k6Clo
 
 	return &TesterService{
 		LocalDir:         localDir,
-		TestSuiteDir:     testSuiteDir,
+		TestSuiteDir:     path.Join(localDir, "suite"),
 		resultsDir:       resultsDir,
 		GrafanaTestRepo:  grafanaTestRepo,
 		K6CloudToken:     k6CloudToken,
