@@ -23,6 +23,8 @@ func NewHGDriver() *HGDriver {
 }
 
 func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.TestRun) error {
+	// TODO
+	// make sure test dir exists or clone
 
 	// run k6 tests
 	err := utils.DoInDir(utils.Getwd(), tr.TestSuiteDir, func() error {

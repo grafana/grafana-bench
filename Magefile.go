@@ -37,6 +37,7 @@ var (
 	provisionDriver = provisioner.ProvisionDriverFromString(envOrDefault("PROVISION", "local"))
 	provisionState  = os.Getenv("STATE")
 	reportCloud     = envOrDefaultBool("REPORT_CLOUD", "false")
+	grafanaTestRepo = envOrDefault("GRAFANA_TEST_REPO_URL", "https://github.com/grafana/grafana-api-tests")
 
 	// default k6 cloud token to jefflevinslunch instance
 	k6CloudTokenPath = envOrDefault("K6_CLOUD_TOKEN_PATH", readK6Token(reportCloud, path.Join(execRoot, "creds", "k6cloud_ops_grafana_ops_net")))
@@ -54,7 +55,7 @@ var (
 // CLIServiceDefaults setups up defaults for running bench
 func CLIServiceDefaults(ctx context.Context) *bench.BenchService {
 
-	svc, err := bench.NewBenchService(ctx, workPath, buildCachePath, gcsCredPath, k6CloudTokenPath, k6CloudProjectID, "bench-builds")
+	svc, err := bench.NewBenchService(ctx, workPath, buildCachePath, gcsCredPath, grafanaTestRepo, k6CloudTokenPath, k6CloudProjectID, "bench-builds")
 	if err != nil {
 		panic(err)
 	}

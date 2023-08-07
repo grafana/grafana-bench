@@ -48,7 +48,8 @@ func (tr *TestRun) ResolveTestSuite() error {
 	exists, _ := utils.PathExists(tr.TestSuiteDir)
 	if !exists {
 		fmt.Println("test-run: cloning build suite")
-		if err := sh.RunV("git", "clone", "https://github.com/grafana/grafana-api-tests", tr.TestSuiteDir); err != nil {
+
+		if err := sh.RunV("git", "clone", tr.GrafanaTestRepo, tr.TestSuiteDir); err != nil {
 			return fmt.Errorf("test-run: Error checking out grafana test repo %s", err)
 		}
 	}

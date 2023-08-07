@@ -23,11 +23,13 @@ type TesterService struct {
 	K6CloudToken     string
 	K6CloudProjectId string
 
+	GrafanaTestRepo string
+
 	// location of the test results
 	resultsDir string
 }
 
-func NewTester(ctx context.Context, localDir, resultsDir, k6CloudToken, k6CloudProjectId string) *TesterService {
+func NewTester(ctx context.Context, localDir, resultsDir, grafanaTestRepo, k6CloudToken, k6CloudProjectId string) *TesterService {
 	testSuiteDir := path.Join(localDir, "suite")
 
 	err := os.MkdirAll(testSuiteDir, 0755)
@@ -44,6 +46,7 @@ func NewTester(ctx context.Context, localDir, resultsDir, k6CloudToken, k6CloudP
 		LocalDir:         localDir,
 		TestSuiteDir:     testSuiteDir,
 		resultsDir:       resultsDir,
+		GrafanaTestRepo:  grafanaTestRepo,
 		K6CloudToken:     k6CloudToken,
 		K6CloudProjectId: k6CloudProjectId,
 	}
