@@ -290,13 +290,14 @@ func readK6Token(reportCloud bool, path string) string {
 }
 
 func HGTest(ctx context.Context, address, port, username, password, tests string) error {
+	log.Println("hgtest")
 	// create a new state
 	provisionDriver = provisioner.HG
 	ps, err := BenchService.Provisioner.New(ctx, provisionDriver, nil, false)
 	if err != nil {
 		return err
 	}
-
+	log.Println("yo")
 	// populate grafana vm
 	ps.GrafanaInstance = &provisioner.VMInstance{
 		Address:         address,

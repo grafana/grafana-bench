@@ -4,21 +4,15 @@ ARG GRAFANA_TEST_REPO
 
 RUN apk update && apk add --no-cache git
 
-# install mage
-RUN git clone https://github.com/magefile/mage
-RUN cd mage && go run bootstrap.go
-
 # build bench
 WORKDIR /app
-COPY go.mod go.mod
+COPY go.mod go.sum .
 RUN go mod download
 
 COPY bench bench/
-COPY Magefile.go Magefile.go
+COPY cmd cmd/
 
-RUN go mod tidy
-
-RUN mage -compile ./grafana-bench
+RUN go build -o grafana-bench ./cmd
 
 FROM grafana/k6:latest
 

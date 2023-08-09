@@ -26,6 +26,10 @@ func NewHGDriver() *HGDriver {
 
 func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.TestRun) error {
 	// resolve test suite to correct version etc
+	if err := os.MkdirAll(filepath.Join("work", "test", "suite"), os.FileMode(0755)); err != nil {
+		return fmt.Errorf("provisioner: %w", err)
+	}
+
 	//err := tr.ResolveTestSuite()
 	//if err != nil {
 	//  return fmt.Errorf("provisioner: error running test suite: %w", err)

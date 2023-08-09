@@ -2,6 +2,7 @@ package bench
 
 import (
 	"context"
+	"fmt"
 	"path"
 
 	"github.com/grafana/grafana-bench/bench/buildcache"
@@ -38,7 +39,7 @@ func NewBenchService(ctx context.Context, workPath, artifactsPath, GCPCredPath, 
 	vmEnabled := GCPCredPath != ""
 	p, err := provisioner.NewProvisioner(ctx, provisionDir, buildCache, vmEnabled, GCPCredPath, grafanaTemplateDir)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating new provisioner: %w", err)
 	}
 
 	// configure tester
