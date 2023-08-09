@@ -148,9 +148,8 @@ func hgtest(ctx context.Context, address, port, username, password, tests string
 	ps.WaitForReady(ctx)
 
 	// set project id to https://jefflevinslunch.grafana.net/a/k6-app/projects/3653020
-	BenchService.Tester.K6CloudProjectId = "3653020"
-	// set token to jefflevinslunch
-	BenchService.Tester.K6CloudToken = readK6Token(true, path.Join("creds", "k6cloud_jefflevinslunch_grafana_net"))
+	BenchService.Tester.K6CloudProjectId = os.Getenv("K6_CLOUD_PROJECT_ID")
+	BenchService.Tester.K6CloudToken = os.Getenv("K6_CLOUD_TOKEN")
 
 	// Hosted Grafana driver won't resolve. It will just make sure tests exist
 	// where they're supposed to
