@@ -172,3 +172,11 @@ func (tr *TestRun) PrepareTestBundle(bundlePath string) error {
 	log.Println("provisioner: compressing test bundle")
 	return utils.CompressFolder(tr.TestSuiteDir, bundlePath)
 }
+
+// return the folder of the testfile relative to testSuite/tests/
+// eg /home/k6/work/tests/suite/tests/dashboards/dashboard_create.js -> dashboards
+// eg testSuite/tests/mytest.js -> ""
+func (tr *TestRun) RelativeFolder(testFile string) string {
+	p := strings.TrimPrefix(testFile, path.Join(tr.TestSuiteDir, "tests"))
+	return path.Dir(p)
+}

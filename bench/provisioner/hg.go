@@ -10,7 +10,9 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/grafana/grafana-bench/bench/tester"
 	"github.com/grafana/grafana-bench/bench/utils"
@@ -67,16 +69,15 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 			return err
 		}
 
-		// START HERE
-		// Ship test suite run to k6 cloud
-		// {test trigger, time of day, machine info, build version, duration??}
+		var (
+			startTime     = time.Now()
+			totalDuration int
+		)
 
 		// run the tests
-		for _, testFile := range tests {
-
-			jsonName := filepath.Base(testFile)
-			jsonName = strings.TrimSuffix(jsonName, filepath.Ext(jsonName))
-			jsonFile := path.Join("/tmp", jsonName+".json")
+		for iteration, testFile := range tests {
+			jsonFile := getJsonOutputFilename(testFile)
+			scenarioName := getScenarioName(testFile)
 
 			log.Println("provisioner: running test file:", testFile)
 			log.Println("provisioner: output json to:", jsonFile)
@@ -100,30 +101,55 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 			if err != nil {
 				log.Println("provisioner", "error running k6 command:", err)
 			}
-
 			log.Println(buf.String())
 
-			// get cloud run url and annotate json data
-			cloudOutputUrl := getCloudRunURL(buf.Bytes())
-			processedData, err := processTestJson(cloudOutputUrl, jsonFile)
+			// scenario + testDuration will be in milliseconds
+			scenarioDuration, testDuration, err := processTestJson(scenarioName, jsonFile)
 			if err != nil {
-				panic(err)
+				log.Println("provisioner:", "error processing json file", err)
 			}
 
-			err = shipToLoki(processedData)
-			if err != nil {
-				panic(err)
+			// build log output
+			m := map[string]string{
+				"suiteRun":   ps.Identifier,
+				"folder":     tr.RelativeFolder(testFile),
+				"testFile":   path.Base(testFile),
+				"order":      strconv.Itoa(iteration + 1),
+				"k6CloudUrl": getCloudRunURL(buf.Bytes()),
+				// maybe do something to make this value pretty for the dashboard.
+				"scenarioDuration": strconv.Itoa(scenarioDuration),
+				"totalDuration":    strconv.Itoa(testDuration),
 			}
+
+			// NOTE total duration will be the total time for all tests to run
+			// including setup and teardown and does not include the rest of the
+			// time for bench to run
+			totalDuration += testDuration
+
+			// test complete log
+			log.Println(m)
 		}
+
+		// suite complete log
+		// {test trigger, time of day, machine info, build version, duration??}
+		m := map[string]string{
+			// TODO figure out how to pass the trigger from argo
+			"testTrigger":  "manual",
+			"suiteRun":     ps.Identifier,
+			"buildVersion": ps.Build.GrafanaRevision,
+			"startTime":    startTime.Format(time.RFC3339),
+			"duration":     strconv.Itoa(totalDuration),
+			"machineInfo":  machineSpec,
+		}
+		log.Println(m)
 
 		return nil
 	})
 
-	// TODO maybe ship a finish time to loki?
-
 	return err
 }
 
+// this is hardcoded based on kubeconfig set when hacking this together. would be cool to get this from kubernetes directly
 func (d *HGDriver) GetMachineSpec(ctx context.Context, ps *ProvisionState) (string, error) {
 	// driver, process/machine, memory, # cores, clockspeed, architecture, os
 	return "local|Intel(R) Xeon(R)|512000|2|2.8 GHz|x86_64|linux", nil
@@ -178,14 +204,33 @@ func getCloudRunURL(b []byte) string {
 	}
 }
 
-// TODO implement me
-func processTestJson(cloudRunUrl, jsonFile string) (any, error) {
-	// url:{url}, iterations:{iterations}, testFolder:{folder}, testName:
-	// {testName}, duration:{duration in seconds}
-	return nil, nil
+// dashboard_create.js -> /tmp/dashboard_create.json
+func getJsonOutputFilename(filename string) string {
+	jsonName := filepath.Base(filename)
+	jsonName = strings.TrimSuffix(jsonName, filepath.Ext(jsonName))
+	return path.Join("/tmp", jsonName+".json")
 }
 
-func shipToLoki(data any) error {
-	// TODO implement me
-	return nil
+// we expect scenarios to be named like the file
+// tests/dashboards/dashboard_create.js -> dashboardCreate
+func getScenarioName(filename string) string {
+	filename = filepath.Base(filename)
+	filename = strings.TrimSuffix(filename, filepath.Ext(filename))
+	parts := strings.Split(filename, "_")
+	for i, p := range parts {
+		parts[i] = strings.Title(p)
+	}
+	return strings.Join(parts, "")
+}
+
+// TODO implement me
+func processTestJson(scenarioName, jsonFile string) (int, int, error) {
+	scenarioDuration := 0
+	totalDuration := 0
+
+	// parse file
+	// get total duration
+	// get scenario duration
+
+	return scenarioDuration, totalDuration, nil
 }
