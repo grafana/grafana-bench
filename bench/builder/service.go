@@ -3,6 +3,7 @@ package builder
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -91,7 +92,7 @@ func (bs *BuilderService) ResolveBuildSuite() error {
 	}
 
 	// clone path to dir
-	fmt.Println("build-service: cloning build suite")
+	log.Println("build-service: cloning build suite")
 	if err := sh.RunV("git", "clone", "https://github.com/grafana/grafana-build", bs.buildSuiteDir); err != nil {
 		return fmt.Errorf("Error checking out grafana test repo %s", err)
 	}
@@ -106,9 +107,9 @@ func (bs *BuilderService) ListBuilds(ctx context.Context) error {
 		return err
 	}
 
-	fmt.Println("Builds")
+	log.Println("Builds")
 	for _, b := range builds {
-		fmt.Printf("%s: %s\n", b.Location, b.Name)
+		log.Printf("%s: %s\n", b.Location, b.Name)
 	}
 
 	return nil

@@ -2,6 +2,7 @@ package tester
 
 import (
 	"fmt"
+	"log"
 	"os/exec"
 	"path"
 	"strings"
@@ -46,7 +47,7 @@ func (tr *TestRun) ResolveTestSuite() error {
 	// clone repo if doesn't exist
 	exists, _ := utils.PathExists(tr.TestSuiteDir)
 	if !exists {
-		fmt.Println("test-run: cloning build suite")
+		log.Println("test-run: cloning build suite")
 
 		if err := sh.RunV("git", "clone", tr.GrafanaTestRepo, tr.TestSuiteDir); err != nil {
 			return fmt.Errorf("test-run: Error checking out grafana test repo %s", err)
@@ -168,6 +169,6 @@ func (tr *TestRun) GetRemoteTestSuiteFiles(remotePath string) ([]string, error) 
 // BundleTestSuite bundles the test suite into a tarball
 // TODO only ship lib and tests dir from suite directory
 func (tr *TestRun) PrepareTestBundle(bundlePath string) error {
-	fmt.Println("provisioner: compressing test bundle")
+	log.Println("provisioner: compressing test bundle")
 	return utils.CompressFolder(tr.TestSuiteDir, bundlePath)
 }

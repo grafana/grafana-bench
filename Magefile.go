@@ -6,6 +6,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"path"
@@ -85,7 +86,7 @@ func Build(ctx context.Context) error {
 // will block until you exit which will shut down the local grafana process.
 func Run(ctx context.Context) error {
 	if provisionDriver != provisioner.Local {
-		fmt.Println("Provision driver is not local, defaulting to linux/amd64")
+		log.Println("Provision driver is not local, defaulting to linux/amd64")
 		grafanaArch = "linux/amd64"
 	}
 
@@ -108,7 +109,7 @@ func Run(ctx context.Context) error {
 	}
 
 	if resolved {
-		fmt.Println("mage: build in cache")
+		log.Println("mage: build in cache")
 	}
 
 	ps, err := BenchService.Provisioner.New(ctx, provisionDriver, build, true)
@@ -129,7 +130,7 @@ func Run(ctx context.Context) error {
 		sigs := make(chan os.Signal, 1)
 		signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 		<-sigs
-		fmt.Println("Shutting down grafana process")
+		log.Println("Shutting down grafana process")
 	}
 
 	return nil
@@ -146,7 +147,7 @@ func Run(ctx context.Context) error {
 // usage: `INI=custom.ini mage bench`
 func Bench(ctx context.Context, testSuite string) error {
 	if provisionDriver != provisioner.Local {
-		fmt.Println("Provision driver is not local, defaulting to linux/amd64")
+		log.Println("Provision driver is not local, defaulting to linux/amd64")
 		grafanaArch = "linux/amd64"
 	}
 
@@ -169,7 +170,7 @@ func Bench(ctx context.Context, testSuite string) error {
 	}
 
 	if resolved {
-		fmt.Println("mage: build in cache")
+		log.Println("mage: build in cache")
 	}
 
 	ps, err := BenchService.Provisioner.New(ctx, provisionDriver, build, false)
@@ -194,8 +195,8 @@ func Bench(ctx context.Context, testSuite string) error {
 	// run the tests
 	err = ps.RunTests(ctx, testRun)
 	if err != nil {
-		fmt.Println("error running tests:", err)
-		fmt.Println("connectionString:", ps.K6Instance.GetConnectionString())
+		log.Println("error running tests:", err)
+		log.Println("connectionString:", ps.K6Instance.GetConnectionString())
 	}
 
 	return err
@@ -224,8 +225,8 @@ func Test(ctx context.Context, testSuite string) error {
 
 	// run the tests
 	if err := ps.RunTests(ctx, testRun); err != nil {
-		fmt.Println("error running tests:", err)
-		fmt.Println("connectionString:", ps.K6Instance.GetConnectionString())
+		log.Println("error running tests:", err)
+		log.Println("connectionString:", ps.K6Instance.GetConnectionString())
 	}
 	return nil
 }
@@ -320,8 +321,8 @@ func HGTest(ctx context.Context, address, port, username, password, tests string
 
 	// run the tests
 	if err := ps.RunTests(ctx, testRun); err != nil {
-		fmt.Println("error running tests:", err)
-		fmt.Println("connectionString:", ps.K6Instance.GetConnectionString())
+		log.Println("error running tests:", err)
+		log.Println("connectionString:", ps.K6Instance.GetConnectionString())
 	}
 
 	return nil

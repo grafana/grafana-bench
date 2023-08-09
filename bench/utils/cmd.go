@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -41,7 +42,7 @@ func ExecStdout(cmd *exec.Cmd) error {
 	go func() {
 		_, err := io.Copy(os.Stdout, stdout)
 		if err != nil {
-			fmt.Println("Error outputting to stdout:", err)
+			log.Println("Error outputting to stdout:", err)
 		}
 	}()
 
@@ -49,7 +50,7 @@ func ExecStdout(cmd *exec.Cmd) error {
 	go func() {
 		_, err := io.Copy(os.Stderr, stderr)
 		if err != nil {
-			fmt.Println("Error outputting to stdout:", err)
+			log.Println("Error outputting to stdout:", err)
 		}
 	}()
 

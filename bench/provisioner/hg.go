@@ -1,8 +1,10 @@
 package provisioner
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -72,8 +74,8 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 			jsonName = strings.TrimSuffix(jsonName, filepath.Ext(jsonName))
 			jsonFile := path.Join("/tmp", jsonName+".json")
 
-			fmt.Println("provisioner: running test file:", testFile)
-			fmt.Println("provisioner: output json to:", jsonFile)
+			log.Println("provisioner: running test file:", testFile)
+			log.Println("provisioner: output json to:", jsonFile)
 
 			cmd := exec.Command("k6", "run", testFile,
 				"--out", "cloud",
@@ -85,12 +87,20 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 				cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", strings.ToUpper(key), strings.TrimSpace(value)))
 			}
 
+			buf := bytes.NewBuffer(nil)
+			cmd.Stdout = buf
+			cmd.Stderr = os.Stderr
+
 			// run command
-			bytes, _ := cmd.CombinedOutput()
-			fmt.Println(string(bytes))
+			err = cmd.Run()
+			if err != nil {
+				log.Println("provisioner", "error running k6 command:", err)
+			}
+
+			log.Println(buf.String())
 
 			// get cloud run url and annotate json data
-			cloudOutputUrl := getCloudRunURL(bytes)
+			cloudOutputUrl := getCloudRunURL(buf.Bytes())
 			processedData, err := processTestJson(cloudOutputUrl, jsonFile)
 			if err != nil {
 				panic(err)
@@ -122,7 +132,7 @@ func (d *HGDriver) WaitForReady(ctx context.Context, ps *ProvisionState) {
 
 // Provision not implemented for hosted grafana driver
 func (d *HGDriver) Provision(ctx context.Context, ps *ProvisionState) (func() error, error) {
-	fmt.Println("provisioner: provision not implemented for hosted grafana driver")
+	log.Println("provisioner: provision not implemented for hosted grafana driver")
 	return NilFunc, nil
 }
 
@@ -131,15 +141,15 @@ func (d *HGDriver) Provision(ctx context.Context, ps *ProvisionState) (func() er
 func (d *HGDriver) Destroy(ctx context.Context, ps *ProvisionState) error {
 	exists, err := utils.PathExists(ps.LocalDir)
 	if err != nil {
-		fmt.Println("provisioner: error checking if provision state exists", err)
+		log.Println("provisioner: error checking if provision state exists", err)
 	}
 
 	if !exists {
-		fmt.Println("provisioner: state not written to disk. exiting")
+		log.Println("provisioner: state not written to disk. exiting")
 		return nil
 	}
 
-	fmt.Println("removing state directory:", ps.LocalDir)
+	log.Println("removing state directory:", ps.LocalDir)
 	return utils.Rm(ps.LocalDir)
 }
 
@@ -156,10 +166,10 @@ func getCloudRunURL(b []byte) string {
 	if len(match) >= 2 {
 		// The URL is captured in the second element of the match
 		url := string(match[1])
-		fmt.Println("provisioner: Found k6 cloud output url:", url)
+		log.Println("provisioner: Found k6 cloud output url:", url)
 		return url
 	} else {
-		fmt.Println("provisioner: URL not found.")
+		log.Println("provisioner: URL not found.")
 		return ""
 	}
 }

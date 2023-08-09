@@ -3,6 +3,7 @@ package provisioner
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -156,10 +157,10 @@ func (d *GCPDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester
 		return err
 	}
 
-	fmt.Println("provisioner: bundleurl:", bundleUrl)
+	log.Println("provisioner: bundleurl:", bundleUrl)
 
 	// connect to k6 instance
-	fmt.Println("provisioner: connecting to k6 instance")
+	log.Println("provisioner: connecting to k6 instance")
 	connection, err := ps.K6Instance.Connect()
 	if err != nil {
 		return err
@@ -167,7 +168,7 @@ func (d *GCPDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester
 	defer connection.Close()
 
 	// download the test bundle
-	fmt.Println("provisioner: downloading test bundle")
+	log.Println("provisioner: downloading test bundle")
 	err = ps.K6Instance.Run(connection, fmt.Sprintf("curl \"%s\" -o /tmp/testbundle.tar.gz", bundleUrl))
 	if err != nil {
 		return err
@@ -175,14 +176,14 @@ func (d *GCPDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester
 
 	// extract the test suite
 	testSuitePath := "/tmp/tests"
-	fmt.Println("provisioner: unpacking test bundle")
+	log.Println("provisioner: unpacking test bundle")
 	err = ps.K6Instance.Run(connection, fmt.Sprintf("mkdir -p %s && tar -xvf /tmp/testbundle.tar.gz --directory=/tmp/tests", testSuitePath))
 	if err != nil {
 		return err
 	}
 
 	// get tests to run indexed to test suite directory
-	fmt.Println("provisioner: getting list of tests to execute")
+	log.Println("provisioner: getting list of tests to execute")
 	tests, err := tr.GetRemoteTestSuiteFiles(testSuitePath)
 	if err != nil {
 		return err
@@ -190,13 +191,13 @@ func (d *GCPDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester
 
 	// create test results dir
 	resultsDir := "/tmp/results"
-	fmt.Println("provisioner: creating test result dir:", resultsDir)
+	log.Println("provisioner: creating test result dir:", resultsDir)
 	err = ps.K6Instance.Run(connection, fmt.Sprintf("mkdir -p %s", resultsDir))
 	if err != nil {
 		return err
 	}
 
-	fmt.Println("provisioner: getting instance machine spec")
+	log.Println("provisioner: getting instance machine spec")
 	machineSpec, err := d.GetMachineSpec(ctx, ps)
 	if err != nil {
 		return err
@@ -216,7 +217,7 @@ func (d *GCPDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester
 	}
 
 	for _, testFile := range tests {
-		fmt.Println("provisioner: running test file:", testFile)
+		log.Println("provisioner: running test file:", testFile)
 		cmd := ""
 
 		if tr.ReportToK6Cloud {
@@ -225,7 +226,7 @@ func (d *GCPDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester
 			cmd = fmt.Sprintf("%s k6 run %s", formatEnv(envVars), testFile)
 		}
 
-		fmt.Println(cmd)
+		log.Println(cmd)
 		err := ps.K6Instance.Run(connection, cmd)
 		if err != nil {
 			return err
@@ -244,7 +245,7 @@ func (d *GCPDriver) prepareBundle(ctx context.Context, ps *ProvisionState) (stri
 	}
 
 	// compress the folder
-	fmt.Println("provisioner: compressing grafana bundle")
+	log.Println("provisioner: compressing grafana bundle")
 	bundlePath := path.Join(ps.LocalDir, getGrafanaBundleName(ps.Build.GrafanaRevision, ps.Build.Arch))
 	err = utils.CompressFolder(ps.WorkDir, bundlePath)
 	if err != nil {

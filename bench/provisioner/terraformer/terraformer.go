@@ -2,8 +2,8 @@ package terraformer
 
 import (
 	"context"
-	"fmt"
 	"html/template"
+	"log"
 	"os"
 	"path"
 
@@ -40,7 +40,7 @@ func NewTerraformer(ctx context.Context, localDir, credPath, bucketName, tfTempl
 	}
 
 	// create dir
-	fmt.Println("terraformer: using local directory:", localDir)
+	log.Println("terraformer: using local directory:", localDir)
 	err := os.MkdirAll(localDir, 0755)
 	if err != nil {
 		return nil, err
@@ -48,11 +48,11 @@ func NewTerraformer(ctx context.Context, localDir, credPath, bucketName, tfTempl
 
 	// ignore setup if no remote cache
 	if bucketName == "" {
-		fmt.Println("build-cache: no remote store defined")
+		log.Println("build-cache: no remote store defined")
 		return terraformer, nil
 	}
 
-	fmt.Println("terraformer: using template:", tfTemplatePath)
+	log.Println("terraformer: using template:", tfTemplatePath)
 	terraformer.TerraformTemplate, err = template.ParseFiles(tfTemplatePath)
 	if err != nil {
 		return nil, err
@@ -77,10 +77,10 @@ func NewTerraformer(ctx context.Context, localDir, credPath, bucketName, tfTempl
 func (t *Terraformer) NewState() *State {
 	// create identifier
 	uuid := uuid.Must(uuid.NewRandom())
-	fmt.Println("terraformer: new state identifier:", uuid.String())
+	log.Println("terraformer: new state identifier:", uuid.String())
 
 	stateDir := path.Join(t.LocalDir, uuid.String())
-	fmt.Println("terraformer: directory initialized:", stateDir)
+	log.Println("terraformer: directory initialized:", stateDir)
 
 	return &State{
 		Identifier: uuid.String(),

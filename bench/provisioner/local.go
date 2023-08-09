@@ -3,6 +3,7 @@ package provisioner
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -61,7 +62,7 @@ func (d *LocalDriver) Destroy(ctx context.Context, ps *ProvisionState) error {
 		return err
 	}
 
-	fmt.Println("removing state directory:", ps.LocalDir)
+	log.Println("removing state directory:", ps.LocalDir)
 
 	// remove the state directory
 	return utils.Rm(ps.LocalDir)
@@ -107,7 +108,7 @@ func (d *LocalDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *test
 
 		// run the tests
 		for _, testFile := range tests {
-			fmt.Println("provisioner: running test file:", testFile)
+			log.Println("provisioner: running test file:", testFile)
 
 			var cmd *exec.Cmd
 			if tr.ReportToK6Cloud {
@@ -145,13 +146,13 @@ func (d *LocalDriver) boot(ctx context.Context, ps *ProvisionState, executable s
 		if err != nil {
 			return fmt.Errorf("provisioner: ERROR killing grafana PID: %w", err)
 		}
-		fmt.Println("provisioner: shutdown grafana pid ", cmd.Process.Pid)
+		log.Println("provisioner: shutdown grafana pid ", cmd.Process.Pid)
 		return nil
 	}
 
 	err := utils.DoInDir(utils.Getwd(), ps.WorkDir, func() error {
 		if err := cmd.Start(); err != nil {
-			fmt.Println("Error starting server:", err)
+			log.Println("Error starting server:", err)
 			return err
 		}
 		return nil
