@@ -6,10 +6,12 @@ import (
 	"log"
 	"os"
 	"path"
+	"runtime"
 	"strconv"
 	"strings"
 
 	"github.com/grafana/grafana-bench/bench"
+	"github.com/grafana/grafana-bench/bench/builder"
 	"github.com/grafana/grafana-bench/bench/provisioner"
 	"github.com/grafana/grafana-bench/bench/utils"
 )
@@ -26,7 +28,6 @@ var (
 	buildCachePath = path.Join(workPath, "buildcache")
 
 	// Get GoEnv from system running mage
-	goEnv           = utils.GetCompilerEnvInfo()
 	grafanaRevision = envOrDefault("GRAFANA_REVISION", "branch:main")
 	grafanaArch     = envOrDefault("GRAFANA_ARCH", getLocalArch())
 	provisionDriver = provisioner.ProvisionDriverFromString(envOrDefault("PROVISION", "local"))
@@ -58,9 +59,7 @@ func CLIServiceDefaults(ctx context.Context) *bench.BenchService {
 
 // Gets the architecture of the machine running Bench
 func getLocalArch() string {
-	sys_os := goEnv["GOOS"]
-	sys_arch := goEnv["GOARCH"]
-	return fmt.Sprintf("%s/%s", strings.ToLower(sys_os), strings.ToLower(sys_arch))
+	return fmt.Sprintf("%s/%s", strings.ToLower(runtime.GOOS), strings.ToLower(runtime.GOARCH))
 }
 
 // Get environment variable or use default value
@@ -98,7 +97,14 @@ func readK6Token(reportCloud bool, path string) string {
 
 func main() {
 	if len(os.Args) != 6 {
-		panic("need 6 args; address port username password tests")
+		log.Println("Missing parameters. need 6 args; address port username password tests")
+
+		// this will panic
+		log.Println("address:", os.Args[1])
+		log.Println("port:", os.Args[2])
+		log.Println("username:", os.Args[3])
+		log.Println("password:", os.Args[4])
+		log.Println("tests:", os.Args[5])
 	}
 
 	var (
@@ -111,22 +117,29 @@ func main() {
 	)
 
 	if err := hgtest(ctx, address, port, username, password, tests); err != nil {
-		panic(err)
+		panic(fmt.Errorf("POTATO: %w", err))
 	}
 }
 
 func hgtest(ctx context.Context, address, port, username, password, tests string) error {
-	log.Println("hgtest")
+
+	// use this to pass in the build version for logging,
+	// but don't try to use this or bad things will happen fo sho
+	b := &builder.Build{
+		GrafanaRevision: os.Getenv("GRAFANA_VERSION"),
+	}
+
 	// create a new state
 	provisionDriver = provisioner.HG
-	ps, err := BenchService.Provisioner.New(ctx, provisionDriver, nil, false)
+	ps, err := BenchService.Provisioner.New(ctx, provisionDriver, b, false)
 	if err != nil {
 		return err
 	}
-	log.Println("yo")
+
 	// populate grafana vm
 	ps.GrafanaInstance = &provisioner.VMInstance{
-		Address:         address,
+		// address is coming in including https://
+		Address:         strings.TrimPrefix(address, "https://"),
 		ServicePort:     port,
 		GrafanaUser:     username,
 		GrafanaPassword: password,

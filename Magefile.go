@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 	"path"
+	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
@@ -32,7 +33,6 @@ var (
 	buildCachePath = path.Join(workPath, "buildcache")
 
 	// Get GoEnv from system running mage
-	goEnv           = utils.GetCompilerEnvInfo()
 	grafanaRevision = envOrDefault("GRAFANA_REVISION", "branch:main")
 	grafanaArch     = envOrDefault("GRAFANA_ARCH", getLocalArch())
 	provisionDriver = provisioner.ProvisionDriverFromString(envOrDefault("PROVISION", "local"))
@@ -251,8 +251,8 @@ func ListBuilds(ctx context.Context) error {
 
 // Gets the architecture of the machine running Bench
 func getLocalArch() string {
-	sys_os := goEnv["GOOS"]
-	sys_arch := goEnv["GOARCH"]
+	sys_os := runtime.GOOS
+	sys_arch := runtime.GOARCH
 	return fmt.Sprintf("%s/%s", strings.ToLower(sys_os), strings.ToLower(sys_arch))
 }
 

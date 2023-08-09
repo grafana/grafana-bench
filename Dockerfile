@@ -15,22 +15,18 @@ COPY cmd cmd/
 RUN go build -o grafana-bench ./cmd
 
 FROM grafana/k6:latest
-
-## Run container
-COPY --from=builder /app/grafana-bench /usr/local/bin/grafana-bench
-
 USER root
 
-## this is a hack. we shouldn't need go installed
-RUN apk update && apk add --no-cache go
-
+## Run container
 COPY docker_startup.sh docker_startup.sh
 RUN chmod +x docker_startup.sh
 
+# get test suite # this is a hack. should get test suite via build arg
 RUN mkdir -p /home/k6/work/test
-
-## this is also a hack. should figure out how to push tests to container better
 COPY work/test/suite /home/k6/work/test/suite/
+
+# copy binary
+COPY --from=builder /app/grafana-bench /usr/local/bin/grafana-bench
 
 WORKDIR /home/k6
 
