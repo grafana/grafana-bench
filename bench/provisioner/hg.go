@@ -24,13 +24,13 @@ func NewHGDriver() *HGDriver {
 
 func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.TestRun) error {
 	// resolve test suite to correct version etc
-	err := tr.ResolveTestSuite()
-	if err != nil {
-		return fmt.Errorf("provisioner: error running test suite: %w", err)
-	}
+	//err := tr.ResolveTestSuite()
+	//if err != nil {
+	//  return fmt.Errorf("provisioner: error running test suite: %w", err)
+	//}
 
 	// run k6 tests
-	err = utils.DoInDir(utils.Getwd(), tr.TestSuiteDir, func() error {
+	err := utils.DoInDir(utils.Getwd(), tr.TestSuiteDir, func() error {
 		resultsDir := tr.ResultsDirectory(ps.Identifier)
 		err := os.MkdirAll(resultsDir, 0755)
 		if err != nil {
