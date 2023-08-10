@@ -52,12 +52,15 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 		}
 
 		envVars := map[string]string{
-			"MACHINE_SPEC":        machineSpec,
-			"TEST_SUITE_REVISION": tr.SuiteRevision,
-			"TEST_SUMMARY_DIR":    resultsDir,
-			"GT_URL":              ps.GrafanaInstance.HttpsServiceAddress(),
-			"GT_USERNAME":         ps.GrafanaInstance.GrafanaUser,
-			"GT_PASSWORD":         ps.GrafanaInstance.GrafanaPassword,
+			"MACHINE_SPEC":                machineSpec,
+			"TEST_SUITE_REVISION":         tr.SuiteRevision,
+			"TEST_SUMMARY_DIR":            resultsDir,
+			"GT_URL":                      ps.GrafanaInstance.HttpsServiceAddress(),
+			"GT_USERNAME":                 ps.GrafanaInstance.GrafanaUser,
+			"GT_PASSWORD":                 ps.GrafanaInstance.GrafanaPassword,
+			"K6_PROMETHEUS_RW_USERNAME":   os.Getenv("K6_PROMETHEUS_RW_USERNAME"),
+			"K6_PROMETHEUS_RW_PASSWORD":   os.Getenv("K6_PROMETHEUS_RW_PASSWORD"),
+			"K6_PROMETHEUS_RW_SERVER_URL": os.Getenv("K6_PROMETHEUS_RW_SERVER_URL"),
 		}
 
 		if tr.ReportToK6Cloud {
@@ -84,9 +87,12 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 			log.Info("output json to", "file", jsonFile)
 
 			cmd := exec.Command("k6", "run", testFile,
+				"--out", "experimental-prometheus-rw",
 				"--out", "cloud",
-				"--out", "json="+jsonFile,
-				"--tag", "SUITE_RUN="+ps.Identifier)
+			)
+			// Removing this because it adds a "SUITE_RUN" label to the Prometheus metrics which causes a cardinality explosion
+			// since this value is different every time the program is run
+			//"--tag", "SUITE_RUN="+ps.Identifier)
 
 			// set env vars
 			for key, value := range envVars {
