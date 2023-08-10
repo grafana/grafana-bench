@@ -2,7 +2,6 @@ package provisioner
 
 import (
 	"context"
-	"log"
 	"net"
 	"time"
 
@@ -37,10 +36,10 @@ func NilFunc() error {
 func WaitForLiveGrafana(address string) {
 	for {
 		if IsLive(address) {
-			log.Println("Server is ready!")
+			log.Info("Server is ready!")
 			break
 		}
-		log.Printf("Waiting for server on %s...\n", address)
+		log.Info("Waiting for server...", "address", address)
 		time.Sleep(time.Second)
 	}
 }
@@ -48,7 +47,7 @@ func WaitForLiveGrafana(address string) {
 func IsLive(address string) bool {
 	_, err := net.Dial("tcp", address)
 	if err != nil {
-		log.Println("Checking isLive: ", err)
+		log.Info("Checking isLive...", "error", err)
 	}
 	return err == nil
 }

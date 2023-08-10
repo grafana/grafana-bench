@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"path"
 	"strings"
@@ -62,20 +61,21 @@ func NewProvisioner(ctx context.Context, localDir string, bc *buildcache.BuildCa
 }
 
 func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *builder.Build, writeState bool) (*ProvisionState, error) {
-	log.Printf("provisioner: using driver %s\n", t)
+	log := log.With("driver", t)
+	log.Info("using driver")
 
 	if t != Local && !p.VMEnabled {
-		return nil, fmt.Errorf("Provisioner does not have VM support enabled")
+		return nil, fmt.Errorf("provisioner does not have VM support enabled")
 	}
 
 	uuid := uuid.Must(uuid.NewRandom())
-	log.Println("provisioner: new state identifier:", uuid.String())
+	log.Info("provisioner: new state identifier", "id", uuid.String())
 
 	localDir := path.Join(p.LocalDir, uuid.String())
 	workDir := path.Join(localDir, "work")
 	stateDir := path.Join(localDir, "state")
 
-	log.Println("provisioner: local path:", localDir)
+	log.Info("provisioner: local path", "dir", localDir)
 
 	driver := p.InitDriver(t)
 
@@ -92,7 +92,7 @@ func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *bu
 
 	// exit if not writing state
 	if !writeState {
-		log.Println("provisioner: writeState set to false. skip writing to disk")
+		log.Info("provisioner: writeState set to false. skip writing to disk")
 		return state, nil
 	}
 
@@ -140,7 +140,7 @@ func ProvisionDriverFromString(driverString string) ProvisionType {
 // Reads statefile from directory
 func (p *ProvisionerService) ReadStateFile(stateIdentifier string) (*ProvisionState, error) {
 	stateFile := path.Join(p.LocalDir, stateIdentifier, "state", "provision_state.json")
-	log.Println("provisioner: reading statefile:", stateFile)
+	log.Info("provisioner: reading statefile", "file", stateFile)
 	file, err := os.Open(stateFile)
 	if err != nil {
 		return nil, err
