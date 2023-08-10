@@ -1,4 +1,4 @@
-FROM golang:1.20-alpine3.17 AS builder
+FROM golang:1.21-alpine AS builder
 
 ARG GRAFANA_TEST_REPO
 

@@ -3,7 +3,6 @@ package provisioner
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"os"
 	"path"
 
@@ -75,7 +74,7 @@ func (p *ProvisionState) RunTests(ctx context.Context, tr *tester.TestRun) error
 func (p *ProvisionState) WriteStateFile() error {
 
 	stateFile := path.Join(p.StateDir, "provision_state.json")
-	log.Println("provisioner: writing statefile:", stateFile)
+	log.Info("provisioner: writing statefile", "path", stateFile)
 
 	file, err := os.Create(stateFile)
 	if err != nil {

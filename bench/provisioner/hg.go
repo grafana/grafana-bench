@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"log"
+	"io"
 	"os"
 	"os/exec"
 	"path"
@@ -27,6 +27,7 @@ func NewHGDriver() *HGDriver {
 }
 
 func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.TestRun) error {
+	log := log.With("provisioner", "hg")
 	// resolve test suite to correct version etc
 	if err := os.MkdirAll(filepath.Join("work", "test", "suite"), os.FileMode(0755)); err != nil {
 		return fmt.Errorf("provisioner: %w", err)
@@ -79,8 +80,8 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 			jsonFile := getJsonOutputFilename(testFile)
 			scenarioName := getScenarioName(testFile)
 
-			log.Println("provisioner: running test file:", testFile)
-			log.Println("provisioner: output json to:", jsonFile)
+			log.Info("running test file", "file", testFile)
+			log.Info("output json to", "file", jsonFile)
 
 			cmd := exec.Command("k6", "run", testFile,
 				"--out", "cloud",
@@ -93,20 +94,19 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 			}
 
 			buf := bytes.NewBuffer(nil)
-			cmd.Stdout = buf
+			cmd.Stdout = io.MultiWriter(buf, os.Stderr)
 			cmd.Stderr = os.Stderr
 
 			// run command
 			err = cmd.Run()
 			if err != nil {
-				log.Println("provisioner", "error running k6 command:", err)
+				log.Info("error running k6 command", "error", err)
 			}
-			log.Println(buf.String())
 
 			// scenario + testDuration will be in milliseconds
 			scenarioDuration, testDuration, err := processTestJson(scenarioName, jsonFile)
 			if err != nil {
-				log.Println("provisioner:", "error processing json file", err)
+				log.Info("error processing json file", "error", err)
 			}
 
 			// build log output
@@ -127,7 +127,7 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 			totalDuration += testDuration
 
 			// test complete log
-			log.Println(m)
+			log.Info(fmt.Sprintf("%+v", m))
 		}
 
 		// suite complete log
@@ -141,7 +141,7 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 			"duration":     strconv.Itoa(totalDuration),
 			"machineInfo":  machineSpec,
 		}
-		log.Println(m)
+		log.Info(fmt.Sprintf("%+v", m))
 
 		return nil
 	})
@@ -162,7 +162,7 @@ func (d *HGDriver) WaitForReady(ctx context.Context, ps *ProvisionState) {
 
 // Provision not implemented for hosted grafana driver
 func (d *HGDriver) Provision(ctx context.Context, ps *ProvisionState) (func() error, error) {
-	log.Println("provisioner: provision not implemented for hosted grafana driver")
+	log.Info("provisioner: provision not implemented for hosted grafana driver")
 	return NilFunc, nil
 }
 
@@ -171,15 +171,15 @@ func (d *HGDriver) Provision(ctx context.Context, ps *ProvisionState) (func() er
 func (d *HGDriver) Destroy(ctx context.Context, ps *ProvisionState) error {
 	exists, err := utils.PathExists(ps.LocalDir)
 	if err != nil {
-		log.Println("provisioner: error checking if provision state exists", err)
+		log.Info("provisioner: error checking if provision state exists", err)
 	}
 
 	if !exists {
-		log.Println("provisioner: state not written to disk. exiting")
+		log.Info("provisioner: state not written to disk. exiting")
 		return nil
 	}
 
-	log.Println("removing state directory:", ps.LocalDir)
+	log.Info("removing state directory", "dir", ps.LocalDir)
 	return utils.Rm(ps.LocalDir)
 }
 
@@ -196,10 +196,10 @@ func getCloudRunURL(b []byte) string {
 	if len(match) >= 2 {
 		// The URL is captured in the second element of the match
 		url := string(match[1])
-		log.Println("provisioner: Found k6 cloud output url:", url)
+		log.Info("Found k6 cloud output url", "url", url)
 		return url
 	} else {
-		log.Println("provisioner: URL not found.")
+		log.Info("URL not found")
 		return ""
 	}
 }
