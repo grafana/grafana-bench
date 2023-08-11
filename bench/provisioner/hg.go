@@ -89,10 +89,8 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 			cmd := exec.Command("k6", "run", testFile,
 				"--out", "experimental-prometheus-rw",
 				"--out", "cloud",
+				"--tag", "SUITE_RUN="+ps.Identifier,
 			)
-			// Removing this because it adds a "SUITE_RUN" label to the Prometheus metrics which causes a cardinality explosion
-			// since this value is different every time the program is run
-			//"--tag", "SUITE_RUN="+ps.Identifier)
 
 			// set env vars
 			for key, value := range envVars {
