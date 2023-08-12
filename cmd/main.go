@@ -9,10 +9,12 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/grafana/grafana-bench/bench"
 	"github.com/grafana/grafana-bench/bench/builder"
 	"github.com/grafana/grafana-bench/bench/provisioner"
+	"github.com/grafana/grafana-bench/bench/tester"
 	"github.com/grafana/grafana-bench/bench/utils"
 )
 
@@ -122,11 +124,31 @@ func main() {
 }
 
 func hgtest(ctx context.Context, address, port, username, password, tests string) error {
+	// populate grafana vm
+	grafanaInstance := &provisioner.VMInstance{
+		// address is coming in including https://
+		Address:         strings.TrimPrefix(address, "https://"),
+		ServicePort:     port,
+		GrafanaUser:     username,
+		GrafanaPassword: password,
+	}
+
+	grafanaVersion, err := provisioner.GetGrafanaBuildVersion(grafanaInstance)
+	if err != nil {
+		log.Println("Error getting grafana version:", err)
+	}
 
 	// use this to pass in the build version for logging,
 	// but don't try to use this or bad things will happen fo sho
 	b := &builder.Build{
-		GrafanaRevision: os.Getenv("GRAFANA_VERSION"),
+		GrafanaRevision: grafanaVersion,
+	}
+
+	// Hosted Grafana driver won't resolve. It will just make sure tests exist
+	// where they're supposed to
+	tr, err := BenchService.Tester.New(ctx, "jalevin/test", tests, true)
+	if err != nil {
+		return err
 	}
 
 	// create a new state
@@ -136,14 +158,10 @@ func hgtest(ctx context.Context, address, port, username, password, tests string
 		return err
 	}
 
-	// populate grafana vm
-	ps.GrafanaInstance = &provisioner.VMInstance{
-		// address is coming in including https://
-		Address:         strings.TrimPrefix(address, "https://"),
-		ServicePort:     port,
-		GrafanaUser:     username,
-		GrafanaPassword: password,
-	}
+	// override identifier
+	ps.Identifier = GetNewIdentifier(b, ps, tr)
+	// set the instance
+	ps.GrafanaInstance = grafanaInstance
 
 	ps.WaitForReady(ctx)
 
@@ -151,18 +169,18 @@ func hgtest(ctx context.Context, address, port, username, password, tests string
 	BenchService.Tester.K6CloudProjectId = os.Getenv("K6_CLOUD_PROJECT_ID")
 	BenchService.Tester.K6CloudToken = os.Getenv("K6_CLOUD_TOKEN")
 
-	// Hosted Grafana driver won't resolve. It will just make sure tests exist
-	// where they're supposed to
-	testRun, err := BenchService.Tester.New(ctx, "jalevin/test", tests, true)
-	if err != nil {
-		return err
-	}
-
 	// run the tests
-	if err := ps.RunTests(ctx, testRun); err != nil {
+	if err := ps.RunTests(ctx, tr); err != nil {
 		log.Println("error running tests:", err)
 		log.Println("connectionString:", ps.K6Instance.GetConnectionString())
 	}
 
 	return nil
+}
+
+func GetNewIdentifier(b *builder.Build, ps *provisioner.ProvisionState, tr *tester.TestRun) string {
+	t := time.Now().UTC().Format("15:04:05")
+	sha := tr.GetShortTestRevision()
+	// {time}-api-tests-{sha}-graf-{version}
+	return fmt.Sprintf("%s-api-tests-%s-graf-%s", t, sha, b.GrafanaRevision)
 }

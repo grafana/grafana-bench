@@ -180,3 +180,25 @@ func (tr *TestRun) RelativeFolder(testFile string) string {
 	p := strings.TrimPrefix(testFile, path.Join(tr.TestSuiteDir, "tests"))
 	return path.Dir(p)
 }
+
+func (tr *TestRun) GetShortTestRevision() string {
+
+	var suiteRevision string
+	err := utils.DoInDir(tr.LocalDir, tr.TestSuiteDir, func() error {
+		// get the commit hash
+		cmd := exec.Command("git", "rev-parse", "--short", "HEAD")
+		hash, err := cmd.CombinedOutput()
+		if err != nil {
+			return err
+		}
+
+		suiteRevision = strings.TrimSpace(string(hash))
+		return nil
+	})
+
+	if err != nil {
+		log.Println("test-run: Error getting short revision", err)
+	}
+
+	return suiteRevision
+}

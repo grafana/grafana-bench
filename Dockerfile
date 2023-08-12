@@ -18,6 +18,8 @@ FROM grafana/k6:latest
 USER root
 
 ## Run container
+RUN apk update && apk add --no-cache git
+
 COPY docker_startup.sh docker_startup.sh
 RUN chmod +x docker_startup.sh
 
