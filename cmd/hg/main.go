@@ -5,9 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path"
-	"runtime"
-	"strconv"
 	"strings"
 	"time"
 
@@ -15,28 +12,12 @@ import (
 	"github.com/grafana/grafana-bench/bench/builder"
 	"github.com/grafana/grafana-bench/bench/provisioner"
 	"github.com/grafana/grafana-bench/bench/tester"
-	"github.com/grafana/grafana-bench/bench/utils"
 )
 
 func main() {
 	// setup
 	ctx := context.Background()
-	execRoot := utils.Getwd()
-	BenchService, err := bench.NewBenchService(ctx, &bench.BenchServiceCfg{
-		WorkPath:         path.Join(execRoot, "work"),
-		GrafanaRevision:  envOrDefault("GRAFANA_REVISION", "branch:main"),
-		GrafanaArch:      envOrDefault("GRAFANA_ARCH", getLocalArch()),
-		ProvisionDriver:  provisioner.ProvisionDriverFromString(envOrDefault("PROVISION", "local")),
-		ProvisionState:   os.Getenv("STATE"),
-		ReportCloud:      envOrDefaultBool("REPORT_CLOUD", "false"),
-		K6CloudProjectID: envOrDefault("K6_CLOUD_PROJECT", ""),
-		K6CloudToken:     envOrDefault("K6_CLOUD_TOKEN_PATH", ""),
-		GCPCredPath:      path.Join(execRoot, "creds", envOrDefault("GCP_CREDS_FILE", "gcp.json")),
-	})
-
-	if err != nil {
-		panic(err)
-	}
+	BenchService, _ := bench.NewBenchServiceOrPanic(ctx)
 
 	// Setup bench service with defaults for CLI
 	if len(os.Args) != 6 {
@@ -126,28 +107,4 @@ func GetNewIdentifier(b *builder.Build, ps *provisioner.ProvisionState, tr *test
 	sha := tr.GetShortTestRevision()
 	// {time}-api-tests-{sha}-graf-{version}
 	return fmt.Sprintf("%s-api-tests-%s-graf-%s", t, sha, b.GrafanaRevision)
-}
-
-// Gets the architecture of the machine running Bench
-func getLocalArch() string {
-	return fmt.Sprintf("%s/%s", strings.ToLower(runtime.GOOS), strings.ToLower(runtime.GOARCH))
-}
-
-// Get environment variable or use default value
-func envOrDefault(environmentVarName, defaultValue string) string {
-	v := os.Getenv(environmentVarName)
-	if v == "" {
-		return defaultValue
-	}
-
-	return v
-}
-
-// Get boolean environment variable. panics if there's an issue with conversion
-func envOrDefaultBool(environmentVarName, defaultValue string) bool {
-	bool, err := strconv.ParseBool(envOrDefault("REPORT_CLOUD", "false"))
-	if err != nil {
-		panic(fmt.Sprintf("error reading bool env variable %s: %s", environmentVarName, err))
-	}
-	return bool
 }

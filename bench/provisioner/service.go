@@ -31,7 +31,7 @@ type ProvisionerService struct {
 	GCPCredentialsPath     string
 }
 
-func NewProvisioner(ctx context.Context, localDir string, bc *buildcache.BuildCache, vmEnabled bool, gcpCredentialsPath, grafanaWorkDirTemplate string) (*ProvisionerService, error) {
+func NewProvisioner(ctx context.Context, bc *buildcache.BuildCache, localDir string, vmEnabled bool, gcpCredentialsPath, grafanaWorkDirTemplate string) (*ProvisionerService, error) {
 
 	if bc == nil {
 		return nil, fmt.Errorf("provisioner: build cache cannot be nil")
