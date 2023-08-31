@@ -61,6 +61,7 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 			"K6_PROMETHEUS_RW_USERNAME":   os.Getenv("K6_PROMETHEUS_RW_USERNAME"),
 			"K6_PROMETHEUS_RW_PASSWORD":   os.Getenv("K6_PROMETHEUS_RW_PASSWORD"),
 			"K6_PROMETHEUS_RW_SERVER_URL": os.Getenv("K6_PROMETHEUS_RW_SERVER_URL"),
+			"K6_CLOUD_TRACES_ENABLED":     "true",
 		}
 
 		if tr.ReportToK6Cloud {

@@ -29,7 +29,7 @@ type TesterService struct {
 	resultsDir string
 }
 
-func NewTester(ctx context.Context, localDir, resultsDir, grafanaTestRepo, k6CloudToken, k6CloudProjectId string) *TesterService {
+func NewTester(ctx context.Context, localDir, resultsDir, grafanaTestRepo, k6CloudProjectId, k6CloudToken string) *TesterService {
 	err := os.MkdirAll(localDir, 0755)
 	if err != nil {
 		panic(fmt.Errorf("tester: could not create test service working directory: %w", err))

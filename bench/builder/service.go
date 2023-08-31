@@ -20,7 +20,7 @@ type BuilderService struct {
 }
 
 // Creates a new build service and resolves the build suite
-func NewBuildService(localdir string, buildcache *buildcache.BuildCache) *BuilderService {
+func NewBuildService(buildcache *buildcache.BuildCache, localdir string) *BuilderService {
 	buildSuiteDir := filepath.Join(localdir, "buildsuite")
 
 	return &BuilderService{
