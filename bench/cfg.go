@@ -1,11 +1,13 @@
 package bench
 
 import (
+	"log"
 	"os"
 	"path"
 
 	"github.com/grafana/grafana-bench/bench/provisioner"
 	"github.com/grafana/grafana-bench/bench/utils/env"
+	"github.com/joho/godotenv"
 )
 
 type BenchServiceCfg struct {
@@ -32,7 +34,11 @@ type BenchServiceCfg struct {
 }
 
 func GetBenchServiceCfgFromEnv(root string) *BenchServiceCfg {
-	// START HERE - setup godotenv
+	// load .env file
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 
 	workPath := path.Join(root, "work")
 	return &BenchServiceCfg{

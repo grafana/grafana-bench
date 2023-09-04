@@ -3,6 +3,7 @@
 work
 creds/
 grafana-bench.tar.gz
+.env
 
 
 
@@ -23,6 +24,7 @@ grafana-bench.tar.gz
 # vendor/
 
 # don't keep GCP keys
+creds/**
 GCP-*
 custom.ini
 # don't keep anything in the test results output

@@ -53,7 +53,7 @@ func (p *ProvisionState) Provision(ctx context.Context) (func() error, error) {
 		return nil, err
 	}
 
-	// write the statefile to dir
+	// write state to disk
 	err = p.WriteStateFile()
 	return p.killFunc, err
 }
@@ -75,6 +75,10 @@ func (p *ProvisionState) WriteStateFile() error {
 
 	stateFile := path.Join(p.StateDir, "provision_state.json")
 	log.Info("provisioner: writing statefile", "path", stateFile)
+	err := os.MkdirAll(p.StateDir, 0700)
+	if err != nil {
+		return err
+	}
 
 	file, err := os.Create(stateFile)
 	if err != nil {
