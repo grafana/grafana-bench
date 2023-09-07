@@ -28,24 +28,18 @@ func NewHGDriver() *HGDriver {
 
 func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.TestRun) error {
 	log := log.With("provisioner", "hg")
-	// resolve test suite to correct version etc
-	if err := os.MkdirAll(filepath.Join("work", "test", "suite"), os.FileMode(0755)); err != nil {
-		return fmt.Errorf("provisioner: %w", err)
+
+	exists, err := utils.PathExists(tr.TestSuiteDir)
+	if err != nil {
+		return fmt.Errorf("provisioner: error checking test suite dir: %s err: %w", tr.TestSuiteDir, err)
 	}
 
-	//err := tr.ResolveTestSuite()
-	//if err != nil {
-	//  return fmt.Errorf("provisioner: error running test suite: %w", err)
-	//}
+	if !exists {
+		return fmt.Errorf("provisioner: error test suite dir %s does not exist. no tests to run", tr.TestSuiteDir)
+	}
 
 	// run k6 tests
-	err := utils.DoInDir(utils.Getwd(), tr.TestSuiteDir, func() error {
-		resultsDir := tr.ResultsDirectory(ps.Identifier)
-		err := os.MkdirAll(resultsDir, 0755)
-		if err != nil {
-			return err
-		}
-
+	err = utils.DoInDir(utils.Getwd(), tr.TestSuiteDir, func() error {
 		machineSpec, err := d.GetMachineSpec(ctx, ps)
 		if err != nil {
 			return err
@@ -54,19 +48,15 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 		envVars := map[string]string{
 			"MACHINE_SPEC":                machineSpec,
 			"TEST_SUITE_REVISION":         tr.SuiteRevision,
-			"TEST_SUMMARY_DIR":            resultsDir,
 			"GT_URL":                      ps.GrafanaInstance.HttpsServiceAddress(),
 			"GT_USERNAME":                 ps.GrafanaInstance.GrafanaUser,
 			"GT_PASSWORD":                 ps.GrafanaInstance.GrafanaPassword,
 			"K6_PROMETHEUS_RW_USERNAME":   os.Getenv("K6_PROMETHEUS_RW_USERNAME"),
 			"K6_PROMETHEUS_RW_PASSWORD":   os.Getenv("K6_PROMETHEUS_RW_PASSWORD"),
 			"K6_PROMETHEUS_RW_SERVER_URL": os.Getenv("K6_PROMETHEUS_RW_SERVER_URL"),
+			"K6_CLOUD_TOKEN":              tr.K6CloudToken,
+			"K6_CLOUD_PROJECT_ID":         tr.K6CloudProjectId,
 			"K6_CLOUD_TRACES_ENABLED":     "true",
-		}
-
-		if tr.ReportToK6Cloud {
-			envVars["K6_CLOUD_TOKEN"] = strings.TrimSpace(tr.K6CloudToken)
-			envVars["K6_CLOUD_PROJECT_ID"] = strings.TrimSpace(tr.K6CloudProjectId)
 		}
 
 		tests, err := tr.GetTestSuiteFiles()
@@ -87,12 +77,16 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 			log.Info("running test file", "file", testFile)
 			log.Info("output json to", "file", jsonFile)
 
-			cmd := exec.Command("k6", "run", testFile,
-				"--out", "experimental-prometheus-rw",
+			args := []string{"run", testFile,
 				"--out", "cloud",
-				"--out", "json="+jsonFile,
-				"--tag", "SUITE_RUN="+ps.Identifier,
-			)
+				"--out", "json=" + jsonFile,
+				"--tag", "SUITE_RUN=" + ps.Identifier}
+
+			if tr.SmokeTest {
+				args = append(args, "--iterations", "1", "--vus", "1")
+			}
+
+			cmd := exec.Command("k6", args...)
 
 			// set env vars
 			for key, value := range envVars {
@@ -156,7 +150,8 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 	return err
 }
 
-// this is hardcoded based on kubeconfig set when hacking this together. would be cool to get this from kubernetes directly
+// Hardcoded based on kubeconfig set when hacking this together.
+// would be cool to get this from kubernetes directly
 func (d *HGDriver) GetMachineSpec(ctx context.Context, ps *ProvisionState) (string, error) {
 	// driver, process/machine, memory, # cores, clockspeed, architecture, os
 	return "local|Intel(R) Xeon(R)|512000|2|2.8 GHz|x86_64|linux", nil

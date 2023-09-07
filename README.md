@@ -29,7 +29,10 @@ If you're doing local development on a test suite or otherwise you can use the c
 
 If you want to report your results to k6 cloud, set the `REPORT_CLOUD` environment variable to true and specify `K6_CLOUD_PROJECT` and `K6_CLOUD_TOKEN`
 
-### Environment Variables
+### Environment Variables / Flags
+See https://github.com/grafana/grafana-bench/blob/main/bench/cfg.go
+
+
 ```.sh
 # CLI options
 GRAFANA_REVISION=branch:main

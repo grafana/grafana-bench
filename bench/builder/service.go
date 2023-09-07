@@ -3,9 +3,9 @@ package builder
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/grafana/grafana-bench/bench/buildcache"
 	"github.com/grafana/grafana-bench/bench/utils"
@@ -33,7 +33,9 @@ func NewBuildService(buildcache *buildcache.BuildCache, localdir string) *Builde
 // Creates a new build ref used to build Grafana
 func (bs *BuilderService) New(ctx context.Context, grafanaRevision, arch string) (*Build, error) {
 
-	// TODO validate arch
+	if !validateArch(arch) {
+		return nil, fmt.Errorf("build-service: invalid architecture %s", arch)
+	}
 
 	gitRef, err := resolveGrafanaRevision(grafanaRevision)
 	if err != nil {
@@ -65,8 +67,6 @@ func (bs *BuilderService) New(ctx context.Context, grafanaRevision, arch string)
 }
 
 // Resolves build suite. Always updates to latest version
-// TODO: it might make sense to clone this for each build in the future, but for
-// now we're just going to link the build suite to the service.
 func (bs *BuilderService) ResolveBuildSuite() error {
 	exists, _ := utils.PathExists(bs.buildSuiteDir)
 
@@ -92,7 +92,7 @@ func (bs *BuilderService) ResolveBuildSuite() error {
 	}
 
 	// clone path to dir
-	log.Println("build-service: cloning build suite")
+	fmt.Println("build-service: cloning build suite")
 	if err := sh.RunV("git", "clone", "https://github.com/grafana/grafana-build", bs.buildSuiteDir); err != nil {
 		return fmt.Errorf("Error checking out grafana test repo %s", err)
 	}
@@ -107,10 +107,30 @@ func (bs *BuilderService) ListBuilds(ctx context.Context) error {
 		return err
 	}
 
-	log.Println("Builds")
+	fmt.Println("Builds")
 	for _, b := range builds {
-		log.Printf("%s: %s\n", b.Location, b.Name)
+		fmt.Printf("%s: %s\n", b.Location, b.Name)
 	}
 
 	return nil
+}
+
+// validate arch string linux/amd64
+func validateArch(archstring string) bool {
+	parts := strings.Split(archstring, "/")
+	if len(parts) != 2 {
+		return false
+	}
+
+	os := parts[0]
+	if os != "linux" && os != "darwin" && os != "windows" {
+		return false
+	}
+
+	arch := parts[1]
+	if arch != "amd64" && arch != "arm64" {
+		return false
+	}
+
+	return true
 }

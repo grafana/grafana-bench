@@ -40,34 +40,7 @@ func Build(ctx context.Context) error {
 // If you use this command with the environment variable PROVISION=local this
 // will block until you exit which will shut down the local grafana process.
 func Run(ctx context.Context) error {
-	if BenchCfg.ProvisionDriver != provisioner.Local {
-		log.Println("Provision driver is not local, defaulting to linux/amd64")
-		BenchCfg.GrafanaArch = "linux/amd64"
-	}
-
-	// create a build with some defaults do the build if it's not resolved
-	build, err := BenchService.Builder.New(ctx, BenchCfg.GrafanaRevision, BenchCfg.GrafanaArch)
-	if err != nil {
-		return err
-	}
-	if !build.Resolved {
-		err := build.Run(ctx)
-		if err != nil {
-			return err
-		}
-	}
-
-	// verify build exists in the cache
-	resolved, err := BenchService.BuildCache.Resolve(ctx, buildcache.TypeBuild, build.ArtifactBuildName)
-	if err != nil {
-		return err
-	}
-
-	if resolved {
-		log.Println("mage: build in cache")
-	}
-
-	ps, err := BenchService.Provisioner.New(ctx, BenchCfg.ProvisionDriver, build, true)
+	ps, err := getProvisionState(ctx, BenchCfg)
 	if err != nil {
 		return err
 	}
@@ -96,39 +69,8 @@ func Run(ctx context.Context) error {
 // You can set the revision yourself. Usage:
 // `GRAFANA_REVISION=branch:k8s-proof-of-concept mage bench`
 // `GRAFANA_REVISION=commit:c116545e0ba005e10e318da96688bdae01439bf5 mage bench`
-//
-// If you would like to specify a custom configuration, you can either set the
-// GRAFANA_CONFIG variable or place a custom.ini in the bench directory on disk
-// usage: `INI=custom.ini mage bench`
 func Bench(ctx context.Context, testSuite string) error {
-	if BenchCfg.ProvisionDriver != provisioner.Local {
-		log.Println("Provision driver is not local, defaulting to linux/amd64")
-		BenchCfg.GrafanaArch = "linux/amd64"
-	}
-
-	// create a build with some defaults do the build if it's not resolved
-	build, err := BenchService.Builder.New(ctx, BenchCfg.GrafanaRevision, BenchCfg.GrafanaArch)
-	if err != nil {
-		return err
-	}
-	if !build.Resolved {
-		err := build.Run(ctx)
-		if err != nil {
-			return err
-		}
-	}
-
-	// verify build exists in the cache
-	resolved, err := BenchService.BuildCache.Resolve(ctx, buildcache.TypeBuild, build.ArtifactBuildName)
-	if err != nil {
-		return err
-	}
-
-	if resolved {
-		log.Println("mage: build in cache")
-	}
-
-	ps, err := BenchService.Provisioner.New(ctx, BenchCfg.ProvisionDriver, build, false)
+	ps, err := getProvisionState(ctx, BenchCfg)
 	if err != nil {
 		return err
 	}
@@ -142,7 +84,7 @@ func Bench(ctx context.Context, testSuite string) error {
 	ps.WaitForReady(ctx)
 
 	// test the build
-	testRun, err := BenchService.Tester.New(ctx, "", testSuite, BenchCfg.ReportCloud)
+	testRun, err := BenchService.Tester.New(ctx, "", testSuite, BenchCfg.SmokeTest, BenchCfg.ReportCloud)
 	if err != nil {
 		return err
 	}
@@ -151,13 +93,21 @@ func Bench(ctx context.Context, testSuite string) error {
 	err = ps.RunTests(ctx, testRun)
 	if err != nil {
 		log.Println("error running tests:", err)
-		log.Println("connectionString:", ps.K6Instance.GetConnectionString())
 	}
 
-	return err
+	// Provide a hint for people running with cloud driver so they don't have to
+	// wait for terraform every time.
+	if err != nil && BenchCfg.DestroyInfra && BenchCfg.ProvisionDriver == provisioner.GCP {
+		log.Println("It appears that you're destroying state even though you got an error. you can preserve with DESTROY=false. Resources will be cleaned up every 24 hours automatically.")
+	}
 
-	// remove the build artifacts
-	//return ps.Destroy(ctx)
+	if BenchCfg.DestroyInfra {
+		return ps.Destroy(ctx)
+	}
+
+	log.Println(fmt.Sprintf("Preserving state. STATE=\"%s\"", ps.Identifier))
+
+	return nil
 }
 
 // Runs test suite on already running instance of grafana. Requires state for
@@ -173,7 +123,7 @@ func Test(ctx context.Context, testSuite string) error {
 	}
 
 	// test the build
-	testRun, err := BenchService.Tester.New(ctx, "", testSuite, BenchCfg.ReportCloud)
+	testRun, err := BenchService.Tester.New(ctx, "", testSuite, BenchCfg.SmokeTest, BenchCfg.ReportCloud)
 	if err != nil {
 		return err
 	}
@@ -202,4 +152,43 @@ func Destroy(ctx context.Context) error {
 // Lists builds in cache
 func ListBuilds(ctx context.Context) error {
 	return BenchService.Builder.ListBuilds(ctx)
+}
+
+// getProvisionState checks the buildconfig for state. If provided, reads the
+// statefile, otherwise resolves the build and creates a new state.
+func getProvisionState(ctx context.Context, cfg *bench.BenchServiceCfg) (*provisioner.ProvisionState, error) {
+
+	// Read state if provided
+	if BenchCfg.ProvisionState != "" {
+		return BenchService.Provisioner.ReadStateFile(BenchCfg.ProvisionState)
+	}
+
+	if BenchCfg.ProvisionDriver != provisioner.Local {
+		log.Println("Provision driver is not local, defaulting to linux/amd64")
+		BenchCfg.GrafanaArch = "linux/amd64"
+	}
+
+	// create a build with some defaults do the build if it's not resolved
+	build, err := BenchService.Builder.New(ctx, BenchCfg.GrafanaRevision, BenchCfg.GrafanaArch)
+	if err != nil {
+		return nil, err
+	}
+	if !build.Resolved {
+		err := build.Run(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// verify build exists in the cache
+	resolved, err := BenchService.BuildCache.Resolve(ctx, buildcache.TypeBuild, build.ArtifactBuildName)
+	if err != nil {
+		return nil, err
+	}
+
+	if resolved {
+		log.Println("mage: build in cache")
+	}
+
+	return BenchService.Provisioner.New(ctx, BenchCfg.ProvisionDriver, build, true)
 }

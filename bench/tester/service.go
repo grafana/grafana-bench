@@ -59,11 +59,12 @@ func NewTester(ctx context.Context, localDir, resultsDir, grafanaTestRepo, k6Clo
 //
 // reportToK6Cloud sends results to k6 cloud if true
 
-func (t *TesterService) New(ctx context.Context, suiteRevision, tests string, reportToK6Cloud bool) (*TestRun, error) {
+func (t *TesterService) New(ctx context.Context, suiteRevision, tests string, smokeTest bool, reportToK6Cloud bool) (*TestRun, error) {
 	return &TestRun{
 		TesterService:   t,
 		SuiteRevision:   suiteRevision,
 		Tests:           tests,
+		SmokeTest:       smokeTest,
 		ReportToK6Cloud: reportToK6Cloud,
 	}, nil
 }
