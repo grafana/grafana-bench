@@ -17,7 +17,7 @@ import (
 func main() {
 	// setup
 	ctx := context.Background()
-	BenchService, _ := bench.NewBenchServiceOrPanic(ctx)
+	benchSvc, benchCfg := bench.NewBenchServiceOrPanic(ctx)
 
 	// Setup bench service with defaults for CLI
 	if len(os.Args) != 6 {
@@ -39,12 +39,12 @@ func main() {
 		tests    = os.Args[5]
 	)
 
-	if err := hgtest(ctx, BenchService, address, port, username, password, tests); err != nil {
-		panic(fmt.Errorf("POTATO: %w", err))
+	if err := hgtest(ctx, benchSvc, benchCfg, address, port, username, password, tests); err != nil {
+		panic(err)
 	}
 }
 
-func hgtest(ctx context.Context, BenchService *bench.BenchService, address, port, username, password, tests string) error {
+func hgtest(ctx context.Context, benchSvc *bench.BenchService, benchCfg *bench.BenchServiceCfg, address, port, username, password, tests string) error {
 	// populate grafana vm
 	grafanaInstance := &provisioner.VMInstance{
 		// address is coming in including https://
@@ -57,7 +57,7 @@ func hgtest(ctx context.Context, BenchService *bench.BenchService, address, port
 	grafanaVersion, err := provisioner.GetGrafanaBuildVersion(grafanaInstance)
 	if err != nil {
 		log.Println("Error getting grafana version:", err)
-		// RETURN HERE
+		return fmt.Errorf("Error getting grafana version. exiting.. err: %w", err)
 	}
 
 	// use this to pass in the build version for logging,
@@ -70,14 +70,14 @@ func hgtest(ctx context.Context, BenchService *bench.BenchService, address, port
 	// where they're supposed to
 	// tests = dashboards
 	// tests = dashboards/dashboard_create.js
-	tr, err := BenchService.Tester.New(ctx, "jalevin/test", tests, true)
+	tr, err := benchSvc.Tester.New(ctx, "jalevin/test", tests, benchCfg.SmokeTest, true)
 	if err != nil {
 		return err
 	}
 
 	// create a new state
 	provisionDriver := provisioner.HG
-	ps, err := BenchService.Provisioner.New(ctx, provisionDriver, b, false)
+	ps, err := benchSvc.Provisioner.New(ctx, provisionDriver, b, false)
 	if err != nil {
 		return err
 	}
@@ -90,8 +90,8 @@ func hgtest(ctx context.Context, BenchService *bench.BenchService, address, port
 	ps.WaitForReady(ctx)
 
 	// set project id to https://jefflevinslunch.grafana.net/a/k6-app/projects/3653020
-	BenchService.Tester.K6CloudProjectId = os.Getenv("K6_CLOUD_PROJECT_ID")
-	BenchService.Tester.K6CloudToken = os.Getenv("K6_CLOUD_TOKEN")
+	benchSvc.Tester.K6CloudProjectId = os.Getenv("K6_CLOUD_PROJECT_ID")
+	benchSvc.Tester.K6CloudToken = os.Getenv("K6_CLOUD_TOKEN")
 
 	// run the tests
 	if err := ps.RunTests(ctx, tr); err != nil {
