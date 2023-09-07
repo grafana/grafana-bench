@@ -6,11 +6,20 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strings"
 	"text/template"
 
 	"github.com/google/uuid"
 	"github.com/grafana/grafana-bench/bench/buildcache"
 	"github.com/grafana/grafana-bench/bench/builder"
+)
+
+type ProvisionType string
+
+const (
+	Local ProvisionType = "local"
+	GCP   ProvisionType = "gcp"
+	HG    ProvisionType = "hg"
 )
 
 type ProvisionerService struct {
@@ -22,7 +31,7 @@ type ProvisionerService struct {
 	GCPCredentialsPath     string
 }
 
-func NewProvisioner(ctx context.Context, localDir string, bc *buildcache.BuildCache, vmEnabled bool, gcpCredentialsPath, grafanaWorkDirTemplate string) (*ProvisionerService, error) {
+func NewProvisioner(ctx context.Context, bc *buildcache.BuildCache, localDir string, vmEnabled bool, gcpCredentialsPath, grafanaWorkDirTemplate string) (*ProvisionerService, error) {
 
 	if bc == nil {
 		return nil, fmt.Errorf("provisioner: build cache cannot be nil")
@@ -51,29 +60,22 @@ func NewProvisioner(ctx context.Context, localDir string, bc *buildcache.BuildCa
 	}, nil
 }
 
-type ProvisionType string
-
-const (
-	Local ProvisionType = "local"
-	GCP   ProvisionType = "gcp"
-)
-
-func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *builder.Build) (*ProvisionState, error) {
-
-	fmt.Printf("provisioner: using driver %s\n", t)
+func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *builder.Build, writeState bool) (*ProvisionState, error) {
+	log := log.With("driver", t)
+	log.Info("using driver")
 
 	if t != Local && !p.VMEnabled {
-		return nil, fmt.Errorf("Provisioner does not have VM support enabled")
+		return nil, fmt.Errorf("provisioner does not have VM support enabled")
 	}
 
 	uuid := uuid.Must(uuid.NewRandom())
-	fmt.Println("provisioner: new state identifier:", uuid.String())
+	log.Info("provisioner: new state identifier", "id", uuid.String())
 
 	localDir := path.Join(p.LocalDir, uuid.String())
 	workDir := path.Join(localDir, "work")
 	stateDir := path.Join(localDir, "state")
 
-	fmt.Println("provisioner: local path:", localDir)
+	log.Info("provisioner: local path", "dir", localDir)
 
 	driver := p.InitDriver(t)
 
@@ -86,6 +88,12 @@ func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *bu
 		WorkDir:     workDir,
 		TemplateDir: p.GrafanaWorkDirTemplate,
 		Build:       build,
+	}
+
+	// exit if not writing state
+	if !writeState {
+		log.Info("provisioner: writeState set to false. skip writing to disk")
+		return state, nil
 	}
 
 	err := os.MkdirAll(state.WorkDir, 0755)
@@ -101,21 +109,38 @@ func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *bu
 	return state, nil
 }
 
+// Initializes provision driver from ProvisionType
 func (p *ProvisionerService) InitDriver(t ProvisionType) ProvisionDriver {
 	switch t {
 	case Local:
 		return NewLocalDriver(p.BuildCache)
 	case GCP:
 		return NewGCPDriver(p.BuildCache, p.TerraformTemplates, p.GCPCredentialsPath)
+	case HG:
+		return NewHGDriver()
 	default:
 		panic(fmt.Errorf("provisioner: unknown provision type: %s", t))
+	}
+}
+
+func ProvisionDriverFromString(driverString string) ProvisionType {
+	driverString = strings.ToLower(driverString)
+	switch driverString {
+	case "local":
+		return Local
+	case "gcp":
+		return GCP
+	case "hg":
+		return HG
+	default:
+		panic(fmt.Errorf("provisioner: unknown provision type: %s", driverString))
 	}
 }
 
 // Reads statefile from directory
 func (p *ProvisionerService) ReadStateFile(stateIdentifier string) (*ProvisionState, error) {
 	stateFile := path.Join(p.LocalDir, stateIdentifier, "state", "provision_state.json")
-	fmt.Println("provisioner: reading statefile:", stateFile)
+	log.Info("provisioner: reading statefile", "file", stateFile)
 	file, err := os.Open(stateFile)
 	if err != nil {
 		return nil, err

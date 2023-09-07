@@ -2,6 +2,7 @@ package builder
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/grafana/grafana-bench/bench/builder/git"
@@ -36,19 +37,19 @@ func resolveGrafanaRevision(grafanaRevision string) (string, error) {
 	var commit string
 	var err error
 	if t == "branch" {
-		fmt.Println("builder: branch", val, "specified. Resolving latest commit")
+		log.Println("builder: branch", val, "specified. Resolving latest commit")
 		commit, err = git.ResolveLatestBranchCommit("grafana/grafana", val)
 		if err != nil {
 			return "", err
 		}
-		fmt.Println("builder: branch", val, "resolved to commit", commit)
+		log.Println("builder: branch", val, "resolved to commit", commit)
 	} else if t == "commit" {
-		fmt.Println("builder: commit", val, "specified. Resolving commit")
+		log.Println("builder: commit", val, "specified. Resolving commit")
 		commit, err = git.ResolveFullCommit("grafana/grafana", val)
 		if err != nil {
 			return "", err
 		}
-		fmt.Println("builder: commit", val, "resolved to commit", commit)
+		log.Println("builder: commit", val, "resolved to commit", commit)
 	}
 
 	return commit, nil

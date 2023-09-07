@@ -1,39 +1,33 @@
-# based on
-# https://github.com/takeyamajp/docker-ubuntu-sshd/blob/master/ubuntu22.04/Dockerfile
+FROM golang:1.21-alpine AS builder
 
-FROM --platform=linux/amd64 ubuntu:22.04
-MAINTAINER "Hiroki Takeyama"
+RUN apk update && apk add --no-cache git
 
-# timezone
-RUN apt update && \
-    apt install -y tzdata; \ 
-    apt install -y git openssh-server make curl; \
-    apt clean;
+# build bench
+WORKDIR /app
+COPY go.mod go.sum .
+RUN go mod download
 
-# checkout grafana
-RUN git clone https://github.com/grafana/grafana /grafana && chmod 777 /grafana
+COPY bench bench/
+COPY cmd cmd/
 
-# sshd
-RUN mkdir /run/sshd; \
-    apt install -y openssh-server; \
-    sed -i 's/^#\(PermitRootLogin\) .*/\1 yes/' /etc/ssh/sshd_config; \
-    sed -i 's/^\(UsePAM yes\)/# \1/' /etc/ssh/sshd_config; \
-    apt clean;
+RUN go build -o grafana-bench ./cmd
 
-# entrypoint
-RUN { \
-    echo '#!/bin/bash -eu'; \
-    echo 'ln -fs /usr/share/zoneinfo/${TZ} /etc/localtime'; \
-    echo 'echo "root:${ROOT_PASSWORD}" | chpasswd'; \
-    echo 'exec "$@"'; \
-    } > /usr/local/bin/entry_point.sh; \
-    chmod +x /usr/local/bin/entry_point.sh;
+FROM grafana/k6:latest
+USER root
 
-ENV TZ America/Chicago
+## Run container
+RUN apk update && apk add --no-cache git
 
-ENV ROOT_PASSWORD root
+COPY docker_startup.sh docker_startup.sh
+RUN chmod +x docker_startup.sh
 
-EXPOSE 22
+# get test suite # this is a hack. should get test suite via build arg
+RUN mkdir -p /home/k6/work/test
+COPY work/test/suite /home/k6/work/test/suite/
 
-ENTRYPOINT ["entry_point.sh"]
-CMD    ["/usr/sbin/sshd", "-D", "-e"]
+# copy binary
+COPY --from=builder /app/grafana-bench /usr/local/bin/grafana-bench
+
+WORKDIR /home/k6
+
+ENTRYPOINT ["./docker_startup.sh"]

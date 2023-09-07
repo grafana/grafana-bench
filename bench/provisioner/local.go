@@ -3,9 +3,7 @@ package provisioner
 import (
 	"context"
 	"fmt"
-	"os"
 	"os/exec"
-	"strings"
 
 	"github.com/grafana/grafana-bench/bench/buildcache"
 	"github.com/grafana/grafana-bench/bench/tester"
@@ -41,7 +39,7 @@ func (d *LocalDriver) Provision(ctx context.Context, ps *ProvisionState) (func()
 
 	// TODO figure out how to get this from ENV or custom.ini
 	ps.GrafanaInstance = &VMInstance{
-		IPAddress:   "localhost",
+		Address:     "localhost",
 		ServicePort: "3000",
 	}
 
@@ -53,11 +51,6 @@ func (d *LocalDriver) WaitForReady(ctx context.Context, ps *ProvisionState) {
 	WaitForLiveGrafana(ps.GrafanaInstance.ServiceAddress())
 }
 
-// Check - checks if Grafana + test runner are ready
-func (d *LocalDriver) Ready(ctx context.Context, ps *ProvisionState) bool {
-	return IsLive(ps.GrafanaInstance.ServiceAddress())
-}
-
 // Destroy - destroys a provisioned instance of Grafana + test runner
 func (d *LocalDriver) Destroy(ctx context.Context, ps *ProvisionState) error {
 	// kill the process
@@ -66,7 +59,7 @@ func (d *LocalDriver) Destroy(ctx context.Context, ps *ProvisionState) error {
 		return err
 	}
 
-	fmt.Println("removing state directory:", ps.LocalDir)
+	log.Info("removing state directory", "dir", ps.LocalDir, "provisioner", "local")
 
 	// remove the state directory
 	return utils.Rm(ps.LocalDir)
@@ -82,12 +75,6 @@ func (d *LocalDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *test
 
 	// run k6 tests
 	err = utils.DoInDir(utils.Getwd(), tr.TestSuiteDir, func() error {
-		resultsDir := tr.ResultsDirectory(ps.Identifier)
-		err := os.MkdirAll(resultsDir, 0755)
-		if err != nil {
-			return err
-		}
-
 		machineSpec, err := d.GetMachineSpec(ctx, ps)
 		if err != nil {
 			return err
@@ -96,13 +83,9 @@ func (d *LocalDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *test
 		envVars := map[string]string{
 			"MACHINE_SPEC":        machineSpec,
 			"TEST_SUITE_REVISION": tr.SuiteRevision,
-			"TEST_SUMMARY_DIR":    resultsDir,
 			"GT_URL":              ps.GrafanaInstance.HttpServiceAddress(),
-		}
-
-		if tr.ReportToK6Cloud {
-			envVars["K6_CLOUD_TOKEN"] = strings.TrimSpace(tr.K6CloudToken)
-			envVars["K6_CLOUD_PROJECT_ID"] = strings.TrimSpace(tr.K6CloudProjectId)
+			"K6_CLOUD_TOKEN":      tr.K6CloudToken,
+			"K6_CLOUD_PROJECT_ID": tr.K6CloudProjectId,
 		}
 
 		tests, err := tr.GetTestSuiteFiles()
@@ -112,14 +95,19 @@ func (d *LocalDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *test
 
 		// run the tests
 		for _, testFile := range tests {
-			fmt.Println("provisioner: running test file:", testFile)
+			log.Info("running test file", "file", testFile, "provisioner", "local")
 
-			var cmd *exec.Cmd
-			if tr.ReportToK6Cloud {
-				cmd = exec.Command("k6", "run", testFile, "-o", "cloud")
-			} else {
-				cmd = exec.Command("k6", "run", testFile)
+			args := []string{"run", testFile}
+
+			if tr.SmokeTest {
+				args = append(args, "--iterations", "1", "--vus", "1")
 			}
+
+			if tr.ReportToK6Cloud {
+				args = append(args, "--out", "cloud")
+			}
+
+			cmd := exec.Command("k6", args...)
 
 			// TODO figure out what to do with threshold errors from k6.
 			// The ones in the test may not match what we need and will exist with
@@ -150,13 +138,13 @@ func (d *LocalDriver) boot(ctx context.Context, ps *ProvisionState, executable s
 		if err != nil {
 			return fmt.Errorf("provisioner: ERROR killing grafana PID: %w", err)
 		}
-		fmt.Println("provisioner: shutdown grafana pid ", cmd.Process.Pid)
+		log.Info("shutdown grafana pid", "pid", cmd.Process.Pid, "provisioner", "local")
 		return nil
 	}
 
 	err := utils.DoInDir(utils.Getwd(), ps.WorkDir, func() error {
 		if err := cmd.Start(); err != nil {
-			fmt.Println("Error starting server:", err)
+			log.Info("Error starting server", "error", err, "provisioner", "local")
 			return err
 		}
 		return nil

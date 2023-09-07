@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/grafana/grafana-bench/bench/buildcache"
 	"github.com/grafana/grafana-bench/bench/utils"
@@ -19,7 +20,7 @@ type BuilderService struct {
 }
 
 // Creates a new build service and resolves the build suite
-func NewBuildService(localdir string, buildcache *buildcache.BuildCache) *BuilderService {
+func NewBuildService(buildcache *buildcache.BuildCache, localdir string) *BuilderService {
 	buildSuiteDir := filepath.Join(localdir, "buildsuite")
 
 	return &BuilderService{
@@ -32,7 +33,9 @@ func NewBuildService(localdir string, buildcache *buildcache.BuildCache) *Builde
 // Creates a new build ref used to build Grafana
 func (bs *BuilderService) New(ctx context.Context, grafanaRevision, arch string) (*Build, error) {
 
-	// TODO validate arch
+	if !validateArch(arch) {
+		return nil, fmt.Errorf("build-service: invalid architecture %s", arch)
+	}
 
 	gitRef, err := resolveGrafanaRevision(grafanaRevision)
 	if err != nil {
@@ -64,8 +67,6 @@ func (bs *BuilderService) New(ctx context.Context, grafanaRevision, arch string)
 }
 
 // Resolves build suite. Always updates to latest version
-// TODO: it might make sense to clone this for each build in the future, but for
-// now we're just going to link the build suite to the service.
 func (bs *BuilderService) ResolveBuildSuite() error {
 	exists, _ := utils.PathExists(bs.buildSuiteDir)
 
@@ -112,4 +113,24 @@ func (bs *BuilderService) ListBuilds(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// validate arch string linux/amd64
+func validateArch(archstring string) bool {
+	parts := strings.Split(archstring, "/")
+	if len(parts) != 2 {
+		return false
+	}
+
+	os := parts[0]
+	if os != "linux" && os != "darwin" && os != "windows" {
+		return false
+	}
+
+	arch := parts[1]
+	if arch != "amd64" && arch != "arm64" {
+		return false
+	}
+
+	return true
 }

@@ -2,7 +2,6 @@ package provisioner
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"time"
 
@@ -17,9 +16,6 @@ type ProvisionDriver interface {
 
 	// Blocking operation that waits for ProvisionState.GrafanaAddress to become responsive
 	WaitForReady(ctx context.Context, ps *ProvisionState)
-
-	// Checks to see if Grafana server is running on ProvisionState.GrafanaAddress
-	Ready(ctx context.Context, ps *ProvisionState) bool
 
 	// Uses driver to run the test suite against instance of Grafana
 	RunTests(ctx context.Context, ps *ProvisionState, tr *tester.TestRun) error
@@ -40,15 +36,18 @@ func NilFunc() error {
 func WaitForLiveGrafana(address string) {
 	for {
 		if IsLive(address) {
-			fmt.Println("Server is ready!")
+			log.Info("Server is ready!")
 			break
 		}
-		fmt.Printf("Waiting for server on %s...\n", address)
+		log.Info("Waiting for server...", "address", address)
 		time.Sleep(time.Second)
 	}
 }
 
 func IsLive(address string) bool {
 	_, err := net.Dial("tcp", address)
+	if err != nil {
+		log.Info("Checking isLive...", "error", err)
+	}
 	return err == nil
 }

@@ -3,7 +3,6 @@ package provisioner
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"os"
 	"path"
 
@@ -39,7 +38,8 @@ type ProvisionState struct {
 
 	// K6 instance, only created when using a non-local driver
 	K6Instance *VMInstance `json:"k6Instance"`
-	killFunc   func() error
+
+	killFunc func() error
 }
 
 // Returns a function to shut down grafana. Does not destroy the infrastructure
@@ -53,7 +53,7 @@ func (p *ProvisionState) Provision(ctx context.Context) (func() error, error) {
 		return nil, err
 	}
 
-	// write the statefile to dir
+	// write state to disk
 	err = p.WriteStateFile()
 	return p.killFunc, err
 }
@@ -74,7 +74,11 @@ func (p *ProvisionState) RunTests(ctx context.Context, tr *tester.TestRun) error
 func (p *ProvisionState) WriteStateFile() error {
 
 	stateFile := path.Join(p.StateDir, "provision_state.json")
-	fmt.Println("provisioner: writing statefile:", stateFile)
+	log.Info("provisioner: writing statefile", "path", stateFile)
+	err := os.MkdirAll(p.StateDir, 0700)
+	if err != nil {
+		return err
+	}
 
 	file, err := os.Create(stateFile)
 	if err != nil {

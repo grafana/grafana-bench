@@ -23,16 +23,16 @@ type TesterService struct {
 	K6CloudToken     string
 	K6CloudProjectId string
 
+	GrafanaTestRepo string
+
 	// location of the test results
 	resultsDir string
 }
 
-func NewTester(ctx context.Context, localDir, resultsDir, k6CloudToken, k6CloudProjectId string) *TesterService {
-	testSuiteDir := path.Join(localDir, "suite")
-
-	err := os.MkdirAll(testSuiteDir, 0755)
+func NewTester(ctx context.Context, localDir, resultsDir, grafanaTestRepo, k6CloudProjectId, k6CloudToken string) *TesterService {
+	err := os.MkdirAll(localDir, 0755)
 	if err != nil {
-		panic(fmt.Errorf("tester: error creating test suite directory: %w", err))
+		panic(fmt.Errorf("tester: could not create test service working directory: %w", err))
 	}
 
 	err = os.MkdirAll(resultsDir, 0755)
@@ -42,8 +42,9 @@ func NewTester(ctx context.Context, localDir, resultsDir, k6CloudToken, k6CloudP
 
 	return &TesterService{
 		LocalDir:         localDir,
-		TestSuiteDir:     testSuiteDir,
+		TestSuiteDir:     path.Join(localDir, "suite"),
 		resultsDir:       resultsDir,
+		GrafanaTestRepo:  grafanaTestRepo,
 		K6CloudToken:     k6CloudToken,
 		K6CloudProjectId: k6CloudProjectId,
 	}
@@ -58,11 +59,12 @@ func NewTester(ctx context.Context, localDir, resultsDir, k6CloudToken, k6CloudP
 //
 // reportToK6Cloud sends results to k6 cloud if true
 
-func (t *TesterService) New(ctx context.Context, suiteRevision, tests string, reportToK6Cloud bool) (*TestRun, error) {
+func (t *TesterService) New(ctx context.Context, suiteRevision, tests string, smokeTest bool, reportToK6Cloud bool) (*TestRun, error) {
 	return &TestRun{
 		TesterService:   t,
 		SuiteRevision:   suiteRevision,
 		Tests:           tests,
+		SmokeTest:       smokeTest,
 		ReportToK6Cloud: reportToK6Cloud,
 	}, nil
 }

@@ -2,54 +2,47 @@ package bench
 
 import (
 	"context"
-	"path"
+	"fmt"
 
 	"github.com/grafana/grafana-bench/bench/buildcache"
 	"github.com/grafana/grafana-bench/bench/builder"
 	"github.com/grafana/grafana-bench/bench/provisioner"
 	"github.com/grafana/grafana-bench/bench/tester"
+	"github.com/grafana/grafana-bench/bench/utils"
 )
 
-// Stores and handles setup of all services. Used when running bench as a single
-// node
 type BenchService struct {
-	// Configured at runtime
-	BuildCache *buildcache.BuildCache
-
+	BuildCache  *buildcache.BuildCache
 	Builder     *builder.BuilderService
 	Provisioner *provisioner.ProvisionerService
 	Tester      *tester.TesterService
 }
 
-func NewBenchService(ctx context.Context, workPath, artifactsPath, GCPCredPath, k6CloudToken, k6CloudProjectID, bucketName string) (*BenchService, error) {
-	// configure the cache
-	buildCache, err := buildcache.NewBuildCache(ctx, artifactsPath, GCPCredPath, bucketName)
+func NewBenchServiceOrPanic(ctx context.Context) (*BenchService, *BenchServiceCfg) {
+	cfg := GetBenchServiceCfgFromEnv(utils.Getwd())
+	svc, err := NewBenchServiceFromConfig(ctx, cfg)
+	if err != nil {
+		panic(err)
+	}
+	return svc, cfg
+}
+
+func NewBenchServiceFromConfig(ctx context.Context, bsc *BenchServiceCfg) (*BenchService, error) {
+	buildCache, err := buildcache.NewBuildCache(ctx, bsc.buildCachePath, bsc.GCPCredPath, bsc.buildCacheBucket)
 	if err != nil {
 		return nil, err
 	}
 
-	// configure builder
-	buildDir := path.Join(workPath, "build")
-	b := builder.NewBuildService(buildDir, buildCache)
-
-	// configure provisioner
-	provisionDir := path.Join(workPath, "provision")
-	grafanaTemplateDir := path.Join(workPath, "grafanaTemplate")
-	vmEnabled := GCPCredPath != ""
-	p, err := provisioner.NewProvisioner(ctx, provisionDir, buildCache, vmEnabled, GCPCredPath, grafanaTemplateDir)
+	vmEnabled := bsc.GCPCredPath != ""
+	p, err := provisioner.NewProvisioner(ctx, buildCache, bsc.provisionerPath, vmEnabled, bsc.GCPCredPath, bsc.grafanaTmplPath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating new provisioner: %w", err)
 	}
-
-	// configure tester
-	resultsDir := path.Join(workPath, "results")
-	testDir := path.Join(workPath, "test")
-	t := tester.NewTester(ctx, testDir, resultsDir, k6CloudToken, k6CloudProjectID)
 
 	return &BenchService{
 		BuildCache:  buildCache,
-		Builder:     b,
 		Provisioner: p,
-		Tester:      t,
+		Builder:     builder.NewBuildService(buildCache, bsc.builderPath),
+		Tester:      tester.NewTester(ctx, bsc.testerPath, bsc.resultsPath, bsc.grafanaTestRepo, bsc.K6CloudProjectID, bsc.K6CloudToken),
 	}, nil
 }

@@ -3,6 +3,7 @@ package buildcache
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"path"
 	"time"
@@ -27,7 +28,7 @@ type BuildRef struct {
 }
 
 func NewBuildCache(ctx context.Context, localDir, credPath, bucketName string) (*BuildCache, error) {
-	fmt.Println("build-cache: using local directory:", localDir)
+	log.Println("build-cache: using local directory:", localDir)
 	// ensure build cache directory exists
 	err := os.MkdirAll(localDir, 0755)
 	if err != nil {
@@ -36,7 +37,7 @@ func NewBuildCache(ctx context.Context, localDir, credPath, bucketName string) (
 
 	// If we don't have a bucket name, don't use remote object store for build cache
 	if bucketName == "" {
-		fmt.Println("build-cache: no remote store defined")
+		log.Println("build-cache: no remote store defined")
 		return &BuildCache{
 			LocalDir:    localDir,
 			RemoteCache: false,
@@ -48,7 +49,7 @@ func NewBuildCache(ctx context.Context, localDir, credPath, bucketName string) (
 		return nil, err
 	}
 
-	fmt.Println("build-cache: using remote store bucket:", bucketName)
+	log.Println("build-cache: using remote store bucket:", bucketName)
 	return &BuildCache{
 		Client:      client,
 		Bucket:      client.Bucket(bucketName),
@@ -108,7 +109,7 @@ func (bc *BuildCache) Resolve(ctx context.Context, ct CacheObjectType, artifactN
 
 // Writes file into local cache and remote cache
 func (bc *BuildCache) StoreFile(ctx context.Context, ct CacheObjectType, srcPath, artifactName string) error {
-	fmt.Println("build-cache: caching artifact", ct.String(), artifactName)
+	log.Println("build-cache: caching artifact", ct.String(), artifactName)
 
 	// Copy to local cache if not already there
 	diskPath := bc.DiskPath(ct, artifactName)
@@ -127,7 +128,7 @@ func (bc *BuildCache) StoreFile(ctx context.Context, ct CacheObjectType, srcPath
 
 	// Copy to remote cache if configured
 	if bc.RemoteCache {
-		fmt.Println("build-cache: uploading to remote cache")
+		log.Println("build-cache: uploading to remote cache")
 		return bc.UploadRemote(ctx, ct, srcPath, artifactName)
 	}
 
@@ -136,7 +137,7 @@ func (bc *BuildCache) StoreFile(ctx context.Context, ct CacheObjectType, srcPath
 
 // Writes byte array to file in local cache and remote cache
 func (bc *BuildCache) StoreBytes(ctx context.Context, ct CacheObjectType, body []byte, artifactName string) error {
-	fmt.Println("build-cache: caching artifact", ct.String(), artifactName)
+	log.Println("build-cache: caching artifact", ct.String(), artifactName)
 
 	// Copy to local cache if not already there
 	diskPath := bc.DiskPath(ct, artifactName)
@@ -156,7 +157,7 @@ func (bc *BuildCache) StoreBytes(ctx context.Context, ct CacheObjectType, body [
 
 	// Copy to remote cache if configured
 	if bc.RemoteCache {
-		fmt.Println("build-cache: uploading to remote cache")
+		log.Println("build-cache: uploading to remote cache")
 		return bc.UploadRemote(ctx, ct, diskPath, artifactName)
 	}
 
@@ -167,7 +168,7 @@ func (bc *BuildCache) StoreBytes(ctx context.Context, ct CacheObjectType, body [
 func (bc *BuildCache) GetPresignedUrl(ctx context.Context, ct CacheObjectType, artifactName string) (string, error) {
 	objectUrl := bc.RemotePath(ct, artifactName)
 
-	fmt.Println("build-cache: generating presigned url for:", bc.BucketName, objectUrl)
+	log.Println("build-cache: generating presigned url for:", bc.BucketName, objectUrl)
 
 	url, err := bc.Bucket.SignedURL(objectUrl, &storage.SignedURLOptions{
 		Scheme:  storage.SigningSchemeV4,

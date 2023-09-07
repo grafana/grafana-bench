@@ -11,14 +11,16 @@ import (
 )
 
 type VMInstance struct {
-	User          string `json:"user"`
-	IPAddress     string `json:"ipAddress"`
-	ServicePort   string `json:"servicePort"`
-	SSHPort       string `json:"sshPort"`
-	SSHKeyPath    string `json:"sshKeyPath"`
-	SSHKeyPubPath string `json:"sshKeyPubPath"`
-	StateDir      string `json:"stateDir"`
-	InstanceName  string `json:"instanceName"`
+	User            string `json:"user"`
+	Address         string `json:"address"`
+	ServicePort     string `json:"servicePort"`
+	SSHPort         string `json:"sshPort"`
+	SSHKeyPath      string `json:"sshKeyPath"`
+	SSHKeyPubPath   string `json:"sshKeyPubPath"`
+	StateDir        string `json:"stateDir"`
+	InstanceName    string `json:"instanceName"`
+	GrafanaUser     string `json:"grafanaUser"`
+	GrafanaPassword string `json:"grafanaPassword"`
 }
 
 // ReadVM is called after terraform apply. It reads the VM info from the state
@@ -48,7 +50,7 @@ func readVM(stateDir, instanceName string) (*VMInstance, error) {
 	}
 
 	return &VMInstance{
-		IPAddress:     string(ipBytes),
+		Address:       string(ipBytes),
 		ServicePort:   servicePort,
 		User:          string(userBytes),
 		SSHPort:       "22",
@@ -65,7 +67,7 @@ func vmFilePath(stateDir, instanceName, file string) string {
 
 // Returns ip_address:servicePort
 func (v *VMInstance) ServiceAddress() string {
-	return v.IPAddress + ":" + v.ServicePort
+	return v.Address + ":" + v.ServicePort
 }
 
 // Returns https://ip_address:servicePort
@@ -80,7 +82,7 @@ func (v *VMInstance) HttpServiceAddress() string {
 
 // Return ip_address:sshPort
 func (v *VMInstance) SSHAddress() string {
-	return v.IPAddress + ":" + v.SSHPort
+	return v.Address + ":" + v.SSHPort
 }
 
 // Returns a connection to the vm instance
@@ -130,7 +132,7 @@ func (v *VMInstance) Run(connection *ssh.Client, cmd string) error {
 func (v *VMInstance) GetConnectionString() string {
 	return fmt.Sprintf("ssh %s@%s -i %s -p %s -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null",
 		v.User,
-		v.IPAddress,
+		v.Address,
 		vmFilePath(v.StateDir, v.InstanceName, "key"),
 		v.SSHPort,
 	)

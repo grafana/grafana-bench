@@ -45,17 +45,17 @@ type Build struct {
 }
 
 // Synchronous method to build grafana.
-// Creating a new build checks if build is in the cache. We don't check here in
-// the event that we want to redo a build
+// checks if build is in the cache or skip to force build
 func (b *Build) Run(ctx context.Context) error {
 	// ensure build suite exists and up to date
 	if err := b.ResolveBuildSuite(); err != nil {
 		return err
 	}
 
+	// check if build in cache first
+
 	// do the build
 	err := utils.DoInDir(b.LocalDir, b.buildSuiteDir, func() error {
-
 		// cmd - note, verbose and distro must be provided at the end of the command
 		cmd := []string{"run", "./cmd", "backend", "build",
 			fmt.Sprintf("--distro=%s", b.Arch),

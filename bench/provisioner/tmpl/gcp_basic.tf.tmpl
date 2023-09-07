@@ -54,7 +54,7 @@ resource "tls_private_key" "grafana_ssh_key" {
 }
 resource "google_compute_instance" "grafana_instance" {
   name         = "bench-grafana-instance-{{ .Identifier }}"
-  machine_type = "e2-micro"
+  machine_type = "e2-medium"
 
   tags = ["bench-grafana-instance-{{ .Identifier }}", "expire-date-{{ .ExpireDate }}"]
 
