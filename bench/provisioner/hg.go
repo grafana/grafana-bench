@@ -9,7 +9,6 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -104,7 +103,7 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 			}
 
 			// scenario + testDuration will be in milliseconds
-			td, err := parseDurationFromJson(scenarioName, jsonFile)
+			td, err := parseDurationFromJsonFile(scenarioName, jsonFile)
 			if err != nil {
 				log.Info("error processing json file", "error", err)
 			}
@@ -113,7 +112,16 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 			// including setup and teardown and does not include the rest of the
 			// time for bench to run
 			totalDuration += td.TotalDuration
-			id, url := getCloudTestRunIdentifiers(buf.Bytes())
+			id, url, err := parseK6CloudIdentifiersFromCLIOutput(buf.Bytes())
+			if err != nil {
+				log.Warn("error parsing cloud run from K6 summary", "error", err)
+			}
+
+			testIterations, err := parseIterationCountFromCLIOutput(buf.Bytes())
+			if err != nil {
+				log.Warn("error parsing iterations from k6 summary", "error", err)
+
+			}
 
 			// test complete log
 			log.Info("testRun",
@@ -123,9 +131,9 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 				"folder", tr.RelativeFolder(testFile),
 				"testFile", path.Base(testFile),
 				"order", strconv.Itoa(iteration+1),
+				"iterations", testIterations,
 				"k6CloudUrl", url,
 				"k6CloudID", id,
-				// maybe do something to make this value pretty for the dashboard.
 				"setupDuration", prettyMS(td.SetupDuration),
 				"scenarioDuration", prettyMS(td.ScenarioDuration),
 				"teardownDuration", prettyMS(td.TeardownDuration),
@@ -134,8 +142,8 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 		}
 
 		log.Info("suiteRun",
-			// TODO figure out how to pass the trigger from argo
-			"testTrigger", "manual",
+			// TODO figure out how to pass the trigger from argo. (Manual, CI / release channel)
+			"testTrigger", "CI",
 			"grafanaVersion", ps.Build.GrafanaRevision,
 			"suiteRun", ps.Identifier,
 			"buildVersion", ps.Build.GrafanaRevision,
@@ -183,37 +191,6 @@ func (d *HGDriver) Destroy(ctx context.Context, ps *ProvisionState) error {
 
 	log.Info("removing state directory", "dir", ps.LocalDir)
 	return utils.Rm(ps.LocalDir)
-}
-
-// pattern to match the cloud output url inside parenthesis
-//
-//	output: cloud (https://jefflevinslunch.grafana.net/a/k6-app/runs/1876021), json (/tmp/dashboard_create.json)
-var k6CloudOutputURLPattern = regexp.MustCompile(`\s*cloud\s*\(([^)]+)\)`)
-var K6CloudOutputIDPattern = regexp.MustCompile(`(\d+)$`)
-
-// getCloudTestRunIdentifiers extracts the cloud run url from the k6 command output
-func getCloudTestRunIdentifiers(b []byte) (string, string) {
-	// Find the first match of the pattern in the input
-	match := k6CloudOutputURLPattern.FindSubmatch(b)
-
-	if len(match) >= 2 {
-		// The URL is captured in the second element of the match
-		url := string(match[1])
-		log.Info("Found k6 cloud output url", "url", url)
-
-		matches := K6CloudOutputIDPattern.FindStringSubmatch(url)
-		if len(matches) > 1 {
-			id := matches[1]
-			log.Info("Found K6 cloud output id", "id", id)
-			return id, url
-		} else {
-			log.Error("K6 cloud output id not found! this should not happen if we have a correctly formed url")
-			return "", url
-		}
-	} else {
-		log.Info("URL not found")
-		return "", ""
-	}
 }
 
 // dashboard_create.js -> /tmp/dashboard_create.json
