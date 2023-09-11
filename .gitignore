@@ -3,7 +3,7 @@
 work
 creds/
 grafana-bench.tar.gz
-.env
+.env*
 
 
 
