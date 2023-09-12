@@ -5,6 +5,7 @@ go 1.20
 require (
 	cloud.google.com/go/storage v1.30.1
 	github.com/google/uuid v1.3.0
+	github.com/joho/godotenv v1.5.1
 	github.com/magefile/mage v1.14.0
 	golang.org/x/crypto v0.11.0
 	google.golang.org/api v0.132.0
@@ -21,7 +22,6 @@ require (
 	github.com/google/s2a-go v0.1.4 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.5 // indirect
 	github.com/googleapis/gax-go/v2 v2.12.0 // indirect
-	github.com/joho/godotenv v1.5.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/net v0.12.0 // indirect
 	golang.org/x/oauth2 v0.10.0 // indirect
