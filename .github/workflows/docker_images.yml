@@ -1,0 +1,29 @@
+name: docker-images
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build-docker:
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_BUILDKIT: 1
+    steps:
+      - uses: actions/checkout@v4
+      - name: Docker Login (GCR)
+        env:
+          GCP_CONTAINERS_SA_JSON: ${{ secrets.GCP_CONTAINERS_SA_JSON }}
+        run: |
+          printf %s "$GCP_CONTAINERS_SA_JSON" | docker login -u _json_key --password-stdin https://us.gcr.io
+      - name: build
+        run: docker build --iidfile=grafana-bench.iid .
+      - name: tag
+        run: |
+          docker tag $(cat grafana-bench.iid) us.gcr.io/kubernetes-dev/grafana-bench:latest
+          echo us.gcr.io/kubernetes-dev/grafana-bench:latest > grafana-bench.tag
+      - name: push
+        if: github.ref == 'refs/heads/main'
+        run: docker push $(cat grafana-bench.tag)
