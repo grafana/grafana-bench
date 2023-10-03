@@ -77,10 +77,8 @@ func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *bu
 
 	log.Info("provisioner: local path", "dir", localDir)
 
-	driver := p.InitDriver(t)
-
 	state := &ProvisionState{
-		driver:      driver,
+		driver:      p.InitDriver(t),
 		Identifier:  uuid.String(),
 		Type:        t,
 		LocalDir:    localDir,
@@ -107,6 +105,22 @@ func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *bu
 	}
 
 	return state, nil
+}
+
+// NewLocalDevState creates a provision state assuming Grafana is running on
+// localhost:3000. Used for local development workflow. e.g. `mage test
+// dashboards` without providing a state
+func (p *ProvisionerService) NewLocalDevState(ctx context.Context) *ProvisionState {
+	return &ProvisionState{
+		driver:     p.InitDriver(Local),
+		Identifier: "LOCALDEVSTATE",
+		Type:       Local,
+		Build:      nil,
+		GrafanaInstance: &VMInstance{
+			Address:     "localhost",
+			ServicePort: "3000",
+		},
+	}
 }
 
 // Initializes provision driver from ProvisionType

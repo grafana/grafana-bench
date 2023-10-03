@@ -113,13 +113,17 @@ func Bench(ctx context.Context, testSuite string) error {
 // Runs test suite on already running instance of grafana. Requires state for
 // operation
 func Test(ctx context.Context, testSuite string) error {
-	if BenchCfg.ProvisionState == "" {
-		return fmt.Errorf("invalid state: \"%s\"", BenchCfg.ProvisionState)
-	}
+	var ps *provisioner.ProvisionState
+	var err error
 
-	ps, err := BenchService.Provisioner.ReadStateFile(BenchCfg.ProvisionState)
-	if err != nil {
-		return err
+	if BenchCfg.ProvisionState != "" {
+		ps, err = BenchService.Provisioner.ReadStateFile(BenchCfg.ProvisionState)
+		if err != nil {
+			return err
+		}
+	} else {
+		// if no state provided, assume local driver, port 3000
+		ps = BenchService.Provisioner.NewLocalDevState(ctx)
 	}
 
 	// test the build
