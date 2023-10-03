@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -73,6 +72,9 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 			jsonFile := getJsonOutputFilename(testFile)
 			scenarioName := getScenarioName(testFile)
 
+			// set the scenario name so it's accessible from the test
+			envVars["SCENARIO_NAME"] = scenarioName
+
 			log.Info("running test file", "file", testFile)
 			log.Info("output json to", "file", jsonFile)
 
@@ -98,7 +100,11 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 
 			// run command
 			err = cmd.Run()
+			exitCode := 0
 			if err != nil {
+				if exitError, ok := err.(*exec.ExitError); ok {
+					exitCode = exitError.ExitCode()
+				}
 				log.Info("error running k6 command", "error", err)
 			}
 
@@ -138,6 +144,7 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 				"scenarioDuration", prettyMS(td.ScenarioDuration),
 				"teardownDuration", prettyMS(td.TeardownDuration),
 				"totalDuration", prettyMS(td.TotalDuration),
+				"exitCode", exitCode,
 			)
 		}
 
@@ -191,32 +198,4 @@ func (d *HGDriver) Destroy(ctx context.Context, ps *ProvisionState) error {
 
 	log.Info("removing state directory", "dir", ps.LocalDir)
 	return utils.Rm(ps.LocalDir)
-}
-
-// dashboard_create.js -> /tmp/dashboard_create.json
-func getJsonOutputFilename(filename string) string {
-	jsonName := filepath.Base(filename)
-	jsonName = strings.TrimSuffix(jsonName, filepath.Ext(jsonName))
-	return path.Join("/tmp", jsonName+".json")
-}
-
-// we expect scenarios to be named like the file
-// tests/dashboards/dashboard_create.js -> dashboardCreate
-func getScenarioName(filename string) string {
-	filename = filepath.Base(filename)
-	filename = strings.TrimSuffix(filename, filepath.Ext(filename))
-	parts := strings.Split(filename, "_")
-	for i, p := range parts {
-		// don't capitalize the first word
-		if i == 0 {
-			continue
-		}
-		parts[i] = strings.Title(p)
-	}
-	return strings.Join(parts, "")
-}
-
-func prettyMS(ms float32) string {
-	duration := time.Duration(ms) * time.Millisecond
-	return fmt.Sprintf("%dms", duration.Milliseconds())
 }

@@ -96,6 +96,7 @@ func (d *LocalDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *test
 		// run the tests
 		for _, testFile := range tests {
 			log.Info("running test file", "file", testFile, "provisioner", "local")
+			envVars["SCENARIO_NAME"] = getScenarioName(testFile)
 
 			args := []string{"run", testFile}
 
@@ -117,7 +118,12 @@ func (d *LocalDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *test
 			// if threshold is breached rather than necessarily modifying the test
 
 			// k6 run tests/tests/dashboards.js -o cloud
-			_ = utils.ExecStdoutWithEnv(cmd, envVars)
+			err = utils.ExecStdoutWithEnv(cmd, envVars)
+			if err != nil {
+				if exitError, ok := err.(*exec.ExitError); ok {
+					log.Info("command exited with err", "status", exitError.ExitCode(), "error", err)
+				}
+			}
 		}
 
 		return nil

@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
+	"path/filepath"
 	"regexp"
+	"strings"
 	"time"
 )
 
@@ -132,4 +135,33 @@ func parseDurationFromJsonFile(scenarioName, jsonFile string) (TestDurations, er
 	//fmt.Println("totalDuration:", td.TotalDuration)
 
 	return td, nil
+}
+
+// dashboard_create.js -> /tmp/dashboard_create.json
+func getJsonOutputFilename(filename string) string {
+	jsonName := filepath.Base(filename)
+	jsonName = strings.TrimSuffix(jsonName, filepath.Ext(jsonName))
+	return path.Join("/tmp", jsonName+".json")
+}
+
+// we expect scenarios to be named like the file
+// tests/dashboards/dashboard_create.js -> dashboardCreate
+func getScenarioName(filename string) string {
+	filename = filepath.Base(filename)
+	filename = strings.TrimSuffix(filename, filepath.Ext(filename))
+	parts := strings.Split(filename, "_")
+	for i, p := range parts {
+		// don't capitalize the first word
+		if i == 0 {
+			continue
+		}
+		parts[i] = strings.Title(p)
+	}
+	return strings.Join(parts, "")
+}
+
+// prettyMS adds ms suffix to ms float
+func prettyMS(ms float32) string {
+	duration := time.Duration(ms) * time.Millisecond
+	return fmt.Sprintf("%dms", duration.Milliseconds())
 }
