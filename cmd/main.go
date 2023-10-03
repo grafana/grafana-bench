@@ -47,7 +47,6 @@ func main() {
 func hgtest(ctx context.Context, benchSvc *bench.BenchService, benchCfg *bench.BenchServiceCfg, address, port, username, password, tests string) error {
 	// populate grafana vm
 	grafanaInstance := &provisioner.VMInstance{
-		// address is coming in including https://
 		Address:         strings.TrimPrefix(address, "https://"),
 		ServicePort:     port,
 		GrafanaUser:     username,
@@ -70,7 +69,7 @@ func hgtest(ctx context.Context, benchSvc *bench.BenchService, benchCfg *bench.B
 	// where they're supposed to
 	// tests = dashboards
 	// tests = dashboards/dashboard_create.js
-	tr, err := benchSvc.Tester.New(ctx, "jalevin/test", tests, benchCfg.SmokeTest, true)
+	tr, err := benchSvc.Tester.New(ctx, "main", tests, benchCfg.SmokeTest, true)
 	if err != nil {
 		return err
 	}
@@ -81,7 +80,6 @@ func hgtest(ctx context.Context, benchSvc *bench.BenchService, benchCfg *bench.B
 	if err != nil {
 		return err
 	}
-
 	// override identifier
 	ps.Identifier = GetNewIdentifier(b, ps, tr)
 	// set the instance
@@ -96,7 +94,6 @@ func hgtest(ctx context.Context, benchSvc *bench.BenchService, benchCfg *bench.B
 	// run the tests
 	if err := ps.RunTests(ctx, tr); err != nil {
 		log.Println("error running tests:", err)
-		log.Println("connectionString:", ps.K6Instance.GetConnectionString())
 	}
 
 	return nil
