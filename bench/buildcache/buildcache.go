@@ -28,16 +28,17 @@ type BuildRef struct {
 }
 
 func NewBuildCache(ctx context.Context, localDir, credPath, bucketName string) (*BuildCache, error) {
-	log.Println("build-cache: using local directory:", localDir)
 	// ensure build cache directory exists
 	err := os.MkdirAll(localDir, 0755)
 	if err != nil {
 		return nil, err
 	}
+	log.Println("build-cache: using local directory:", localDir)
 
-	// If we don't have a bucket name, don't use remote object store for build cache
-	if bucketName == "" {
-		log.Println("build-cache: no remote store defined")
+	// check if creds exist
+	exists, _ := utils.PathExists(credPath)
+	if !exists {
+		log.Println("build-cache: no remote cache creds provided. Using local cache")
 		return &BuildCache{
 			LocalDir:    localDir,
 			RemoteCache: false,
@@ -46,7 +47,12 @@ func NewBuildCache(ctx context.Context, localDir, credPath, bucketName string) (
 
 	client, err := storage.NewClient(ctx, option.WithCredentialsFile(credPath))
 	if err != nil {
-		return nil, err
+		log.Println("build-cache: error authenticating to remote cache bucket. Using local cache")
+		// just use local if authentication fails
+		return &BuildCache{
+			LocalDir:    localDir,
+			RemoteCache: false,
+		}, nil
 	}
 
 	log.Println("build-cache: using remote store bucket:", bucketName)
