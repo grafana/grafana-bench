@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"path"
 	"path/filepath"
@@ -19,7 +20,7 @@ var k6CloudOutputURLPattern = regexp.MustCompile(`\s*cloud\s*\(([^)]+)\)`)
 var K6CloudOutputIDPattern = regexp.MustCompile(`(\d+)$`)
 
 // parseK6CloudIdentifiersFromCLIOutput parses cloud run id and url output of k6 cli
-func parseK6CloudIdentifiersFromCLIOutput(b []byte) (string, string, error) {
+func parseK6CloudIdentifiersFromCLIOutput(log *slog.Logger, b []byte) (string, string, error) {
 	// Find the first match of the pattern in the input
 	match := k6CloudOutputURLPattern.FindSubmatch(b)
 
@@ -80,7 +81,7 @@ type TestDurations struct {
 // {"metric":"iteration_duration","type":"Point","data":{"time":"2023-08-09T09:02:13.291575-08:00","value":325.78425,"tags":{"SUITE_RUN":"08bf3d97-155e-42d0-a709-bab1d8c08941","group":"::setup"}}
 // {"metric":"iteration_duration","type":"Point","data":{"time":"2023-08-09T09:02:13.650349-08:00","value":358.328625,"tags":{"SUITE_RUN":"08bf3d97-155e-42d0-a709-bab1d8c08941","group":"","scenario":"createDashboard"}}}
 // {"metric":"iteration_duration","type":"Point","data":{"time":"2023-08-09T09:02:16.191412-08:00","value":2149.020291,"tags":{"SUITE_RUN":"08bf3d97-155e-42d0-a709-bab1d8c08941","group":"::teardown"}}}
-func parseDurationFromJsonFile(scenarioName, jsonFile string) (TestDurations, error) {
+func parseDurationFromJsonFile(log *slog.Logger, scenarioName, jsonFile string) (TestDurations, error) {
 	var td TestDurations
 
 	file, err := os.Open(jsonFile)
@@ -98,7 +99,7 @@ func parseDurationFromJsonFile(scenarioName, jsonFile string) (TestDurations, er
 		var logEntry Metric
 		err := json.Unmarshal(line, &logEntry)
 		if err != nil {
-			fmt.Println("Error unmarshaling JSON:", err)
+			log.Warn("Error unmarshalling JSON", "err", err)
 			continue
 		}
 
@@ -124,15 +125,12 @@ func parseDurationFromJsonFile(scenarioName, jsonFile string) (TestDurations, er
 
 	}
 
+	// TODO review this. not entirely sure it makes sense.
 	if err := scanner.Err(); err != nil {
-		fmt.Println("Error reading file:", err)
+		return td, fmt.Errorf("Error reading file:", err)
 	}
 
 	td.TotalDuration = td.SetupDuration + td.ScenarioDuration + td.TeardownDuration
-	//fmt.Println("setupDuration:", td.SetupDuration)
-	//fmt.Println("scenarioDuration", td.ScenarioDuration)
-	//fmt.Println("teardownDuration:", td.TeardownDuration)
-	//fmt.Println("totalDuration:", td.TotalDuration)
 
 	return td, nil
 }

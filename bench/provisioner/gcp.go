@@ -61,12 +61,12 @@ func (d *GCPDriver) Provision(ctx context.Context, ps *ProvisionState) (func() e
 	err = utils.DoInDir(utils.Getwd(), ps.StateDir, func() error {
 		// terraform init
 		if err := utils.ExecStdout(exec.Command("terraform", "init")); err != nil {
-			return fmt.Errorf("provisioner: GCPDriver terraform init err: %w", err)
+			return fmt.Errorf("GCPDriver terraform init err: %w", err)
 		}
 
 		// terraform apply
 		if err := utils.ExecStdout(exec.Command("terraform", "apply", "-auto-approve")); err != nil {
-			return fmt.Errorf("provisioner: GCPDriver terraform apply err: %w", err)
+			return fmt.Errorf("GCPDriver terraform apply err: %w", err)
 		}
 
 		return nil
@@ -93,7 +93,7 @@ func (d *GCPDriver) Provision(ctx context.Context, ps *ProvisionState) (func() e
 
 // Blocking call that waits for grafana to become ready
 func (d *GCPDriver) WaitForReady(ctx context.Context, ps *ProvisionState) {
-	WaitForLiveGrafana(ps.GrafanaInstance.ServiceAddress())
+	WaitForLiveGrafana(ps.Log, ps.GrafanaInstance.ServiceAddress())
 }
 
 // Destroy - destroys a provisioned instance of Grafana and K6 test runner
@@ -124,12 +124,10 @@ func (d *GCPDriver) Destroy(ctx context.Context, ps *ProvisionState) error {
 }
 
 func (d *GCPDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.TestRun) error {
-	log := log.With("provisioner", "gcp")
-
 	// resolve test suite to correct version etc
 	err := tr.ResolveTestSuite()
 	if err != nil {
-		return fmt.Errorf("provisioner: error running test suite: %w", err)
+		return fmt.Errorf("error running test suite: %w", err)
 	}
 
 	// bundle test suite
@@ -157,10 +155,10 @@ func (d *GCPDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester
 		return err
 	}
 
-	log.Info("got bundle URL", "url", bundleUrl)
+	ps.Log.Info("got bundle URL", "url", bundleUrl)
 
 	// connect to k6 instance
-	log.Info("connecting to k6 instance")
+	ps.Log.Info("connecting to k6 instance")
 	connection, err := ps.K6Instance.Connect()
 	if err != nil {
 		return err
@@ -168,7 +166,7 @@ func (d *GCPDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester
 	defer connection.Close()
 
 	// download the test bundle
-	log.Info("downloading test bundle")
+	ps.Log.Info("downloading test bundle", "url", bundleUrl)
 	err = ps.K6Instance.Run(connection, fmt.Sprintf("curl \"%s\" -o /tmp/testbundle.tar.gz", bundleUrl))
 	if err != nil {
 		return err
@@ -176,28 +174,20 @@ func (d *GCPDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester
 
 	// extract the test suite
 	testSuitePath := "/tmp/tests"
-	log.Info("unpacking test bundle")
+	ps.Log.Info("unpacking test bundle", "path", testSuitePath)
 	err = ps.K6Instance.Run(connection, fmt.Sprintf("mkdir -p %s && tar -xvf /tmp/testbundle.tar.gz --directory=/tmp/tests", testSuitePath))
 	if err != nil {
 		return err
 	}
 
 	// get tests to run indexed to test suite directory
-	log.Info("getting list of tests to execute")
+	ps.Log.Info("getting list of tests to execute")
 	tests, err := tr.GetRemoteTestSuiteFiles(testSuitePath)
 	if err != nil {
 		return err
 	}
 
-	// create test results dir
-	resultsDir := "/tmp/results"
-	log.Info("creating test result dir", "dir", resultsDir)
-	err = ps.K6Instance.Run(connection, fmt.Sprintf("mkdir -p %s", resultsDir))
-	if err != nil {
-		return err
-	}
-
-	log.Info("getting instance machine spec")
+	ps.Log.Info("getting instance machine spec")
 	machineSpec, err := d.GetMachineSpec(ctx, ps)
 	if err != nil {
 		return err
@@ -207,26 +197,25 @@ func (d *GCPDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester
 	envVars := map[string]string{
 		"MACHINE_SPEC":        machineSpec,
 		"TEST_SUITE_REVISION": tr.SuiteRevision,
-		"TEST_SUMMARY_DIR":    resultsDir,
 		"GT_URL":              ps.GrafanaInstance.HttpServiceAddress(),
 	}
 
-	if tr.ReportToK6Cloud {
+	if tr.Type == tester.Load {
 		envVars["K6_CLOUD_TOKEN"] = tr.K6CloudToken
 		envVars["K6_CLOUD_PROJECT_ID"] = tr.K6CloudProjectId
 	}
 
 	for _, testFile := range tests {
-		log.Info("running test file", "file", testFile)
+		ps.Log.Info("running test file", "file", testFile)
 		cmd := ""
 
-		if tr.ReportToK6Cloud {
+		if tr.Type == tester.Load {
 			cmd = fmt.Sprintf("%s k6 run %s --out cloud", formatEnv(envVars), testFile)
 		} else {
 			cmd = fmt.Sprintf("%s k6 run %s", formatEnv(envVars), testFile)
 		}
 
-		log.Info(cmd)
+		ps.Log.Info("running test on VM", "cmd", cmd)
 		err := ps.K6Instance.Run(connection, cmd)
 		if err != nil {
 			return err
@@ -245,8 +234,8 @@ func (d *GCPDriver) prepareBundle(ctx context.Context, ps *ProvisionState) (stri
 	}
 
 	// compress the folder
-	log.Info("provisioner: compressing grafana bundle")
 	bundlePath := path.Join(ps.LocalDir, getGrafanaBundleName(ps.Build.GrafanaRevision, ps.Build.Arch))
+	ps.Log.Info("compressing grafana bundle", "bundlePath", bundlePath)
 	err = utils.CompressFolder(ps.WorkDir, bundlePath)
 	if err != nil {
 		return "", err
@@ -270,10 +259,6 @@ func (d *GCPDriver) writeTemplates(ctx context.Context, ps *ProvisionState, graf
 		GrafanaBundleUrl: grafanaBundleUrl,
 		ExpireDate:       time.Now().AddDate(0, 0, 1).Format("2006-01-02"),
 	}
-
-	// TODO
-	// Add tag to the terraform template so that we can mark for delete in 24
-	// hours assuming it's not already nuked
 
 	// write terraform template
 	terraformPlanFile, err := os.Create(path.Join(ps.StateDir, "main.tf"))

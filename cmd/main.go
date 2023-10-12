@@ -3,10 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"time"
+
+	"log/slog"
 
 	"github.com/grafana/grafana-bench/bench"
 	"github.com/grafana/grafana-bench/bench/builder"
@@ -17,34 +18,49 @@ import (
 func main() {
 	// setup
 	ctx := context.Background()
-	benchSvc, benchCfg := bench.NewBenchServiceOrPanic(ctx)
+	log := slog.New(slog.NewTextHandler(os.Stderr, nil))
+
+	// START HERE
+	// 5. plumb test type argument through to provisioner
+	// 4. figure out why we're not exiting from docker run script
+
+	benchSvc, benchCfg := bench.NewBenchServiceOrPanic(ctx, log)
 
 	// Setup bench service with defaults for CLI
-	if len(os.Args) != 6 {
-		log.Println("Missing parameters. need 6 args; address port username password tests")
+	if len(os.Args) != 7 {
+		log.Error("Missing parameters. need 6 args; address port username password tests", "argCount", len(os.Args))
 
-		// this will panic
-		log.Println("address:", os.Args[1])
-		log.Println("port:", os.Args[2])
-		log.Println("username:", os.Args[3])
-		log.Println("password:", os.Args[4])
-		log.Println("tests:", os.Args[5])
+		// one of these will panic and exit, probably
+		log.Error("arg[0]", "exec", os.Args[0])
+		log.Error("arg[1]", "testType", os.Args[1])
+		log.Error("arg[2]", "address", os.Args[2])
+		log.Error("arg[3]", "port", os.Args[3])
+		log.Error("arg[4]", "username", os.Args[4])
+		log.Error("arg[5]", "password", os.Args[5])
+		log.Error("arg[6]", "tests", os.Args[6])
 	}
 
 	var (
-		address  = os.Args[1]
-		port     = os.Args[2]
-		username = os.Args[3]
-		password = os.Args[4]
-		tests    = os.Args[5]
+		testType  = os.Args[1]
+		address   = os.Args[2]
+		port      = os.Args[3]
+		username  = os.Args[4]
+		password  = os.Args[5]
+		testSuite = os.Args[6]
 	)
 
-	if err := hgtest(ctx, benchSvc, benchCfg, address, port, username, password, tests); err != nil {
+	if err := hgtest(ctx, log, benchSvc, benchCfg, testType, address, port, username, password, testSuite); err != nil {
 		panic(err)
 	}
 }
 
-func hgtest(ctx context.Context, benchSvc *bench.BenchService, benchCfg *bench.BenchServiceCfg, address, port, username, password, tests string) error {
+func hgtest(ctx context.Context, log *slog.Logger, benchSvc *bench.BenchService, benchCfg *bench.BenchServiceCfg, testType, address, port, username, password, tests string) error {
+	log = log.With("svc", "hgtest")
+
+	// k6 cloud credentials
+	benchSvc.Tester.K6CloudProjectId = os.Getenv("K6_CLOUD_PROJECT_ID")
+	benchSvc.Tester.K6CloudToken = os.Getenv("K6_CLOUD_TOKEN")
+
 	// populate grafana vm
 	grafanaInstance := &provisioner.VMInstance{
 		Address:         strings.TrimPrefix(address, "https://"),
@@ -55,53 +71,61 @@ func hgtest(ctx context.Context, benchSvc *bench.BenchService, benchCfg *bench.B
 
 	grafanaVersion, err := provisioner.GetGrafanaBuildVersion(grafanaInstance)
 	if err != nil {
-		log.Println("Error getting grafana version:", err)
+		log.Error("error getting grafana version", "err", err)
 		return fmt.Errorf("Error getting grafana version. exiting.. err: %w", err)
 	}
 
 	// use this to pass in the build version for logging,
-	// but don't try to use this or bad things will happen fo sho
-	b := &builder.Build{
+	// but don't try to use the build object or bad things will happen fo sho
+	build := &builder.Build{
 		GrafanaRevision: grafanaVersion,
 	}
 
-	// Hosted Grafana driver won't resolve. It will just make sure tests exist
-	// where they're supposed to
-	// tests = dashboards
-	// tests = dashboards/dashboard_create.js
-	tr, err := benchSvc.Tester.New(ctx, "main", tests, benchCfg.SmokeTest, true)
+	suiteRevision := "" // using precompiled tests. ignore
+	tr, err := benchSvc.Tester.New(ctx, suiteRevision, testType, tests)
 	if err != nil {
 		return err
 	}
 
-	// create a new state
-	provisionDriver := provisioner.HG
-	ps, err := benchSvc.Provisioner.New(ctx, provisionDriver, b, false)
+	tr.SuiteRevision, err = tr.GetShortTestRevisionFromCompiled()
 	if err != nil {
 		return err
 	}
-	// override identifier
-	ps.Identifier = GetNewIdentifier(b, ps, tr)
-	// set the instance
+
+	// create a new provision state
+	ps, err := benchSvc.Provisioner.New(ctx, provisioner.HG, build, false)
+	if err != nil {
+		return err
+	}
+
+	// set identifier for suite run
+	ps.Identifier = GetNewSuiteIdentifier(build, ps, tr)
+	log.Info("suite identifier", "identifier", ps.Identifier)
+
+	// set vm
 	ps.GrafanaInstance = grafanaInstance
 
 	ps.WaitForReady(ctx)
 
-	// set project id to https://jefflevinslunch.grafana.net/a/k6-app/projects/3653020
-	benchSvc.Tester.K6CloudProjectId = os.Getenv("K6_CLOUD_PROJECT_ID")
-	benchSvc.Tester.K6CloudToken = os.Getenv("K6_CLOUD_TOKEN")
-
 	// run the tests
 	if err := ps.RunTests(ctx, tr); err != nil {
-		log.Println("error running tests:", err)
+		log.Error("error running tests", "err", err)
 	}
 
 	return nil
 }
 
-func GetNewIdentifier(b *builder.Build, ps *provisioner.ProvisionState, tr *tester.TestRun) string {
-	t := time.Now().UTC().Format("15:04:05")
-	sha := tr.GetShortTestRevision()
-	// {time}-api-tests-{sha}-graf-{version}
-	return fmt.Sprintf("%s-api-tests-%s-graf-%s", t, sha, b.GrafanaRevision)
+// GetNewSuitedentifier creates an identifier to be used for
+// building dashboards in hosted grafana
+//
+// smoke-13:37:35-api-tests-cb5adc0-graf-10.2.0-60657
+// load-13:37:35-api-tests-cb5adc0-graf-10.2.0-60657
+func GetNewSuiteIdentifier(b *builder.Build, ps *provisioner.ProvisionState, tr *tester.TestRun) string {
+	// {type}-{time}-api-tests-{sha}-graf-{version}
+	return fmt.Sprintf("%s-%s-api-tests-%s-graf-%s",
+		tr.Type,
+		time.Now().UTC().Format("15:04:05"),
+		tr.SuiteRevision,
+		b.GrafanaRevision,
+	)
 }

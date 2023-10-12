@@ -6,17 +6,19 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"log/slog"
 
 	"github.com/grafana/grafana-bench/bench"
 	"github.com/grafana/grafana-bench/bench/buildcache"
 	"github.com/grafana/grafana-bench/bench/provisioner"
 )
 
-var BenchService, BenchCfg = bench.NewBenchServiceOrPanic(context.Background())
+var log = slog.New(slog.NewTextHandler(os.Stderr, nil))
+var BenchService, BenchCfg = bench.NewBenchServiceOrPanic(context.Background(), log)
 
 // Build builds a grafana binary and stores it in the artifacts folder
 // usage: GRAFANA_REVISION=branch:k8s-proof-of-concept mage buildcommit
@@ -58,7 +60,7 @@ func Run(ctx context.Context) error {
 		sigs := make(chan os.Signal, 1)
 		signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 		<-sigs
-		log.Println("Shutting down grafana process")
+		log.Info("Shutting down grafana process", "svc", "mage")
 	}
 
 	return nil
@@ -69,7 +71,7 @@ func Run(ctx context.Context) error {
 // You can set the revision yourself. Usage:
 // `GRAFANA_REVISION=branch:k8s-proof-of-concept mage bench`
 // `GRAFANA_REVISION=commit:c116545e0ba005e10e318da96688bdae01439bf5 mage bench`
-func Bench(ctx context.Context, testSuite string) error {
+func Bench(ctx context.Context, testType string, testSuite string) error {
 	ps, err := getProvisionState(ctx, BenchCfg)
 	if err != nil {
 		return err
@@ -84,7 +86,7 @@ func Bench(ctx context.Context, testSuite string) error {
 	ps.WaitForReady(ctx)
 
 	// test the build
-	testRun, err := BenchService.Tester.New(ctx, "", testSuite, BenchCfg.SmokeTest, BenchCfg.ReportCloud)
+	testRun, err := BenchService.Tester.New(ctx, "", testType, testSuite)
 	if err != nil {
 		return err
 	}
@@ -92,27 +94,30 @@ func Bench(ctx context.Context, testSuite string) error {
 	// run the tests
 	err = ps.RunTests(ctx, testRun)
 	if err != nil {
-		log.Println("error running tests:", err)
+		log.Error("error running tests", "svc", "mage", "err", err)
+		if ps.Type == provisioner.GCP {
+			fmt.Println("connectionString:", ps.K6Instance.GetConnectionString())
+		}
 	}
 
 	// Provide a hint for people running with cloud driver so they don't have to
 	// wait for terraform every time.
 	if err != nil && BenchCfg.DestroyInfra && BenchCfg.ProvisionDriver == provisioner.GCP {
-		log.Println("It appears that you're destroying state even though you got an error. you can preserve with DESTROY=false. Resources will be cleaned up every 24 hours automatically.")
+		fmt.Println("It appears that you're destroying state even though you got an error. you can preserve with DESTROY=false. Resources will be cleaned up every 24 hours automatically.")
 	}
 
 	if BenchCfg.DestroyInfra {
 		return ps.Destroy(ctx)
 	}
 
-	log.Println(fmt.Sprintf("Preserving state. STATE=\"%s\"", ps.Identifier))
+	fmt.Println(fmt.Sprintf("Preserving state. STATE=\"%s\"", ps.Identifier))
 
 	return nil
 }
 
 // Runs test suite on already running instance of grafana. Requires state for
 // operation
-func Test(ctx context.Context, testSuite string) error {
+func Test(ctx context.Context, testType string, testSuite string) error {
 	var ps *provisioner.ProvisionState
 	var err error
 
@@ -127,15 +132,17 @@ func Test(ctx context.Context, testSuite string) error {
 	}
 
 	// test the build
-	testRun, err := BenchService.Tester.New(ctx, "", testSuite, BenchCfg.SmokeTest, BenchCfg.ReportCloud)
+	testRun, err := BenchService.Tester.New(ctx, "", testType, testSuite)
 	if err != nil {
 		return err
 	}
 
 	// run the tests
 	if err := ps.RunTests(ctx, testRun); err != nil {
-		log.Println("error running tests:", err)
-		log.Println("connectionString:", ps.K6Instance.GetConnectionString())
+		log.Error("error running tests", "svc", "mage", "err", err)
+		if ps.Type == provisioner.GCP {
+			fmt.Println("connectionString:", ps.K6Instance.GetConnectionString())
+		}
 	}
 	return nil
 }
@@ -143,6 +150,7 @@ func Test(ctx context.Context, testSuite string) error {
 // Destroy looks up the state and tears down a provision state
 func Destroy(ctx context.Context) error {
 	if BenchCfg.ProvisionState == "" {
+		log.Error("invalid state", "svc", "mage", "identifier", BenchCfg.ProvisionState)
 		return fmt.Errorf("invalid state: \"%s\"", BenchCfg.ProvisionState)
 	}
 	ps, err := BenchService.Provisioner.ReadStateFile(BenchCfg.ProvisionState)
@@ -168,7 +176,7 @@ func getProvisionState(ctx context.Context, cfg *bench.BenchServiceCfg) (*provis
 	}
 
 	if BenchCfg.ProvisionDriver != provisioner.Local {
-		log.Println("Provision driver is not local, defaulting to linux/amd64")
+		log.Warn("Provision driver is not local, defaulting to linux/amd64")
 		BenchCfg.GrafanaArch = "linux/amd64"
 	}
 
@@ -191,7 +199,7 @@ func getProvisionState(ctx context.Context, cfg *bench.BenchServiceCfg) (*provis
 	}
 
 	if resolved {
-		log.Println("mage: build in cache")
+		log.Info("build in cache", "svc", "mage")
 	}
 
 	return BenchService.Provisioner.New(ctx, BenchCfg.ProvisionDriver, build, true)

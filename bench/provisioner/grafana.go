@@ -76,12 +76,12 @@ func GetGrafanaSession(vm *VMInstance) (*http.Cookie, error) {
 	// check response status code
 	var responsePayload map[string]interface{}
 	if resp.StatusCode != http.StatusOK {
-		fmt.Println("Error loggin in: Response status code:", resp.StatusCode)
+		fmt.Println("Error logging in: Response status code:", resp.StatusCode)
 		err = json.NewDecoder(resp.Body).Decode(&responsePayload)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to decode response: %w", err)
+			return nil, fmt.Errorf("Error logging into grafana instance. Failed to decode response: %w", err)
 		}
-		fmt.Println("Response:", responsePayload)
+		return nil, fmt.Errorf("Error logging into grafana instance. statusCode:", resp.StatusCode, "response:", responsePayload)
 	}
 
 	// get the build version

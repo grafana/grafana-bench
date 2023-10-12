@@ -2,57 +2,27 @@ package builder
 
 import (
 	"fmt"
-	"log"
 	"strings"
-
-	"github.com/grafana/grafana-bench/bench/builder/git"
 )
 
-// Resolves branch or commit to full length ref supported values:
-// "" - defaults to defaults to "branch:main" and will get the latest commit on
-// main.
-// "branch:yourbranch" - will get the latest commit from yourbranch
-// "commit:abcdefg" - will get the full length commit. Must include at least 7
-// characters of the ref
-func resolveGrafanaRevision(grafanaRevision string) (string, error) {
-	if grafanaRevision == "" {
-		grafanaRevision = "branch:main"
+// validate arch string linux/amd64
+func validateArch(archstring string) bool {
+	parts := strings.Split(archstring, "/")
+	if len(parts) != 2 {
+		return false
 	}
 
-	pieces := strings.Split(grafanaRevision, ":")
-	if len(pieces) != 2 {
-		return "", fmt.Errorf("builder: Invalid GrafanaRevision format. Use `commit:e74e7fa` or `branch:main`")
+	os := parts[0]
+	if os != "linux" && os != "darwin" && os != "windows" {
+		return false
 	}
 
-	t, val := pieces[0], pieces[1]
-
-	if t != "commit" && t != "branch" {
-		return "", fmt.Errorf("builder: Invalid GrafanaRevision format. Use `commit:e74e7fa` or `branch:main`")
+	arch := parts[1]
+	if arch != "amd64" && arch != "arm64" {
+		return false
 	}
 
-	if t == "commit" && len(val) < 7 {
-		return "", fmt.Errorf("builder: Invalid GrafanaRevision format: %s commit ref must be at least 7 characters", grafanaRevision)
-	}
-
-	var commit string
-	var err error
-	if t == "branch" {
-		log.Println("builder: branch", val, "specified. Resolving latest commit")
-		commit, err = git.ResolveLatestBranchCommit("grafana/grafana", val)
-		if err != nil {
-			return "", err
-		}
-		log.Println("builder: branch", val, "resolved to commit", commit)
-	} else if t == "commit" {
-		log.Println("builder: commit", val, "specified. Resolving commit")
-		commit, err = git.ResolveFullCommit("grafana/grafana", val)
-		if err != nil {
-			return "", err
-		}
-		log.Println("builder: commit", val, "resolved to commit", commit)
-	}
-
-	return commit, nil
+	return true
 }
 
 // generates the name of the build artifact for caching

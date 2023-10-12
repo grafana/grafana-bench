@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"strings"
 
@@ -70,7 +69,7 @@ func (bc *BuildCache) DownloadRemote(ctx context.Context, ct CacheObjectType, ar
 	}
 
 	// if exists, download
-	log.Println("build-cache: object found, downloading")
+	bc.Log.Info("object found, downloading", "objectName", obj.ObjectName())
 	if err := WriteToLocal(ctx, bc.DiskPath(ct, artifactName), obj); err != nil {
 		return false, fmt.Errorf("Error retrieving artifact from bucket: %w", err)
 	}

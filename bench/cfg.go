@@ -1,7 +1,7 @@
 package bench
 
 import (
-	"log"
+	"log/slog"
 	"os"
 	"path"
 
@@ -40,22 +40,33 @@ type BenchServiceCfg struct {
 
 	buildCacheBucket string
 	buildCachePath   string
-	builderPath      string
-	provisionerPath  string
-	grafanaTmplPath  string
-	testerPath       string
-	grafanaTestRepo  string
-	resultsPath      string
+	// working directory for builder
+	builderPath string
+	// working directory for provisioner
+	provisionerPath string
+	// path to grafana template when compiling backend only
+	grafanaTmplPath string
+
+	// working directory for tester
+	testerPath string
+	// determines whether tester should manage lifecycle of repo or use
+	// precompiled tests
+	testerUseCompiledTests bool
+	// url for github repo with grafana tests
+	testerGrafanaTestRepo string
 }
 
-func GetBenchServiceCfgFromEnv(root string) *BenchServiceCfg {
+func GetBenchServiceCfgFromEnv(log *slog.Logger, root string) *BenchServiceCfg {
+	log.With("svc", "config")
+
 	// load .env file
 	err := godotenv.Load(".env")
 	if err != nil {
-		log.Println("No .env provided")
+		log.Warn("No .env provided")
 	}
 
-	workPath := path.Join(root, "work")
+	workPath := env.EnvOrDefault("WORK_PATH", path.Join(root, "work"))
+
 	return &BenchServiceCfg{
 		WorkPath:         workPath,
 		GrafanaRevision:  env.EnvOrDefault("GRAFANA_REVISION", "branch:main"),
@@ -81,8 +92,8 @@ func GetBenchServiceCfgFromEnv(root string) *BenchServiceCfg {
 		grafanaTmplPath: path.Join(workPath, "grafanaTemplate"),
 
 		// Tester
-		testerPath:      path.Join(workPath, "test"),
-		grafanaTestRepo: "https://github.com/grafana/grafana-api-tests",
-		resultsPath:     path.Join(workPath, "results"),
+		testerPath:             env.EnvOrDefault("TEST_PATH", path.Join(workPath, "test")),
+		testerUseCompiledTests: env.EnvOrDefaultBool("USE_COMPILED_TESTS", "false"),
+		testerGrafanaTestRepo:  "https://github.com/grafana/grafana-api-tests",
 	}
 }

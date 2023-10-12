@@ -3,6 +3,7 @@ package provisioner
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"os"
 	"path"
 
@@ -11,6 +12,8 @@ import (
 )
 
 type ProvisionState struct {
+	Log *slog.Logger
+
 	// UUID for the build
 	Identifier string `json:"identifier"`
 	driver     ProvisionDriver
@@ -74,7 +77,7 @@ func (p *ProvisionState) RunTests(ctx context.Context, tr *tester.TestRun) error
 func (p *ProvisionState) WriteStateFile() error {
 
 	stateFile := path.Join(p.StateDir, "provision_state.json")
-	log.Info("provisioner: writing statefile", "path", stateFile)
+	p.Log.Info("writing statefile", "path", stateFile)
 	err := os.MkdirAll(p.StateDir, 0700)
 	if err != nil {
 		return err

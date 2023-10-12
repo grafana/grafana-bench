@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"strings"
 
 	"github.com/grafana/grafana-bench/bench/buildcache"
 	"github.com/grafana/grafana-bench/bench/tester"
@@ -48,7 +49,7 @@ func (d *LocalDriver) Provision(ctx context.Context, ps *ProvisionState) (func()
 
 // Blocking call that waits for grafana to become ready
 func (d *LocalDriver) WaitForReady(ctx context.Context, ps *ProvisionState) {
-	WaitForLiveGrafana(ps.GrafanaInstance.ServiceAddress())
+	WaitForLiveGrafana(ps.Log, ps.GrafanaInstance.ServiceAddress())
 }
 
 // Destroy - destroys a provisioned instance of Grafana + test runner
@@ -59,7 +60,7 @@ func (d *LocalDriver) Destroy(ctx context.Context, ps *ProvisionState) error {
 		return err
 	}
 
-	log.Info("removing state directory", "dir", ps.LocalDir, "provisioner", "local")
+	ps.Log.Info("removing state directory", "dir", ps.LocalDir)
 
 	// remove the state directory
 	return utils.Rm(ps.LocalDir)
@@ -67,27 +68,28 @@ func (d *LocalDriver) Destroy(ctx context.Context, ps *ProvisionState) error {
 
 // Runs tests against a provisioned instance of Grafana
 func (d *LocalDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.TestRun) error {
+
 	// resolve test suite
 	err := tr.ResolveTestSuite()
 	if err != nil {
 		return fmt.Errorf("provisioner: error running test suite: %w", err)
 	}
 
+	machineSpec, err := d.GetMachineSpec(ctx, ps)
+	if err != nil {
+		return err
+	}
+
+	envVars := map[string]string{
+		"MACHINE_SPEC":        machineSpec,
+		"TEST_SUITE_REVISION": tr.SuiteRevision,
+		"GT_URL":              ps.GrafanaInstance.HttpServiceAddress(),
+		"K6_CLOUD_TOKEN":      tr.K6CloudToken,
+		"K6_CLOUD_PROJECT_ID": tr.K6CloudProjectId,
+	}
+
 	// run k6 tests
 	err = utils.DoInDir(utils.Getwd(), tr.TestSuiteDir, func() error {
-		machineSpec, err := d.GetMachineSpec(ctx, ps)
-		if err != nil {
-			return err
-		}
-
-		envVars := map[string]string{
-			"MACHINE_SPEC":        machineSpec,
-			"TEST_SUITE_REVISION": tr.SuiteRevision,
-			"GT_URL":              ps.GrafanaInstance.HttpServiceAddress(),
-			"K6_CLOUD_TOKEN":      tr.K6CloudToken,
-			"K6_CLOUD_PROJECT_ID": tr.K6CloudProjectId,
-		}
-
 		tests, err := tr.GetTestSuiteFiles()
 		if err != nil {
 			return err
@@ -95,33 +97,27 @@ func (d *LocalDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *test
 
 		// run the tests
 		for _, testFile := range tests {
-			log.Info("running test file", "file", testFile, "provisioner", "local")
+			ps.Log.Info("running test file", "file", testFile)
 			envVars["SCENARIO_NAME"] = getScenarioName(testFile)
 
 			args := []string{"run", testFile}
 
-			if tr.SmokeTest {
+			if tr.Type == tester.Smoke {
 				args = append(args, "--iterations", "1", "--vus", "1")
 			}
 
-			if tr.ReportToK6Cloud {
+			if tr.Type == tester.Load {
 				args = append(args, "--out", "cloud")
 			}
 
 			cmd := exec.Command("k6", args...)
 
-			// TODO figure out what to do with threshold errors from k6.
-			// The ones in the test may not match what we need and will exist with
-			// non-zero status code resulting in RunWithVar returning an error
-			// an error even though we don't care about it. This isn't a GREAT
-			// approach. We should figure out a way to tell k6 not to return an error
-			// if threshold is breached rather than necessarily modifying the test
-
-			// k6 run tests/tests/dashboards.js -o cloud
+			// k6 run tests/tests/dashboards.js ...args
 			err = utils.ExecStdoutWithEnv(cmd, envVars)
 			if err != nil {
 				if exitError, ok := err.(*exec.ExitError); ok {
-					log.Info("command exited with err", "status", exitError.ExitCode(), "error", err)
+					cmdString := "k6 " + strings.Join(cmd.Args, " ")
+					ps.Log.Info("k6 command exited with err", "status", exitError.ExitCode(), "error", err, "testFile", testFile, "cmd", cmdString)
 				}
 			}
 		}
@@ -142,15 +138,15 @@ func (d *LocalDriver) boot(ctx context.Context, ps *ProvisionState, executable s
 	killFunc := func() error {
 		err := cmd.Process.Kill()
 		if err != nil {
-			return fmt.Errorf("provisioner: ERROR killing grafana PID: %w", err)
+			return fmt.Errorf("ERROR killing grafana PID: %w", err)
 		}
-		log.Info("shutdown grafana pid", "pid", cmd.Process.Pid, "provisioner", "local")
+		ps.Log.Info("shutdown grafana pid", "pid", cmd.Process.Pid, "provisioner", "local")
 		return nil
 	}
 
 	err := utils.DoInDir(utils.Getwd(), ps.WorkDir, func() error {
 		if err := cmd.Start(); err != nil {
-			log.Info("Error starting server", "error", err, "provisioner", "local")
+			ps.Log.Info("Error starting server", "error", err, "provisioner", "local")
 			return err
 		}
 		return nil

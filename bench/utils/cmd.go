@@ -19,11 +19,5 @@ func ExecStdoutWithEnv(cmd *exec.Cmd, env map[string]string) error {
 func ExecStdout(cmd *exec.Cmd) error {
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
-
-	// Start the command
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("error starting command: %w", err)
-	}
-
-	return nil
+	return cmd.Run()
 }
