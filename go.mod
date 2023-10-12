@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/storage v1.33.0
 	github.com/google/uuid v1.3.0
 	github.com/joho/godotenv v1.5.1
-	github.com/magefile/mage v1.14.0
+	github.com/magefile/mage v1.15.0
 	golang.org/x/crypto v0.14.0
 	google.golang.org/api v0.132.0
 )
