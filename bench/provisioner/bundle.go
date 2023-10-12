@@ -16,29 +16,29 @@ func setupGrafanaWorkdir(ctx context.Context, bc *buildcache.BuildCache, ps *Pro
 	// verify build artifact exists in the buildcache
 	resolved, err := bc.Resolve(ctx, buildcache.TypeBuild, ps.Build.ArtifactBuildName)
 	if err != nil {
-		return "", fmt.Errorf("build-cache: error checking for grafana executable : %w", err)
+		return "", fmt.Errorf("error checking for grafana executable : %w", err)
 	}
 	if !resolved {
-		return "", fmt.Errorf("build-cache: grafana executable not found: %s", ps.Build.ArtifactBuildName)
+		return "", fmt.Errorf("grafana executable not found: %s", ps.Build.ArtifactBuildName)
 	}
 
 	// verify defaults.ini exists in the buildcache
 	resolved, err = bc.Resolve(ctx, buildcache.TypeINI, ps.Build.ArtifactININame)
 	if err != nil {
-		return "", fmt.Errorf("build-cache: error checking for defaults.ini: %w", err)
+		return "", fmt.Errorf("error checking for defaults.ini: %w", err)
 	}
 	if !resolved {
-		return "", fmt.Errorf("build-cache: defaults.ini not found: %s", ps.Build.ArtifactININame)
+		return "", fmt.Errorf("defaults.ini not found: %s", ps.Build.ArtifactININame)
 	}
 
 	// delete old workdir if exists
 	if err := utils.Rm(ps.WorkDir); err != nil {
-		return "", fmt.Errorf("provisioner: error deleting workdir: %w", err)
+		return "", fmt.Errorf("error deleting workdir: %w", err)
 	}
 
 	// copy template directory
 	if err := utils.Cp(ps.TemplateDir, ps.WorkDir); err != nil {
-		return "", fmt.Errorf("provisioner: error copying template directory: %s - %w", ps.TemplateDir, err)
+		return "", fmt.Errorf("error copying template directory: %s - %w", ps.TemplateDir, err)
 	}
 
 	// Copy executable into work dir

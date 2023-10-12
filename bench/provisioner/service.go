@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"path"
 	"strings"
@@ -23,6 +24,7 @@ const (
 )
 
 type ProvisionerService struct {
+	Log                    *slog.Logger
 	BuildCache             *buildcache.BuildCache
 	TerraformTemplates     map[string]*template.Template
 	LocalDir               string
@@ -30,26 +32,28 @@ type ProvisionerService struct {
 	GCPCredentialsPath     string
 }
 
-func NewProvisioner(ctx context.Context, bc *buildcache.BuildCache, localDir string, gcpCredentialsPath, grafanaWorkDirTemplate string) (*ProvisionerService, error) {
+func NewProvisioner(ctx context.Context, log *slog.Logger, bc *buildcache.BuildCache, localDir string, gcpCredentialsPath, grafanaWorkDirTemplate string) (*ProvisionerService, error) {
+	log = log.With("svc", "provisioner")
 
 	if bc == nil {
-		return nil, fmt.Errorf("provisioner: build cache cannot be nil")
+		return nil, fmt.Errorf("build cache cannot be nil")
 	}
 
 	if localDir == "" {
-		return nil, fmt.Errorf("provisioner: local directory cannot be empty")
+		return nil, fmt.Errorf("local directory cannot be empty")
 	}
 
 	if grafanaWorkDirTemplate == "" {
-		return nil, fmt.Errorf("provisioner: template directory cannot be empty")
+		return nil, fmt.Errorf("template directory cannot be empty")
 	}
 
 	templates, err := loadTerraformTemplates()
 	if err != nil {
-		return nil, fmt.Errorf("provisioner: error loading template: %w", err)
+		return nil, fmt.Errorf("error loading template: %w", err)
 	}
 
 	return &ProvisionerService{
+		Log:                    log,
 		LocalDir:               localDir,
 		TerraformTemplates:     templates,
 		GrafanaWorkDirTemplate: grafanaWorkDirTemplate,
@@ -59,17 +63,17 @@ func NewProvisioner(ctx context.Context, bc *buildcache.BuildCache, localDir str
 }
 
 func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *builder.Build, writeState bool) (*ProvisionState, error) {
-	log := log.With("driver", t)
-	log.Info("using driver")
+	log := p.Log.With("driver", t)
 
 	uuid := uuid.Must(uuid.NewRandom())
-	log.Info("provisioner: new state identifier", "id", uuid.String())
+	p.Log.Info("new state identifier", "id", uuid.String())
 
 	localDir := path.Join(p.LocalDir, uuid.String())
 	workDir := path.Join(localDir, "work")
 	stateDir := path.Join(localDir, "state")
 
 	state := &ProvisionState{
+		Log:         log,
 		driver:      p.InitDriver(t),
 		Identifier:  uuid.String(),
 		Type:        t,
@@ -82,11 +86,11 @@ func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *bu
 
 	// exit if not writing state
 	if !writeState {
-		log.Info("provisioner: writeState set to false. skip writing to disk")
+		log.Info("writeState set to false. skip writing to disk")
 		return state, nil
 	}
 
-	log.Info("provisioner: local path", "dir", localDir)
+	log.Info("local path", "dir", localDir)
 
 	err := os.MkdirAll(state.WorkDir, 0755)
 	if err != nil {
@@ -106,6 +110,7 @@ func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *bu
 // dashboards` without providing a state
 func (p *ProvisionerService) NewLocalDevState(ctx context.Context) *ProvisionState {
 	return &ProvisionState{
+		Log:        p.Log.With("driver", Local),
 		driver:     p.InitDriver(Local),
 		Identifier: "LOCALDEVSTATE",
 		Type:       Local,
@@ -148,7 +153,7 @@ func ProvisionDriverFromString(driverString string) ProvisionType {
 // Reads statefile from directory
 func (p *ProvisionerService) ReadStateFile(stateIdentifier string) (*ProvisionState, error) {
 	stateFile := path.Join(p.LocalDir, stateIdentifier, "state", "provision_state.json")
-	log.Info("provisioner: reading statefile", "file", stateFile)
+	p.Log.Info("reading statefile", "file", stateFile)
 	file, err := os.Open(stateFile)
 	if err != nil {
 		return nil, err
@@ -161,6 +166,7 @@ func (p *ProvisionerService) ReadStateFile(stateIdentifier string) (*ProvisionSt
 		return nil, err
 	}
 
+	ps.Log = p.Log.With("driver", ps.Type)
 	ps.driver = p.InitDriver(ps.Type)
 
 	// TODO the rest of this is dependent on the driver.

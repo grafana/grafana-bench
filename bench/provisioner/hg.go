@@ -14,6 +14,7 @@ import (
 
 	"github.com/grafana/grafana-bench/bench/tester"
 	"github.com/grafana/grafana-bench/bench/utils"
+	"github.com/unknwon/log"
 )
 
 var _ ProvisionDriver = (*HGDriver)(nil)
@@ -25,8 +26,7 @@ func NewHGDriver() *HGDriver {
 }
 
 func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.TestRun) error {
-	log := log.With("provisioner", "hg")
-	log.Info("running test suite")
+	ps.Log.Info("running test suite")
 
 	if err := tr.ResolveTestSuite(); err != nil {
 		return fmt.Errorf("provisioner: %w", err)
@@ -73,8 +73,8 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 			// set the scenario name so it's accessible from the test
 			envVars["SCENARIO_NAME"] = scenarioName
 
-			log.Info("running test file", "file", testFile)
-			log.Info("output json to", "file", jsonFile)
+			ps.Log.Info("running test file", "file", testFile)
+			ps.Log.Info("output json to", "file", jsonFile)
 
 			args := []string{"run", testFile,
 				"--out", "json=" + jsonFile,
@@ -103,13 +103,13 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 					exitCode = exitError.ExitCode()
 					anyFailures = true
 				}
-				log.Info("error running k6 command", "error", err)
+				ps.Log.Info("error running k6 command", "error", err)
 			}
 
 			// scenario + testDuration will be in milliseconds
 			td, err := parseDurationFromJsonFile(scenarioName, jsonFile)
 			if err != nil {
-				log.Info("error processing json file", "error", err)
+				ps.Log.Info("error processing json file", "error", err)
 			}
 
 			// NOTE total duration will be the total time for all tests to run
@@ -120,18 +120,18 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 			if tr.Type == tester.Load {
 				id, url, err = parseK6CloudIdentifiersFromCLIOutput(buf.Bytes())
 				if err != nil {
-					log.Warn("error parsing cloud run from K6 summary", "error", err)
+					ps.Log.Warn("error parsing cloud run from K6 summary", "error", err)
 				}
 			}
 
 			testIterations, err := parseIterationCountFromCLIOutput(buf.Bytes())
 			if err != nil {
-				log.Warn("error parsing iterations from k6 summary", "error", err)
+				ps.Log.Warn("error parsing iterations from k6 summary", "error", err)
 
 			}
 
 			// test complete log
-			log.Info("testRun",
+			ps.Log.Info("testRun",
 				"suiteRun", ps.Identifier,
 				"scenarioName", scenarioName,
 				"grafanaVersion", ps.Build.GrafanaRevision,
@@ -149,7 +149,7 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 			)
 		}
 
-		log.Info("suiteRun",
+		ps.Log.Info("suiteRun",
 			// TODO pass the trigger from argo. (Manual, CI / release channel)
 			"testTrigger", "CI",
 			"grafanaVersion", ps.Build.GrafanaRevision,
@@ -164,7 +164,7 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 		return nil
 	})
 
-	log.Info("test suite finished")
+	ps.Log.Info("test suite finished")
 
 	return err
 }
@@ -178,28 +178,18 @@ func (d *HGDriver) GetMachineSpec(ctx context.Context, ps *ProvisionState) (stri
 
 // Blocking call that waits for grafana to become ready
 func (d *HGDriver) WaitForReady(ctx context.Context, ps *ProvisionState) {
-	WaitForLiveGrafana(ps.GrafanaInstance.ServiceAddress())
+	WaitForLiveGrafana(ps.Log, ps.GrafanaInstance.ServiceAddress())
 }
 
 // Provision not implemented for hosted grafana driver
 func (d *HGDriver) Provision(ctx context.Context, ps *ProvisionState) (func() error, error) {
-	log.Info("provisioner: provision not implemented for hosted grafana driver")
+	log.Warn("provision not implemented for provision driver")
 	return NilFunc, nil
 }
 
 // Provision not implemented for hosted grafana driver. state is not written to
 // disk
 func (d *HGDriver) Destroy(ctx context.Context, ps *ProvisionState) error {
-	exists, err := utils.PathExists(ps.LocalDir)
-	if err != nil {
-		log.Info("provisioner: error checking if provision state exists", err)
-	}
-
-	if !exists {
-		log.Info("provisioner: state not written to disk. exiting")
-		return nil
-	}
-
-	log.Info("removing state directory", "dir", ps.LocalDir)
-	return utils.Rm(ps.LocalDir)
+	log.Warn("destroy not implemented for provision driver")
+	return nil
 }

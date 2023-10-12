@@ -9,6 +9,7 @@ import (
 	"github.com/grafana/grafana-bench/bench/buildcache"
 	"github.com/grafana/grafana-bench/bench/tester"
 	"github.com/grafana/grafana-bench/bench/utils"
+	"github.com/rs/zerolog/log"
 )
 
 var _ ProvisionDriver = (*LocalDriver)(nil)
@@ -49,7 +50,7 @@ func (d *LocalDriver) Provision(ctx context.Context, ps *ProvisionState) (func()
 
 // Blocking call that waits for grafana to become ready
 func (d *LocalDriver) WaitForReady(ctx context.Context, ps *ProvisionState) {
-	WaitForLiveGrafana(ps.GrafanaInstance.ServiceAddress())
+	WaitForLiveGrafana(ps.Log, ps.GrafanaInstance.ServiceAddress())
 }
 
 // Destroy - destroys a provisioned instance of Grafana + test runner
@@ -60,7 +61,7 @@ func (d *LocalDriver) Destroy(ctx context.Context, ps *ProvisionState) error {
 		return err
 	}
 
-	log.Info("removing state directory", "dir", ps.LocalDir, "provisioner", "local")
+	ps.Log.Info("removing state directory", "dir", ps.LocalDir)
 
 	// remove the state directory
 	return utils.Rm(ps.LocalDir)
@@ -68,7 +69,6 @@ func (d *LocalDriver) Destroy(ctx context.Context, ps *ProvisionState) error {
 
 // Runs tests against a provisioned instance of Grafana
 func (d *LocalDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.TestRun) error {
-	log := log.With("provisioner", "local")
 
 	// resolve test suite
 	err := tr.ResolveTestSuite()
@@ -139,7 +139,7 @@ func (d *LocalDriver) boot(ctx context.Context, ps *ProvisionState, executable s
 	killFunc := func() error {
 		err := cmd.Process.Kill()
 		if err != nil {
-			return fmt.Errorf("provisioner: ERROR killing grafana PID: %w", err)
+			return fmt.Errorf("ERROR killing grafana PID: %w", err)
 		}
 		log.Info("shutdown grafana pid", "pid", cmd.Process.Pid, "provisioner", "local")
 		return nil

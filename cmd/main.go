@@ -28,7 +28,7 @@ func main() {
 	// 4. figure out why we're not exiting from docker run script
 	// 5. plumb test type through to provisioner
 
-	benchSvc, benchCfg := bench.NewBenchServiceOrPanic(ctx)
+	benchSvc, benchCfg := bench.NewBenchServiceOrPanic(ctx, log)
 
 	// Setup bench service with defaults for CLI
 	if len(os.Args) != 6 {
