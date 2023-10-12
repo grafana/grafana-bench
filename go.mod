@@ -3,7 +3,7 @@ module github.com/grafana/grafana-bench
 go 1.20
 
 require (
-	cloud.google.com/go/storage v1.30.1
+	cloud.google.com/go/storage v1.33.0
 	github.com/google/uuid v1.3.0
 	github.com/joho/godotenv v1.5.1
 	github.com/magefile/mage v1.14.0
