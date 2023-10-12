@@ -21,36 +21,35 @@ func main() {
 	log := slog.New(slog.NewTextHandler(os.Stderr, nil))
 
 	// START HERE
-	// 2. update log statements in this file
-	// 3. use main logger in provisioner
+	// 5. plumb test type argument through to provisioner
 	// 4. figure out why we're not exiting from docker run script
-	// 5. plumb test type through to provisioner
 
 	benchSvc, benchCfg := bench.NewBenchServiceOrPanic(ctx, log)
 
 	// Setup bench service with defaults for CLI
-	if len(os.Args) != 6 {
+	if len(os.Args) != 7 {
 		log.Error("Missing parameters. need 6 args; address port username password tests", "argCount", len(os.Args))
 
 		// one of these will panic and exit, probably
-		log.Error("arg[1]", "address", os.Args[1])
-		log.Error("arg[2]", "port", os.Args[2])
-		log.Error("arg[3]", "username", os.Args[3])
-		log.Error("arg[4]", "password", os.Args[4])
-		log.Error("arg[5]", "tests", os.Args[5])
+		log.Error("arg[0]", "exec", os.Args[0])
+		log.Error("arg[1]", "testType", os.Args[1])
+		log.Error("arg[2]", "address", os.Args[2])
+		log.Error("arg[3]", "port", os.Args[3])
+		log.Error("arg[4]", "username", os.Args[4])
+		log.Error("arg[5]", "password", os.Args[5])
+		log.Error("arg[6]", "tests", os.Args[6])
 	}
 
 	var (
-		// TODO get this as arg
-		testType = "smoke"
-		address  = os.Args[1]
-		port     = os.Args[2]
-		username = os.Args[3]
-		password = os.Args[4]
-		tests    = os.Args[5]
+		testType  = os.Args[1]
+		address   = os.Args[2]
+		port      = os.Args[3]
+		username  = os.Args[4]
+		password  = os.Args[5]
+		testSuite = os.Args[6]
 	)
 
-	if err := hgtest(ctx, log, benchSvc, benchCfg, testType, address, port, username, password, tests); err != nil {
+	if err := hgtest(ctx, log, benchSvc, benchCfg, testType, address, port, username, password, testSuite); err != nil {
 		panic(err)
 	}
 }

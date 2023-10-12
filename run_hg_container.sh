@@ -6,6 +6,12 @@ else
   exit 1
 fi
 
+TEST_TYPE=$1
+if [ -z "$TEST_TYPE" ]
+then
+  TEST_TYPE="smoke"
+fi
+
 source .env.hg
 
 docker run --rm \
@@ -20,4 +26,4 @@ docker run --rm \
   -e GRAFANA_PORT=$GRAFANA_PORT \
   -e GRAFANA_USER=$GRAFANA_USER \
   -e GRAFANA_PASSWORD=$GRAFANA_PASSWORD \
-  -e GRAFANA_TEST_SUITE=$GRAFANA_TEST_SUITE grafana-bench-hg-test:latest
+  -e GRAFANA_TEST_SUITE=$GRAFANA_TEST_SUITE grafana-bench-hg-test:latest $TEST_TYPE
