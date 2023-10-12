@@ -63,7 +63,7 @@ func (b *Build) Run(ctx context.Context) error {
 			"--verbose",
 		}
 
-		fmt.Println("builder: running command go", strings.Join(cmd, " "))
+		b.Log.Info("running build command", "cmd", strings.Join(cmd, " "))
 
 		err := sh.RunV("go", cmd...)
 		return err
