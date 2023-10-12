@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"time"
@@ -22,7 +21,6 @@ func main() {
 	log := slog.New(slog.NewTextHandler(os.Stderr, nil))
 
 	// START HERE
-	// 1. plumb the logger through to services
 	// 2. update log statements in this file
 	// 3. use main logger in provisioner
 	// 4. figure out why we're not exiting from docker run script
@@ -32,14 +30,14 @@ func main() {
 
 	// Setup bench service with defaults for CLI
 	if len(os.Args) != 6 {
-		log.Error("Missing parameters. need 6 args; address port username password tests")
+		log.Error("Missing parameters. need 6 args; address port username password tests", "argCount", len(os.Args))
 
-		// this will panic
-		log.Info("address:", os.Args[1])
-		log.Info("port:", os.Args[2])
-		log.Info("username:", os.Args[3])
-		log.Info("password:", os.Args[4])
-		log.Info("tests:", os.Args[5])
+		// one of these will panic and exit, probably
+		log.Error("arg[1]", "address", os.Args[1])
+		log.Error("arg[2]", "port", os.Args[2])
+		log.Error("arg[3]", "username", os.Args[3])
+		log.Error("arg[4]", "password", os.Args[4])
+		log.Error("arg[5]", "tests", os.Args[5])
 	}
 
 	var (
@@ -52,12 +50,14 @@ func main() {
 		tests    = os.Args[5]
 	)
 
-	if err := hgtest(ctx, benchSvc, benchCfg, testType, address, port, username, password, tests); err != nil {
+	if err := hgtest(ctx, log, benchSvc, benchCfg, testType, address, port, username, password, tests); err != nil {
 		panic(err)
 	}
 }
 
-func hgtest(ctx context.Context, benchSvc *bench.BenchService, benchCfg *bench.BenchServiceCfg, testType, address, port, username, password, tests string) error {
+func hgtest(ctx context.Context, log *slog.Logger, benchSvc *bench.BenchService, benchCfg *bench.BenchServiceCfg, testType, address, port, username, password, tests string) error {
+	log = log.With("svc", "hgtest")
+
 	// k6 cloud credentials
 	benchSvc.Tester.K6CloudProjectId = os.Getenv("K6_CLOUD_PROJECT_ID")
 	benchSvc.Tester.K6CloudToken = os.Getenv("K6_CLOUD_TOKEN")
@@ -72,7 +72,7 @@ func hgtest(ctx context.Context, benchSvc *bench.BenchService, benchCfg *bench.B
 
 	grafanaVersion, err := provisioner.GetGrafanaBuildVersion(grafanaInstance)
 	if err != nil {
-		log.Println("Error getting grafana version:", err)
+		log.Error("error getting grafana version", "err", err)
 		return fmt.Errorf("Error getting grafana version. exiting.. err: %w", err)
 	}
 
@@ -101,6 +101,8 @@ func hgtest(ctx context.Context, benchSvc *bench.BenchService, benchCfg *bench.B
 
 	// set identifier for suite run
 	ps.Identifier = GetNewSuiteIdentifier(build, ps, tr)
+	log.Info("suite identifier", "identifier", ps.Identifier)
+
 	// set vm
 	ps.GrafanaInstance = grafanaInstance
 
@@ -108,7 +110,7 @@ func hgtest(ctx context.Context, benchSvc *bench.BenchService, benchCfg *bench.B
 
 	// run the tests
 	if err := ps.RunTests(ctx, tr); err != nil {
-		log.Println("error running tests:", err)
+		log.Error("error running tests", "err", err)
 	}
 
 	return nil
