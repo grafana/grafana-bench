@@ -1,5 +1,5 @@
 #! /usr/bin/env sh
-if docker build --platform=linux/amd64 -t grafana-bench:latest .; then
+if docker build --platform=linux/amd64 -t grafana-bench-hg-test:latest -f hg.Dockerfile .; then
   echo "build succeeded"
 else
   echo "build failed"
@@ -19,4 +19,3 @@ docker run --rm \
   -e GRAFANA_USER=$GRAFANA_USER \
   -e GRAFANA_PASSWORD=$GRAFANA_PASSWORD \
   -e GRAFANA_TEST_SUITE=$GRAFANA_TEST_SUITE grafana-bench:latest
-

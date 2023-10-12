@@ -27,36 +27,32 @@ func NewHGDriver() *HGDriver {
 func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.TestRun) error {
 	log := log.With("provisioner", "hg")
 
-	exists, err := utils.PathExists(tr.TestSuiteDir)
-	if err != nil {
-		return fmt.Errorf("provisioner: error checking test suite dir: %s err: %w", tr.TestSuiteDir, err)
+	if err := tr.ResolveTestSuite(); err != nil {
+		return fmt.Errorf("provisioner: %w", err)
 	}
 
-	if !exists {
-		return fmt.Errorf("provisioner: error test suite dir %s does not exist. no tests to run", tr.TestSuiteDir)
+	// verify we have tests
+	machineSpec, err := d.GetMachineSpec(ctx, ps)
+	if err != nil {
+		return err
+	}
+
+	envVars := map[string]string{
+		"MACHINE_SPEC":                machineSpec,
+		"TEST_SUITE_REVISION":         tr.SuiteRevision,
+		"GT_URL":                      ps.GrafanaInstance.HttpsServiceAddress(),
+		"GT_USERNAME":                 ps.GrafanaInstance.GrafanaUser,
+		"GT_PASSWORD":                 ps.GrafanaInstance.GrafanaPassword,
+		"K6_PROMETHEUS_RW_USERNAME":   os.Getenv("K6_PROMETHEUS_RW_USERNAME"),
+		"K6_PROMETHEUS_RW_PASSWORD":   os.Getenv("K6_PROMETHEUS_RW_PASSWORD"),
+		"K6_PROMETHEUS_RW_SERVER_URL": os.Getenv("K6_PROMETHEUS_RW_SERVER_URL"),
+		"K6_CLOUD_TOKEN":              tr.K6CloudToken,
+		"K6_CLOUD_PROJECT_ID":         tr.K6CloudProjectId,
+		"K6_CLOUD_TRACES_ENABLED":     "true",
 	}
 
 	// run k6 tests
 	err = utils.DoInDir(utils.Getwd(), tr.TestSuiteDir, func() error {
-		machineSpec, err := d.GetMachineSpec(ctx, ps)
-		if err != nil {
-			return err
-		}
-
-		envVars := map[string]string{
-			"MACHINE_SPEC":                machineSpec,
-			"TEST_SUITE_REVISION":         tr.SuiteRevision,
-			"GT_URL":                      ps.GrafanaInstance.HttpsServiceAddress(),
-			"GT_USERNAME":                 ps.GrafanaInstance.GrafanaUser,
-			"GT_PASSWORD":                 ps.GrafanaInstance.GrafanaPassword,
-			"K6_PROMETHEUS_RW_USERNAME":   os.Getenv("K6_PROMETHEUS_RW_USERNAME"),
-			"K6_PROMETHEUS_RW_PASSWORD":   os.Getenv("K6_PROMETHEUS_RW_PASSWORD"),
-			"K6_PROMETHEUS_RW_SERVER_URL": os.Getenv("K6_PROMETHEUS_RW_SERVER_URL"),
-			"K6_CLOUD_TOKEN":              tr.K6CloudToken,
-			"K6_CLOUD_PROJECT_ID":         tr.K6CloudProjectId,
-			"K6_CLOUD_TRACES_ENABLED":     "true",
-		}
-
 		tests, err := tr.GetTestSuiteFiles()
 		if err != nil {
 			return err
@@ -65,6 +61,7 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 		var (
 			startTime     = time.Now()
 			totalDuration float32
+			anyFailures   = false
 		)
 
 		// run the tests
@@ -79,12 +76,11 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 			log.Info("output json to", "file", jsonFile)
 
 			args := []string{"run", testFile,
-				"--out", "cloud",
 				"--out", "json=" + jsonFile,
 				"--tag", "SUITE_RUN=" + ps.Identifier}
 
-			if tr.SmokeTest {
-				args = append(args, "--iterations", "1", "--vus", "1")
+			if tr.Type == tester.Smoke {
+				args = append(args, "--iterations", "1", "--vus", "1", "--out", "cloud")
 			}
 
 			cmd := exec.Command("k6", args...)
@@ -104,6 +100,7 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 			if err != nil {
 				if exitError, ok := err.(*exec.ExitError); ok {
 					exitCode = exitError.ExitCode()
+					anyFailures = true
 				}
 				log.Info("error running k6 command", "error", err)
 			}
@@ -117,10 +114,13 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 			// NOTE total duration will be the total time for all tests to run
 			// including setup and teardown and does not include the rest of the
 			// time for bench to run
+			var id, url string
 			totalDuration += td.TotalDuration
-			id, url, err := parseK6CloudIdentifiersFromCLIOutput(buf.Bytes())
-			if err != nil {
-				log.Warn("error parsing cloud run from K6 summary", "error", err)
+			if tr.Type == tester.Load {
+				id, url, err = parseK6CloudIdentifiersFromCLIOutput(buf.Bytes())
+				if err != nil {
+					log.Warn("error parsing cloud run from K6 summary", "error", err)
+				}
 			}
 
 			testIterations, err := parseIterationCountFromCLIOutput(buf.Bytes())
@@ -149,7 +149,7 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 		}
 
 		log.Info("suiteRun",
-			// TODO figure out how to pass the trigger from argo. (Manual, CI / release channel)
+			// TODO pass the trigger from argo. (Manual, CI / release channel)
 			"testTrigger", "CI",
 			"grafanaVersion", ps.Build.GrafanaRevision,
 			"suiteRun", ps.Identifier,
@@ -157,6 +157,7 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 			"startTime", startTime.Format(time.RFC3339),
 			"duration", prettyMS(totalDuration),
 			"machineInfo", machineSpec,
+			"anyFailures", anyFailures,
 		)
 
 		return nil

@@ -8,42 +8,39 @@ import (
 )
 
 type TesterService struct {
-	LocalDir string
-
+	LocalDir         string
+	UseCompiledTests bool
 	// location of the test suite in the workdir
 	TestSuiteDir string
-
-	// TODO implement me
-	// if enabled, always clone the test suite into a separate folder to ensure
-	// that the state of the folder does not clash when running multiple bench marks at the
-	// same time
-	AlwaysCloneTestSuite bool
-
-	// k6CloudToken
+	// location of tests in side the test suite
+	TestRoot         string
 	K6CloudToken     string
 	K6CloudProjectId string
-
-	GrafanaTestRepo string
-
-	// location of the test results
-	resultsDir string
+	GrafanaTestRepo  string
 }
 
-func NewTester(ctx context.Context, localDir, resultsDir, grafanaTestRepo, k6CloudProjectId, k6CloudToken string) *TesterService {
+func NewTester(ctx context.Context, localDir string, useCompiledTests bool, grafanaTestRepo, k6CloudProjectId, k6CloudToken string) *TesterService {
 	err := os.MkdirAll(localDir, 0755)
 	if err != nil {
 		panic(fmt.Errorf("tester: could not create test service working directory: %w", err))
 	}
 
-	err = os.MkdirAll(resultsDir, 0755)
-	if err != nil {
-		panic(fmt.Errorf("tester: error creating test suite directory: %w", err))
+	var testSuiteDir, testRoot string
+	if useCompiledTests {
+		// assume directly in the test folder if compiled
+		testSuiteDir = path.Join(localDir)
+		testRoot = path.Join(localDir)
+	} else {
+		// location of repo on disk
+		testSuiteDir = path.Join(localDir, "suite")
+		// location of tests in repo
+		testRoot = path.Join(testSuiteDir, "dist", "tests")
 	}
 
 	return &TesterService{
 		LocalDir:         localDir,
-		TestSuiteDir:     path.Join(localDir, "suite"),
-		resultsDir:       resultsDir,
+		TestSuiteDir:     testSuiteDir,
+		TestRoot:         testRoot,
 		GrafanaTestRepo:  grafanaTestRepo,
 		K6CloudToken:     k6CloudToken,
 		K6CloudProjectId: k6CloudProjectId,
@@ -51,20 +48,18 @@ func NewTester(ctx context.Context, localDir, resultsDir, grafanaTestRepo, k6Clo
 }
 
 // New creates a new test run.
-// suiteREvision is optional. If left blank, it will use exactly what is in the
+// suiteRevision is optional. If left blank, it will use exactly what is in the
 // test repo for local development. Otherwise, provide branch or commit.
 //
-// tests takes a foloder or .js file in the tests/ directory of
+// tests takes a folder or .js file in the dist/ directory of
 // https://github.com/grafana/grafana-api-tests
-//
-// reportToK6Cloud sends results to k6 cloud if true
+func (t *TesterService) New(ctx context.Context, suiteRevision string, runType string, tests string) (*TestRun, error) {
+	trt := TestRunTypeFromString(runType)
 
-func (t *TesterService) New(ctx context.Context, suiteRevision, tests string, smokeTest bool, reportToK6Cloud bool) (*TestRun, error) {
 	return &TestRun{
-		TesterService:   t,
-		SuiteRevision:   suiteRevision,
-		Tests:           tests,
-		SmokeTest:       smokeTest,
-		ReportToK6Cloud: reportToK6Cloud,
+		TesterService: t,
+		SuiteRevision: suiteRevision,
+		Type:          trt,
+		Tests:         tests,
 	}, nil
 }

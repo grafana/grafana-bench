@@ -26,12 +26,11 @@ type ProvisionerService struct {
 	BuildCache             *buildcache.BuildCache
 	TerraformTemplates     map[string]*template.Template
 	LocalDir               string
-	VMEnabled              bool
 	GrafanaWorkDirTemplate string
 	GCPCredentialsPath     string
 }
 
-func NewProvisioner(ctx context.Context, bc *buildcache.BuildCache, localDir string, vmEnabled bool, gcpCredentialsPath, grafanaWorkDirTemplate string) (*ProvisionerService, error) {
+func NewProvisioner(ctx context.Context, bc *buildcache.BuildCache, localDir string, gcpCredentialsPath, grafanaWorkDirTemplate string) (*ProvisionerService, error) {
 
 	if bc == nil {
 		return nil, fmt.Errorf("provisioner: build cache cannot be nil")
@@ -52,7 +51,6 @@ func NewProvisioner(ctx context.Context, bc *buildcache.BuildCache, localDir str
 
 	return &ProvisionerService{
 		LocalDir:               localDir,
-		VMEnabled:              vmEnabled,
 		TerraformTemplates:     templates,
 		GrafanaWorkDirTemplate: grafanaWorkDirTemplate,
 		GCPCredentialsPath:     gcpCredentialsPath,
@@ -63,10 +61,6 @@ func NewProvisioner(ctx context.Context, bc *buildcache.BuildCache, localDir str
 func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *builder.Build, writeState bool) (*ProvisionState, error) {
 	log := log.With("driver", t)
 	log.Info("using driver")
-
-	if t != Local && !p.VMEnabled {
-		return nil, fmt.Errorf("provisioner does not have VM support enabled")
-	}
 
 	uuid := uuid.Must(uuid.NewRandom())
 	log.Info("provisioner: new state identifier", "id", uuid.String())

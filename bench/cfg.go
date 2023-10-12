@@ -40,12 +40,20 @@ type BenchServiceCfg struct {
 
 	buildCacheBucket string
 	buildCachePath   string
-	builderPath      string
-	provisionerPath  string
-	grafanaTmplPath  string
-	testerPath       string
-	grafanaTestRepo  string
-	resultsPath      string
+	// working directory for builder
+	builderPath string
+	// working directory for provisioner
+	provisionerPath string
+	// path to grafana template when compiling backend only
+	grafanaTmplPath string
+
+	// working directory for tester
+	testerPath string
+	// determines whether tester should manage lifecycle of repo or use
+	// precompiled tests
+	testerUseCompiledTests bool
+	// url for github repo with grafana tests
+	testerGrafanaTestRepo string
 }
 
 func GetBenchServiceCfgFromEnv(root string) *BenchServiceCfg {
@@ -81,8 +89,8 @@ func GetBenchServiceCfgFromEnv(root string) *BenchServiceCfg {
 		grafanaTmplPath: path.Join(workPath, "grafanaTemplate"),
 
 		// Tester
-		testerPath:      path.Join(workPath, "test"),
-		grafanaTestRepo: "https://github.com/grafana/grafana-api-tests",
-		resultsPath:     path.Join(workPath, "results"),
+		testerPath:             path.Join(workPath, "test"),
+		testerUseCompiledTests: env.EnvOrDefaultBool("USE_COMPILED_TESTS", "false"),
+		testerGrafanaTestRepo:  "https://github.com/grafana/grafana-api-tests",
 	}
 }

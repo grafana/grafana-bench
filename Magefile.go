@@ -69,7 +69,7 @@ func Run(ctx context.Context) error {
 // You can set the revision yourself. Usage:
 // `GRAFANA_REVISION=branch:k8s-proof-of-concept mage bench`
 // `GRAFANA_REVISION=commit:c116545e0ba005e10e318da96688bdae01439bf5 mage bench`
-func Bench(ctx context.Context, testSuite string) error {
+func Bench(ctx context.Context, testType string, testSuite string) error {
 	ps, err := getProvisionState(ctx, BenchCfg)
 	if err != nil {
 		return err
@@ -84,7 +84,7 @@ func Bench(ctx context.Context, testSuite string) error {
 	ps.WaitForReady(ctx)
 
 	// test the build
-	testRun, err := BenchService.Tester.New(ctx, "", testSuite, BenchCfg.SmokeTest, BenchCfg.ReportCloud)
+	testRun, err := BenchService.Tester.New(ctx, "", testType, testSuite)
 	if err != nil {
 		return err
 	}
@@ -93,6 +93,9 @@ func Bench(ctx context.Context, testSuite string) error {
 	err = ps.RunTests(ctx, testRun)
 	if err != nil {
 		log.Println("error running tests:", err)
+		if ps.Type == provisioner.GCP {
+			log.Println("connectionString:", ps.K6Instance.GetConnectionString())
+		}
 	}
 
 	// Provide a hint for people running with cloud driver so they don't have to
@@ -112,7 +115,7 @@ func Bench(ctx context.Context, testSuite string) error {
 
 // Runs test suite on already running instance of grafana. Requires state for
 // operation
-func Test(ctx context.Context, testSuite string) error {
+func Test(ctx context.Context, testType string, testSuite string) error {
 	var ps *provisioner.ProvisionState
 	var err error
 
@@ -127,7 +130,7 @@ func Test(ctx context.Context, testSuite string) error {
 	}
 
 	// test the build
-	testRun, err := BenchService.Tester.New(ctx, "", testSuite, BenchCfg.SmokeTest, BenchCfg.ReportCloud)
+	testRun, err := BenchService.Tester.New(ctx, "", testType, testSuite)
 	if err != nil {
 		return err
 	}
@@ -135,7 +138,9 @@ func Test(ctx context.Context, testSuite string) error {
 	// run the tests
 	if err := ps.RunTests(ctx, testRun); err != nil {
 		log.Println("error running tests:", err)
-		log.Println("connectionString:", ps.K6Instance.GetConnectionString())
+		if ps.Type == provisioner.GCP {
+			log.Println("connectionString:", ps.K6Instance.GetConnectionString())
+		}
 	}
 	return nil
 }

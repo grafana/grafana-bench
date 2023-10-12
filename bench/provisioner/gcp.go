@@ -189,14 +189,6 @@ func (d *GCPDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester
 		return err
 	}
 
-	// create test results dir
-	resultsDir := "/tmp/results"
-	log.Info("creating test result dir", "dir", resultsDir)
-	err = ps.K6Instance.Run(connection, fmt.Sprintf("mkdir -p %s", resultsDir))
-	if err != nil {
-		return err
-	}
-
 	log.Info("getting instance machine spec")
 	machineSpec, err := d.GetMachineSpec(ctx, ps)
 	if err != nil {
@@ -207,11 +199,10 @@ func (d *GCPDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester
 	envVars := map[string]string{
 		"MACHINE_SPEC":        machineSpec,
 		"TEST_SUITE_REVISION": tr.SuiteRevision,
-		"TEST_SUMMARY_DIR":    resultsDir,
 		"GT_URL":              ps.GrafanaInstance.HttpServiceAddress(),
 	}
 
-	if tr.ReportToK6Cloud {
+	if tr.Type == tester.Load {
 		envVars["K6_CLOUD_TOKEN"] = tr.K6CloudToken
 		envVars["K6_CLOUD_PROJECT_ID"] = tr.K6CloudProjectId
 	}
@@ -220,7 +211,7 @@ func (d *GCPDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester
 		log.Info("running test file", "file", testFile)
 		cmd := ""
 
-		if tr.ReportToK6Cloud {
+		if tr.Type == tester.Load {
 			cmd = fmt.Sprintf("%s k6 run %s --out cloud", formatEnv(envVars), testFile)
 		} else {
 			cmd = fmt.Sprintf("%s k6 run %s", formatEnv(envVars), testFile)

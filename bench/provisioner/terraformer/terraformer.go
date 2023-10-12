@@ -21,7 +21,6 @@ type Terraformer struct {
 	TerraformTemplate *template.Template
 	// Use a remote bucket to cache builds
 	RemoteCache bool
-	VmEnabled   bool
 }
 
 // State contains all the data relevant to manage VM's
