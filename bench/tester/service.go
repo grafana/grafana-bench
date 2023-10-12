@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"os"
 	"path"
+
+	"log/slog"
 )
 
 type TesterService struct {
+	Log              *slog.Logger
 	LocalDir         string
 	UseCompiledTests bool
 	// location of the test suite in the workdir
@@ -21,7 +24,9 @@ type TesterService struct {
 	GrafanaTestRepo  string
 }
 
-func NewTester(ctx context.Context, localDir string, useCompiledTests bool, grafanaTestRepo, k6CloudProjectId, k6CloudToken string) *TesterService {
+func NewTester(ctx context.Context, log *slog.Logger, localDir string, useCompiledTests bool, grafanaTestRepo, k6CloudProjectId, k6CloudToken string) *TesterService {
+	log = log.With("svc", "tester")
+
 	err := os.MkdirAll(localDir, 0755)
 	if err != nil {
 		panic(fmt.Errorf("tester: could not create test service working directory: %w", err))
@@ -40,6 +45,7 @@ func NewTester(ctx context.Context, localDir string, useCompiledTests bool, graf
 	}
 
 	return &TesterService{
+		Log:              log,
 		LocalDir:         localDir,
 		UseCompiledTests: useCompiledTests,
 		TestSuiteDir:     testSuiteDir,

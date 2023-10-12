@@ -14,7 +14,6 @@ import (
 
 	"github.com/grafana/grafana-bench/bench/tester"
 	"github.com/grafana/grafana-bench/bench/utils"
-	"github.com/unknwon/log"
 )
 
 var _ ProvisionDriver = (*HGDriver)(nil)
@@ -107,7 +106,7 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 			}
 
 			// scenario + testDuration will be in milliseconds
-			td, err := parseDurationFromJsonFile(scenarioName, jsonFile)
+			td, err := parseDurationFromJsonFile(ps.Log, scenarioName, jsonFile)
 			if err != nil {
 				ps.Log.Info("error processing json file", "error", err)
 			}
@@ -118,7 +117,7 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 			var id, url string
 			totalDuration += td.TotalDuration
 			if tr.Type == tester.Load {
-				id, url, err = parseK6CloudIdentifiersFromCLIOutput(buf.Bytes())
+				id, url, err = parseK6CloudIdentifiersFromCLIOutput(ps.Log, buf.Bytes())
 				if err != nil {
 					ps.Log.Warn("error parsing cloud run from K6 summary", "error", err)
 				}
@@ -183,13 +182,13 @@ func (d *HGDriver) WaitForReady(ctx context.Context, ps *ProvisionState) {
 
 // Provision not implemented for hosted grafana driver
 func (d *HGDriver) Provision(ctx context.Context, ps *ProvisionState) (func() error, error) {
-	log.Warn("provision not implemented for provision driver")
+	ps.Log.Warn("provision not implemented for provision driver")
 	return NilFunc, nil
 }
 
 // Provision not implemented for hosted grafana driver. state is not written to
 // disk
 func (d *HGDriver) Destroy(ctx context.Context, ps *ProvisionState) error {
-	log.Warn("destroy not implemented for provision driver")
+	ps.Log.Warn("destroy not implemented for provision driver")
 	return nil
 }

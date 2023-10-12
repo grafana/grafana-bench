@@ -1,7 +1,6 @@
 package tester
 
 import (
-	"log"
 	"path"
 	"strings"
 
@@ -9,10 +8,9 @@ import (
 )
 
 // BundleTestSuite bundles the test suite into a tarball
-// TODO only ship lib and tests dir from suite directory
 func (tr *TestRun) PrepareTestBundle(bundlePath string) error {
-	log.Println("provisioner: compressing test bundle")
-	return utils.CompressFolder(tr.TestSuiteDir, bundlePath)
+	tr.Log.Info("compressing test bundle", "bundlePath", bundlePath)
+	return utils.CompressFolder(tr.TestRoot, bundlePath)
 }
 
 // return the folder of the testfile relative to testSuite/tests/

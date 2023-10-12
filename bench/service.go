@@ -22,7 +22,7 @@ type BenchService struct {
 }
 
 func NewBenchServiceOrPanic(ctx context.Context, log *slog.Logger) (*BenchService, *BenchServiceCfg) {
-	cfg := GetBenchServiceCfgFromEnv(utils.Getwd())
+	cfg := GetBenchServiceCfgFromEnv(log, utils.Getwd())
 
 	buildCache, err := buildcache.NewBuildCache(ctx, log, cfg.buildCachePath, cfg.GCPCredPath, cfg.buildCacheBucket)
 	if err != nil {

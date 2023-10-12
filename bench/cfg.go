@@ -1,7 +1,7 @@
 package bench
 
 import (
-	"log"
+	"log/slog"
 	"os"
 	"path"
 
@@ -56,11 +56,13 @@ type BenchServiceCfg struct {
 	testerGrafanaTestRepo string
 }
 
-func GetBenchServiceCfgFromEnv(root string) *BenchServiceCfg {
+func GetBenchServiceCfgFromEnv(log *slog.Logger, root string) *BenchServiceCfg {
+	log.With("svc", "config")
+
 	// load .env file
 	err := godotenv.Load(".env")
 	if err != nil {
-		log.Println("No .env provided")
+		log.Warn("No .env provided")
 	}
 
 	workPath := env.EnvOrDefault("WORK_PATH", path.Join(root, "work"))

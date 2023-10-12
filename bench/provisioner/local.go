@@ -9,7 +9,6 @@ import (
 	"github.com/grafana/grafana-bench/bench/buildcache"
 	"github.com/grafana/grafana-bench/bench/tester"
 	"github.com/grafana/grafana-bench/bench/utils"
-	"github.com/rs/zerolog/log"
 )
 
 var _ ProvisionDriver = (*LocalDriver)(nil)
@@ -98,7 +97,7 @@ func (d *LocalDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *test
 
 		// run the tests
 		for _, testFile := range tests {
-			log.Info("running test file", "file", testFile)
+			ps.Log.Info("running test file", "file", testFile)
 			envVars["SCENARIO_NAME"] = getScenarioName(testFile)
 
 			args := []string{"run", testFile}
@@ -118,7 +117,7 @@ func (d *LocalDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *test
 			if err != nil {
 				if exitError, ok := err.(*exec.ExitError); ok {
 					cmdString := "k6 " + strings.Join(cmd.Args, " ")
-					log.Info("k6 command exited with err", "status", exitError.ExitCode(), "error", err, "testFile", testFile, "cmd", cmdString)
+					ps.Log.Info("k6 command exited with err", "status", exitError.ExitCode(), "error", err, "testFile", testFile, "cmd", cmdString)
 				}
 			}
 		}
@@ -141,13 +140,13 @@ func (d *LocalDriver) boot(ctx context.Context, ps *ProvisionState, executable s
 		if err != nil {
 			return fmt.Errorf("ERROR killing grafana PID: %w", err)
 		}
-		log.Info("shutdown grafana pid", "pid", cmd.Process.Pid, "provisioner", "local")
+		ps.Log.Info("shutdown grafana pid", "pid", cmd.Process.Pid, "provisioner", "local")
 		return nil
 	}
 
 	err := utils.DoInDir(utils.Getwd(), ps.WorkDir, func() error {
 		if err := cmd.Start(); err != nil {
-			log.Info("Error starting server", "error", err, "provisioner", "local")
+			ps.Log.Info("Error starting server", "error", err, "provisioner", "local")
 			return err
 		}
 		return nil

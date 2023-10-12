@@ -2,7 +2,6 @@ package tester
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -59,7 +58,7 @@ func (tr *TestRun) ResolveTestSuite() error {
 	// clone repo if doesn't exist
 	exists, _ := utils.PathExists(tr.TestSuiteDir)
 	if !exists {
-		log.Println("test-run: cloning build suite")
+		tr.Log.Info("cloning build suite")
 
 		if err := sh.RunV("git", "clone", tr.GrafanaTestRepo, tr.TestSuiteDir); err != nil {
 			return fmt.Errorf("test-run: Error checking out grafana test repo %s", err)
@@ -169,26 +168,4 @@ func (tr *TestRun) GetShortTestRevisionFromCompiled() (string, error) {
 		return "", err
 	}
 	return string(bytes), nil
-}
-
-// Gets commit sha for version of the test suite
-func (tr *TestRun) GetShortTestRevision() string {
-	var suiteRevision string
-	err := utils.DoInDir(tr.LocalDir, tr.TestSuiteDir, func() error {
-		// get the commit hash
-		cmd := exec.Command("git", "rev-parse", "--short", "HEAD")
-		hash, err := cmd.CombinedOutput()
-		if err != nil {
-			return err
-		}
-
-		suiteRevision = strings.TrimSpace(string(hash))
-		return nil
-	})
-
-	if err != nil {
-		log.Println("test-run: Error getting short revision", err)
-	}
-
-	return suiteRevision
 }
