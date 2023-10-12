@@ -69,8 +69,6 @@ func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *bu
 	workDir := path.Join(localDir, "work")
 	stateDir := path.Join(localDir, "state")
 
-	log.Info("provisioner: local path", "dir", localDir)
-
 	state := &ProvisionState{
 		driver:      p.InitDriver(t),
 		Identifier:  uuid.String(),
@@ -87,6 +85,8 @@ func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *bu
 		log.Info("provisioner: writeState set to false. skip writing to disk")
 		return state, nil
 	}
+
+	log.Info("provisioner: local path", "dir", localDir)
 
 	err := os.MkdirAll(state.WorkDir, 0755)
 	if err != nil {

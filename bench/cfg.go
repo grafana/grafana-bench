@@ -63,7 +63,8 @@ func GetBenchServiceCfgFromEnv(root string) *BenchServiceCfg {
 		log.Println("No .env provided")
 	}
 
-	workPath := path.Join(root, "work")
+	workPath := env.EnvOrDefault("WORK_PATH", path.Join(root, "work"))
+
 	return &BenchServiceCfg{
 		WorkPath:         workPath,
 		GrafanaRevision:  env.EnvOrDefault("GRAFANA_REVISION", "branch:main"),
@@ -89,7 +90,7 @@ func GetBenchServiceCfgFromEnv(root string) *BenchServiceCfg {
 		grafanaTmplPath: path.Join(workPath, "grafanaTemplate"),
 
 		// Tester
-		testerPath:             path.Join(workPath, "test"),
+		testerPath:             env.EnvOrDefault("TEST_PATH", path.Join(workPath, "test")),
 		testerUseCompiledTests: env.EnvOrDefaultBool("USE_COMPILED_TESTS", "false"),
 		testerGrafanaTestRepo:  "https://github.com/grafana/grafana-api-tests",
 	}

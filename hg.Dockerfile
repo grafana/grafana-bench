@@ -40,7 +40,8 @@ COPY --from=builder /app/grafana-bench /usr/local/bin/grafana-bench
 USER bench
 WORKDIR /home/bench
 
-COPY work/test/suite/dist /home/bench/tests
+COPY work/test/suite/dist/tests /home/bench/tests
+COPY work/test/suite/dist/.version /home/bench/tests/.version
 
 ENTRYPOINT [ "./docker_startup.sh" ]
 

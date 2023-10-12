@@ -25,7 +25,7 @@ func EnvOrDefault(environmentVarName, defaultValue string) string {
 
 // Get boolean environment variable. panics if there's an issue with conversion
 func EnvOrDefaultBool(environmentVarName, defaultValue string) bool {
-	bool, err := strconv.ParseBool(EnvOrDefault(environmentVarName, defaultValue))
+	bool, err := strconv.ParseBool(strings.ToLower(EnvOrDefault(environmentVarName, defaultValue)))
 	if err != nil {
 		panic(fmt.Sprintf("error reading bool env variable %s: %s", environmentVarName, err))
 	}

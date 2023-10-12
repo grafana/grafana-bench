@@ -3,7 +3,6 @@ package utils
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,7 +25,7 @@ func Getwd() string {
 // Do function in a directory
 func DoInDir(workdir string, operationDir string, fn func() error) error {
 	if err := os.Chdir(operationDir); err != nil {
-		return fmt.Errorf("utils: changing director <%s>: %w", operationDir, err)
+		return fmt.Errorf("utils: changing directory <%s>: %w", operationDir, err)
 	}
 
 	// TODO find a more graceful way to log error and alert
@@ -89,13 +88,13 @@ func GlobByPrefix(dir string, prefix string) ([]string, error) {
 func List(path string) ([]string, error) {
 	fileList := []string{}
 
-	files, err := ioutil.ReadDir(path)
+	files, err := os.ReadDir(path)
 	if err != nil {
 		return fileList, err
 	}
 
 	for _, file := range files {
-		if file.Mode().IsRegular() {
+		if !file.Type().IsRegular() {
 			fileList = append(fileList, filepath.Join(path, file.Name()))
 		}
 	}

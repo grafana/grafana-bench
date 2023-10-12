@@ -26,6 +26,7 @@ func NewHGDriver() *HGDriver {
 
 func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.TestRun) error {
 	log := log.With("provisioner", "hg")
+	log.Info("running test suite")
 
 	if err := tr.ResolveTestSuite(); err != nil {
 		return fmt.Errorf("provisioner: %w", err)
@@ -162,6 +163,8 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 
 		return nil
 	})
+
+	log.Info("test suite finished")
 
 	return err
 }

@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"log/slog"
+
 	"github.com/grafana/grafana-bench/bench"
 	"github.com/grafana/grafana-bench/bench/builder"
 	"github.com/grafana/grafana-bench/bench/provisioner"
@@ -17,18 +19,26 @@ import (
 func main() {
 	// setup
 	ctx := context.Background()
+	log := slog.New(slog.NewTextHandler(os.Stderr, nil))
+
+	// START HERE
+	// 1. plumb the logger through to services
+	// 2. update log statements in this file
+	// 3. use main logger in provisioner
+	// 4. figure out why we're not exiting from docker run script
+
 	benchSvc, benchCfg := bench.NewBenchServiceOrPanic(ctx)
 
 	// Setup bench service with defaults for CLI
 	if len(os.Args) != 6 {
-		log.Println("Missing parameters. need 6 args; address port username password tests")
+		log.Error("Missing parameters. need 6 args; address port username password tests")
 
 		// this will panic
-		log.Println("address:", os.Args[1])
-		log.Println("port:", os.Args[2])
-		log.Println("username:", os.Args[3])
-		log.Println("password:", os.Args[4])
-		log.Println("tests:", os.Args[5])
+		log.Info("address:", os.Args[1])
+		log.Info("port:", os.Args[2])
+		log.Info("username:", os.Args[3])
+		log.Info("password:", os.Args[4])
+		log.Info("tests:", os.Args[5])
 	}
 
 	var (

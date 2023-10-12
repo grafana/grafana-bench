@@ -164,8 +164,7 @@ func (tr *TestRun) GetTestSuiteFiles() ([]string, error) {
 
 // read .version from dist/ folder in test repo
 func (tr *TestRun) GetShortTestRevisionFromCompiled() (string, error) {
-	versionFile := path.Join(tr.TestSuiteDir, "dist", ".version")
-	bytes, err := os.ReadFile(versionFile)
+	bytes, err := os.ReadFile(tr.VersionFilePath)
 	if err != nil {
 		return "", err
 	}

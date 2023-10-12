@@ -13,7 +13,9 @@ type TesterService struct {
 	// location of the test suite in the workdir
 	TestSuiteDir string
 	// location of tests in side the test suite
-	TestRoot         string
+	TestRoot string
+	// location of the .version file within the test repo
+	VersionFilePath  string
 	K6CloudToken     string
 	K6CloudProjectId string
 	GrafanaTestRepo  string
@@ -25,22 +27,24 @@ func NewTester(ctx context.Context, localDir string, useCompiledTests bool, graf
 		panic(fmt.Errorf("tester: could not create test service working directory: %w", err))
 	}
 
-	var testSuiteDir, testRoot string
+	var testSuiteDir, testRoot, versionFilePath string
 	if useCompiledTests {
-		// assume directly in the test folder if compiled
-		testSuiteDir = path.Join(localDir)
-		testRoot = path.Join(localDir)
+		// just use the same folder for everything if precompiled
+		testSuiteDir = localDir
+		testRoot = localDir
+		versionFilePath = path.Join(localDir, ".version")
 	} else {
-		// location of repo on disk
 		testSuiteDir = path.Join(localDir, "suite")
-		// location of tests in repo
 		testRoot = path.Join(testSuiteDir, "dist", "tests")
+		versionFilePath = path.Join(testRoot, ".version")
 	}
 
 	return &TesterService{
 		LocalDir:         localDir,
+		UseCompiledTests: useCompiledTests,
 		TestSuiteDir:     testSuiteDir,
 		TestRoot:         testRoot,
+		VersionFilePath:  versionFilePath,
 		GrafanaTestRepo:  grafanaTestRepo,
 		K6CloudToken:     k6CloudToken,
 		K6CloudProjectId: k6CloudProjectId,
