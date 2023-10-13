@@ -116,7 +116,7 @@ func (p *ProvisionerService) NewLocalDevState(ctx context.Context) *ProvisionSta
 		Type:       Local,
 		Build:      nil,
 		GrafanaInstance: &VMInstance{
-			Address:     "localhost",
+			Host:        "localhost",
 			ServicePort: "3000",
 		},
 	}

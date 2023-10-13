@@ -39,9 +39,9 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 	envVars := map[string]string{
 		"MACHINE_SPEC":                machineSpec,
 		"TEST_SUITE_REVISION":         tr.SuiteRevision,
-		"GT_URL":                      ps.GrafanaInstance.HttpsServiceAddress(),
-		"GT_USERNAME":                 ps.GrafanaInstance.GrafanaUser,
-		"GT_PASSWORD":                 ps.GrafanaInstance.GrafanaPassword,
+		"GT_URL":                      ps.GrafanaInstance.SchemeServiceAddress(),
+		"GT_USERNAME":                 ps.GrafanaInstance.ServiceUser,
+		"GT_PASSWORD":                 ps.GrafanaInstance.ServicePassword,
 		"K6_PROMETHEUS_RW_USERNAME":   os.Getenv("K6_PROMETHEUS_RW_USERNAME"),
 		"K6_PROMETHEUS_RW_PASSWORD":   os.Getenv("K6_PROMETHEUS_RW_PASSWORD"),
 		"K6_PROMETHEUS_RW_SERVER_URL": os.Getenv("K6_PROMETHEUS_RW_SERVER_URL"),

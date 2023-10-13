@@ -2,6 +2,8 @@ package provisioner
 
 import (
 	"fmt"
+	"net"
+	"net/url"
 	"os"
 	"path"
 	"strings"
@@ -11,16 +13,70 @@ import (
 )
 
 type VMInstance struct {
-	User            string `json:"user"`
-	Address         string `json:"address"`
+	StateDir     string `json:"stateDir"`
+	InstanceName string `json:"instanceName"`
+
+	User          string `json:"user"`
+	Host          string `json:"address"`
+	SSHPort       string `json:"sshPort"`
+	SSHKeyPath    string `json:"sshKeyPath"`
+	SSHKeyPubPath string `json:"sshKeyPubPath"`
+
 	ServicePort     string `json:"servicePort"`
-	SSHPort         string `json:"sshPort"`
-	SSHKeyPath      string `json:"sshKeyPath"`
-	SSHKeyPubPath   string `json:"sshKeyPubPath"`
-	StateDir        string `json:"stateDir"`
-	InstanceName    string `json:"instanceName"`
-	GrafanaUser     string `json:"grafanaUser"`
-	GrafanaPassword string `json:"grafanaPassword"`
+	ServiceScheme   string `json:"serviceScheme"`
+	ServiceUser     string `json:"grafanaUser"`
+	ServicePassword string `json:"grafanaPassword"`
+}
+
+// Creates a VM Instance with Grafana Credentials. Does not configure ssh
+// credentials.
+// Takes a fully qualified address such as https://jefflevinslunch.grafana.net
+// and populates the service fields based on the address. If a port is not
+// included in the address, it will be determined based on the scheme
+func NewReadOnlyGrafanaVM(address, grafanaUser, grafanaPassword string) *VMInstance {
+	host, port, scheme, err := parseServiceAddress(address)
+	if err != nil {
+		panic(fmt.Errorf("error parsing grafana uri: %w", err))
+	}
+
+	return &VMInstance{
+		Host:            host,
+		ServicePort:     port,
+		ServiceScheme:   scheme,
+		ServiceUser:     grafanaUser,
+		ServicePassword: grafanaPassword,
+	}
+}
+
+// parseServiceAddress takes an address such as
+// https://jefflevinslunch.grafana.net:3000 and returns scheme, host, port. if
+// no port is provided, we assume standard ports based on the url scheme
+func parseServiceAddress(address string) (string, string, string, error) {
+	u, err := url.Parse(address)
+	if err != nil {
+		panic(fmt.Errorf("error parsing grafana uri: %w", err))
+	}
+
+	// first assume host + port based on scheme
+	host := u.Host
+	port := ""
+	if u.Scheme == "https" {
+		port = "443"
+	} else if u.Scheme == "http" {
+		port = "80"
+	} else {
+		return "", "", "", fmt.Errorf("unknown scheme: %s. address: %s", u.Scheme, address)
+	}
+
+	// check if host includes a port. if it does, split those apart
+	if strings.Contains(u.Host, ":") {
+		host, port, err = net.SplitHostPort(u.Host)
+		if err != nil {
+			panic(fmt.Errorf("error parsing grafana uri: %w", err))
+		}
+	}
+
+	return u.Scheme, host, port, nil
 }
 
 // ReadVM is called after terraform apply. It reads the VM info from the state
@@ -29,60 +85,56 @@ type VMInstance struct {
 // This assumes a file named, ip_address, sshkey, sshkeypub
 // terraform outputs data into. eac
 func readVM(stateDir, instanceName string) (*VMInstance, error) {
-	ipBytes, err := os.ReadFile(vmFilePath(stateDir, instanceName, "ip_address"))
+
+	// TODO figure out how to get service port in here
+
+	vmStateDir := path.Join(stateDir, instanceName)
+
+	ipBytes, err := os.ReadFile(path.Join(vmStateDir, "ip_address"))
 	if err != nil {
 		return nil, err
 	}
 
 	servicePort := ""
-	exists, _ := utils.PathExists(vmFilePath(stateDir, instanceName, "service_port"))
+	exists, _ := utils.PathExists(path.Join(vmStateDir, "service_port"))
 	if exists {
-		p, err := os.ReadFile(vmFilePath(stateDir, instanceName, "service_port"))
+		p, err := os.ReadFile(path.Join(vmStateDir, "service_port"))
 		if err != nil {
 			return nil, err
 		}
 		servicePort = string(p)
 	}
 
-	userBytes, err := os.ReadFile(vmFilePath(stateDir, instanceName, "user"))
+	userBytes, err := os.ReadFile(path.Join(vmStateDir, "user"))
 	if err != nil {
 		return nil, err
 	}
 
 	return &VMInstance{
-		Address:       string(ipBytes),
+		Host:          string(ipBytes),
 		ServicePort:   servicePort,
 		User:          string(userBytes),
 		SSHPort:       "22",
-		SSHKeyPath:    vmFilePath(stateDir, instanceName, "key"),
-		SSHKeyPubPath: vmFilePath(stateDir, instanceName, "key_pub"),
+		SSHKeyPath:    path.Join(vmStateDir, "key"),
+		SSHKeyPubPath: path.Join(vmStateDir, "key_pub"),
 		StateDir:      stateDir,
 		InstanceName:  instanceName,
 	}, nil
 }
 
-func vmFilePath(stateDir, instanceName, file string) string {
-	return path.Join(stateDir, instanceName, file)
-}
-
 // Returns ip_address:servicePort
 func (v *VMInstance) ServiceAddress() string {
-	return v.Address + ":" + v.ServicePort
+	return v.Host + ":" + v.ServicePort
 }
 
-// Returns https://ip_address:servicePort
-func (v *VMInstance) HttpsServiceAddress() string {
-	return "https://" + v.ServiceAddress()
-}
-
-// Returns http://ip_address:servicePort
-func (v *VMInstance) HttpServiceAddress() string {
-	return "http://" + v.ServiceAddress()
+// Returns {scheme}://{ip_address}:{servicePort}
+func (v *VMInstance) SchemeServiceAddress() string {
+	return fmt.Sprintf("%s://%s:%s", v.ServiceScheme, v.Host, v.ServicePort)
 }
 
 // Return ip_address:sshPort
 func (v *VMInstance) SSHAddress() string {
-	return v.Address + ":" + v.SSHPort
+	return v.Host + ":" + v.SSHPort
 }
 
 // Returns a connection to the vm instance
@@ -113,7 +165,7 @@ func (v *VMInstance) Connect() (*ssh.Client, error) {
 	return ssh.Dial("tcp", v.SSHAddress(), config)
 }
 
-func (v *VMInstance) Run(connection *ssh.Client, cmd string) error {
+func (v *VMInstance) RunCmd(connection *ssh.Client, cmd string) error {
 	// Create a new session
 	session, err := connection.NewSession()
 	if err != nil {
@@ -132,8 +184,8 @@ func (v *VMInstance) Run(connection *ssh.Client, cmd string) error {
 func (v *VMInstance) GetConnectionString() string {
 	return fmt.Sprintf("ssh %s@%s -i %s -p %s -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null",
 		v.User,
-		v.Address,
-		vmFilePath(v.StateDir, v.InstanceName, "key"),
+		v.Host,
+		path.Join(v.StateDir, v.InstanceName, "key"),
 		v.SSHPort,
 	)
 }
