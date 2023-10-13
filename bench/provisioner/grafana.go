@@ -9,6 +9,9 @@ import (
 
 func GetGrafanaBuildVersion(vm *VMInstance) (string, error) {
 	grafanaSession, err := GetGrafanaSession(vm)
+	if err != nil {
+		return "", err
+	}
 
 	targetURL := vm.HttpsServiceAddress() + "/api/frontend/settings"
 	req, err := http.NewRequest("GET", targetURL, nil)
