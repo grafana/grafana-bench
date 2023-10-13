@@ -31,7 +31,6 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 		return fmt.Errorf("provisioner: %w", err)
 	}
 
-	// verify we have tests
 	machineSpec, err := d.GetMachineSpec(ctx, ps)
 	if err != nil {
 		return err
@@ -79,6 +78,7 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 				"--out", "json=" + jsonFile,
 				"--tag", "SUITE_RUN=" + ps.Identifier}
 
+			// TODO fix k6 cloud logic
 			if tr.Type == tester.Smoke {
 				args = append(args, "--iterations", "1", "--vus", "1", "--out", "cloud")
 			}
@@ -126,7 +126,6 @@ func (d *HGDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester.
 			testIterations, err := parseIterationCountFromCLIOutput(buf.Bytes())
 			if err != nil {
 				ps.Log.Warn("error parsing iterations from k6 summary", "error", err)
-
 			}
 
 			// test complete log
