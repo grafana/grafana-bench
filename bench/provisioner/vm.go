@@ -34,7 +34,7 @@ type VMInstance struct {
 // and populates the service fields based on the address. If a port is not
 // included in the address, it will be determined based on the scheme
 func NewReadOnlyGrafanaVM(address, grafanaUser, grafanaPassword string) *VMInstance {
-	host, port, scheme, err := parseServiceAddress(address)
+	scheme, host, port, err := parseServiceAddress(address)
 	if err != nil {
 		panic(fmt.Errorf("error parsing grafana uri: %w", err))
 	}
