@@ -21,7 +21,7 @@ func main() {
 	benchSvc, benchCfg := bench.NewBenchServiceOrPanic(ctx, log)
 
 	// Setup bench service with defaults for CLI
-	if len(os.Args) != 7 {
+	if len(os.Args) != 6 {
 		log.Error("Missing parameters. need 6 args; address port username password tests", "argCount", len(os.Args))
 
 		// one of these will panic and exit, probably
