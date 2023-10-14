@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	"log/slog"
@@ -19,11 +18,6 @@ func main() {
 	// setup
 	ctx := context.Background()
 	log := slog.New(slog.NewTextHandler(os.Stderr, nil))
-
-	// START HERE
-	// 5. plumb test type argument through to provisioner
-	// 4. figure out why we're not exiting from docker run script
-
 	benchSvc, benchCfg := bench.NewBenchServiceOrPanic(ctx, log)
 
 	// Setup bench service with defaults for CLI
@@ -34,27 +28,25 @@ func main() {
 		log.Error("arg[0]", "exec", os.Args[0])
 		log.Error("arg[1]", "testType", os.Args[1])
 		log.Error("arg[2]", "address", os.Args[2])
-		log.Error("arg[3]", "port", os.Args[3])
-		log.Error("arg[4]", "username", os.Args[4])
-		log.Error("arg[5]", "password", os.Args[5])
-		log.Error("arg[6]", "tests", os.Args[6])
+		log.Error("arg[4]", "username", os.Args[3])
+		log.Error("arg[5]", "password", os.Args[4])
+		log.Error("arg[6]", "tests", os.Args[5])
 	}
 
 	var (
 		testType  = os.Args[1]
 		address   = os.Args[2]
-		port      = os.Args[3]
-		username  = os.Args[4]
-		password  = os.Args[5]
-		testSuite = os.Args[6]
+		username  = os.Args[3]
+		password  = os.Args[4]
+		testSuite = os.Args[5]
 	)
 
-	if err := hgtest(ctx, log, benchSvc, benchCfg, testType, address, port, username, password, testSuite); err != nil {
+	if err := hgtest(ctx, log, benchSvc, benchCfg, testType, address, username, password, testSuite); err != nil {
 		panic(err)
 	}
 }
 
-func hgtest(ctx context.Context, log *slog.Logger, benchSvc *bench.BenchService, benchCfg *bench.BenchServiceCfg, testType, address, port, username, password, tests string) error {
+func hgtest(ctx context.Context, log *slog.Logger, benchSvc *bench.BenchService, benchCfg *bench.BenchServiceCfg, testType, address, username, password, tests string) error {
 	log = log.With("svc", "hgtest")
 
 	// k6 cloud credentials
@@ -62,12 +54,7 @@ func hgtest(ctx context.Context, log *slog.Logger, benchSvc *bench.BenchService,
 	benchSvc.Tester.K6CloudToken = os.Getenv("K6_CLOUD_TOKEN")
 
 	// populate grafana vm
-	grafanaInstance := &provisioner.VMInstance{
-		Address:         strings.TrimPrefix(address, "https://"),
-		ServicePort:     port,
-		GrafanaUser:     username,
-		GrafanaPassword: password,
-	}
+	grafanaInstance := provisioner.NewReadOnlyGrafanaVM(address, username, password)
 
 	grafanaVersion, err := provisioner.GetGrafanaBuildVersion(grafanaInstance)
 	if err != nil {
@@ -99,7 +86,7 @@ func hgtest(ctx context.Context, log *slog.Logger, benchSvc *bench.BenchService,
 	}
 
 	// set identifier for suite run
-	ps.Identifier = GetNewSuiteIdentifier(build, ps, tr)
+	ps.Identifier = getNewSuiteIdentifier(build, ps, tr)
 	log.Info("suite identifier", "identifier", ps.Identifier)
 
 	// set vm
@@ -120,7 +107,7 @@ func hgtest(ctx context.Context, log *slog.Logger, benchSvc *bench.BenchService,
 //
 // smoke-13:37:35-api-tests-cb5adc0-graf-10.2.0-60657
 // load-13:37:35-api-tests-cb5adc0-graf-10.2.0-60657
-func GetNewSuiteIdentifier(b *builder.Build, ps *provisioner.ProvisionState, tr *tester.TestRun) string {
+func getNewSuiteIdentifier(b *builder.Build, ps *provisioner.ProvisionState, tr *tester.TestRun) string {
 	// {type}-{time}-api-tests-{sha}-graf-{version}
 	return fmt.Sprintf("%s-%s-api-tests-%s-graf-%s",
 		tr.Type,

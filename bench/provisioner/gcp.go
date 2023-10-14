@@ -167,7 +167,7 @@ func (d *GCPDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester
 
 	// download the test bundle
 	ps.Log.Info("downloading test bundle", "url", bundleUrl)
-	err = ps.K6Instance.Run(connection, fmt.Sprintf("curl \"%s\" -o /tmp/testbundle.tar.gz", bundleUrl))
+	err = ps.K6Instance.RunCmd(connection, fmt.Sprintf("curl \"%s\" -o /tmp/testbundle.tar.gz", bundleUrl))
 	if err != nil {
 		return err
 	}
@@ -175,7 +175,7 @@ func (d *GCPDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester
 	// extract the test suite
 	testSuitePath := "/tmp/tests"
 	ps.Log.Info("unpacking test bundle", "path", testSuitePath)
-	err = ps.K6Instance.Run(connection, fmt.Sprintf("mkdir -p %s && tar -xvf /tmp/testbundle.tar.gz --directory=/tmp/tests", testSuitePath))
+	err = ps.K6Instance.RunCmd(connection, fmt.Sprintf("mkdir -p %s && tar -xvf /tmp/testbundle.tar.gz --directory=/tmp/tests", testSuitePath))
 	if err != nil {
 		return err
 	}
@@ -197,7 +197,7 @@ func (d *GCPDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester
 	envVars := map[string]string{
 		"MACHINE_SPEC":        machineSpec,
 		"TEST_SUITE_REVISION": tr.SuiteRevision,
-		"GT_URL":              ps.GrafanaInstance.HttpServiceAddress(),
+		"GT_URL":              ps.GrafanaInstance.SchemeServiceAddress(),
 	}
 
 	if tr.Type == tester.Load {
@@ -216,7 +216,7 @@ func (d *GCPDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *tester
 		}
 
 		ps.Log.Info("running test on VM", "cmd", cmd)
-		err := ps.K6Instance.Run(connection, cmd)
+		err := ps.K6Instance.RunCmd(connection, cmd)
 		if err != nil {
 			return err
 		}

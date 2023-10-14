@@ -13,7 +13,7 @@ func GetGrafanaBuildVersion(vm *VMInstance) (string, error) {
 		return "", err
 	}
 
-	targetURL := vm.HttpsServiceAddress() + "/api/frontend/settings"
+	targetURL := vm.SchemeServiceAddress() + "/api/frontend/settings"
 	req, err := http.NewRequest("GET", targetURL, nil)
 	if err != nil {
 		return "", fmt.Errorf("Failed to create request: %w", err)
@@ -46,14 +46,14 @@ func GetGrafanaBuildVersion(vm *VMInstance) (string, error) {
 
 // logs into grafana instance and returns a session cookie
 func GetGrafanaSession(vm *VMInstance) (*http.Cookie, error) {
-	loginURL := vm.HttpsServiceAddress() + "/login"
+	loginURL := vm.SchemeServiceAddress() + "/login"
 
 	loginPayload := struct {
 		User     string `json:"user"`
 		Password string `json:"password"`
 	}{
-		User:     vm.GrafanaUser,
-		Password: vm.GrafanaPassword,
+		User:     vm.ServiceUser,
+		Password: vm.ServicePassword,
 	}
 
 	jsonPayload, err := json.Marshal(loginPayload)
@@ -84,7 +84,7 @@ func GetGrafanaSession(vm *VMInstance) (*http.Cookie, error) {
 		if err != nil {
 			return nil, fmt.Errorf("Error logging into grafana instance. Failed to decode response: %w", err)
 		}
-		return nil, fmt.Errorf("Error logging into grafana instance. statusCode:", resp.StatusCode, "response:", responsePayload)
+		return nil, fmt.Errorf("Error logging into grafana instance. statusCode: %s, response: %s", resp.StatusCode, responsePayload)
 	}
 
 	// get the build version
