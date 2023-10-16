@@ -156,8 +156,14 @@ func (tr *TestRun) GetTestSuiteFiles() ([]string, error) {
 		return []string{p}, nil
 	}
 
+	var d string
+	if tr.Tests == "all" {
+		d = tr.TestRoot
+	} else {
+		d = path.Join(tr.TestRoot, tr.Tests)
+	}
+
 	// folder if no extension
-	d := path.Join(tr.TestRoot, tr.Tests)
 	exists, _ := utils.PathExists(d)
 	if !exists {
 		return []string{}, fmt.Errorf("test-run: Path %s was not found. double check you passed the correct argument when creating test run", d)

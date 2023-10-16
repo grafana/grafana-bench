@@ -37,10 +37,10 @@ func NilFunc() error {
 func WaitForLiveGrafana(log *slog.Logger, address string) {
 	for {
 		if IsLive(log, address) {
-			log.Info("Server is ready!")
+			log.Info("Grafana server is ready!")
 			break
 		}
-		log.Info("Waiting for server...", "address", address)
+		log.Info("Waiting for grafana server...", "address", address)
 		time.Sleep(time.Second)
 	}
 }
