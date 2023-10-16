@@ -22,15 +22,15 @@ func main() {
 
 	// Setup bench service with defaults for CLI
 	if len(os.Args) != 6 {
-		log.Error("Missing parameters. need 6 args; address port username password tests", "argCount", len(os.Args))
+		log.Error("Missing parameters. need 6 args; testType grafanaAddress username password tests", "argCount", len(os.Args))
 
 		// one of these will panic and exit, probably
 		log.Error("arg[0]", "exec", os.Args[0])
 		log.Error("arg[1]", "testType", os.Args[1])
 		log.Error("arg[2]", "address", os.Args[2])
 		log.Error("arg[4]", "username", os.Args[3])
-		log.Error("arg[5]", "password", os.Args[4])
-		log.Error("arg[6]", "tests", os.Args[5])
+		log.Error("arg[4]", "password", os.Args[4])
+		log.Error("arg[5]", "tests", os.Args[5])
 	}
 
 	var (

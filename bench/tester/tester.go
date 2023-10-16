@@ -20,6 +20,17 @@ const (
 	Load TestRunType = "load"
 )
 
+func (trt TestRunType) String() string {
+	switch trt {
+	case Smoke:
+		return "smoke"
+	case Load:
+		return "load"
+	default:
+		panic("Unknown TestRunType")
+	}
+}
+
 // Gets the TestRunType from a string
 func TestRunTypeFromString(trt string) TestRunType {
 	trt = strings.ToLower(trt)
@@ -35,7 +46,6 @@ func TestRunTypeFromString(trt string) TestRunType {
 
 type TestRun struct {
 	*TesterService
-
 	// Check, Smoke, Load. See TestRunType
 	Type TestRunType
 	// relative path to file or folder to run in the test suite
@@ -167,5 +177,5 @@ func (tr *TestRun) GetShortTestRevisionFromCompiled() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return string(bytes), nil
+	return strings.TrimSpace(string(bytes)), nil
 }

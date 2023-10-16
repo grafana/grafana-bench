@@ -41,7 +41,6 @@ USER bench
 WORKDIR /home/bench
 
 COPY work/test/suite/dist/tests /home/bench/tests
-COPY work/test/suite/dist/.version /home/bench/tests/.version
 
 ENTRYPOINT [ "./docker_startup.sh" ]
 
