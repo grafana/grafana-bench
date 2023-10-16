@@ -96,7 +96,8 @@ func hgtest(ctx context.Context, log *slog.Logger, benchSvc *bench.BenchService,
 
 	// run the tests
 	if err := ps.RunTests(ctx, tr); err != nil {
-		log.Error("error running tests", "err", err)
+		log.Error(err.Error())
+		os.Exit(1)
 	}
 
 	return nil

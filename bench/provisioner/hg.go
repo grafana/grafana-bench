@@ -277,6 +277,10 @@ func smokeTest(ctx context.Context, ps *ProvisionState, tr *tester.TestRun, mach
 			"anyFailures", anyFailures,
 		)
 
+		if anyFailures {
+			return fmt.Errorf("Smoke test failed. Too many test failures. Review the logs for specific failures.")
+		}
+
 		return nil
 	})
 }
