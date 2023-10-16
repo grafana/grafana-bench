@@ -31,7 +31,7 @@ func (ct CacheObjectType) String() string {
 	case TypeTestBundle:
 		return "testBundle"
 	default:
-		return "Unknown"
+		panic("Unknown CacheObjectType")
 	}
 }
 
