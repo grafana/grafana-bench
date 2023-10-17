@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.4.2-labs
-FROM grafana/k6:0.46.0 AS k6
+FROM grafana/k6:0.47.0 AS k6
 
 FROM golang:1.21-alpine AS builder
 
