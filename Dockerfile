@@ -33,11 +33,11 @@ FROM alpine:3.18 AS runtime
 RUN apk add --no-cache ca-certificates git
 RUN adduser -D -u 1010 -g 1010 bench
 
-COPY docker_startup.sh /home/bench/docker_startup.sh
 COPY --from=k6 /usr/bin/k6 /usr/local/bin/k6
 COPY --from=builder /app/grafana-bench /usr/local/bin/grafana-bench
 
 USER bench
 WORKDIR /home/bench
+RUN mkdir /home/bench/tests
 
-ENTRYPOINT [ "./docker_startup.sh" ]
+ENTRYPOINT ["grafana-bench"]

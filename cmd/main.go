@@ -12,12 +12,15 @@ import (
 	"github.com/grafana/grafana-bench/bench/builder"
 	"github.com/grafana/grafana-bench/bench/provisioner"
 	"github.com/grafana/grafana-bench/bench/tester"
+	"github.com/grafana/grafana-bench/bench/utils"
 )
 
 func main() {
 	// setup
 	ctx := context.Background()
 	log := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	cfg := bench.GetBenchServiceCfgFromEnv(log, utils.Getwd())
+
 	benchSvc, benchCfg := bench.NewBenchServiceOrPanic(ctx, log)
 
 	// Setup bench service with defaults for CLI
@@ -34,14 +37,22 @@ func main() {
 	}
 
 	var (
-		testType  = os.Args[1]
-		address   = os.Args[2]
-		username  = os.Args[3]
-		password  = os.Args[4]
-		testSuite = os.Args[5]
+		testType = os.Args[1]
+		address  = os.Args[2]
+		username = os.Args[3]
+		password = os.Args[4]
+		tests    = os.Args[5]
 	)
 
-	if err := hgtest(ctx, log, benchSvc, benchCfg, testType, address, username, password, testSuite); err != nil {
+	log.Info("Bench run params",
+		"testType", testType,
+		"grafanaAddress", address,
+		"grafanaUser", username,
+		"tests", tests,
+		"k6ProjectId", cfg.K6CloudProjectID,
+	)
+
+	if err := hgtest(ctx, log, benchSvc, benchCfg, testType, address, username, password, tests); err != nil {
 		panic(err)
 	}
 }
