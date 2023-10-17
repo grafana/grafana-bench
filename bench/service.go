@@ -23,7 +23,10 @@ type BenchService struct {
 
 func NewBenchServiceOrPanic(ctx context.Context, log *slog.Logger) (*BenchService, *BenchServiceCfg) {
 	cfg := GetBenchServiceCfgFromEnv(log, utils.Getwd())
+	return NewBenchServiceFromCfgOrPanic(ctx, log, cfg)
+}
 
+func NewBenchServiceFromCfgOrPanic(ctx context.Context, log *slog.Logger, cfg *BenchServiceCfg) (*BenchService, *BenchServiceCfg) {
 	buildCache, err := buildcache.NewBuildCache(ctx, log, cfg.buildCachePath, cfg.GCPCredPath, cfg.buildCacheBucket)
 	if err != nil {
 		panic(fmt.Errorf("error instantiating build cache: %w", err))
