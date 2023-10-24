@@ -149,6 +149,7 @@ func loadTest(ctx context.Context, ps *ProvisionState, tr *tester.TestRun, machi
 			ps.Log.Info("testRun",
 				"suiteRun", ps.Identifier,
 				"scenarioName", scenarioName,
+				"grafanaUrl", ps.GrafanaInstance.Host,
 				"grafanaVersion", ps.Build.GrafanaRevision,
 				"folder", tr.RelativeFolder(testFile),
 				"testFile", path.Base(testFile),
@@ -168,6 +169,7 @@ func loadTest(ctx context.Context, ps *ProvisionState, tr *tester.TestRun, machi
 			// TODO pass the trigger from argo. (Manual, CI / release channel)
 			"suiteRun", ps.Identifier,
 			"testTrigger", "CI",
+			"grafanaUrl", ps.GrafanaInstance.Host,
 			"grafanaVersion", ps.Build.GrafanaRevision,
 			"buildVersion", ps.Build.GrafanaRevision,
 			"startTime", startTime.Format(time.RFC3339),
