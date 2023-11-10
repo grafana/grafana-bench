@@ -1,6 +1,7 @@
 package buildcache
 
 import (
+	"fmt"
 	"path"
 	"strings"
 
@@ -59,4 +60,18 @@ func (bc *BuildCache) DiskDirectory(ct CacheObjectType) string {
 // Returns object handle for given artifactName
 func (bc *BuildCache) GetObjectHandle(ct CacheObjectType, artifactName string) *storage.ObjectHandle {
 	return bc.Bucket.Object(bc.RemotePath(ct, artifactName))
+}
+
+// generates the name of the build artifact for caching
+// e.g. 6e4fe51fe8f0da7719eb933ef77c6e8b46dae126-darwin-arm64
+func GetArtifactBuildName(grafanaGitRef, arch string) string {
+	// darwin/arm64 -> darwin-arm64
+	arch = strings.Replace(arch, "/", "-", -1)
+	return fmt.Sprintf("%s-%s-grafana-server", grafanaGitRef, arch)
+}
+
+// generates the name of the ini artifact for caching
+// e.g. 6e4fe51fe8f0da7719eb933ef77c6e8b46dae126_defaults.ini
+func GetArtifactININame(grafanaGitRef string) string {
+	return fmt.Sprintf("%s_defaults.ini", grafanaGitRef)
 }

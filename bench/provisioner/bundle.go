@@ -13,22 +13,25 @@ import (
 // Sets up directory with configs needed for testing a grafana
 // build. This method expects the BuildArtifactPath to exist on disk.
 func setupGrafanaWorkdir(ctx context.Context, bc *buildcache.BuildCache, ps *ProvisionState) (string, error) {
+	grafanaBuildArtifactName := buildcache.GetArtifactBuildName(ps.GrafanaBuild.Revision, ps.GrafanaBuild.Arch)
+	grafanaBuildININame := buildcache.GetArtifactININame(ps.GrafanaBuild.Revision)
+
 	// verify build artifact exists in the buildcache
-	resolved, err := bc.Resolve(ctx, buildcache.TypeBuild, ps.Build.ArtifactBuildName)
+	resolved, err := bc.Resolve(ctx, buildcache.TypeBuild, grafanaBuildArtifactName)
 	if err != nil {
 		return "", fmt.Errorf("error checking for grafana executable : %w", err)
 	}
 	if !resolved {
-		return "", fmt.Errorf("grafana executable not found: %s", ps.Build.ArtifactBuildName)
+		return "", fmt.Errorf("grafana executable not found: %s", grafanaBuildArtifactName)
 	}
 
 	// verify defaults.ini exists in the buildcache
-	resolved, err = bc.Resolve(ctx, buildcache.TypeINI, ps.Build.ArtifactININame)
+	resolved, err = bc.Resolve(ctx, buildcache.TypeINI, grafanaBuildININame)
 	if err != nil {
 		return "", fmt.Errorf("error checking for defaults.ini: %w", err)
 	}
 	if !resolved {
-		return "", fmt.Errorf("defaults.ini not found: %s", ps.Build.ArtifactININame)
+		return "", fmt.Errorf("defaults.ini not found: %s", grafanaBuildININame)
 	}
 
 	// delete old workdir if exists
@@ -43,13 +46,13 @@ func setupGrafanaWorkdir(ctx context.Context, bc *buildcache.BuildCache, ps *Pro
 
 	// Copy executable into work dir
 	executableDestination := path.Join(ps.WorkDir, "grafana")
-	if err := bc.Retrieve(ctx, buildcache.TypeBuild, ps.Build.ArtifactBuildName, executableDestination); err != nil {
+	if err := bc.Retrieve(ctx, buildcache.TypeBuild, grafanaBuildArtifactName, executableDestination); err != nil {
 		return "", err
 	}
 
 	// copy defaults.ini into work dir
 	iniDestination := path.Join(ps.WorkDir, "conf", "defaults.ini")
-	if err := bc.Retrieve(ctx, buildcache.TypeINI, ps.Build.ArtifactININame, iniDestination); err != nil {
+	if err := bc.Retrieve(ctx, buildcache.TypeINI, grafanaBuildININame, iniDestination); err != nil {
 		return "", err
 	}
 

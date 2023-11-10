@@ -39,7 +39,7 @@ func (d *GCPDriver) Provision(ctx context.Context, ps *ProvisionState) (func() e
 	}
 
 	// cache the bundle
-	artifactName := getGrafanaBundleName(ps.Build.GrafanaRevision, ps.Build.Arch)
+	artifactName := getGrafanaBundleName(ps.GrafanaBuild.Revision, ps.GrafanaBuild.Arch)
 	err = d.buildCache.StoreFile(ctx, buildcache.TypeBundle, bundlePath, artifactName)
 	if err != nil {
 		return NilFunc, err
@@ -234,7 +234,7 @@ func (d *GCPDriver) prepareBundle(ctx context.Context, ps *ProvisionState) (stri
 	}
 
 	// compress the folder
-	bundlePath := path.Join(ps.LocalDir, getGrafanaBundleName(ps.Build.GrafanaRevision, ps.Build.Arch))
+	bundlePath := path.Join(ps.LocalDir, getGrafanaBundleName(ps.GrafanaBuild.Revision, ps.GrafanaBuild.Arch))
 	ps.Log.Info("compressing grafana bundle", "bundlePath", bundlePath)
 	err = utils.CompressFolder(ps.WorkDir, bundlePath)
 	if err != nil {

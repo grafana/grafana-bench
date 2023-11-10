@@ -88,7 +88,7 @@ func hgtest(ctx context.Context, log *slog.Logger, benchSvc *bench.BenchService,
 	}
 
 	// create a new provision state
-	ps, err := benchSvc.Provisioner.New(ctx, provisioner.HG, build, false)
+	ps, err := benchSvc.Provisioner.New(ctx, provisioner.HG, build.GrafanaRevision, build.Arch, false)
 	if err != nil {
 		return err
 	}

@@ -12,7 +12,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/grafana/grafana-bench/bench/buildcache"
-	"github.com/grafana/grafana-bench/bench/builder"
 )
 
 type ProvisionType string
@@ -62,7 +61,7 @@ func NewProvisionSvc(ctx context.Context, log *slog.Logger, bc *buildcache.Build
 	}, nil
 }
 
-func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *builder.Build, writeState bool) (*ProvisionState, error) {
+func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, GrafanaRevision string, GrafanaArch string, writeState bool) (*ProvisionState, error) {
 	log := p.Log.With("driver", t)
 
 	uuid := uuid.Must(uuid.NewRandom())
@@ -72,16 +71,23 @@ func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *bu
 	workDir := path.Join(localDir, "work")
 	stateDir := path.Join(localDir, "state")
 
+	gb := struct {
+		Revision string
+		Arch     string
+	}{
+		Revision: GrafanaRevision, Arch: GrafanaArch,
+	}
+
 	state := &ProvisionState{
-		Log:         log,
-		driver:      p.InitDriver(t),
-		Identifier:  uuid.String(),
-		Type:        t,
-		LocalDir:    localDir,
-		StateDir:    stateDir,
-		WorkDir:     workDir,
-		TemplateDir: p.GrafanaWorkDirTemplate,
-		Build:       build,
+		Log:          log,
+		driver:       p.InitDriver(t),
+		Identifier:   uuid.String(),
+		Type:         t,
+		LocalDir:     localDir,
+		StateDir:     stateDir,
+		WorkDir:      workDir,
+		TemplateDir:  p.GrafanaWorkDirTemplate,
+		GrafanaBuild: gb,
 	}
 
 	// exit if not writing state
@@ -109,12 +115,18 @@ func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *bu
 // localhost:3000. Used for local development workflow. e.g. `mage test
 // dashboards` without providing a state
 func (p *ProvisionerService) NewLocalDevState(ctx context.Context) *ProvisionState {
+	gb := struct {
+		Revision string
+		Arch     string
+	}{
+		Revision: "", Arch: "",
+	}
 	return &ProvisionState{
-		Log:        p.Log.With("driver", Local),
-		driver:     p.InitDriver(Local),
-		Identifier: "LOCALDEVSTATE",
-		Type:       Local,
-		Build:      nil,
+		Log:          p.Log.With("driver", Local),
+		driver:       p.InitDriver(Local),
+		Identifier:   "LOCALDEVSTATE",
+		Type:         Local,
+		GrafanaBuild: gb,
 		GrafanaInstance: &VMInstance{
 			Host:        "localhost",
 			ServicePort: "3000",

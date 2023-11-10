@@ -47,13 +47,13 @@ func (bs *BuilderService) New(ctx context.Context, grafanaRevision, arch string)
 		return nil, err
 	}
 
-	artifactBuildName := getArtifactBuildName(gitRef, arch)
+	artifactBuildName := buildcache.GetArtifactBuildName(gitRef, arch)
 	buildResolved, err := bs.BuildCache.Resolve(ctx, buildcache.TypeBuild, artifactBuildName)
 	if err != nil {
 		return nil, fmt.Errorf("build-service: could not resolve build: %w", err)
 	}
 
-	artifactININame := getArtifactININame(gitRef)
+	artifactININame := buildcache.GetArtifactININame(gitRef)
 	iniResolved, err := bs.BuildCache.Resolve(ctx, buildcache.TypeINI, artifactININame)
 	if err != nil {
 		return nil, fmt.Errorf("build-service: could not resolve build: %w", err)
