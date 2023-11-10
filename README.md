@@ -27,7 +27,7 @@ When a run is performed, a state ID is generated and state is written to a folde
 
 If you're doing local development on a test suite or otherwise you can use the command `mage run` (When you ctrl + c the process will stop) and `STATE={stateID} mage test {test}` in another window. 
 
-If you want to report your results to k6 cloud, set the `REPORT_CLOUD` environment variable to true and specify `K6_CLOUD_PROJECT` and `K6_CLOUD_TOKEN`
+If you want to report your results to k6 cloud, set the `REPORT_CLOUD` environment variable to true and specify `K6_CLOUD_PROJECT_ID` and `K6_CLOUD_TOKEN`
 
 ### Environment Variables / Flags
 See https://github.com/grafana/grafana-bench/blob/main/bench/cfg.go
@@ -45,6 +45,6 @@ GCP_CREDS_FILE=
 
 #K6
 REPORT_CLOUD=false
-K6_CLOUD_PROJECT=
+K6_CLOUD_PROJECT_ID=
 K6_CLOUD_TOKEN=
 ```

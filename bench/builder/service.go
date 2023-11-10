@@ -23,7 +23,7 @@ type BuilderService struct {
 }
 
 // Creates a new build service and resolves the build suite
-func NewBuildService(log *slog.Logger, buildcache *buildcache.BuildCache, localdir string) *BuilderService {
+func NewBuildSvc(log *slog.Logger, buildcache *buildcache.BuildCache, localdir string) *BuilderService {
 	// TODO remove this. don't have a need for nested folders
 	buildSuiteDir := filepath.Join(localdir)
 

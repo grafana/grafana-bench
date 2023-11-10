@@ -32,7 +32,7 @@ type ProvisionerService struct {
 	GCPCredentialsPath     string
 }
 
-func NewProvisioner(ctx context.Context, log *slog.Logger, bc *buildcache.BuildCache, localDir string, gcpCredentialsPath, grafanaWorkDirTemplate string) (*ProvisionerService, error) {
+func NewProvisionSvc(ctx context.Context, log *slog.Logger, bc *buildcache.BuildCache, localDir string, gcpCredentialsPath, grafanaWorkDirTemplate string) (*ProvisionerService, error) {
 	log = log.With("svc", "provisioner")
 
 	if bc == nil {

@@ -12,22 +12,18 @@ import (
 	"github.com/grafana/grafana-bench/bench/builder"
 	"github.com/grafana/grafana-bench/bench/provisioner"
 	"github.com/grafana/grafana-bench/bench/tester"
-	"github.com/grafana/grafana-bench/bench/utils"
 )
 
 func main() {
-	// setup
 	ctx := context.Background()
 	log := slog.New(slog.NewTextHandler(os.Stderr, nil))
-	cfg := bench.GetBenchServiceCfgFromEnv(log, utils.Getwd())
-
 	benchSvc, benchCfg := bench.NewBenchServiceOrPanic(ctx, log)
 
 	// Setup bench service with defaults for CLI
 	if len(os.Args) != 6 {
 		log.Error("Missing parameters. need 6 args; testType grafanaAddress username password tests", "argCount", len(os.Args))
 
-		// one of these will panic and exit, probably
+		// one of these will panic and exit
 		log.Error("arg[0]", "exec", os.Args[0])
 		log.Error("arg[1]", "testType", os.Args[1])
 		log.Error("arg[2]", "address", os.Args[2])
@@ -49,7 +45,7 @@ func main() {
 		"grafanaAddress", address,
 		"grafanaUser", username,
 		"tests", tests,
-		"k6ProjectId", cfg.K6CloudProjectID,
+		"k6ProjectId", benchCfg.K6CloudProjectID,
 	)
 
 	if err := hgtest(ctx, log, benchSvc, benchCfg, testType, address, username, password, tests); err != nil {
@@ -60,6 +56,7 @@ func main() {
 func hgtest(ctx context.Context, log *slog.Logger, benchSvc *bench.BenchService, benchCfg *bench.BenchServiceCfg, testType, address, username, password, tests string) error {
 	log = log.With("svc", "hgtest")
 
+	// TODO remove this block. should get for free from config/service init
 	// k6 cloud credentials
 	benchSvc.Tester.K6CloudProjectId = os.Getenv("K6_CLOUD_PROJECT_ID")
 	benchSvc.Tester.K6CloudToken = os.Getenv("K6_CLOUD_TOKEN")

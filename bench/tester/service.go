@@ -26,7 +26,7 @@ type TesterService struct {
 	GrafanaTestRepo  string
 }
 
-func NewTester(ctx context.Context, log *slog.Logger, localDir string, useCompiledTests bool, grafanaTestRepo, k6CloudProjectId, k6CloudToken string) *TesterService {
+func NewTestSvc(ctx context.Context, log *slog.Logger, localDir string, useCompiledTests bool, grafanaTestRepo, k6CloudProjectId, k6CloudToken string) *TesterService {
 	log = log.With("svc", "tester")
 
 	var testSuiteDir, testRoot, versionFilePath string

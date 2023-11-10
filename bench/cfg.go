@@ -76,7 +76,7 @@ func GetBenchServiceCfgFromEnv(log *slog.Logger, root string) *BenchServiceCfg {
 		DestroyInfra:     env.EnvOrDefaultBool("DESTROY", "true"),
 		SmokeTest:        env.EnvOrDefaultBool("SMOKE", "false"),
 		ReportCloud:      env.EnvOrDefaultBool("REPORT_CLOUD", "false"),
-		K6CloudProjectID: env.EnvOrDefault("K6_CLOUD_PROJECT", ""),
+		K6CloudProjectID: env.EnvOrDefault("K6_CLOUD_PROJECT_ID", ""),
 		K6CloudToken:     env.EnvOrDefault("K6_CLOUD_TOKEN", ""),
 		GCPCredPath:      path.Join(root, "creds", env.EnvOrDefault("GCP_CREDS_FILE", "gcp.json")),
 
