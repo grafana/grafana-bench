@@ -165,6 +165,9 @@ func loadTest(ctx context.Context, ps *ProvisionState, tr *tester.TestRun, machi
 			)
 		}
 
+		totalScenarioDurations := prettyMS(totalDuration)
+		benchDuration := prettyMS(float32(time.Since(startTime).Milliseconds()))
+
 		ps.Log.Info("suiteRun",
 			// TODO pass the trigger from argo. (Manual, CI / release channel)
 			"suiteRun", ps.Identifier,
@@ -173,7 +176,8 @@ func loadTest(ctx context.Context, ps *ProvisionState, tr *tester.TestRun, machi
 			"grafanaVersion", ps.Build.GrafanaRevision,
 			"buildVersion", ps.Build.GrafanaRevision,
 			"startTime", startTime.Format(time.RFC3339),
-			"duration", prettyMS(totalDuration),
+			"benchDuration", benchDuration,
+			"totalScenarioDurations", totalScenarioDurations,
 			"machineInfo", machineSpec,
 			"anyFailures", anyFailures,
 		)
