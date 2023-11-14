@@ -127,7 +127,7 @@ func parseDurationFromJsonFile(log *slog.Logger, scenarioName, jsonFile string) 
 
 	// TODO review this. not entirely sure it makes sense.
 	if err := scanner.Err(); err != nil {
-		return td, fmt.Errorf("Error reading file:", err)
+		return td, fmt.Errorf("Error reading file: %w", err)
 	}
 
 	td.TotalDuration = td.SetupDuration + td.ScenarioDuration + td.TeardownDuration
