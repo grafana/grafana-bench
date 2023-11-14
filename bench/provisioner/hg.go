@@ -281,7 +281,6 @@ func smokeTest(ctx context.Context, ps *ProvisionState, tr *tester.TestRun, mach
 			"testTrigger", "CI",
 			"grafanaUrl", ps.GrafanaInstance.Host,
 			"grafanaVersion", ps.GrafanaBuild.Revision,
-			"buildVersion", ps.GrafanaBuild.Revision,
 			"startTime", startTime.Format(time.RFC3339),
 			"totalScenarioDurations", totalScenarioDurations,
 			"duration", benchDuration,
