@@ -165,15 +165,19 @@ func loadTest(ctx context.Context, ps *ProvisionState, tr *tester.TestRun, machi
 			)
 		}
 
+		totalScenarioDurations := prettyMS(totalDuration)
+		benchDuration := prettyMS(float32(time.Since(startTime).Milliseconds()))
+
 		ps.Log.Info("suiteRun",
-			// TODO pass the trigger from argo. (Manual, CI / release channel)
 			"suiteRun", ps.Identifier,
+			// TODO pass the trigger from argo. (Manual, CI / release channel)
 			"testTrigger", "CI",
 			"grafanaUrl", ps.GrafanaInstance.Host,
 			"grafanaVersion", ps.GrafanaBuild.Revision,
 			"buildVersion", ps.GrafanaBuild.Revision,
 			"startTime", startTime.Format(time.RFC3339),
-			"duration", prettyMS(totalDuration),
+			"totalScenarioDurations", totalScenarioDurations,
+			"duration", benchDuration,
 			"machineInfo", machineSpec,
 			"anyFailures", anyFailures,
 		)
@@ -253,8 +257,8 @@ func smokeTest(ctx context.Context, ps *ProvisionState, tr *tester.TestRun, mach
 			// test complete log
 			ps.Log.Info("testRun",
 				"suiteRun", ps.Identifier,
-				"exitCode", exitCode,
 				"scenarioName", scenarioName,
+				"grafanaUrl", ps.GrafanaInstance.Host,
 				"grafanaVersion", ps.GrafanaBuild.Revision,
 				"folder", tr.RelativeFolder(testFile),
 				"testFile", path.Base(testFile),
@@ -264,17 +268,23 @@ func smokeTest(ctx context.Context, ps *ProvisionState, tr *tester.TestRun, mach
 				"scenarioDuration", prettyMS(td.ScenarioDuration),
 				"teardownDuration", prettyMS(td.TeardownDuration),
 				"totalDuration", prettyMS(td.TotalDuration),
+				"exitCode", exitCode,
 			)
 		}
 
+		totalScenarioDurations := prettyMS(totalDuration)
+		benchDuration := prettyMS(float32(time.Since(startTime).Milliseconds()))
+
 		ps.Log.Info("suiteRun",
-			// TODO pass the trigger from argo. (Manual, CI / release channel)
 			"suiteRun", ps.Identifier,
+			// TODO pass the trigger from argo. (Manual, CI / release channel)
 			"testTrigger", "CI",
+			"grafanaUrl", ps.GrafanaInstance.Host,
 			"grafanaVersion", ps.GrafanaBuild.Revision,
 			"buildVersion", ps.GrafanaBuild.Revision,
 			"startTime", startTime.Format(time.RFC3339),
-			"duration", prettyMS(totalDuration),
+			"totalScenarioDurations", totalScenarioDurations,
+			"duration", benchDuration,
 			"machineInfo", machineSpec,
 			"anyFailures", anyFailures,
 		)
