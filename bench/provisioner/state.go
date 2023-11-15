@@ -7,9 +7,13 @@ import (
 	"os"
 	"path"
 
-	"github.com/grafana/grafana-bench/bench/builder"
 	"github.com/grafana/grafana-bench/bench/tester"
 )
+
+type GrafanaBuildInfo struct {
+	Revision string `json:"revision"`
+	Arch     string `json:"arch"`
+}
 
 type ProvisionState struct {
 	Log *slog.Logger
@@ -29,8 +33,8 @@ type ProvisionState struct {
 	// Directory containing state information
 	StateDir string `json:"stateDir"`
 
-	// Grafana build the provision is based on
-	Build *builder.Build `json:"build"`
+	// Grafana build info
+	GrafanaBuildInfo GrafanaBuildInfo `json:"grafanaBuild"`
 
 	// Custom setup info
 	TemplateDir          string `json:"templateDir"`

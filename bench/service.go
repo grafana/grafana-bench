@@ -32,14 +32,14 @@ func NewBenchServiceFromCfgOrPanic(ctx context.Context, log *slog.Logger, cfg *B
 		panic(fmt.Errorf("error instantiating build cache: %w", err))
 	}
 
-	provisioner, err := provisioner.NewProvisioner(ctx, log, buildCache, cfg.provisionerPath, cfg.GCPCredPath, cfg.grafanaTmplPath)
+	provisioner, err := provisioner.NewProvisionSvc(ctx, log, buildCache, cfg.provisionerPath, cfg.GCPCredPath, cfg.grafanaTmplPath)
 	if err != nil {
 		panic(fmt.Errorf("error creating new provisioner: %w", err))
 	}
 
-	builder := builder.NewBuildService(log, buildCache, cfg.builderPath)
+	builder := builder.NewBuildSvc(log, buildCache, cfg.builderPath)
 
-	tester := tester.NewTester(ctx,
+	tester := tester.NewTestSvc(ctx,
 		log,
 		cfg.testerPath,
 		cfg.testerUseCompiledTests,

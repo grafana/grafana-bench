@@ -202,5 +202,5 @@ func getProvisionState(ctx context.Context, cfg *bench.BenchServiceCfg) (*provis
 		log.Info("build in cache", "svc", "mage")
 	}
 
-	return BenchService.Provisioner.New(ctx, BenchCfg.ProvisionDriver, build, true)
+	return BenchService.Provisioner.New(ctx, BenchCfg.ProvisionDriver, build.GrafanaRevision, build.Arch, true)
 }

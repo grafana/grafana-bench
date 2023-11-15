@@ -12,7 +12,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/grafana/grafana-bench/bench/buildcache"
-	"github.com/grafana/grafana-bench/bench/builder"
 )
 
 type ProvisionType string
@@ -32,7 +31,7 @@ type ProvisionerService struct {
 	GCPCredentialsPath     string
 }
 
-func NewProvisioner(ctx context.Context, log *slog.Logger, bc *buildcache.BuildCache, localDir string, gcpCredentialsPath, grafanaWorkDirTemplate string) (*ProvisionerService, error) {
+func NewProvisionSvc(ctx context.Context, log *slog.Logger, bc *buildcache.BuildCache, localDir string, gcpCredentialsPath, grafanaWorkDirTemplate string) (*ProvisionerService, error) {
 	log = log.With("svc", "provisioner")
 
 	if bc == nil {
@@ -62,7 +61,7 @@ func NewProvisioner(ctx context.Context, log *slog.Logger, bc *buildcache.BuildC
 	}, nil
 }
 
-func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *builder.Build, writeState bool) (*ProvisionState, error) {
+func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, grafanaRevision string, grafanaArch string, writeState bool) (*ProvisionState, error) {
 	log := p.Log.With("driver", t)
 
 	uuid := uuid.Must(uuid.NewRandom())
@@ -81,7 +80,10 @@ func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *bu
 		StateDir:    stateDir,
 		WorkDir:     workDir,
 		TemplateDir: p.GrafanaWorkDirTemplate,
-		Build:       build,
+		GrafanaBuildInfo: GrafanaBuildInfo{
+			Revision: grafanaRevision,
+			Arch:     grafanaArch,
+		},
 	}
 
 	// exit if not writing state
@@ -110,11 +112,11 @@ func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, build *bu
 // dashboards` without providing a state
 func (p *ProvisionerService) NewLocalDevState(ctx context.Context) *ProvisionState {
 	return &ProvisionState{
-		Log:        p.Log.With("driver", Local),
-		driver:     p.InitDriver(Local),
-		Identifier: "LOCALDEVSTATE",
-		Type:       Local,
-		Build:      nil,
+		Log:              p.Log.With("driver", Local),
+		driver:           p.InitDriver(Local),
+		Identifier:       "LOCALDEVSTATE",
+		Type:             Local,
+		GrafanaBuildInfo: GrafanaBuildInfo{},
 		GrafanaInstance: &VMInstance{
 			Host:        "localhost",
 			ServicePort: "3000",
