@@ -13,8 +13,8 @@ import (
 // Sets up directory with configs needed for testing a grafana
 // build. This method expects the BuildArtifactPath to exist on disk.
 func setupGrafanaWorkdir(ctx context.Context, bc *buildcache.BuildCache, ps *ProvisionState) (string, error) {
-	grafanaBuildArtifactName := buildcache.GetArtifactBuildName(ps.GrafanaBuild.Revision, ps.GrafanaBuild.Arch)
-	grafanaBuildININame := buildcache.GetArtifactININame(ps.GrafanaBuild.Revision)
+	grafanaBuildArtifactName := buildcache.GetArtifactBuildName(ps.GrafanaBuildInfo.Revision, ps.GrafanaBuildInfo.Arch)
+	grafanaBuildININame := buildcache.GetArtifactININame(ps.GrafanaBuildInfo.Revision)
 
 	// verify build artifact exists in the buildcache
 	resolved, err := bc.Resolve(ctx, buildcache.TypeBuild, grafanaBuildArtifactName)

@@ -10,6 +10,11 @@ import (
 	"github.com/grafana/grafana-bench/bench/tester"
 )
 
+type GrafanaBuildInfo struct {
+	Revision string `json:"revision"`
+	Arch     string `json:"arch"`
+}
+
 type ProvisionState struct {
 	Log *slog.Logger
 
@@ -29,10 +34,7 @@ type ProvisionState struct {
 	StateDir string `json:"stateDir"`
 
 	// Grafana build info
-	GrafanaBuild struct {
-		Revision string
-		Arch     string
-	} `json:"GrafanaBuild"`
+	GrafanaBuildInfo GrafanaBuildInfo `json:"grafanaBuild"`
 
 	// Custom setup info
 	TemplateDir          string `json:"templateDir"`
