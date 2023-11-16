@@ -13,6 +13,10 @@ import (
 	"github.com/grafana/grafana-bench/bench/tester"
 )
 
+var benchRevision = "local"
+
+//var container_id = ""
+
 func main() {
 	ctx := context.Background()
 	log := slog.New(slog.NewTextHandler(os.Stderr, nil))
@@ -80,8 +84,10 @@ func hgtest(ctx context.Context, log *slog.Logger, benchSvc *bench.BenchService,
 		return err
 	}
 
+	ps.BenchRevision = benchRevision
+
 	// set identifier for suite run
-	ps.Identifier = getNewSuiteIdentifier(ps, tr, grafanaVersion)
+	ps.Identifier = getNewSuiteIdentifier(tr, grafanaVersion)
 	log.Info("suite identifier", "identifier", ps.Identifier)
 
 	// set vm
@@ -103,10 +109,10 @@ func hgtest(ctx context.Context, log *slog.Logger, benchSvc *bench.BenchService,
 //
 // smoke-13:37:35-api-tests-cb5adc0-graf-10.2.0-60657
 // load-13:37:35-api-tests-cb5adc0-graf-10.2.0-60657
-func getNewSuiteIdentifier(ps *provisioner.ProvisionState, tr *tester.TestRun, grafanaVersion string) string {
+func getNewSuiteIdentifier(tr *tester.TestRun, grafanaVersion string) string {
 	// {type}-{time}-api-tests-{sha}-graf-{version}
 	return fmt.Sprintf("%s-%s-api-tests-%s-graf-%s",
-		tr.Type,
+		tr.Type.String(),
 		time.Now().UTC().Format("15:04:05"),
 		tr.SuiteRevision,
 		grafanaVersion,

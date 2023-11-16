@@ -18,6 +18,11 @@ type GrafanaBuildInfo struct {
 type ProvisionState struct {
 	Log *slog.Logger
 
+	// git sha of bench version
+	BenchRevision string
+	// GCR id of bench image
+	BenchContainer string
+
 	// UUID for the build
 	Identifier string `json:"identifier"`
 	driver     ProvisionDriver

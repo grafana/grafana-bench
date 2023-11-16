@@ -104,9 +104,6 @@ func loadTest(ctx context.Context, ps *ProvisionState, tr *tester.TestRun, machi
 			// set the scenario name so it's accessible from the test
 			envVars["SCENARIO_NAME"] = scenarioName
 
-			ps.Log.Info("running test file", "file", testFile)
-			ps.Log.Info("output json to", "file", jsonFile)
-
 			// build the command with buffer
 			cmd, buf := prepareK6Command(ps.Identifier, testFile, jsonFile, envVars,
 				"--out", "json="+jsonFile,
@@ -116,11 +113,13 @@ func loadTest(ctx context.Context, ps *ProvisionState, tr *tester.TestRun, machi
 			// run command
 			err = cmd.Run()
 			exitCode := 0
+			exitMessage := ""
 			if err != nil {
 				if exitError, ok := err.(*exec.ExitError); ok {
 					exitCode = exitError.ExitCode()
 					anyFailures = true
 				}
+				exitMessage = "error running k6 command: " + err.Error()
 				ps.Log.Info("error running k6 command", "error", err)
 			}
 
@@ -147,6 +146,9 @@ func loadTest(ctx context.Context, ps *ProvisionState, tr *tester.TestRun, machi
 
 			// test complete log
 			ps.Log.Info("testRun",
+				"benchVersion", ps.BenchRevision,
+				"apiTestsVersion", tr.SuiteRevision,
+				"testRun", newTestIdentifier(testFile, tr, ps.GrafanaBuildInfo.Revision),
 				"suiteRun", ps.Identifier,
 				"scenarioName", scenarioName,
 				"grafanaUrl", ps.GrafanaInstance.Host,
@@ -161,6 +163,7 @@ func loadTest(ctx context.Context, ps *ProvisionState, tr *tester.TestRun, machi
 				"scenarioDuration", prettyMS(td.ScenarioDuration),
 				"teardownDuration", prettyMS(td.TeardownDuration),
 				"totalDuration", prettyMS(td.TotalDuration),
+				"exitMessage", exitMessage,
 				"exitCode", exitCode,
 			)
 		}
@@ -169,6 +172,8 @@ func loadTest(ctx context.Context, ps *ProvisionState, tr *tester.TestRun, machi
 		benchDuration := prettyMS(float32(time.Since(startTime).Milliseconds()))
 
 		ps.Log.Info("suiteRun",
+			"benchVersion", ps.BenchRevision,
+			"apiTestsVersion", tr.SuiteRevision,
 			"suiteRun", ps.Identifier,
 			// TODO pass the trigger from argo. (Manual, CI / release channel)
 			"testTrigger", "CI",
@@ -217,9 +222,6 @@ func smokeTest(ctx context.Context, ps *ProvisionState, tr *tester.TestRun, mach
 			// set the scenario name so it's accessible from the test
 			envVars["SCENARIO_NAME"] = scenarioName
 
-			ps.Log.Info("running test file", "file", testFile)
-			ps.Log.Info("output json to", "file", jsonFile)
-
 			// build the command with buffer
 			cmd, buf := prepareK6Command(ps.Identifier, testFile, jsonFile, envVars,
 				"--iterations", "1",
@@ -229,11 +231,13 @@ func smokeTest(ctx context.Context, ps *ProvisionState, tr *tester.TestRun, mach
 			// run command
 			err = cmd.Run()
 			exitCode := 0
+			exitMessage := ""
 			if err != nil {
 				if exitError, ok := err.(*exec.ExitError); ok {
 					exitCode = exitError.ExitCode()
 					anyFailures = true
 				}
+				exitMessage = "error running k6 command: " + err.Error()
 				ps.Log.Info("error running k6 command", "error", err)
 			}
 
@@ -255,6 +259,9 @@ func smokeTest(ctx context.Context, ps *ProvisionState, tr *tester.TestRun, mach
 
 			// test complete log
 			ps.Log.Info("testRun",
+				"benchVersion", ps.BenchRevision,
+				"apiTestsVersion", tr.SuiteRevision,
+				"testRun", newTestIdentifier(testFile, tr, ps.GrafanaBuildInfo.Revision),
 				"suiteRun", ps.Identifier,
 				"scenarioName", scenarioName,
 				"grafanaUrl", ps.GrafanaInstance.Host,
@@ -267,6 +274,7 @@ func smokeTest(ctx context.Context, ps *ProvisionState, tr *tester.TestRun, mach
 				"scenarioDuration", prettyMS(td.ScenarioDuration),
 				"teardownDuration", prettyMS(td.TeardownDuration),
 				"totalDuration", prettyMS(td.TotalDuration),
+				"exitMessage", exitMessage,
 				"exitCode", exitCode,
 			)
 		}
@@ -275,6 +283,8 @@ func smokeTest(ctx context.Context, ps *ProvisionState, tr *tester.TestRun, mach
 		benchDuration := prettyMS(float32(time.Since(startTime).Milliseconds()))
 
 		ps.Log.Info("suiteRun",
+			"benchVersion", ps.BenchRevision,
+			"apiTestsVersion", tr.SuiteRevision,
 			"suiteRun", ps.Identifier,
 			// TODO pass the trigger from argo. (Manual, CI / release channel)
 			"testTrigger", "CI",
@@ -288,7 +298,8 @@ func smokeTest(ctx context.Context, ps *ProvisionState, tr *tester.TestRun, mach
 		)
 
 		if anyFailures {
-			return fmt.Errorf("Smoke test failed. Too many test failures. Review the logs for specific failures.")
+			dashboardUrl := fmt.Sprintf("https://ops.grafana-ops.net/d/d3381df1-fa32-4955-994a-e6a8bca58025/test-runs?var-SuiteRun=%s", ps.Identifier)
+			return fmt.Errorf("Smoke test failed. Too many test failures. Review logs or see dashboard %s", dashboardUrl)
 		}
 
 		return nil
@@ -317,4 +328,16 @@ func prepareK6Command(identifier, testFile, jsonFile string, envVars map[string]
 	cmd.Stderr = os.Stderr
 
 	return cmd, buf
+}
+
+// dashboardCreate.js-13:37:35-smoke-api-tests-cb5adc0-graf-10.2.0-60657
+func newTestIdentifier(filename string, tr *tester.TestRun, grafanaVersion string) string {
+	// {filename}-{time}-{type}-api-tests-{sha}-graf-{version}
+	return fmt.Sprintf("%s-%s-%s-api-tests-%s-graf-%s",
+		filename,
+		time.Now().UTC().Format("15:04:05"),
+		tr.Type.String(),
+		tr.SuiteRevision,
+		grafanaVersion,
+	)
 }
