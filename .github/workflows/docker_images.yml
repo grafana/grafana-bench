@@ -19,7 +19,7 @@ jobs:
         run: |
           printf %s "$GCP_CONTAINERS_SA_JSON" | docker login -u _json_key --password-stdin https://us.gcr.io
       - name: build
-        run: docker build --iidfile=grafana-bench.iid .
+        run: docker build --iidfile=grafana-bench.iid --build-arg BENCH_REVISION=${{ github.sha }} . 
       - name: tag
         run: |
           docker tag $(cat grafana-bench.iid) us.gcr.io/kubernetes-dev/grafana-bench:latest

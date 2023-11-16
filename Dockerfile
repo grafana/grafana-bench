@@ -8,6 +8,7 @@ RUN apk add --no-cache ca-certificates git
 # build bench
 WORKDIR /app
 
+ARG BENCH_REVISION 
 ARG TARGETOS=linux
 ARG TARGETARCH=amd64
 ARG TARGETVARIANT
@@ -26,7 +27,7 @@ COPY bench ./bench
 RUN --mount=type=cache,id=go-build-${TARGETOS}-${TARGETARCH}${TARGETVARIANT},target=/root/.cache/go-build \
         --mount=type=cache,id=go-pkg-${TARGETOS}-${TARGETARCH}${TARGETVARIANT},target=/go/pkg \
             CGO_ENABLED=0 \
-                go build -trimpath -o grafana-bench ./cmd
+                go build -ldflags="-X main.benchRevision=${BENCH_REVISION}" -trimpath -o grafana-bench ./cmd
 
 FROM alpine:3.18 AS runtime
 

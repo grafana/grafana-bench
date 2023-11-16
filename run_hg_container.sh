@@ -1,5 +1,8 @@
 #! /usr/bin/env sh
-if docker build --platform=linux/amd64 -t grafana-bench-test .; then
+
+BENCH_REVISION=$(git rev-parse HEAD)
+
+if docker build --platform=linux/amd64 --build-arg BENCH_REVISION=$BENCH_REVISION -t grafana-bench-test .; then
   echo "build succeeded"
 else
   echo "build failed"
