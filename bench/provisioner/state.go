@@ -20,8 +20,6 @@ type ProvisionState struct {
 
 	// git sha of bench version
 	BenchRevision string
-	// GCR id of bench image
-	BenchContainer string
 
 	// UUID for the build
 	Identifier string `json:"identifier"`
