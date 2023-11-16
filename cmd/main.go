@@ -15,8 +15,6 @@ import (
 
 var benchRevision = "local"
 
-//var container_id = ""
-
 func main() {
 	ctx := context.Background()
 	log := slog.New(slog.NewTextHandler(os.Stderr, nil))
