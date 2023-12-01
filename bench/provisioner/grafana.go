@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 )
 
@@ -85,6 +86,16 @@ func GetGrafanaSession(vm *VMInstance) (*http.Cookie, error) {
 			return nil, fmt.Errorf("Error logging into grafana instance. Failed to decode response: %w", err)
 		}
 		return nil, fmt.Errorf("Error logging into grafana instance. statusCode: %d, response: %s", resp.StatusCode, responsePayload)
+	}
+
+	if len(resp.Cookies()) == 0 {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Printf("Failed to read response body: %v\n", err)
+		}
+		fmt.Println(string(body))
+		fmt.Println("url:", loginURL)
+		return nil, fmt.Errorf("Error logging into grafana instance. No session returned even though we didn't get a login error")
 	}
 
 	// get the build version

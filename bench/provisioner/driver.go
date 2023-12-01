@@ -28,6 +28,15 @@ type ProvisionDriver interface {
 	Destroy(ctx context.Context, ps *ProvisionState) error
 }
 
+type TestDriver interface {
+	Setup(ctx context.Context)
+	BuildCommand(ctx context.Context) error
+	RunCommand(ctx context.Context) error
+	PostProcess(ctx context.Context, fn []func() error) error
+	Log(ctx context.Context) error
+	Cleanup(ctx context.Context) error
+}
+
 // Stubbed function to return when something goes wrong provisioning
 func NilFunc() error {
 	return nil
