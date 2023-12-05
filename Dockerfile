@@ -31,11 +31,19 @@ RUN --mount=type=cache,id=go-build-${TARGETOS}-${TARGETARCH}${TARGETVARIANT},tar
 
 FROM alpine:3.18 AS runtime
 
-RUN apk add --no-cache ca-certificates git
+RUN apk add --no-cache ca-certificates git chromium-swiftshader
 RUN adduser -D -u 1010 -g 1010 bench
 
 COPY --from=k6 /usr/bin/k6 /usr/local/bin/k6
 COPY --from=builder /app/grafana-bench /usr/local/bin/grafana-bench
+
+ENV CHROME_BIN=/usr/bin/chromium-browser
+ENV CHROME_PATH=/usr/lib/chromium/
+
+ENV K6_BROWSER_HEADLESS=true
+# no-sandbox chrome arg is required to run chrome browser in
+# alpine and avoids the usage of SYS_ADMIN Docker capability
+ENV K6_BROWSER_ARGS=no-sandbox
 
 USER bench
 WORKDIR /home/bench

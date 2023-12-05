@@ -40,7 +40,7 @@ func (d *LocalDriver) Provision(ctx context.Context, ps *ProvisionState) (func()
 
 	// TODO figure out how to get this from ENV or custom.ini
 	ps.GrafanaInstance = &VMInstance{
-		Host:     "localhost",
+		Host:        "localhost",
 		ServicePort: "3000",
 	}
 
@@ -84,6 +84,8 @@ func (d *LocalDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *test
 		"MACHINE_SPEC":        machineSpec,
 		"TEST_SUITE_REVISION": tr.SuiteRevision,
 		"GT_URL":              ps.GrafanaInstance.SchemeServiceAddress(),
+		"GT_USERNAME":         ps.GrafanaInstance.ServiceUser,
+		"GT_PASSWORD":         ps.GrafanaInstance.ServicePassword,
 		"K6_CLOUD_TOKEN":      tr.K6CloudToken,
 		"K6_CLOUD_PROJECT_ID": tr.K6CloudProjectId,
 	}
