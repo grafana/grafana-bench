@@ -1,6 +1,5 @@
 # syntax=docker/dockerfile:1.4.2-labs
-FROM grafana/k6:0.46.0 AS k6
-
+FROM grafana/k6:latest AS k6
 FROM golang:1.21-alpine AS builder
 
 RUN apk add --no-cache ca-certificates git
@@ -34,12 +33,13 @@ FROM alpine:3.18 AS runtime
 RUN apk add --no-cache ca-certificates git chromium-swiftshader
 RUN adduser -D -u 1010 -g 1010 bench
 
+# copy binaries
 COPY --from=k6 /usr/bin/k6 /usr/local/bin/k6
 COPY --from=builder /app/grafana-bench /usr/local/bin/grafana-bench
 
+# config k6 browser
 ENV CHROME_BIN=/usr/bin/chromium-browser
 ENV CHROME_PATH=/usr/lib/chromium/
-
 ENV K6_BROWSER_HEADLESS=true
 # no-sandbox chrome arg is required to run chrome browser in
 # alpine and avoids the usage of SYS_ADMIN Docker capability
