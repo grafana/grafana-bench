@@ -26,12 +26,12 @@ jobs:
       - name: push
         if: github.ref == 'refs/heads/main'
         run: docker push $(cat grafana-bench.tag)
-      - name: login to ghr.io
+      - name: login to github container registry(ghcr.io)
         env: 
           JEFF_PAT: ${{ secrets.JEFF_PAT }}
         run: |
-          echo $JEFF_PAT | docker login ghcr.io -u jalevin --password-stdin
-      - name: publish to GCR
+          printf %s "$JEFF_AT" | docker login -u jalevin --password-stdin https://ghcr.io
+      - name: publish to github container registry
         run: |
           docker tag $(cat grafana-bench.iid) ghcr.io/grafana/grafana-bench:latest
           docker push ghcr.io/grafana/grafana-bench:latest
