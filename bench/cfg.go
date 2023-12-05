@@ -1,7 +1,6 @@
 package bench
 
 import (
-	"fmt"
 	"log/slog"
 	"os"
 	"path"
@@ -82,8 +81,6 @@ func GetBenchServiceCfgFromEnv(log *slog.Logger, root string) *BenchServiceCfg {
 	if !strings.HasPrefix(testerPath, "/") {
 		testerPath = path.Join(root, testerPath)
 	}
-
-	fmt.Println(testerPath)
 
 	return &BenchServiceCfg{
 		// Base cfg

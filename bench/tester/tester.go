@@ -58,7 +58,6 @@ type TestRun struct {
 func (tr *TestRun) ResolveTestSuite() error {
 	if tr.UseCompiledTests {
 
-		fmt.Println(tr.TestRoot)
 		// verify we have tests
 		exists, err := utils.PathExists(tr.TestRoot)
 		if err != nil || !exists {
