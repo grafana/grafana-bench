@@ -105,7 +105,7 @@ func (d *LocalDriver) RunTests(ctx context.Context, ps *ProvisionState, tr *test
 			args := []string{"run", testFile}
 
 			if tr.Type == tester.Smoke {
-				args = append(args)
+				args = append(args, "--iterations", "1", "--vus", "1")
 			}
 
 			if tr.Type == tester.Load {

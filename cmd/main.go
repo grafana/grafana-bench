@@ -60,12 +60,11 @@ func hgtest(ctx context.Context, log *slog.Logger, benchSvc *bench.BenchService,
 	grafanaInstance := provisioner.NewReadOnlyGrafanaVM(address, username, password)
 	provisioner.WaitForLiveGrafana(log, grafanaInstance.ServiceAddress())
 
-	grafanaVersion := "10.23.23"
-	// grafanaVersion, err := provisioner.GetGrafanaBuildVersion(grafanaInstance)
-	// if err != nil {
-	// 	log.Error("error getting grafana version", "err", err)
-	// 	return fmt.Errorf("Error getting grafana version. exiting.. err: %w", err)
-	// }
+	grafanaVersion, err := provisioner.GetGrafanaBuildVersion(grafanaInstance)
+	if err != nil {
+		log.Error("error getting grafana version", "err", err)
+		return fmt.Errorf("Error getting grafana version. exiting.. err: %w", err)
+	}
 
 	suiteRevision := "" // using precompiled tests. ignore
 	tr, err := benchSvc.Tester.New(ctx, suiteRevision, testType, tests)
