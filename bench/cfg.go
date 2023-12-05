@@ -1,9 +1,11 @@
 package bench
 
 import (
+	"fmt"
 	"log/slog"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/grafana/grafana-bench/bench/provisioner"
 	"github.com/grafana/grafana-bench/bench/utils/env"
@@ -74,6 +76,15 @@ func GetBenchServiceCfgFromEnv(log *slog.Logger, root string) *BenchServiceCfg {
 
 	workPath := env.EnvOrDefault("WORK_PATH", path.Join(root, "work"))
 
+	// If TEST_PATH does not being with a /, assume it's relative to
+	// root of bench and append the work path
+	testerPath := env.EnvOrDefault("TEST_PATH", path.Join(workPath, "test"))
+	if !strings.HasPrefix(testerPath, "/") {
+		testerPath = path.Join(root, testerPath)
+	}
+
+	fmt.Println(testerPath)
+
 	return &BenchServiceCfg{
 		// Base cfg
 		WorkPath:         workPath,
@@ -101,7 +112,7 @@ func GetBenchServiceCfgFromEnv(log *slog.Logger, root string) *BenchServiceCfg {
 		K6CloudProjectID:       env.EnvOrDefault("K6_CLOUD_PROJECT_ID", ""),
 		K6CloudToken:           env.EnvOrDefault("K6_CLOUD_TOKEN", ""),
 		GCPCredPath:            path.Join(root, "creds", env.EnvOrDefault("GCP_CREDS_FILE", "gcp.json")),
-		testerPath:             env.EnvOrDefault("TEST_PATH", path.Join(workPath, "tests")),
+		testerPath:             testerPath,
 		testerUseCompiledTests: env.EnvOrDefaultBool("USE_COMPILED_TESTS", "false"),
 		testerGrafanaTestRepo:  "https://github.com/grafana/grafana-api-tests",
 	}
