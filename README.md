@@ -4,15 +4,21 @@ https://github.com/grafana/grafana-build and https://github.com/grafana/grafana-
 
 ## Setup
 ### Dependencies
-install the mage, k6, and docker for your OS
+A. Install mage, k6, and docker for your OS
+B. Make sure you have access to github.com/grafana/grafana-api-tests. If you need to do any javascript bundling for your tests, you may need node + yarn
 
-### Environment
+### Config
 Copy .env.sample to .env and set variables.
-All of this can be overridden by command line.
+These can be overridden by environment variables.
 
 ## Usage
 ** Note, the first time you run one of these commands may take a while,
-sequential runs will be faster due to caching.
+sequential runs will be faster due to caching of builds etc.
+
+### Testing an already running Grafana
+By default we assume Grafana is running on localhost:3000 with username admin/admin.
+
+### Using the build pipeline
 
 `mage bench {test}`
 
@@ -35,16 +41,21 @@ See https://github.com/grafana/grafana-bench/blob/main/bench/cfg.go
 
 ```.sh
 # CLI options
-GRAFANA_REVISION=branch:main
-GRAFANA_ARCH=linux/amd64
-PROVISION_DRIVER=local
-PROVISION_STATE=
+export GRAFANA_REVISION=branch:main
+export GRAFANA_ARCH=linux/amd64
+export PROVISION_DRIVER=local
+export PROVISION_STATE=
 
-#GCP credentials
-GCP_CREDS_FILE=
+# GCP credentials
+export GCP_CREDS_FILE=
 
-#K6
-REPORT_CLOUD=false
-K6_CLOUD_PROJECT_ID=
-K6_CLOUD_TOKEN=
+# K6
+export REPORT_CLOUD=false
+export K6_CLOUD_PROJECT_ID=
+export K6_CLOUD_TOKEN=
+
+# Grafana
+export GRAFANA_ADDRESS=http://localhost:3000
+export GRAFANA_USER=admin
+export GRAFANA_PASSWORD=admin
 ```

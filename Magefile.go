@@ -128,7 +128,7 @@ func Test(ctx context.Context, testType string, testSuite string) error {
 		}
 	} else {
 		// if no state provided, assume local driver, port 3000
-		ps = BenchService.Provisioner.NewLocalDevState(ctx)
+		ps = BenchService.Provisioner.NewLocalDevState(ctx, BenchCfg.GrafanaAddress, BenchCfg.GrafanaUser, BenchCfg.GrafanaPassword)
 	}
 
 	// test the build
