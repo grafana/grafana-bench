@@ -2,14 +2,14 @@
 
 # accept passing in the .env file to source for secrets
 if [ "$#" -eq 0 ]; then
-  . .env.hg
+  . .env
 else
   . "$1"
 fi
 
 BENCH_REVISION=$(git rev-parse HEAD)
 
-if docker build --platform=linux/amd64 --build-arg BENCH_REVISION="$BENCH_REVISION" -t grafana-bench-test .; then
+if docker build --platform=linux/amd64 --build-arg BENCH_REVISION="$BENCH_REVISION" -f Dockerfile.browser -t grafana-bench-test .; then
   echo "build succeeded"
 else
   echo "build failed"
@@ -26,7 +26,7 @@ GRAFANA_PASSWORD=${GRAFANA_PASSWORD:-"admin"}
 
 docker run --rm \
   --platform=linux/amd64 \
-  --volume="$(PWD)/work/test/suite/dist/tests:/home/bench/tests" \
+  --volume="$(PWD)/work/test/synthetics/:/home/bench/tests" \
   -e K6_CLOUD_PROJECT_ID="$K6_CLOUD_PROJECT_ID" \
   -e K6_CLOUD_TOKEN="$K6_CLOUD_TOKEN" \
   -e USE_COMPILED_TESTS="$USE_COMPILED_TESTS" \

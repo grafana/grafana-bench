@@ -223,10 +223,7 @@ func smokeTest(ctx context.Context, ps *ProvisionState, tr *tester.TestRun, mach
 			envVars["SCENARIO_NAME"] = scenarioName
 
 			// build the command with buffer
-			cmd, buf := prepareK6Command(ps.Identifier, testFile, jsonFile, envVars,
-				"--iterations", "1",
-				"--vus", "1",
-			)
+			cmd, buf := prepareK6Command(ps.Identifier, testFile, jsonFile, envVars)
 
 			// run command
 			err = cmd.Run()
