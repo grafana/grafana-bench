@@ -91,7 +91,7 @@ func GetBenchServiceCfgFromEnv(log *slog.Logger, root string) *BenchServiceCfg {
 		ProvisionDriver: provisioner.ProvisionDriverFromString(env.EnvOrDefault("PROVISION", "local")),
 		ProvisionState:  os.Getenv("STATE"),
 		DestroyInfra:    env.EnvOrDefaultBool("DESTROY", "true"),
-		GrafanaAddress:  env.EnvOrDefault("GRAFANA_ADDRESS", "localhost:3000"),
+		GrafanaAddress:  env.EnvOrDefault("GRAFANA_ADDRESS", "http://localhost:3000"),
 		GrafanaUser:     env.EnvOrDefault("GRAFANA_USER", "admin"),
 		GrafanaPassword: env.EnvOrDefault("GRAFANA_PASSWORD", "admin"),
 
@@ -101,7 +101,7 @@ func GetBenchServiceCfgFromEnv(log *slog.Logger, root string) *BenchServiceCfg {
 		K6CloudProjectID:       env.EnvOrDefault("K6_CLOUD_PROJECT_ID", ""),
 		K6CloudToken:           env.EnvOrDefault("K6_CLOUD_TOKEN", ""),
 		GCPCredPath:            path.Join(root, "creds", env.EnvOrDefault("GCP_CREDS_FILE", "gcp.json")),
-		testerPath:             env.EnvOrDefault("TEST_PATH", path.Join(workPath, "test")),
+		testerPath:             env.EnvOrDefault("TEST_PATH", path.Join(workPath, "tests")),
 		testerUseCompiledTests: env.EnvOrDefaultBool("USE_COMPILED_TESTS", "false"),
 		testerGrafanaTestRepo:  "https://github.com/grafana/grafana-api-tests",
 	}
