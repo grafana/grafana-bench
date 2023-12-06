@@ -7,26 +7,47 @@ on:
     branches: [ "main" ]
 
 jobs:
-  # can we make this job dependant on build-docker??
-  test-container:
+  build-pr-container:
     runs-on: ubuntu-latest
+    steps:
+      - uses: docker/login-action@v3
+      - name: docker login (github)
+        with:
+          registry: ghcr.io
+          username: jalevin                 # TODO don't use personal github
+          password: ${{ secrets.JEFF_PAT }} # TODO don't use PAT
+      - uses: actions/checkout@v4
+      - name: build container
+        run: docker build --iidfile=grafana-bench.iid --build-arg BENCH_REVISION=${{ github.sha }} . 
+      - name: tag container
+        run: |
+          docker tag ghcr.io/grafana/grafana-bench:${{ github.sha }}
+          docker push ghcr.io/grafana/grafana-bench:${{ github.sha }}
+
+  test-pr-container:
+    runs-on: ubuntu-latest
+    needs: [build-pr-container]
     container:
-      image: ghcr.io/grafana/grafana-bench:latest
+      image: ghcr.io/grafana/grafana-bench:${{ github.sha }}
       env:
         GRAFANA_ADDRESS: PURPOSEFULLY_INVALID
         GRAFANA_USER: PURPOSEFULLY_INVALID
         GRAFANA_PASSWORD: PURPOSEFULLY_INVALID
-      #volumes:
-      #  - $GITHUB_WORKSPACE/CI/browser_test.js:/home/k6/tests.js
       options: --user root
     steps:
       - uses: actions/checkout@v4
-      - name: write test to file
+      - name: run browser check
         run: |
           k6 run ./CI/browser_test.js
-
       - name: Archive screenshots
         uses: actions/upload-artifact@v3
         with:
           name: screenshots
           path: screenshots
+
+      # TODO if branch is not main, delete container
+      #- name: cleanup container if not in main branch
+      #  if: ${{ github.ref_name}} != "main"
+      #  run: |
+
+      # TODO if branch main, ghcr.io/grafana/grafana-bench:latest
