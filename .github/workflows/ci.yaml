@@ -31,7 +31,7 @@ jobs:
           # iidfile: grafana-bench.iid
           build-args: |
             BENCH_REVISION=${{ github.sha }}
-          outputs: outputs: type=docker,dest=/tmp/grafana-bench-image.tar
+          outputs: type=docker,dest=/tmp/grafana-bench-image.tar
           push: true
           tags: |
             ghcr.io/grafana/grafana-bench:${{ github.sha }}
