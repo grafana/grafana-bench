@@ -31,9 +31,16 @@ jobs:
           # iidfile: grafana-bench.iid
           build-args: |
             BENCH_REVISION=${{ github.sha }}
+          outputs: outputs: type=docker,dest=/tmp/grafana-bench-image.tar
           push: true
           tags: |
             ghcr.io/grafana/grafana-bench:${{ github.sha }}
+      - name: upload bench image to artifact store
+        uses: actions/upload-artifact@v3
+        with:
+          name: grafana_bench_image
+          path: /tmp/grafana-bench-image.tar
+
         # run: docker build --platforms linux/amd64,linux/arm64,darwin/amd64 --iidfile=grafana-bench.iid --build-arg BENCH_REVISION=${{ github.sha }} .
       # - name: tag container
       #   run: |
@@ -61,8 +68,9 @@ jobs:
           name: screenshots
           path: screenshots
 
-    publish-main:
+  publish-main:
     runs-on: ubuntu-latest
+    needs: [build-pr-container, test-pr-container]
     env:
       DOCKER_BUILDKIT: 1
     steps:
@@ -78,19 +86,21 @@ jobs:
           registry: us.gcr.io
           username: _json_key
           password: ${{ secrets.GCP_CONTAINERS_SA_JSON }}
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: |
-            my-docker-hub-namespace/my-docker-hub-repository
-            ghcr.io/${{ github.repository }}
-      - name: Build and push Docker images
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: latest
+      - name: Download image artifact
+        uses: actions/download-artifact@v3
+        with: 
+          name: grafana_bench_image
+          path: /tmp/grafana-bench-image.tar
+      - name: Load image
+        run: |
+          docker load --input /tmp/grafana-bench-image.tar
+      - name: Tag and push Docker images
+        run: |
+          docker buildx imagetools create \ 
+            --tag ghcr.io/grafana/grafana-bench:latest \
+            --tag us.gcr.io/kubernetes-dev/grafana-bench:latest \
+            grafana-bench:${{ github.sha }}
+
           # labels: ${{ steps.meta.outputs.labels }}
       # - name: build
       #   run: docker build --iidfile=grafana-bench.iid --build-arg BENCH_REVISION=${{ github.sha }} . 
