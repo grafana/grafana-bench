@@ -24,3 +24,9 @@ jobs:
       - name: write test to file
         run: |
           k6 run ./CI/browser_test.js
+
+      - name: Archive screenshots
+        uses: actions/upload-artifact@v3
+        with:
+          name: screenshots
+          path: screenshots

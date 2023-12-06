@@ -19,10 +19,18 @@ export default async function () {
 
   try {
     await page.goto(`https://www.google.com`);
+
     console.log(page.url());
+
     check(page, {
       'url is correct': page.url() === `https://www.google.com`,
     });
+
+    page.screenshot({
+      path: "screenshots/google.png",
+    })
+
+
   } finally {
     page.close();
   }
