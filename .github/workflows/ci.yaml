@@ -23,5 +23,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: write test to file
         run: |
+          ls -lha ./
+          ls -lha /
           
           k6 run $GITHUB_WORKSPACE/CI/browser_test.js
