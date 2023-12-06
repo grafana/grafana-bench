@@ -15,7 +15,7 @@ jobs:
         platform:
           - linux/amd64
           - linux/arm64
-          - darwin/arm64
+          # - darwin/arm64
 
     steps:
       - name: docker login (github)
@@ -37,7 +37,7 @@ jobs:
           # iidfile: grafana-bench.iid
           build-args: |
             BENCH_REVISION=${{ github.sha }}
-          push: false
+          push: true
           tags: |
             ghcr.io/grafana/grafana-bench:${{ github.sha }}
         # run: docker build --platforms linux/amd64,linux/arm64,darwin/amd64 --iidfile=grafana-bench.iid --build-arg BENCH_REVISION=${{ github.sha }} .
