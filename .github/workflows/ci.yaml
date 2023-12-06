@@ -11,11 +11,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-    matrix:
-      platform:
-        - linux/amd64
-        - linux/arm64
-        - darwin/amd64
+      matrix:
+        platform:
+          - linux/amd64
+          - linux/arm64
+          - darwin/amd64
 
     steps:
       - name: docker login (github)
