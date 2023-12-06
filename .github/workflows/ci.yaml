@@ -56,9 +56,11 @@ jobs:
           name: screenshots
           path: screenshots
 
+  # publish container on build and test in main
   publish-main:
     needs: [build-pr-container, test-pr-container]
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
     env:
       DOCKER_BUILDKIT: 1
     steps:
