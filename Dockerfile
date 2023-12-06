@@ -1,17 +1,17 @@
 # syntax=docker/dockerfile:1.4.2-labs
-FROM grafana/k6:latest AS k6
+
 FROM golang:1.21-alpine AS builder
-
-RUN apk add --no-cache ca-certificates git
-
-# build bench
-WORKDIR /app
 
 ARG BENCH_REVISION 
 ARG TARGETOS=linux
 ARG TARGETARCH=amd64
 ARG TARGETVARIANT
 ENV GOOS=$TARGETOS GOARCH=$TARGETARCH
+
+RUN apk add --no-cache ca-certificates git
+
+# build bench
+WORKDIR /app
 
 # go mod download first to cache modules for faster local builds
 COPY go.mod go.sum ./
@@ -28,6 +28,7 @@ RUN --mount=type=cache,id=go-build-${TARGETOS}-${TARGETARCH}${TARGETVARIANT},tar
             CGO_ENABLED=0 \
                 go build -ldflags="-X main.benchRevision=${BENCH_REVISION}" -trimpath -o grafana-bench ./cmd
 
+FROM grafana/k6:latest AS k6
 FROM alpine:3.18 AS runtime
 
 RUN apk add --no-cache ca-certificates git chromium-swiftshader
@@ -48,5 +49,7 @@ ENV K6_BROWSER_ARGS=no-sandbox
 USER bench
 WORKDIR /home/bench
 RUN mkdir /home/bench/tests
+
+USER root
 
 ENTRYPOINT ["grafana-bench"]
