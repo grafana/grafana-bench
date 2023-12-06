@@ -35,12 +35,12 @@ jobs:
           #push: true
           tags: |
             grafana-bench:${{ github.sha }}
-      - name: push container (github)
+      - name: load and push container (github)
         run: |
-          docker load /tmp/grafana-bench-image.tar
+          docker load --input /tmp/grafana-bench-image.tar
           docker buildx imagetools create \
             --tag ghcr.io/grafana/grafana-bench:${{ github.sha }} \
-          grafana-bench:latest
+            grafana-bench:latest
       - name: upload bench image to artifact store
         uses: actions/upload-artifact@v3
         with:
