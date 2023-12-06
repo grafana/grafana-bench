@@ -57,6 +57,7 @@ jobs:
           path: screenshots
 
   publish-main:
+    needs: [build-pr-container, test-pr-container]
     runs-on: ubuntu-latest
     env:
       DOCKER_BUILDKIT: 1
