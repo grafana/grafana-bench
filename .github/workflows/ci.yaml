@@ -18,7 +18,7 @@ jobs:
         GRAFANA_PASSWORD: PURPOSEFULLY_INVALID
       #volumes:
       #  - $GITHUB_WORKSPACE/CI/browser_test.js:/home/k6/tests.js
-      #options: --cpus
+      options: --user root
     steps:
       - uses: actions/checkout@v4
       - name: write test to file
