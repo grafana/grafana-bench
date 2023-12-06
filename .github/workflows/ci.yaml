@@ -1,0 +1,26 @@
+name: docker-images
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  # can we make this job dependant on build-docker??
+  test-container:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/grafana/grafana-bench:latest
+      env:
+        GRAFANA_ADDRESS: PURPOSEFULLY_INVALID
+        GRAFANA_USER: PURPOSEFULLY_INVALID
+        GRAFANA_PASSWORD: PURPOSEFULLY_INVALID
+      volumes:
+        - $GITHUB_WORKSPACE/CI/browser_test.js:/home/k6/tests.js
+      options: --cpus
+    steps:
+      - uses: actions/checkout@v4
+      - name: write test to file
+        run: |
+          k6 run $GITHUB_WORKSPACE/CI/browser_test.js
