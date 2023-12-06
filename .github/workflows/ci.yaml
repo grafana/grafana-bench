@@ -31,12 +31,13 @@ jobs:
           # iidfile: grafana-bench.iid
           build-args: |
             BENCH_REVISION=${{ github.sha }}
-          outputs: type=image,dest=/tmp/grafana-bench-image.tar
+          outputs: type=oci,dest=/tmp/grafana-bench-image.tar
           #push: true
           tags: |
             grafana-bench:${{ github.sha }}
       - name: load and push container (github)
         run: |
+          docker load --input /tmp/grafana-bench-image.tar
           docker load --input /tmp/grafana-bench-image.tar
           docker buildx imagetools create \
             --tag ghcr.io/grafana/grafana-bench:${{ github.sha }} \
