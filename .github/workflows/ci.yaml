@@ -11,14 +11,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DOCKER_CLI_EXPERIMENTAL: enabled
-    strategy:
-      fail-fast: false
-      matrix:
-        platform:
-          - linux/amd64
-          - linux/arm64
-          # - darwin/arm64
-
     steps:
       - name: docker login (github)
         uses: docker/login-action@v3
@@ -35,7 +27,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          platforms: ${{ matrix.platform }}
+          platforms: linux/amd64,linux/arm64
           # iidfile: grafana-bench.iid
           build-args: |
             BENCH_REVISION=${{ github.sha }}
