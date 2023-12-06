@@ -17,6 +17,8 @@ jobs:
           username: jalevin # TODO don't use personal github
           password: ${{ secrets.JEFF_PAT }} # TODO don't use PAT
       - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
       - name: build container
         uses: docker/build-push-action@v5
         with:
