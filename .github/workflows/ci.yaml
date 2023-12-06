@@ -8,6 +8,7 @@ on:
 
 jobs:
   build-pr-container:
+    needs: test-bench
     runs-on: ubuntu-latest
     env:
       DOCKER_CLI_EXPERIMENTAL: enabled
