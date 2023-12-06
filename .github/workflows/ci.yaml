@@ -74,8 +74,10 @@ jobs:
           registry: us.gcr.io
           username: _json_key
           password: ${{ secrets.GCP_CONTAINERS_SA_JSON }}
-      - name: tag container
+      - name: pull, tag, and push container
         run: |
+          docker pull ghcr.io/grafana/grafana-bench:${{ github.sha }}
+
           docker tag ghcr.io/grafana/grafana-bench:${{ github.sha }} \
             us.gcr.io/kubernetes-dev/grafana-bench:latest
 
