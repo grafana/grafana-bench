@@ -32,9 +32,15 @@ jobs:
           build-args: |
             BENCH_REVISION=${{ github.sha }}
           outputs: type=docker,dest=/tmp/grafana-bench-image.tar
-          push: true
+          #push: true
           tags: |
-            ghcr.io/grafana/grafana-bench:${{ github.sha }}
+            grafana-bench:${{ github.sha }}
+      - name: push container (github)
+        run: |
+          docker load /tmp/grafana-bench-image.tar
+          docker buildx imagetools create \
+            --tag ghcr.io/grafana/grafana-bench:${{ github.sha }} \
+          grafana-bench:latest
       - name: upload bench image to artifact store
         uses: actions/upload-artifact@v3
         with:
