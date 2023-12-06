@@ -18,11 +18,21 @@ jobs:
           password: ${{ secrets.JEFF_PAT }} # TODO don't use PAT
       - uses: actions/checkout@v4
       - name: build container
-        run: docker build --iidfile=grafana-bench.iid --build-arg BENCH_REVISION=${{ github.sha }} .
-      - name: tag container
-        run: |
-          docker tag ghcr.io/grafana/grafana-bench:${{ github.sha }}
-          docker push ghcr.io/grafana/grafana-bench:${{ github.sha }}
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64,darwin/amd64
+          iidfile: grafana-bench.iid
+          build-args: |
+            BENCH_REVISION=${{ github.sha }}
+          push: false
+          tags: |
+            ghcr.io/grafana/grafana-bench:${{ github.sha }}
+        # run: docker build --platforms linux/amd64,linux/arm64,darwin/amd64 --iidfile=grafana-bench.iid --build-arg BENCH_REVISION=${{ github.sha }} .
+      # - name: tag container
+      #   run: |
+      #     docker tag ghcr.io/grafana/grafana-bench:${{ github.sha }}
+      #     docker push ghcr.io/grafana/grafana-bench:${{ github.sha }}
 
   test-pr-container:
     runs-on: ubuntu-latest
