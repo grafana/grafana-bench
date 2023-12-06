@@ -10,19 +10,19 @@ jobs:
   build-pr-container:
     runs-on: ubuntu-latest
     steps:
-    - name: docker login (github)
-    - uses: docker/login-action@v3
-      with:
-        registry: ghcr.io
-        username: jalevin                 # TODO don't use personal github
-        password: ${{ secrets.JEFF_PAT }} # TODO don't use PAT
-    - name: build container
-    - uses: actions/checkout@v4
-      run: docker build --iidfile=grafana-bench.iid --build-arg BENCH_REVISION=${{ github.sha }} . 
-    - name: tag container
-      run: |
-        docker tag ghcr.io/grafana/grafana-bench:${{ github.sha }}
-        docker push ghcr.io/grafana/grafana-bench:${{ github.sha }}
+      - uses: docker/login-action@v3
+      - name: docker login (github)
+        with:
+          registry: ghcr.io
+          username: jalevin                 # TODO don't use personal github
+          password: ${{ secrets.JEFF_PAT }} # TODO don't use PAT
+      - name: build container
+      - uses: actions/checkout@v4
+        run: docker build --iidfile=grafana-bench.iid --build-arg BENCH_REVISION=${{ github.sha }} . 
+      - name: tag container
+        run: |
+          docker tag ghcr.io/grafana/grafana-bench:${{ github.sha }}
+          docker push ghcr.io/grafana/grafana-bench:${{ github.sha }}
 
   test-pr-container:
     runs-on: ubuntu-latest
@@ -35,15 +35,15 @@ jobs:
         GRAFANA_PASSWORD: PURPOSEFULLY_INVALID
       options: --user root
     steps:
-    - uses: actions/checkout@v4
-    - name: run browser check
-      run: |
-        k6 run ./CI/browser_test.js
-    - name: Archive screenshots
-      uses: actions/upload-artifact@v3
-      with:
-        name: screenshots
-        path: screenshots
+      - uses: actions/checkout@v4
+      - name: run browser check
+        run: |
+          k6 run ./CI/browser_test.js
+      - name: Archive screenshots
+      - uses: actions/upload-artifact@v3
+        with:
+          name: screenshots
+          path: screenshots
 
       # TODO if branch is not main, delete container
       #- name: cleanup container if not in main branch
