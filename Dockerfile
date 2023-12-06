@@ -31,8 +31,12 @@ RUN --mount=type=cache,id=go-build-${TARGETOS}-${TARGETARCH}${TARGETVARIANT},tar
 FROM grafana/k6:latest AS k6
 FROM alpine:3.18 AS runtime
 
+USER root
 RUN apk add --no-cache ca-certificates git chromium-swiftshader
+
 RUN adduser -D -u 1010 -g 1010 bench
+
+USER bench
 
 # copy binaries
 COPY --from=k6 /usr/bin/k6 /usr/local/bin/k6
@@ -46,10 +50,8 @@ ENV K6_BROWSER_HEADLESS=true
 # alpine and avoids the usage of SYS_ADMIN Docker capability
 ENV K6_BROWSER_ARGS=no-sandbox
 
-USER bench
 WORKDIR /home/bench
 RUN mkdir /home/bench/tests
 
-USER root
 
 ENTRYPOINT ["grafana-bench"]
