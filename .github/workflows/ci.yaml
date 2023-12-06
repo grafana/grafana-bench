@@ -2,23 +2,23 @@ name: test-bench-image
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   build-pr-container:
     runs-on: ubuntu-latest
     steps:
-      - uses: docker/login-action@v3
-      - name: docker login (github)
-        with:
-          registry: ghcr.io
-          username: jalevin                 # TODO don't use personal github
-          password: ${{ secrets.JEFF_PAT }} # TODO don't use PAT
+      # - uses: docker/login-action@v3
+      # - name: docker login (github)
+      #   with:
+      #     registry: ghcr.io
+      #     username: jalevin # TODO don't use personal github
+      #     password: ${{ secrets.JEFF_PAT }} # TODO don't use PAT
       - name: build container
       - uses: actions/checkout@v4
-        run: docker build --iidfile=grafana-bench.iid --build-arg BENCH_REVISION=${{ github.sha }} . 
+        run: docker build --iidfile=grafana-bench.iid --build-arg BENCH_REVISION=${{ github.sha }} .
       - name: tag container
         run: |
           docker tag ghcr.io/grafana/grafana-bench:${{ github.sha }}
