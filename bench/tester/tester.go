@@ -181,8 +181,15 @@ func (tr *TestRun) GetTestSuiteFiles() ([]string, error) {
 // read .version from dist/ folder in test repo
 func (tr *TestRun) GetShortTestRevisionFromCompiled() (string, error) {
 	bytes, err := os.ReadFile(tr.VersionFilePath)
-	if err != nil {
-		return "", err
+
+	if err == nil {
+		return strings.TrimSpace(string(bytes)), nil
 	}
-	return strings.TrimSpace(string(bytes)), nil
+
+	if os.IsNotExist(err) {
+		tr.Log.Warn(fmt.Sprintf("No version file specified at %s", tr.VersionFilePath))
+		return "UNKNOWN", nil
+	}
+
+	return "", err
 }
