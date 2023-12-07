@@ -317,6 +317,7 @@ func prepareK6Command(identifier, testFile, jsonFile string, envVars map[string]
 
 	cmd := exec.Command("k6", defaultArgs...)
 
+	envVars["path"] = os.Getenv("PATH")
 	// set env vars
 	for key, value := range envVars {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", strings.ToUpper(key), strings.TrimSpace(value)))
