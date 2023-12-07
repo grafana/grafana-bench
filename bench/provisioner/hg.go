@@ -81,6 +81,7 @@ func loadTest(ctx context.Context, ps *ProvisionState, tr *tester.TestRun, machi
 		"K6_CLOUD_TOKEN":          tr.K6CloudToken,
 		"K6_CLOUD_PROJECT_ID":     tr.K6CloudProjectId,
 		"K6_CLOUD_TRACES_ENABLED": "true",
+		"K6_BROWSER_ENABLED":      "true",
 	}
 
 	// run k6 tests
@@ -200,6 +201,7 @@ func smokeTest(ctx context.Context, ps *ProvisionState, tr *tester.TestRun, mach
 		"GT_URL":              ps.GrafanaInstance.SchemeServiceAddress(),
 		"GT_USERNAME":         ps.GrafanaInstance.ServiceUser,
 		"GT_PASSWORD":         ps.GrafanaInstance.ServicePassword,
+		"K6_BROWSER_ENABLED":  "true",
 	}
 
 	return utils.DoInDir(utils.Getwd(), tr.TestSuiteDir, func() error {
