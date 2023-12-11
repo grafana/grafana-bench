@@ -29,7 +29,7 @@ RUN --mount=type=cache,id=go-build-${TARGETOS}-${TARGETARCH}${TARGETVARIANT},tar
                 go build -ldflags="-X main.benchRevision=${BENCH_REVISION}" -trimpath -o grafana-bench ./cmd
 
 FROM grafana/k6:latest AS k6
-FROM alpine:3.18 AS runtime
+FROM alpine:3.19 AS runtime
 
 USER root
 RUN apk add --no-cache ca-certificates git chromium-swiftshader
