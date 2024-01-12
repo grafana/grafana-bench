@@ -57,7 +57,7 @@ func (b *Build) Run(ctx context.Context) error {
 	// do the build
 	err := utils.DoInDir(b.LocalDir, b.buildSuiteDir, func() error {
 		// cmd - note, verbose and distro must be provided at the end of the command
-		cmd := []string{"run", "./cmd", "artifacts", "--artifacts=backend", "--build",
+		cmd := []string{"run", "./cmd", "artifacts", "--artifacts=backend:grafana:linux/amd64",
 			fmt.Sprintf("--platform=%s", b.Arch),
 			fmt.Sprintf("--grafana-ref=%s", b.GrafanaRevision),
 			"--verbose",
