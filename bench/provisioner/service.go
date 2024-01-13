@@ -110,13 +110,15 @@ func (p *ProvisionerService) New(ctx context.Context, t ProvisionType, grafanaRe
 // NewLocalDevState creates a provision state assuming Grafana is running on https://localhost:3000. Used for local development workflow.
 // e.g. `mage test dashboards` without providing a state
 func (p *ProvisionerService) NewLocalDevState(ctx context.Context, grafanaAddress string, grafanaUser string, grafanaPassword string) *ProvisionState {
+
+	instance, _ := NewReadOnlyGrafanaVM(grafanaAddress, grafanaUser, grafanaPassword)
 	return &ProvisionState{
 		Log:              p.Log.With("driver", Local),
 		driver:           p.InitDriver(Local),
 		Identifier:       "LOCALDEVSTATE",
 		Type:             Local,
 		GrafanaBuildInfo: GrafanaBuildInfo{},
-		GrafanaInstance:  NewReadOnlyGrafanaVM(grafanaAddress, grafanaUser, grafanaPassword),
+		GrafanaInstance:  instance,
 	}
 }
 

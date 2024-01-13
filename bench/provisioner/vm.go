@@ -33,10 +33,10 @@ type VMInstance struct {
 // Takes a fully qualified address such as https://jefflevinslunch.grafana.net
 // and populates the service fields based on the address. If a port is not
 // included in the address, it will be determined based on the scheme
-func NewReadOnlyGrafanaVM(address, grafanaUser, grafanaPassword string) *VMInstance {
+func NewReadOnlyGrafanaVM(address, grafanaUser, grafanaPassword string) (*VMInstance, error) {
 	scheme, host, port, err := parseServiceAddress(address)
 	if err != nil {
-		panic(fmt.Errorf("error parsing grafana uri: %w", err))
+		return nil, fmt.Errorf("error parsing grafana uri: %w", err)
 	}
 
 	return &VMInstance{
@@ -45,7 +45,7 @@ func NewReadOnlyGrafanaVM(address, grafanaUser, grafanaPassword string) *VMInsta
 		ServiceScheme:   scheme,
 		ServiceUser:     grafanaUser,
 		ServicePassword: grafanaPassword,
-	}
+	}, nil
 }
 
 // parseServiceAddress takes an address such as

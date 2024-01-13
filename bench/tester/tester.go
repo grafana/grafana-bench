@@ -71,6 +71,7 @@ func (tr *TestRun) ResolveTestSuite() error {
 	if !exists {
 		tr.Log.Info("cloning build suite")
 
+		// TODO remove dependency on mage.sh.RunV
 		if err := sh.RunV("git", "clone", tr.GrafanaTestRepo, tr.TestSuiteDir); err != nil {
 			return fmt.Errorf("test-run: Error checking out grafana test repo %s", err)
 		}
