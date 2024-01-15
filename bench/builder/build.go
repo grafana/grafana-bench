@@ -76,7 +76,7 @@ func (b *Build) Run(ctx context.Context) error {
 	}
 
 	// cache the build
-	grafanaExecutablePath := path.Join(b.buildSuiteDir, "bin", b.Arch, "grafana")
+	grafanaExecutablePath := path.Join(b.buildSuiteDir, "dist", "bin", "grafana", b.Arch, "grafana")
 	if err := b.BuildCache.StoreFile(ctx, buildcache.TypeBuild, grafanaExecutablePath, b.ArtifactBuildName); err != nil {
 		return err
 	}
