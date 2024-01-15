@@ -10,6 +10,7 @@ import (
 
 	"github.com/grafana/grafana-bench/bench/buildcache"
 	"github.com/grafana/grafana-bench/bench/utils"
+	"github.com/grafana/grafana-bench/bench/utils/env"
 	"github.com/magefile/mage/sh"
 )
 
@@ -57,11 +58,12 @@ func (b *Build) Run(ctx context.Context) error {
 	// do the build
 	err := utils.DoInDir(b.LocalDir, b.buildSuiteDir, func() error {
 		// cmd - note, verbose and distro must be provided at the end of the command
-		cmd := []string{"run", "./cmd", "artifacts", "--build=true", "--publish=false",
+		cmd := []string{"run", "./cmd", "artifacts", "--build=true", "--publish=false", "--verbose",
 			fmt.Sprintf("--artifacts=backend:grafana:%s", b.Arch),
 			fmt.Sprintf("--platform=%s", b.Arch),
 			fmt.Sprintf("--grafana-ref=%s", b.GrafanaRevision),
-			"--verbose",
+			// token is required by grafana build. Pass a dummy one if none provided
+			fmt.Sprintf("--github-token=%s", env.EnvOrDefault("GITHUB_TOKEN", "XXXXXXXX")),
 		}
 
 		b.Log.Info("running build command", "cmd", strings.Join(cmd, " "))
