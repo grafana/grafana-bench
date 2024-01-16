@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -16,36 +15,36 @@ import (
 )
 
 type TestRunner struct {
-	Log *slog.Logger
-	Type TestType
-	// location of the .version file within the test repo
-	TestVersionFilepath string
-	Tests               string
-	K6CloudToken        string
-	K6CloudProjectID    string
-	GrafanaInstance     *provisioner.VMInstance
-	MachineSpec         string
+	Log              *slog.Logger
+	Type             TestType
+	TestVersion      string
+	Tests            string
+	K6CloudToken     string
+	K6CloudProjectID string
+	GrafanaInstance  *provisioner.VMInstance
+	MachineSpec      string
 }
 
 func NewTestRunner(
 	log *slog.Logger,
 	testType TestType,
-	tests   string,
-	testVersionFilepath string,
-	k6CloudProjectId, k6CloudToken string,
+	tests string,
+	testVersion string,
+	k6CloudProjectId,
+	k6CloudToken string,
 	grafanaInstance *provisioner.VMInstance,
 	machineSpec string,
 ) *TestRunner {
 
 	return &TestRunner{
-		Log:                 log,
-		Type:                testType,
-		Tests:               tests,
-		TestVersionFilepath: testVersionFilepath,
-		K6CloudToken:        k6CloudToken,
-		K6CloudProjectID:    k6CloudProjectId,
-		GrafanaInstance:     grafanaInstance,
-		MachineSpec:         machineSpec,
+		Log:              log,
+		Type:             testType,
+		Tests:            tests,
+		TestVersion:      testVersion,
+		K6CloudToken:     k6CloudToken,
+		K6CloudProjectID: k6CloudProjectId,
+		GrafanaInstance:  grafanaInstance,
+		MachineSpec:      machineSpec,
 	}
 }
 
@@ -60,19 +59,15 @@ func (t *TestRunner) Exec(ctx context.Context) error {
 		return fmt.Errorf("getting grafana version %w", err)
 	}
 
-	testVersion, err := t.GetTestRevision(t.TestVersionFilepath)
-	if err != nil {
-		return err
-	}
 
-	runIdentifier := NewRunIdentifier(t.Type.Name(), grafanaVersion, testVersion)
+	runIdentifier := NewRunIdentifier(t.Type.Name(), grafanaVersion, t.TestVersion)
 	t.Log.Info("suite identifier", "identifier", runIdentifier)
 
 	t.Log = log.With("svc", fmt.Sprintf("%s-test-runner", t.Type.Name()))
 
 	envVars := map[string]string{
 		"MACHINE_SPEC":        t.MachineSpec,
-		"TEST_SUITE_REVISION": testVersion,
+		"TEST_SUITE_REVISION": t.TestVersion,
 		"GT_URL":              t.GrafanaInstance.SchemeServiceAddress(),
 		"GT_USERNAME":         t.GrafanaInstance.ServiceUser,
 		"GT_PASSWORD":         t.GrafanaInstance.ServicePassword,
@@ -125,22 +120,6 @@ func NewRunIdentifier(testType, grafanaVersion, testVersion string) string {
 		testVersion,
 		grafanaVersion,
 	)
-}
-
-// read .version from test directory
-func (t *TestRunner) GetTestRevision(testVersionFilepath string) (string, error) {
-	bytes, err := os.ReadFile(testVersionFilepath)
-
-	if err == nil {
-		return strings.TrimSpace(string(bytes)), nil
-	}
-
-	if os.IsNotExist(err) {
-		t.Log.Warn(fmt.Sprintf("No version file specified at %s", testVersionFilepath))
-		return "UNKNOWN", nil
-	}
-
-	return "", err
 }
 
 // Wait for the server to start up
