@@ -44,6 +44,7 @@ func NewBuildCache(ctx context.Context, log *slog.Logger, localDir, credPath, bu
 	if !exists {
 		log.Info("no remote cache creds provided. Using local cache")
 		return &BuildCache{
+			Log:         log,
 			LocalDir:    localDir,
 			RemoteCache: false,
 		}, nil
@@ -54,6 +55,7 @@ func NewBuildCache(ctx context.Context, log *slog.Logger, localDir, credPath, bu
 		log.Info("error authenticating to remote cache bucket. Using local cache")
 		// just use local if authentication fails
 		return &BuildCache{
+			Log:         log,
 			LocalDir:    localDir,
 			RemoteCache: false,
 		}, nil

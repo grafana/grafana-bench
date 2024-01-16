@@ -10,6 +10,7 @@ import (
 
 	"github.com/grafana/grafana-bench/bench/buildcache"
 	"github.com/grafana/grafana-bench/bench/utils"
+	"github.com/grafana/grafana-bench/bench/utils/env"
 	"github.com/magefile/mage/sh"
 )
 
@@ -57,10 +58,12 @@ func (b *Build) Run(ctx context.Context) error {
 	// do the build
 	err := utils.DoInDir(b.LocalDir, b.buildSuiteDir, func() error {
 		// cmd - note, verbose and distro must be provided at the end of the command
-		cmd := []string{"run", "./cmd", "backend", "build",
-			fmt.Sprintf("--distro=%s", b.Arch),
+		cmd := []string{"run", "./cmd", "artifacts", "--build=true", "--publish=false", "--verbose",
+			fmt.Sprintf("--artifacts=backend:grafana:%s", b.Arch),
+			fmt.Sprintf("--platform=%s", b.Arch),
 			fmt.Sprintf("--grafana-ref=%s", b.GrafanaRevision),
-			"--verbose",
+			// token is required by grafana build. Pass a dummy one if none provided
+			fmt.Sprintf("--github-token=%s", env.EnvOrDefault("GITHUB_TOKEN", "XXXXXXXX")),
 		}
 
 		b.Log.Info("running build command", "cmd", strings.Join(cmd, " "))
@@ -73,7 +76,7 @@ func (b *Build) Run(ctx context.Context) error {
 	}
 
 	// cache the build
-	grafanaExecutablePath := path.Join(b.buildSuiteDir, "bin", b.Arch, "grafana")
+	grafanaExecutablePath := path.Join(b.buildSuiteDir, "dist", "bin", "grafana", b.Arch, "grafana")
 	if err := b.BuildCache.StoreFile(ctx, buildcache.TypeBuild, grafanaExecutablePath, b.ArtifactBuildName); err != nil {
 		return err
 	}
