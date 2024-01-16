@@ -6,40 +6,51 @@ import (
 	"log/slog"
 	"net"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/grafana/grafana-bench/bench/provisioner"
-	"github.com/unknwon/log"
+	"github.com/grafana/grafana-bench/bench/utils"
 )
 
 type TestRunner struct {
 	Log *slog.Logger
-	// location of test files on disk
-	TestDir string
+	Type TestType
 	// location of the .version file within the test repo
 	TestVersionFilepath string
+	Tests               string
 	K6CloudToken        string
 	K6CloudProjectID    string
 	GrafanaInstance     *provisioner.VMInstance
-
+	MachineSpec         string
 	runIdentifier string
 }
 
-func NewTestRunner(ctx context.Context, log *slog.Logger, testDir string, testVersionFilepath string, k6CloudProjectId, k6CloudToken string, grafanaInstance *provisioner.VMInstance) *TestRunner {
+func NewTestRunner(
+	log *slog.Logger,
+	testType TestType,
+	tests   string,
+	testVersionFilepath string,
+	k6CloudProjectId, k6CloudToken string,
+	grafanaInstance *provisioner.VMInstance,
+	machineSpec string,
+) *TestRunner {
 
 	return &TestRunner{
 		Log:                 log,
-		TestDir:             testDir,
+		Type:                testType,
+		Tests:               tests,
 		TestVersionFilepath: testVersionFilepath,
 		K6CloudToken:        k6CloudToken,
 		K6CloudProjectID:    k6CloudProjectId,
 		GrafanaInstance:     grafanaInstance,
+		MachineSpec:         machineSpec,
 	}
 }
 
-func (t *TestRunner) Exec(testType TestType) error {
-	ctx := context.Background()
+func (t *TestRunner) Exec(ctx context.Context) error {
 	log := t.Log.With("svc", "boot-test-runner")
 
 	// TODO implement a timeout of some sort
@@ -47,25 +58,56 @@ func (t *TestRunner) Exec(testType TestType) error {
 
 	grafanaVersion, err := provisioner.GetGrafanaBuildVersion(t.GrafanaInstance)
 	if err != nil {
-		t.Log.Error("error getting grafana version", "err", err)
-		return fmt.Errorf("Error getting grafana version. exiting.. err: %w", err)
+		return fmt.Errorf("getting grafana version %w", err)
 	}
 
-	testVersion, err := t.GetShortTestRevisionFromCompiled(t.TestVersionFilepath)
+	testVersion, err := t.GetTestRevision(t.TestVersionFilepath)
 	if err != nil {
 		return err
 	}
 
-	t.runIdentifier = NewRunIdentifier(testType.Name(), grafanaVersion, testVersion)
+	t.runIdentifier = NewRunIdentifier(t.Type.Name(), grafanaVersion, testVersion)
 	t.Log.Info("suite identifier", "identifier", t.runIdentifier)
 
-	t.Log = log.With("svc", fmt.Sprintf("%s-test-runner", testType.Name()))
+	t.Log = log.With("svc", fmt.Sprintf("%s-test-runner", t.Type.Name()))
 
-	switch testType {
-	case SmokeTest:
-		return t.Smoke()
-	case LoadTest:
-		return t.Load()
+	envVars := map[string]string{
+		"MACHINE_SPEC":        t.MachineSpec,
+		"TEST_SUITE_REVISION": testVersion,
+		"GT_URL":              t.GrafanaInstance.SchemeServiceAddress(),
+		"GT_USERNAME":         t.GrafanaInstance.ServiceUser,
+		"GT_PASSWORD":         t.GrafanaInstance.ServicePassword,
+		"K6_CLOUD_TOKEN":      t.K6CloudToken,
+		"K6_CLOUD_PROJECT_ID": t.K6CloudProjectID,
+	}
+
+	// run k6 tests
+	tests, err := t.GetTestFiles()
+	if err != nil {
+		return err
+	}
+
+	// run the tests
+	for _, testFile := range tests {
+		t.Log.Info("running test file", "file", testFile)
+		envVars["SCENARIO_NAME"] = getScenarioName(testFile)
+
+		args := []string{"run", testFile}
+
+		if t.Type == LoadTest {
+			args = append(args, "--out", "cloud")
+		}
+
+		cmd := exec.Command("k6", args...)
+
+		// k6 run tests/tests/dashboards.js ...args
+		err = utils.ExecStdoutWithEnv(cmd, envVars)
+		if err != nil {
+			if exitError, ok := err.(*exec.ExitError); ok {
+				cmdString := "k6 " + strings.Join(cmd.Args, " ")
+				t.Log.Warn("k6 command exited with err", "status", exitError.ExitCode(), "error", err, "testFile", testFile, "cmd", cmdString)
+			}
+		}
 	}
 
 	return nil
@@ -87,7 +129,7 @@ func NewRunIdentifier(testType, grafanaVersion, testVersion string) string {
 }
 
 // read .version from test directory
-func (t *TestRunner) GetShortTestRevisionFromCompiled(testVersionFilepath string) (string, error) {
+func (t *TestRunner) GetTestRevision(testVersionFilepath string) (string, error) {
 	bytes, err := os.ReadFile(testVersionFilepath)
 
 	if err == nil {
@@ -103,7 +145,7 @@ func (t *TestRunner) GetShortTestRevisionFromCompiled(testVersionFilepath string
 }
 
 // Wait for the server to start up
-func WaitForLiveGrafana(ctx context.Context, log *log.Slog, grafanaAddress string) {
+func WaitForLiveGrafana(ctx context.Context, log *slog.Logger, grafanaAddress string) {
 	for {
 		if IsLive(log, grafanaAddress) {
 			log.Info("Grafana server is ready!")
@@ -120,4 +162,42 @@ func IsLive(log *slog.Logger, address string) bool {
 		log.Info("Checking isLive...", "error", err)
 	}
 	return err == nil
+}
+
+// GetTestFiles builds a list of k6 tests to run
+// If Tests has a js extension run that single file otherwise assume it's
+// a folder and glob all of the .js files in it recursively
+// e.g.
+// Tests=dashboard_read.js will run dashboard_read.js
+// Tests=dashboards will run all files in dashboards/**.*.js
+//
+// If TestSuite is blank, assume we want to run everything in dist/**.*.js
+func (t *TestRunner) GetTestFiles() ([]string, error) {
+	// single file if we have .js extension
+	if strings.Contains(t.Tests, ".js") {
+		return []string{t.Tests}, nil
+	}
+
+	files, err := utils.GlobByExtension(t.Tests, ".js")
+	if err != nil {
+		return []string{}, err
+	}
+
+	return files, nil
+}
+
+// we expect scenarios to be named like the file
+// tests/dashboards/dashboard_create.js -> dashboardCreate
+func getScenarioName(filename string) string {
+	filename = filepath.Base(filename)
+	filename = strings.TrimSuffix(filename, filepath.Ext(filename))
+	parts := strings.Split(filename, "_")
+	for i, p := range parts {
+		// don't capitalize the first word
+		if i == 0 {
+			continue
+		}
+		parts[i] = strings.Title(p)
+	}
+	return strings.Join(parts, "")
 }
