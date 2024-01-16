@@ -44,14 +44,16 @@ func main() {
 // read test runner specification from CLI args
 func testRunnerFromArgs(log *slog.Logger, args []string) (*TestRunner, error) {
 	var (
-		testType     string
-		address      string
-		username     string
-		password     string
-		machineSpec  string
-		revision     string
-		revisionFile string
-		tests        string
+		testType         string
+		address          string
+		username         string
+		password         string
+		machineSpec      string
+		revision         string
+		revisionFile     string
+		tests            string
+		k6CloudToken     string
+		k6CloudProjectId string
 	)
 
 	fs := flag.NewFlagSet("test runner", flag.ContinueOnError)
@@ -85,6 +87,14 @@ func testRunnerFromArgs(log *slog.Logger, args []string) (*TestRunner, error) {
 		return nil, err
 	}
 
+	if k6CloudToken == "" {
+		k6CloudToken = env.EnvOrDefault("K6_CLOUD_TOKEN", "")
+	}
+
+	if k6CloudProjectId == "" {
+		k6CloudProjectId = env.EnvOrDefault("K6_CLOUD_PROJECT_ID", "")
+	}
+
 	// the test is specified as an argument after the flags
 	switch fs.NArg() {
 	case 0:
@@ -98,9 +108,6 @@ func testRunnerFromArgs(log *slog.Logger, args []string) (*TestRunner, error) {
 	if !exists {
 		return nil, fmt.Errorf("test file %s was not found", tests)
 	}
-
-	k6CloudToken := env.EnvOrDefault("K6_CLOUD_TOKEN", "")
-	k6CloudProjectId := env.EnvOrDefault("K6_CLOUD_PROJECT_ID", "")
 
 	return NewTestRunner(
 		log,
