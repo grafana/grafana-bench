@@ -17,7 +17,7 @@ import (
 type TestRunner struct {
 	Log              *slog.Logger
 	Type             TestType
-	TestVersion      string
+	TestRevision     string
 	Tests            string
 	K6CloudToken     string
 	K6CloudProjectID string
@@ -29,7 +29,7 @@ func NewTestRunner(
 	log *slog.Logger,
 	testType TestType,
 	tests string,
-	testVersion string,
+	testRevision string,
 	k6CloudProjectId,
 	k6CloudToken string,
 	grafanaInstance *provisioner.VMInstance,
@@ -40,7 +40,7 @@ func NewTestRunner(
 		Log:              log,
 		Type:             testType,
 		Tests:            tests,
-		TestVersion:      testVersion,
+		TestRevision:     testRevision,
 		K6CloudToken:     k6CloudToken,
 		K6CloudProjectID: k6CloudProjectId,
 		GrafanaInstance:  grafanaInstance,
@@ -60,14 +60,14 @@ func (t *TestRunner) Exec(ctx context.Context) error {
 	}
 
 
-	runIdentifier := NewRunIdentifier(t.Type.Name(), grafanaVersion, t.TestVersion)
+	runIdentifier := NewRunIdentifier(t.Type.Name(), grafanaVersion, t.TestRevision)
 	t.Log.Info("suite identifier", "identifier", runIdentifier)
 
 	t.Log = log.With("svc", fmt.Sprintf("%s-test-runner", t.Type.Name()))
 
 	envVars := map[string]string{
 		"MACHINE_SPEC":        t.MachineSpec,
-		"TEST_SUITE_REVISION": t.TestVersion,
+		"TEST_SUITE_REVISION": t.TestRevision,
 		"GT_URL":              t.GrafanaInstance.SchemeServiceAddress(),
 		"GT_USERNAME":         t.GrafanaInstance.ServiceUser,
 		"GT_PASSWORD":         t.GrafanaInstance.ServicePassword,
@@ -112,12 +112,12 @@ func (t *TestRunner) Exec(ctx context.Context) error {
 //
 // smoke-13:37:35-api-tests-cb5adc0-graf-10.2.0-60657
 // load-13:37:35-api-tests-cb5adc0-graf-10.2.0-60657
-func NewRunIdentifier(testType, grafanaVersion, testVersion string) string {
+func NewRunIdentifier(testType, grafanaVersion, testRevision string) string {
 	// {type}-{time}-api-tests-{sha}-graf-{version}
 	return fmt.Sprintf("%s-%s-api-tests-%s-graf-%s",
 		testType,
 		time.Now().UTC().Format("15:04:05"),
-		testVersion,
+		testRevision,
 		grafanaVersion,
 	)
 }

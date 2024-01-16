@@ -44,14 +44,14 @@ func main() {
 // read test runner specification from CLI args
 func testRunnerFromArgs(log *slog.Logger, args []string) (*TestRunner, error) {
 	var (
-		testType    string
-		address     string
-		username    string
-		password    string
-		machineSpec string
-		version     string
-		versionFile string
-		tests       string
+		testType     string
+		address      string
+		username     string
+		password     string
+		machineSpec  string
+		revision     string
+		revisionFile string
+		tests        string
 	)
 
 	fs := flag.NewFlagSet("test runner", flag.ContinueOnError)
@@ -60,8 +60,8 @@ func testRunnerFromArgs(log *slog.Logger, args []string) (*TestRunner, error) {
 	fs.StringVar(&username, "user", "admin", "grafana user name")
 	fs.StringVar(&password, "password", "admin", "grafana password")
 	fs.StringVar(&machineSpec, "spec", "", "grafana instance machine spec")
-	fs.StringVar(&version, "version", "", "test version. Has precedence over version-file")
-	fs.StringVar(&versionFile, "version-file", "", "path to test version file")
+	fs.StringVar(&revision, "revision", "", "test revision. Has precedence over version-file")
+	fs.StringVar(&revisionFile, "revision-file", "", "path to a file with the test revision")
 	err := fs.Parse(args)
 	if err != nil {
 		return nil, err
@@ -72,11 +72,11 @@ func testRunnerFromArgs(log *slog.Logger, args []string) (*TestRunner, error) {
 		return nil, err
 	}
 
-	// If versionFile and version are specified, version has precedence
-	if version == "" && versionFile != "" {
-		version, err = getTestRevision(versionFile)
+	// If revision-file and revision are specified, revision has precedence
+	if revision == "" && revisionFile != "" {
+		revision, err = getTestRevision(revisionFile)
 		if err != nil {
-			return nil, fmt.Errorf("getting version from file %s: w", versionFile, err)
+			return nil, fmt.Errorf("getting version from file %s: w", revisionFile, err)
 		}
 	}
 
@@ -106,7 +106,7 @@ func testRunnerFromArgs(log *slog.Logger, args []string) (*TestRunner, error) {
 		log,
 		trt,
 		tests,
-		version,
+		revision,
 		k6CloudProjectId,
 		k6CloudToken,
 		grafanaInstance,
@@ -115,9 +115,9 @@ func testRunnerFromArgs(log *slog.Logger, args []string) (*TestRunner, error) {
 }
 
 
-// read .version from test directory
-func getTestRevision(testVersionFilepath string) (string, error) {
-	bytes, err := os.ReadFile(testVersionFilepath)
+// read test revision from test file
+func getTestRevision(revisionFile string) (string, error) {
+	bytes, err := os.ReadFile(revisionFile)
 	if err != nil {
 		return "", fmt.Errorf("getting test version version from %s: %w", err)
 	}
