@@ -40,8 +40,9 @@ func (d *LocalDriver) Provision(ctx context.Context, ps *ProvisionState) (func()
 
 	// TODO figure out how to get this from ENV or custom.ini
 	ps.GrafanaInstance = &VMInstance{
-		Host:        "localhost",
-		ServicePort: "3000",
+		ServiceScheme: "http",
+		Host:          "localhost",
+		ServicePort:   "3000",
 	}
 
 	return killFunc, nil
