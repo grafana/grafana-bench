@@ -25,7 +25,6 @@ type TestRunner struct {
 	K6CloudProjectID    string
 	GrafanaInstance     *provisioner.VMInstance
 	MachineSpec         string
-	runIdentifier string
 }
 
 func NewTestRunner(
@@ -66,8 +65,8 @@ func (t *TestRunner) Exec(ctx context.Context) error {
 		return err
 	}
 
-	t.runIdentifier = NewRunIdentifier(t.Type.Name(), grafanaVersion, testVersion)
-	t.Log.Info("suite identifier", "identifier", t.runIdentifier)
+	runIdentifier := NewRunIdentifier(t.Type.Name(), grafanaVersion, testVersion)
+	t.Log.Info("suite identifier", "identifier", runIdentifier)
 
 	t.Log = log.With("svc", fmt.Sprintf("%s-test-runner", t.Type.Name()))
 

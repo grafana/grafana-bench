@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"os"
 
@@ -18,9 +19,9 @@ func main() {
 	log := slog.New(slog.NewTextHandler(os.Stderr, nil))
 	log = log.With("svc", "test-runner")
 
-	runner, err := testRunnerFromArgs(log, os.Args)
+	runner, err := testRunnerFromArgs(log, os.Args[1:])
 	if err != nil {
-		log.Error("parsing parameters", "error", err, "args", os.Args[1:])
+		log.Error("parsing parameters", "error", err)
 		os.Exit(1)
 	}
 
@@ -41,20 +42,37 @@ func main() {
 
 // read test runner specification from CLI args
 func testRunnerFromArgs(log *slog.Logger, args []string) (*TestRunner, error) {
-	// arg[0] is the command name, checking for the rest of CLI arguments
-	if len(args[1:]) != 7 {
-		return nil, fmt.Errorf("invalid number of arguments. Expected 7 got %d", len(args))
+	var (
+		testType    string
+		address     string
+		username    string
+		password    string
+		machineSpec string
+		versionPath string
+		tests       string
+	)
+
+	fs := flag.NewFlagSet("test runner", flag.ContinueOnError)
+	fs.StringVar(&testType, "type", "smoke", "test type. Allowed values: 'smoke', 'load'")
+	fs.StringVar(&address, "instance", "http://localhost:3000", "url to grafana instance")
+	fs.StringVar(&username, "user", "admin", "grafana user name")
+	fs.StringVar(&password, "password", "admin", "grafana password")
+	fs.StringVar(&machineSpec, "spec", "", "grafana instance machine spec")
+	fs.StringVar(&versionPath, "revision", "", "path to test version file.")
+	err := fs.Parse(args)
+	if err != nil {
+		return nil, err
 	}
 
-	var (
-		testType    = args[1]
-		address     = args[2]
-		username    = args[3]
-		password    = args[4]
-		machineSpec = args[5]
-		versionPath = args[6]
-		tests       = args[7]
-	)
+	// the test is specified as an argument after the flags
+	switch fs.NArg() {
+	case 0:
+		return nil, fmt.Errorf("tests must be specified")
+	case 1:
+		tests = fs.Arg(0)
+	default:
+		return nil, fmt.Errorf("expected one test argument got %d: %s", fs.NArg(), fs.Args())
+	}
 
 	trt, err := ParseTestType(testType)
 	if err != nil {
