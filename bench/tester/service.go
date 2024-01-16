@@ -37,7 +37,7 @@ func NewTestSvc(ctx context.Context, log *slog.Logger, localDir string, useCompi
 		versionFilePath = path.Join(localDir, ".version")
 	} else {
 		testSuiteDir = path.Join(localDir, "suite")
-		testRoot = path.Join(testSuiteDir, "dist", "test")
+		testRoot = path.Join(testSuiteDir, "dist", "tests")
 		versionFilePath = path.Join(testRoot, ".version")
 		err := os.MkdirAll(localDir, 0755)
 		if err != nil {
