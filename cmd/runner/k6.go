@@ -16,6 +16,67 @@ import (
 	"time"
 )
 
+// K6RunSummary summarizes the execution of a k6 execution
+type K6RunSummary struct {
+	ExitCode    int
+	ExitMessage string
+	Iterations  string
+	Durations   TestDurations
+	CloudId     string
+	CloudURL    string
+}
+
+// Execute the test
+func K6ExecTest(log *slog.Logger, testFile string, scenarioName string, runIdentifier string, env map[string]string, args ...string) (K6RunSummary, error) {
+	jsonFile := getJsonOutputFilename(testFile)
+
+	// build the command with buffer
+	cmd, buf := prepareK6Command(
+		runIdentifier,
+		testFile,
+		jsonFile,
+		env,
+		args...)
+
+	// run command
+	var (
+		cmdErr   string
+		exitCode int
+	)
+	if err := cmd.Run(); err != nil {
+		if exitError, ok := err.(*exec.ExitError); ok {
+			exitCode = exitError.ExitCode()
+		}
+		cmdErr = "error running k6 command: " + err.Error()
+		log.Info("error running k6 command", "error", err)
+	}
+
+	// scenario + testDuration will be in milliseconds
+	duration, err := parseDurationFromJsonFile(log, scenarioName, jsonFile)
+	if err != nil {
+		log.Warn("error processing json file", "error", err)
+	}
+
+	cloudId, cloudURL, err := parseK6CloudIdentifiersFromCLIOutput(log, buf.Bytes())
+	if err != nil {
+		log.Warn("error parsing cloud run from K6 summary", "error", err)
+	}
+
+	iterations, err := parseIterationCountFromCLIOutput(buf.Bytes())
+	if err != nil {
+		log.Warn("error parsing iterations from k6 summary", "error", err)
+	}
+
+	return K6RunSummary{
+		ExitCode:    exitCode,
+		Durations:   duration,
+		Iterations:  iterations,
+		ExitMessage: cmdErr,
+		CloudId:     cloudId,
+		CloudURL:    cloudURL,
+	}, nil
+}
+
 // pattern to match the cloud output url inside parenthesis
 //
 //	output: cloud (https://jefflevinslunch.grafana.net/a/k6-app/runs/1876021), json (/tmp/dashboard_create.json)
@@ -48,7 +109,6 @@ func prepareK6Command(identifier, testFile, jsonFile string, envVars map[string]
 
 	return cmd, buf
 }
-
 
 // parseK6CloudIdentifiersFromCLIOutput parses cloud run id and url output of k6 cli
 func parseK6CloudIdentifiersFromCLIOutput(log *slog.Logger, b []byte) (string, string, error) {

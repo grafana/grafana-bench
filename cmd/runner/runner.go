@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"strconv"
@@ -82,7 +81,7 @@ func (t *TestRunner) Exec(ctx context.Context) error {
 	if t.Type == SmokeTest {
 		return t.smokeTest(ctx, runIdentifier)
 	} else {
-		return t. loadTest(ctx, runIdentifier)
+		return t.loadTest(ctx, runIdentifier)
 	}
 }
 
@@ -91,7 +90,7 @@ func (t *TestRunner) Exec(ctx context.Context) error {
 //
 // smoke-13:37:35-api-tests-cb5adc0-graf-10.2.0-60657
 // load-13:37:35-api-tests-cb5adc0-graf-10.2.0-60657
-func (t *TestRunner)newRunIdentifier() string {
+func (t *TestRunner) newRunIdentifier() string {
 	// {type}-{time}-api-tests-{sha}-graf-{version}
 	return fmt.Sprintf("%s-%s-api-tests-%s-graf-%s",
 		t.Type.Name(),
@@ -119,18 +118,18 @@ func getScenarioName(filename string) string {
 
 // load test runs 100 iteration(default specified in test suite) of each test
 // specified and reports to k6 cloud
-func (t *TestRunner)loadTest(ctx context.Context, runIdentifier string) error {
+func (t *TestRunner) loadTest(ctx context.Context, runIdentifier string) error {
 	envVars := map[string]string{
 		"MACHINE_SPEC":        t.MachineSpec,
 		"TEST_TYPE":           t.Type.Name(),
 		"TEST_SUITE_REVISION": t.TestRevision,
 		// TODO unify variable names
-		"GRAFANA_URL":         t.GrafanaInstance.SchemeServiceAddress(),
-		"GRAFANA_USERNAME":    t.GrafanaInstance.ServiceUser,
-		"GRAFANA_PASSWORD":    t.GrafanaInstance.ServicePassword,
-		"GT_URL":      t.GrafanaInstance.SchemeServiceAddress(),
-		"GT_USERNAME": t.GrafanaInstance.ServiceUser,
-		"GT_PASSWORD": t.GrafanaInstance.ServicePassword,
+		"GRAFANA_URL":      t.GrafanaInstance.SchemeServiceAddress(),
+		"GRAFANA_USERNAME": t.GrafanaInstance.ServiceUser,
+		"GRAFANA_PASSWORD": t.GrafanaInstance.ServicePassword,
+		"GT_URL":           t.GrafanaInstance.SchemeServiceAddress(),
+		"GT_USERNAME":      t.GrafanaInstance.ServiceUser,
+		"GT_PASSWORD":      t.GrafanaInstance.ServicePassword,
 		//
 
 		"K6_CLOUD_TOKEN":          t.K6CloudToken,
@@ -147,51 +146,25 @@ func (t *TestRunner)loadTest(ctx context.Context, runIdentifier string) error {
 
 	// run the tests
 	for iteration, testFile := range t.Tests {
-		jsonFile := getJsonOutputFilename(testFile)
 		scenarioName := getScenarioName(testFile)
-
 		// set the scenario name so it's accessible from the test
 		envVars["SCENARIO_NAME"] = scenarioName
 
-		// build the command with buffer
-		cmd, buf := prepareK6Command(runIdentifier, testFile, jsonFile, envVars,
-			"--out", "json="+jsonFile,
+		// run command send output to cloud
+		k6Summary, err := K6ExecTest(
+			t.Log,
+			testFile,
+			scenarioName,
+			runIdentifier,
+			envVars,
 			"--out", "cloud",
 		)
-
-		// run command
-		err := cmd.Run()
-		exitCode := 0
-		exitMessage := ""
 		if err != nil {
-			if exitError, ok := err.(*exec.ExitError); ok {
-				exitCode = exitError.ExitCode()
-				anyFailures = true
-			}
-			exitMessage = "error running k6 command: " + err.Error()
-			t.Log.Info("error running k6 command", "error", err)
+			t.Log.Error("executing k6 test", "error", err)
+			// TODO: maybe we should break the iteration here, as test result may not be relevant
 		}
 
-		// scenario + testDuration will be in milliseconds
-		td, err := parseDurationFromJsonFile(t.Log, scenarioName, jsonFile)
-		if err != nil {
-			t.Log.Info("error processing json file", "error", err)
-		}
-
-		// NOTE total duration will be the total time for all tests to run
-		// including setup and teardown and does not include the rest of the
-		// time for bench to run
-		var id, url string
-		totalDuration += td.TotalDuration
-		id, url, err = parseK6CloudIdentifiersFromCLIOutput(t.Log, buf.Bytes())
-		if err != nil {
-			t.Log.Warn("error parsing cloud run from K6 summary", "error", err)
-		}
-
-		testIterations, err := parseIterationCountFromCLIOutput(buf.Bytes())
-		if err != nil {
-			t.Log.Warn("error parsing iterations from k6 summary", "error", err)
-		}
+		totalDuration += k6Summary.Durations.TotalDuration
 
 		// test complete log
 		t.Log.Info("testRun",
@@ -206,15 +179,15 @@ func (t *TestRunner)loadTest(ctx context.Context, runIdentifier string) error {
 			"folder", path.Dir(testFile),
 			"testFile", path.Base(testFile),
 			"order", strconv.Itoa(iteration+1),
-			"iterations", testIterations,
-			"k6CloudUrl", url,
-			"k6CloudID", id,
-			"setupDuration", prettyMS(td.SetupDuration),
-			"scenarioDuration", prettyMS(td.ScenarioDuration),
-			"teardownDuration", prettyMS(td.TeardownDuration),
-			"totalDuration", prettyMS(td.TotalDuration),
-			"exitMessage", exitMessage,
-			"exitCode", exitCode,
+			"iterations", k6Summary.Iterations,
+			"k6CloudUrl", k6Summary.CloudURL,
+			"k6CloudID", k6Summary.CloudId,
+			"setupDuration", prettyMS(k6Summary.Durations.SetupDuration),
+			"scenarioDuration", prettyMS(k6Summary.Durations.ScenarioDuration),
+			"teardownDuration", prettyMS(k6Summary.Durations.TeardownDuration),
+			"totalDuration", prettyMS(k6Summary.Durations.TotalDuration),
+			"exitMessage", k6Summary.ExitMessage,
+			"exitCode", k6Summary.ExitCode,
 		)
 	}
 
@@ -241,7 +214,7 @@ func (t *TestRunner)loadTest(ctx context.Context, runIdentifier string) error {
 
 // smokeTest runs a single iteration of each test specified and does not report
 // to k6 cloud
-func (t *TestRunner)smokeTest(ctx context.Context, runIdentifier string) error {
+func (t *TestRunner) smokeTest(ctx context.Context, runIdentifier string) error {
 	envVars := map[string]string{
 		"MACHINE_SPEC":        t.MachineSpec,
 		"TEST_TYPE":           t.Type.Name(),
@@ -259,43 +232,25 @@ func (t *TestRunner)smokeTest(ctx context.Context, runIdentifier string) error {
 
 	// run the tests
 	for iteration, testFile := range t.Tests {
-		jsonFile := getJsonOutputFilename(testFile)
 		scenarioName := getScenarioName(testFile)
 
 		// set the scenario name so it's accessible from the test
 		envVars["SCENARIO_NAME"] = scenarioName
 
-		// build the command with buffer
-		cmd, buf := prepareK6Command(runIdentifier, testFile, jsonFile, envVars)
-
 		// run command
-		err := cmd.Run()
-		exitCode := 0
-		exitMessage := ""
+		k6Summary, err := K6ExecTest(
+			t.Log,
+			testFile,
+			scenarioName,
+			runIdentifier,
+			envVars,
+		)
 		if err != nil {
-			if exitError, ok := err.(*exec.ExitError); ok {
-				exitCode = exitError.ExitCode()
-				anyFailures = true
-			}
-			exitMessage = "error running k6 command: " + err.Error()
-			t.Log.Info("error running k6 command", "error", err)
+			t.Log.Error("executing k6 test", "error", err)
+			// TODO: maybe we should break the iteration here, as test result may not be relevant
 		}
 
-		// get iterations
-		testIterations, err := parseIterationCountFromCLIOutput(buf.Bytes())
-		if err != nil {
-			t.Log.Warn("error parsing iterations from k6 summary", "error", err)
-		}
-
-		// scenario + testDuration will be in milliseconds
-		td, err := parseDurationFromJsonFile(t.Log, scenarioName, jsonFile)
-		if err != nil {
-			t.Log.Info("error processing json file", "error", err)
-		}
-		// NOTE total duration will be the total time for all tests to run
-		// including setup and teardown and does not include the rest of the
-		// time for bench to run
-		totalDuration += td.TotalDuration
+		totalDuration += k6Summary.Durations.TotalDuration
 
 		// test complete log
 		t.Log.Info("testRun",
@@ -310,13 +265,13 @@ func (t *TestRunner)smokeTest(ctx context.Context, runIdentifier string) error {
 			"folder", path.Dir(testFile),
 			"testFile", path.Base(testFile),
 			"order", strconv.Itoa(iteration+1),
-			"iterations", testIterations,
-			"setupDuration", prettyMS(td.SetupDuration),
-			"scenarioDuration", prettyMS(td.ScenarioDuration),
-			"teardownDuration", prettyMS(td.TeardownDuration),
-			"totalDuration", prettyMS(td.TotalDuration),
-			"exitMessage", exitMessage,
-			"exitCode", exitCode,
+			"iterations", k6Summary.Iterations,
+			"setupDuration", prettyMS(k6Summary.Durations.SetupDuration),
+			"scenarioDuration", prettyMS(k6Summary.Durations.ScenarioDuration),
+			"teardownDuration", prettyMS(k6Summary.Durations.TeardownDuration),
+			"totalDuration", prettyMS(k6Summary.Durations.TotalDuration),
+			"exitMessage", k6Summary.ExitMessage,
+			"exitCode", k6Summary.ExitCode,
 		)
 	}
 
