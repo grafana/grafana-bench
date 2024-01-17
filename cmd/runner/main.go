@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"log/slog"
 
@@ -54,11 +55,13 @@ func testRunnerFromArgs(log *slog.Logger, args []string) (*TestRunner, error) {
 		tests            string
 		k6CloudToken     string
 		k6CloudProjectId string
+		grafanaTimeout   time.Duration
 	)
 
 	fs := flag.NewFlagSet("test runner", flag.ContinueOnError)
 	fs.StringVar(&testType, "type", "smoke", "test type. Allowed values: 'smoke', 'load'")
 	fs.StringVar(&address, "instance", "http://localhost:3000", "url to grafana instance")
+	fs.DurationVar(&grafanaTimeout, "timeout", 30 * time.Second, "timeout for waiting grafana to be live")
 	fs.StringVar(&username, "user", "admin", "grafana user name")
 	fs.StringVar(&password, "password", "admin", "grafana password")
 	fs.StringVar(&machineSpec, "spec", "", "grafana instance machine spec")
@@ -118,10 +121,10 @@ func testRunnerFromArgs(log *slog.Logger, args []string) (*TestRunner, error) {
 		k6CloudProjectId,
 		k6CloudToken,
 		grafanaInstance,
+		grafanaTimeout,
 		machineSpec,
 	), nil
 }
-
 
 // read test revision from test file
 func getTestRevision(revisionFile string) (string, error) {

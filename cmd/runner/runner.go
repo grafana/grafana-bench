@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"net"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -22,6 +21,7 @@ type TestRunner struct {
 	K6CloudToken     string
 	K6CloudProjectID string
 	GrafanaInstance  *provisioner.VMInstance
+	GrafanaTimeout   time.Duration
 	MachineSpec      string
 }
 
@@ -33,6 +33,7 @@ func NewTestRunner(
 	k6CloudProjectId,
 	k6CloudToken string,
 	grafanaInstance *provisioner.VMInstance,
+	grafanaTimeout time.Duration,
 	machineSpec string,
 ) *TestRunner {
 
@@ -44,6 +45,7 @@ func NewTestRunner(
 		K6CloudToken:     k6CloudToken,
 		K6CloudProjectID: k6CloudProjectId,
 		GrafanaInstance:  grafanaInstance,
+		GrafanaTimeout:   grafanaTimeout,
 		MachineSpec:      machineSpec,
 	}
 }
@@ -52,7 +54,14 @@ func (t *TestRunner) Exec(ctx context.Context) error {
 	log := t.Log.With("svc", "boot-test-runner")
 
 	// TODO implement a timeout of some sort
-	WaitForLiveGrafana(ctx, log, t.GrafanaInstance.ServiceAddress())
+	log.Info("Waiting for grafana server...", "address", t.GrafanaInstance.ServiceAddress())
+
+	grafanaCtx, _ := context.WithTimeout(ctx, t.GrafanaTimeout)
+	err := t.GrafanaInstance.WaitForLiveGrafana(grafanaCtx)
+	if err != nil {
+		return fmt.Errorf("checking Grafana is Live... %w", err)
+	}
+	log.Info("Grafana server is ready!")
 
 	grafanaVersion, err := provisioner.GetGrafanaBuildVersion(t.GrafanaInstance)
 	if err != nil {
@@ -114,26 +123,6 @@ func NewRunIdentifier(testType, grafanaVersion, testRevision string) string {
 		testRevision,
 		grafanaVersion,
 	)
-}
-
-// Wait for the server to start up
-func WaitForLiveGrafana(ctx context.Context, log *slog.Logger, grafanaAddress string) {
-	for {
-		if IsLive(log, grafanaAddress) {
-			log.Info("Grafana server is ready!")
-			break
-		}
-		log.Info("Waiting for grafana server...", "address", grafanaAddress)
-		time.Sleep(time.Second)
-	}
-}
-
-func IsLive(log *slog.Logger, address string) bool {
-	_, err := net.Dial("tcp", address)
-	if err != nil {
-		log.Info("Checking isLive...", "error", err)
-	}
-	return err == nil
 }
 
 // we expect scenarios to be named like the file

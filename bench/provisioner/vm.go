@@ -1,12 +1,14 @@
 package provisioner
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/url"
 	"os"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/grafana/grafana-bench/bench/utils"
 	"golang.org/x/crypto/ssh"
@@ -197,4 +199,32 @@ func formatEnv(env map[string]string) string {
 		envVars += fmt.Sprintf("%s=\"%s\" ", strings.ToUpper(k), strings.TrimSpace(v))
 	}
 	return envVars
+}
+
+
+// Wait for the grafana instance to start up
+func (v *VMInstance) WaitForLiveGrafana(ctx context.Context) error {
+	if v.IsLive() {
+		return nil
+	}
+
+	timer := time.NewTicker(time.Second)
+	defer timer.Stop()
+
+	for {
+		select {
+		case <- timer.C:
+			if v.IsLive() {
+				return nil
+			}
+		case <- ctx.Done():
+			return ctx.Err()
+		}
+	}
+}
+
+// checks if grafana is alive
+func (v *VMInstance)IsLive() bool {
+	_, err := net.Dial("tcp", v.ServiceAddress())
+	return err == nil
 }
