@@ -18,7 +18,7 @@ type TestRunner struct {
 	Log              *slog.Logger
 	Type             TestType
 	TestRevision     string
-	Tests            string
+	Tests            []string
 	K6CloudToken     string
 	K6CloudProjectID string
 	GrafanaInstance  *provisioner.VMInstance
@@ -28,7 +28,7 @@ type TestRunner struct {
 func NewTestRunner(
 	log *slog.Logger,
 	testType TestType,
-	tests string,
+	tests []string,
 	testRevision string,
 	k6CloudProjectId,
 	k6CloudToken string,
@@ -75,14 +75,8 @@ func (t *TestRunner) Exec(ctx context.Context) error {
 		"K6_CLOUD_PROJECT_ID": t.K6CloudProjectID,
 	}
 
-	// run k6 tests
-	tests, err := t.GetTestFiles()
-	if err != nil {
-		return err
-	}
-
 	// run the tests
-	for _, testFile := range tests {
+	for _, testFile := range t.Tests {
 		t.Log.Info("running test file", "file", testFile)
 		envVars["SCENARIO_NAME"] = getScenarioName(testFile)
 
@@ -140,28 +134,6 @@ func IsLive(log *slog.Logger, address string) bool {
 		log.Info("Checking isLive...", "error", err)
 	}
 	return err == nil
-}
-
-// GetTestFiles builds a list of k6 tests to run
-// If Tests has a js extension run that single file otherwise assume it's
-// a folder and glob all of the .js files in it recursively
-// e.g.
-// Tests=dashboard_read.js will run dashboard_read.js
-// Tests=dashboards will run all files in dashboards/**.*.js
-//
-// If TestSuite is blank, assume we want to run everything in dist/**.*.js
-func (t *TestRunner) GetTestFiles() ([]string, error) {
-	// single file if we have .js extension
-	if strings.Contains(t.Tests, ".js") {
-		return []string{t.Tests}, nil
-	}
-
-	files, err := utils.GlobByExtension(t.Tests, ".js")
-	if err != nil {
-		return []string{}, err
-	}
-
-	return files, nil
 }
 
 // we expect scenarios to be named like the file

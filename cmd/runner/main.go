@@ -104,15 +104,16 @@ func testRunnerFromArgs(log *slog.Logger, args []string) (*TestRunner, error) {
 	default:
 		return nil, fmt.Errorf("expected one test argument got %d: %s", fs.NArg(), fs.Args())
 	}
-	exists, _ := utils.PathExists(tests)
-	if !exists {
-		return nil, fmt.Errorf("test file %s was not found", tests)
+
+	testFiles, err := getTestFiles(tests)
+	if err != nil {
+		return nil, fmt.Errorf("getting test list: %w", err)
 	}
 
 	return NewTestRunner(
 		log,
 		trt,
-		tests,
+		testFiles,
 		revision,
 		k6CloudProjectId,
 		k6CloudToken,
@@ -129,4 +130,34 @@ func getTestRevision(revisionFile string) (string, error) {
 		return "", fmt.Errorf("getting test version version from %s: %w", err)
 	}
 	return strings.TrimSpace(string(bytes)), nil
+}
+
+// getTestFiles builds a list of k6 tests to run
+// If Tests has a js extension run that single file otherwise assume it's
+// a folder and glob all of the .js files in it recursively
+// e.g.
+// tests=dashboard_read.js will run dashboard_read.js
+// tests=dashboards will run all files in dashboards/**.*.js
+//
+// If TestSuite is blank, assume we want to run everything in dist/**.*.js
+func getTestFiles(tests string) ([]string, error) {
+	// single file if we have .js extension
+	if strings.Contains(tests, ".js") {
+		exists, _ := utils.PathExists(tests)
+		if !exists {
+			return nil, fmt.Errorf("test file %s was not found", tests)
+		}
+		return []string{tests}, nil
+	}
+
+	files, err := utils.GlobByExtension(tests, ".js")
+	if err != nil {
+		return nil, err
+	}
+
+	if len(files) == 0 {
+		return nil, fmt.Errorf("no test files found at %s", tests)
+	}
+
+	return files, nil
 }
