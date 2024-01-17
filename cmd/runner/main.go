@@ -45,6 +45,7 @@ func main() {
 // read test runner specification from CLI args
 func testRunnerFromArgs(log *slog.Logger, args []string) (*TestRunner, error) {
 	var (
+		testTrigger      string
 		testType         string
 		address          string
 		username         string
@@ -59,6 +60,7 @@ func testRunnerFromArgs(log *slog.Logger, args []string) (*TestRunner, error) {
 	)
 
 	fs := flag.NewFlagSet("test runner", flag.ContinueOnError)
+	fs.StringVar(&testTrigger, "trigger", "local", "test trigger")
 	fs.StringVar(&testType, "type", "smoke", "test type. Allowed values: 'smoke', 'load'")
 	fs.StringVar(&address, "instance", "http://localhost:3000", "url to grafana instance")
 	fs.DurationVar(&grafanaTimeout, "timeout", 30 * time.Second, "timeout for waiting grafana to be live")
@@ -115,6 +117,7 @@ func testRunnerFromArgs(log *slog.Logger, args []string) (*TestRunner, error) {
 
 	return NewTestRunner(
 		log,
+		testTrigger,
 		trt,
 		testFiles,
 		revision,
