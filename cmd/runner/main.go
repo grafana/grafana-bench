@@ -89,7 +89,7 @@ func testRunnerFromArgs(log *slog.Logger, args []string) (*TestRunner, error) {
 	if revision == "" && revisionFile != "" {
 		revision, err = getTestRevision(revisionFile)
 		if err != nil {
-			return nil, fmt.Errorf("getting version from file %s: w", revisionFile, err)
+			return nil, fmt.Errorf("getting version from file %s: %w", revisionFile, err)
 		}
 	}
 
@@ -144,7 +144,7 @@ func testRunnerFromArgs(log *slog.Logger, args []string) (*TestRunner, error) {
 func getTestRevision(revisionFile string) (string, error) {
 	bytes, err := os.ReadFile(revisionFile)
 	if err != nil {
-		return "", fmt.Errorf("getting test version version from %s: %w", err)
+		return "", fmt.Errorf("getting test version version from %w", err)
 	}
 	return strings.TrimSpace(string(bytes)), nil
 }
