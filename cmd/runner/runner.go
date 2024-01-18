@@ -22,7 +22,6 @@ type TestRunner struct {
 	K6CloudToken     string
 	K6CloudProjectID string
 	GrafanaInstance  *provisioner.VMInstance
-	GrafanaRevision  string
 	GrafanaTimeout   time.Duration
 	GrafanaVersion   string
 	MachineSpec      string
@@ -93,13 +92,14 @@ func (t *TestRunner) Exec(ctx context.Context) error {
 //
 // smoke-13:37:35-api-tests-cb5adc0-graf-10.2.0-60657
 // load-13:37:35-api-tests-cb5adc0-graf-10.2.0-60657
+//
 func (t *TestRunner) newRunIdentifier() string {
 	// {type}-{time}-api-tests-{sha}-graf-{version}
 	return fmt.Sprintf("%s-%s-api-tests-%s-graf-%s",
 		t.Type.Name(),
 		time.Now().UTC().Format("15:04:05"),
 		t.TestRevision,
-		t.GrafanaRevision,
+		t.GrafanaVersion,
 	)
 }
 
@@ -202,7 +202,7 @@ func (t *TestRunner) loadTest(ctx context.Context, runIdentifier string) error {
 		"suiteRun", runIdentifier,
 		"testTrigger", t.Trigger,
 		"grafanaUrl", t.GrafanaInstance.Host,
-		"grafanaVersion", t.GrafanaRevision,
+		"grafanaVersion", t.GrafanaVersion,
 		"startTime", startTime.Format(time.RFC3339),
 		"totalScenarioDurations", totalScenarioDurations,
 		"duration", benchDuration,
@@ -261,7 +261,7 @@ func (t *TestRunner) smokeTest(ctx context.Context, runIdentifier string) error 
 			"suiteRun", runIdentifier,
 			"scenarioName", scenarioName,
 			"grafanaUrl", t.GrafanaInstance.Host,
-			"grafanaVersion", t.GrafanaRevision,
+			"grafanaVersion", t.GrafanaVersion,
 			"folder", path.Dir(testFile),
 			"testFile", path.Base(testFile),
 			"order", strconv.Itoa(iteration+1),
@@ -284,7 +284,7 @@ func (t *TestRunner) smokeTest(ctx context.Context, runIdentifier string) error 
 		"suiteRun", runIdentifier,
 		"testTrigger", t.Trigger,
 		"grafanaUrl", t.GrafanaInstance.Host,
-		"grafanaVersion", t.GrafanaRevision,
+		"grafanaVersion", t.GrafanaVersion,
 		"startTime", startTime.Format(time.RFC3339),
 		"totalScenarioDurations", totalScenarioDurations,
 		"duration", benchDuration,

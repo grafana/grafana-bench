@@ -68,6 +68,7 @@ func testRunnerFromArgs(log *slog.Logger, args []string) (*TestRunner, error) {
 	fs.StringVar(&username, "user", "admin", "grafana user name. Can be overridden by the GRAFANA_USER environment variable")
 	fs.StringVar(&password, "password", "admin", "grafana password. Can be overridden by the GRAFANA_PASSWORD environment variable")
 	fs.StringVar(&machineSpec, "spec", "", "grafana instance machine spec")
+	// TODO: add default value as the revision is used to generate the run id
 	fs.StringVar(&revision, "revision", "", "test suite revision. Has precedence over revision-file")
 	fs.StringVar(&revisionFile, "revision-file", "", "path to a file with the test revision")
 	fs.StringVar(&benchRevision, "bench-revision", "", "grafana bench revision")
