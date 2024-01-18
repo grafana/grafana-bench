@@ -57,6 +57,7 @@ func testRunnerFromArgs(log *slog.Logger, args []string) (*TestRunner, error) {
 		k6CloudToken     string
 		k6CloudProjectId string
 		grafanaTimeout   time.Duration
+		benchRevision    string
 	)
 
 	fs := flag.NewFlagSet("test runner", flag.ContinueOnError)
@@ -69,6 +70,7 @@ func testRunnerFromArgs(log *slog.Logger, args []string) (*TestRunner, error) {
 	fs.StringVar(&machineSpec, "spec", "", "grafana instance machine spec")
 	fs.StringVar(&revision, "revision", "", "test suite revision. Has precedence over revision-file")
 	fs.StringVar(&revisionFile, "revision-file", "", "path to a file with the test revision")
+	fs.StringVar(&benchRevision, "bench-revision", "", "grafana bench revision")
 	fs.StringVar(&k6CloudToken, "k6-cloud-token", "", "K6 cloud access token. If not set K6_CLOUD_TOKEN environment variable is used")
 	fs.StringVar(&k6CloudToken, "k6-cloud-project", "", "K6 cloud project ID. If not set K6_CLOUD_PROJECT_ID environment variable is used")
 
@@ -133,6 +135,7 @@ func testRunnerFromArgs(log *slog.Logger, args []string) (*TestRunner, error) {
 		grafanaInstance,
 		grafanaTimeout,
 		machineSpec,
+		benchRevision,
 	), nil
 }
 

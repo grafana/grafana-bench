@@ -26,6 +26,7 @@ type TestRunner struct {
 	GrafanaTimeout   time.Duration
 	GrafanaVersion   string
 	MachineSpec      string
+	BenchRevision    string
 }
 
 func NewTestRunner(
@@ -39,6 +40,7 @@ func NewTestRunner(
 	grafanaInstance *provisioner.VMInstance,
 	grafanaTimeout time.Duration,
 	machineSpec string,
+	benchRevision string,
 ) *TestRunner {
 
 	return &TestRunner{
@@ -52,6 +54,7 @@ func NewTestRunner(
 		GrafanaInstance:  grafanaInstance,
 		GrafanaTimeout:   grafanaTimeout,
 		MachineSpec:      machineSpec,
+		BenchRevision:    benchRevision,
 	}
 }
 
@@ -168,8 +171,7 @@ func (t *TestRunner) loadTest(ctx context.Context, runIdentifier string) error {
 
 		// test complete log
 		t.Log.Info("testRun",
-			// TODO: remove BenchRevision is no longer relevant
-			// "benchVersion", ps.BenchRevision,
+			"benchVersion", t.BenchRevision,
 			"apiTestsVersion", t.TestRevision,
 			"testRun", t.newTestIdentifier(testFile),
 			"suiteRun", runIdentifier,
@@ -195,8 +197,7 @@ func (t *TestRunner) loadTest(ctx context.Context, runIdentifier string) error {
 	benchDuration := prettyMS(float32(time.Since(startTime).Milliseconds()))
 
 	t.Log.Info("suiteRun",
-		// TODO: remove BenchRevision is no longer relevant
-		// "benchVersion", ps.BenchRevision,
+		"benchVersion", t.BenchRevision,
 		"apiTestsVersion", t.TestRevision,
 		"suiteRun", runIdentifier,
 		"testTrigger", t.Trigger,
@@ -254,8 +255,7 @@ func (t *TestRunner) smokeTest(ctx context.Context, runIdentifier string) error 
 
 		// test complete log
 		t.Log.Info("testRun",
-			// TODO: remove BenchRevision is no longer relevant
-			// "benchVersion", ps.BenchRevision,
+			"benchVersion", t.BenchRevision,
 			"apiTestsVersion", t.TestRevision,
 			"testRun", t.newTestIdentifier(testFile),
 			"suiteRun", runIdentifier,
@@ -279,8 +279,7 @@ func (t *TestRunner) smokeTest(ctx context.Context, runIdentifier string) error 
 	benchDuration := prettyMS(float32(time.Since(startTime).Milliseconds()))
 
 	t.Log.Info("suiteRun",
-		// FIXME: BenchRevision is no longer relevant
-		//	"benchVersion", ps.BenchRevision,
+		"benchVersion", t.BenchRevision,
 		"apiTestsVersion", t.TestRevision,
 		"suiteRun", runIdentifier,
 		"testTrigger", t.Trigger,
