@@ -15,6 +15,7 @@ import (
 
 type TestRunner struct {
 	Log              *slog.Logger
+	RunIdentifier    string
 	Type             TestType
 	Trigger          string
 	TestRevision     string
@@ -75,15 +76,15 @@ func (t *TestRunner) Exec(ctx context.Context) error {
 		return fmt.Errorf("getting grafana version %w", err)
 	}
 
-	runIdentifier := t.newRunIdentifier()
-	t.Log.Info("suite identifier", "identifier", runIdentifier)
+	t.RunIdentifier = t.newRunIdentifier()
+	t.Log.Info("suite identifier", "identifier", t.RunIdentifier)
 
 	t.Log = log.With("svc", fmt.Sprintf("%s-test-runner", t.Type.Name()))
 
 	if t.Type == SmokeTest {
-		return t.smokeTest(ctx, runIdentifier)
+		return t.smokeTest(ctx)
 	} else {
-		return t.loadTest(ctx, runIdentifier)
+		return t.loadTest(ctx)
 	}
 }
 
@@ -92,7 +93,6 @@ func (t *TestRunner) Exec(ctx context.Context) error {
 //
 // smoke-13:37:35-api-tests-cb5adc0-graf-10.2.0-60657
 // load-13:37:35-api-tests-cb5adc0-graf-10.2.0-60657
-//
 func (t *TestRunner) newRunIdentifier() string {
 	// {type}-{time}-api-tests-{sha}-graf-{version}
 	return fmt.Sprintf("%s-%s-api-tests-%s-graf-%s",
@@ -121,7 +121,7 @@ func getScenarioName(filename string) string {
 
 // load test runs 100 iteration(default specified in test suite) of each test
 // specified and reports to k6 cloud
-func (t *TestRunner) loadTest(ctx context.Context, runIdentifier string) error {
+func (t *TestRunner) loadTest(ctx context.Context) error {
 	envVars := map[string]string{
 		"MACHINE_SPEC":        t.MachineSpec,
 		"TEST_TYPE":           t.Type.Name(),
@@ -158,7 +158,7 @@ func (t *TestRunner) loadTest(ctx context.Context, runIdentifier string) error {
 			t.Log,
 			testFile,
 			scenarioName,
-			runIdentifier,
+			t.RunIdentifier,
 			envVars,
 			"--out", "cloud",
 		)
@@ -174,7 +174,7 @@ func (t *TestRunner) loadTest(ctx context.Context, runIdentifier string) error {
 			"benchVersion", t.BenchRevision,
 			"apiTestsVersion", t.TestRevision,
 			"testRun", t.newTestIdentifier(testFile),
-			"suiteRun", runIdentifier,
+			"suiteRun", t.RunIdentifier,
 			"scenarioName", scenarioName,
 			"grafanaUrl", t.GrafanaInstance.Host,
 			"grafanaVersion", t.GrafanaVersion,
@@ -199,7 +199,7 @@ func (t *TestRunner) loadTest(ctx context.Context, runIdentifier string) error {
 	t.Log.Info("suiteRun",
 		"benchVersion", t.BenchRevision,
 		"apiTestsVersion", t.TestRevision,
-		"suiteRun", runIdentifier,
+		"suiteRun", t.RunIdentifier,
 		"testTrigger", t.Trigger,
 		"grafanaUrl", t.GrafanaInstance.Host,
 		"grafanaVersion", t.GrafanaVersion,
@@ -215,7 +215,7 @@ func (t *TestRunner) loadTest(ctx context.Context, runIdentifier string) error {
 
 // smokeTest runs a single iteration of each test specified and does not report
 // to k6 cloud
-func (t *TestRunner) smokeTest(ctx context.Context, runIdentifier string) error {
+func (t *TestRunner) smokeTest(ctx context.Context) error {
 	envVars := map[string]string{
 		"MACHINE_SPEC":        t.MachineSpec,
 		"TEST_TYPE":           t.Type.Name(),
@@ -243,7 +243,7 @@ func (t *TestRunner) smokeTest(ctx context.Context, runIdentifier string) error 
 			t.Log,
 			testFile,
 			scenarioName,
-			runIdentifier,
+			t.RunIdentifier,
 			envVars,
 		)
 		if err != nil {
@@ -258,7 +258,7 @@ func (t *TestRunner) smokeTest(ctx context.Context, runIdentifier string) error 
 			"benchVersion", t.BenchRevision,
 			"apiTestsVersion", t.TestRevision,
 			"testRun", t.newTestIdentifier(testFile),
-			"suiteRun", runIdentifier,
+			"suiteRun", t.RunIdentifier,
 			"scenarioName", scenarioName,
 			"grafanaUrl", t.GrafanaInstance.Host,
 			"grafanaVersion", t.GrafanaVersion,
@@ -281,7 +281,7 @@ func (t *TestRunner) smokeTest(ctx context.Context, runIdentifier string) error 
 	t.Log.Info("suiteRun",
 		"benchVersion", t.BenchRevision,
 		"apiTestsVersion", t.TestRevision,
-		"suiteRun", runIdentifier,
+		"suiteRun", t.RunIdentifier,
 		"testTrigger", t.Trigger,
 		"grafanaUrl", t.GrafanaInstance.Host,
 		"grafanaVersion", t.GrafanaVersion,
@@ -294,7 +294,7 @@ func (t *TestRunner) smokeTest(ctx context.Context, runIdentifier string) error 
 
 	if anyFailures {
 		// TODO: remove reference to dashboard. This seems particular to the hosted grafana R
-		dashboardUrl := fmt.Sprintf("https://ops.grafana-ops.net/d/d3381df1-fa32-4955-994a-e6a8bca58025/test-runs?var-SuiteRun=%s", runIdentifier)
+		dashboardUrl := fmt.Sprintf("https://ops.grafana-ops.net/d/d3381df1-fa32-4955-994a-e6a8bca58025/test-runs?var-SuiteRun=%s", t.RunIdentifier)
 		return fmt.Errorf("Smoke test failed. Too many test failures. Review logs or see dashboard %s", dashboardUrl)
 	}
 
