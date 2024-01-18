@@ -119,6 +119,34 @@ func getScenarioName(filename string) string {
 	return strings.Join(parts, "")
 }
 
+// logTags formats the test runner's attributes as log attributes
+// TODO: check for missing attributes (for example add test type?)
+func (t *TestRunner)logTags() []any {
+	return []any {
+		"testTrigger", t.Trigger,
+		"benchVersion", t.BenchRevision,
+		"apiTestsVersion", t.TestRevision,
+		"suiteRun", t.RunIdentifier,
+		"grafanaUrl", t.GrafanaInstance.Host,
+		"grafanaVersion", t.GrafanaVersion,
+	}
+}
+
+// k6RunLogtags returns the k6RunSummary attributes formatted as lot attributes
+func k6RunLogtags(k K6RunSummary) []any {
+	return []any{
+		"iterations", k.Iterations,
+		"k6CloudUrl", k.CloudURL,
+		"k6CloudID", k.CloudId,
+		"setupDuration", prettyMS(k.Durations.SetupDuration),
+		"scenarioDuration", prettyMS(k.Durations.ScenarioDuration),
+		"teardownDuration", prettyMS(k.Durations.TeardownDuration),
+		"totalDuration", prettyMS(k.Durations.TotalDuration),
+		"exitMessage", k.ExitMessage,
+		"exitCode", strconv.Itoa(k.ExitCode),
+	}
+}
+
 // load test runs 100 iteration(default specified in test suite) of each test
 // specified and reports to k6 cloud
 func (t *TestRunner) loadTest(ctx context.Context) error {
@@ -170,43 +198,25 @@ func (t *TestRunner) loadTest(ctx context.Context) error {
 		totalDuration += k6Summary.Durations.TotalDuration
 
 		// test complete log
-		t.Log.Info("testRun",
-			"benchVersion", t.BenchRevision,
-			"apiTestsVersion", t.TestRevision,
+		testTags := []any{
 			"testRun", t.newTestIdentifier(testFile),
-			"suiteRun", t.RunIdentifier,
 			"scenarioName", scenarioName,
-			"grafanaUrl", t.GrafanaInstance.Host,
-			"grafanaVersion", t.GrafanaVersion,
 			"folder", path.Dir(testFile),
 			"testFile", path.Base(testFile),
 			"order", strconv.Itoa(iteration+1),
-			"iterations", k6Summary.Iterations,
-			"k6CloudUrl", k6Summary.CloudURL,
-			"k6CloudID", k6Summary.CloudId,
-			"setupDuration", prettyMS(k6Summary.Durations.SetupDuration),
-			"scenarioDuration", prettyMS(k6Summary.Durations.ScenarioDuration),
-			"teardownDuration", prettyMS(k6Summary.Durations.TeardownDuration),
-			"totalDuration", prettyMS(k6Summary.Durations.TotalDuration),
-			"exitMessage", k6Summary.ExitMessage,
-			"exitCode", k6Summary.ExitCode,
-		)
+		}
+		t.Log.With(t.logTags()...).
+			With(testTags...).
+			Info("testrun", k6RunLogtags(k6Summary)...,)
 	}
 
 	totalScenarioDurations := prettyMS(totalDuration)
 	benchDuration := prettyMS(float32(time.Since(startTime).Milliseconds()))
 
-	t.Log.Info("suiteRun",
-		"benchVersion", t.BenchRevision,
-		"apiTestsVersion", t.TestRevision,
-		"suiteRun", t.RunIdentifier,
-		"testTrigger", t.Trigger,
-		"grafanaUrl", t.GrafanaInstance.Host,
-		"grafanaVersion", t.GrafanaVersion,
+	t.Log.With(t.logTags()...).Info("suiteRun",
 		"startTime", startTime.Format(time.RFC3339),
 		"totalScenarioDurations", totalScenarioDurations,
 		"duration", benchDuration,
-		"machineInfo", t.MachineSpec,
 		"anyFailures", anyFailures,
 	)
 
@@ -254,37 +264,22 @@ func (t *TestRunner) smokeTest(ctx context.Context) error {
 		totalDuration += k6Summary.Durations.TotalDuration
 
 		// test complete log
-		t.Log.Info("testRun",
-			"benchVersion", t.BenchRevision,
-			"apiTestsVersion", t.TestRevision,
+		testTags := []any{
 			"testRun", t.newTestIdentifier(testFile),
-			"suiteRun", t.RunIdentifier,
 			"scenarioName", scenarioName,
-			"grafanaUrl", t.GrafanaInstance.Host,
-			"grafanaVersion", t.GrafanaVersion,
 			"folder", path.Dir(testFile),
 			"testFile", path.Base(testFile),
 			"order", strconv.Itoa(iteration+1),
-			"iterations", k6Summary.Iterations,
-			"setupDuration", prettyMS(k6Summary.Durations.SetupDuration),
-			"scenarioDuration", prettyMS(k6Summary.Durations.ScenarioDuration),
-			"teardownDuration", prettyMS(k6Summary.Durations.TeardownDuration),
-			"totalDuration", prettyMS(k6Summary.Durations.TotalDuration),
-			"exitMessage", k6Summary.ExitMessage,
-			"exitCode", k6Summary.ExitCode,
-		)
+		}
+		t.Log.With(t.logTags()...).
+			With(testTags...).
+			Info("testrun", k6RunLogtags(k6Summary)...,)
 	}
 
 	totalScenarioDurations := prettyMS(totalDuration)
 	benchDuration := prettyMS(float32(time.Since(startTime).Milliseconds()))
 
-	t.Log.Info("suiteRun",
-		"benchVersion", t.BenchRevision,
-		"apiTestsVersion", t.TestRevision,
-		"suiteRun", t.RunIdentifier,
-		"testTrigger", t.Trigger,
-		"grafanaUrl", t.GrafanaInstance.Host,
-		"grafanaVersion", t.GrafanaVersion,
+	t.Log.With(t.logTags()...).Info("suiteRun",
 		"startTime", startTime.Format(time.RFC3339),
 		"totalScenarioDurations", totalScenarioDurations,
 		"duration", benchDuration,
