@@ -88,7 +88,8 @@ func (t *TestRunner) Exec(ctx context.Context) error {
 	}
 }
 
-// newRunIdentifier creates an identifier to be used for
+// newRunIdentifier creates an identifier to link tests together when querying
+// test output
 // building dashboards in hosted grafana
 //
 // smoke-13:37:35-api-tests-cb5adc0-graf-10.2.0-60657
