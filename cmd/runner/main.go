@@ -69,6 +69,9 @@ func testRunnerFromArgs(log *slog.Logger, args []string) (*TestRunner, error) {
 	fs.StringVar(&machineSpec, "spec", "", "grafana instance machine spec")
 	fs.StringVar(&revision, "revision", "", "test suite revision. Has precedence over revision-file")
 	fs.StringVar(&revisionFile, "revision-file", "", "path to a file with the test revision")
+	fs.StringVar(&k6CloudToken, "k6-cloud-token", "", "K6 cloud access token. If not set K6_CLOUD_TOKEN environment variable is used")
+	fs.StringVar(&k6CloudToken, "k6-cloud-project", "", "K6 cloud project ID. If not set K6_CLOUD_PROJECT_ID environment variable is used")
+
 	err := fs.Parse(args)
 	if err != nil {
 		return nil, err
