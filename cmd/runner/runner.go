@@ -147,9 +147,48 @@ func k6RunLogtags(k K6RunSummary) []any {
 	}
 }
 
+// TestSuiteRunSummary summary
+type TestSuiteRunSummary struct {
+	AnyFailures   bool
+	TotalDuration float32
+}
+
 // load test runs 100 iteration(default specified in test suite) of each test
 // specified and reports to k6 cloud
 func (t *TestRunner) loadTest(ctx context.Context) error {
+	// ky cloud environment variables
+	envVars := map[string]string{
+		"K6_CLOUD_TOKEN": t.K6CloudToken,
+		"K6_CLOUD_PROJECT_ID": t.K6CloudProjectID,
+		"K6_CLOUD_TRACES_ENABLED": "true",
+	}
+
+	// exec test and redirect output to cloud
+	_, err := t.execTest(ctx, envVars, "--out", "cloud")
+
+	return err
+}
+
+// smokeTest runs a single iteration of each test specified and does not report
+// to k6 cloud 
+func (t *TestRunner) smokeTest(ctx context.Context) error {
+	summary, err := t.execTest(ctx, map[string]string{})
+	if err != nil {
+		return err
+	}
+
+	if summary.AnyFailures {
+		// TODO: remove reference to dashboard? This seems particular to the hosted grafana R
+               dashboardUrl := fmt.Sprintf("https://ops.grafana-ops.net/d/d3381df1-fa32-4955-994a-e6a8bca58025/test-runs?var-SuiteRun=%s", t.RunIdentifier)
+               t.Log.With(t.logTags()).Error("test suite failed. Too many test failures. Review logs or see dashboard" + dashboardUrl)
+	}
+
+	return nil
+}
+
+// execute test suite
+func (t *TestRunner) execTest(ctx context.Context, env map[string]string, args...string) (TestSuiteRunSummary, error) {
+	// set common test execution variables
 	envVars := map[string]string{
 		"MACHINE_SPEC":        t.MachineSpec,
 		"TEST_TYPE":           t.Type.Name(),
@@ -162,10 +201,6 @@ func (t *TestRunner) loadTest(ctx context.Context) error {
 		"GT_USERNAME":      t.GrafanaInstance.ServiceUser,
 		"GT_PASSWORD":      t.GrafanaInstance.ServicePassword,
 		//
-
-		"K6_CLOUD_TOKEN":          t.K6CloudToken,
-		"K6_CLOUD_PROJECT_ID":     t.K6CloudProjectID,
-		"K6_CLOUD_TRACES_ENABLED": "true",
 	}
 
 	// run k6 tests
@@ -188,7 +223,7 @@ func (t *TestRunner) loadTest(ctx context.Context) error {
 			scenarioName,
 			t.RunIdentifier,
 			envVars,
-			"--out", "cloud",
+			args...,
 		)
 		if err != nil {
 			t.Log.Error("executing k6 test", "error", err)
@@ -220,80 +255,10 @@ func (t *TestRunner) loadTest(ctx context.Context) error {
 		"anyFailures", anyFailures,
 	)
 
-	return nil
-}
-
-// smokeTest runs a single iteration of each test specified and does not report
-// to k6 cloud
-func (t *TestRunner) smokeTest(ctx context.Context) error {
-	envVars := map[string]string{
-		"MACHINE_SPEC":        t.MachineSpec,
-		"TEST_TYPE":           t.Type.Name(),
-		"TEST_SUITE_REVISION": t.TestRevision,
-		"GT_URL":              t.GrafanaInstance.SchemeServiceAddress(),
-		"GT_USERNAME":         t.GrafanaInstance.ServiceUser,
-		"GT_PASSWORD":         t.GrafanaInstance.ServicePassword,
-	}
-
-	var (
-		startTime     = time.Now()
-		totalDuration float32
-		anyFailures   = false
-	)
-
-	// run the tests
-	for iteration, testFile := range t.Tests {
-		scenarioName := getScenarioName(testFile)
-
-		// set the scenario name so it's accessible from the test
-		envVars["SCENARIO_NAME"] = scenarioName
-
-		// run command
-		k6Summary, err := K6ExecTest(
-			t.Log,
-			testFile,
-			scenarioName,
-			t.RunIdentifier,
-			envVars,
-		)
-		if err != nil {
-			t.Log.Error("executing k6 test", "error", err)
-			// TODO: maybe we should break the iteration here, as test result may not be relevant
-		}
-
-		totalDuration += k6Summary.Durations.TotalDuration
-
-		// test complete log
-		testTags := []any{
-			"testRun", t.newTestIdentifier(testFile),
-			"scenarioName", scenarioName,
-			"folder", path.Dir(testFile),
-			"testFile", path.Base(testFile),
-			"order", strconv.Itoa(iteration+1),
-		}
-		t.Log.With(t.logTags()...).
-			With(testTags...).
-			Info("testrun", k6RunLogtags(k6Summary)...,)
-	}
-
-	totalScenarioDurations := prettyMS(totalDuration)
-	benchDuration := prettyMS(float32(time.Since(startTime).Milliseconds()))
-
-	t.Log.With(t.logTags()...).Info("suiteRun",
-		"startTime", startTime.Format(time.RFC3339),
-		"totalScenarioDurations", totalScenarioDurations,
-		"duration", benchDuration,
-		"machineInfo", t.MachineSpec,
-		"anyFailures", anyFailures,
-	)
-
-	if anyFailures {
-		// TODO: remove reference to dashboard. This seems particular to the hosted grafana R
-		dashboardUrl := fmt.Sprintf("https://ops.grafana-ops.net/d/d3381df1-fa32-4955-994a-e6a8bca58025/test-runs?var-SuiteRun=%s", t.RunIdentifier)
-		return fmt.Errorf("Smoke test failed. Too many test failures. Review logs or see dashboard %s", dashboardUrl)
-	}
-
-	return nil
+	return TestSuiteRunSummary{
+		AnyFailures:   anyFailures,
+		TotalDuration: totalDuration,
+	}, nil
 }
 
 // dashboardCreate.js-13:37:35-smoke-api-tests-cb5adc0-graf-10.2.0-60657
