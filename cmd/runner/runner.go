@@ -180,7 +180,7 @@ func (t *TestRunner) smokeTest(ctx context.Context) error {
 	if summary.AnyFailures {
 		// TODO: remove reference to dashboard? This seems particular to the hosted grafana R
                dashboardUrl := fmt.Sprintf("https://ops.grafana-ops.net/d/d3381df1-fa32-4955-994a-e6a8bca58025/test-runs?var-SuiteRun=%s", t.RunIdentifier)
-               t.Log.With(t.logTags()).Error("test suite failed. Too many test failures. Review logs or see dashboard" + dashboardUrl)
+               t.Log.With(t.logTags()).Error("test suite failed. Too many test failures. Review logs or see dashboard: " + dashboardUrl)
 	}
 
 	return nil
@@ -231,6 +231,7 @@ func (t *TestRunner) execTest(ctx context.Context, env map[string]string, args..
 		}
 
 		totalDuration += k6Summary.Durations.TotalDuration
+		anyFailures = anyFailures || k6Summary.AnyFailures
 
 		// test complete log
 		testTags := []any{

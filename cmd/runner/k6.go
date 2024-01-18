@@ -18,6 +18,7 @@ import (
 
 // K6RunSummary summarizes the execution of a k6 execution
 type K6RunSummary struct {
+	AnyFailures bool
 	ExitCode    int
 	ExitMessage string
 	Iterations  string
@@ -40,12 +41,14 @@ func K6ExecTest(log *slog.Logger, testFile string, scenarioName string, runIdent
 
 	// run command
 	var (
-		cmdErr   string
-		exitCode int
+		cmdErr      string
+		exitCode    int
+		anyFailures bool
 	)
 	if err := cmd.Run(); err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			exitCode = exitError.ExitCode()
+			anyFailures = true
 		}
 		cmdErr = "error running k6 command: " + err.Error()
 		log.Info("error running k6 command", "error", err)
@@ -68,6 +71,7 @@ func K6ExecTest(log *slog.Logger, testFile string, scenarioName string, runIdent
 	}
 
 	return K6RunSummary{
+		AnyFailures: anyFailures,
 		ExitCode:    exitCode,
 		Durations:   duration,
 		Iterations:  iterations,
