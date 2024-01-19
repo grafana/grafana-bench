@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -114,6 +113,8 @@ func testRunnerForTesting(
 
 const loginError = "Error logging into grafana instance"
 
+const testSuiteFailed = "test suite failed. Too many test failures"
+
 func Test_Runner(t *testing.T) {
 	t.Parallel()
 
@@ -123,6 +124,7 @@ func Test_Runner(t *testing.T) {
 		testType  TestType
 		tests     []string
 		expectErr string
+		expectMsg string
 	}{
 		{
 			testCase: "passing test",
@@ -130,9 +132,21 @@ func Test_Runner(t *testing.T) {
 			tests:    []string{"k6tests/pass.js"},
 		},
 		{
-			testCase: "failing test",
+			testCase: "failing test (smoke)",
 			testType: SmokeTest,
 			tests:    []string{"k6tests/fail.js"},
+			expectMsg: testSuiteFailed,
+		},
+		{
+			testCase: "failing test (load)",
+			testType: SmokeTest,
+			tests:    []string{"k6tests/fail.js"},
+		},
+		{
+			testCase: "missing test (smoke)",
+			testType: SmokeTest,
+			tests:    []string{"k6tests/missing.js"},
+			expectMsg: testSuiteFailed,
 		},
 		{
 			testCase:  "wrong credentials",
@@ -143,7 +157,7 @@ func Test_Runner(t *testing.T) {
 			tests:     []string{"k6tests/pass.js"},
 			expectErr: loginError,
 		},
-	}
+	 }
 
 	for _, tc := range testCases {
 		tc := tc
@@ -151,9 +165,8 @@ func Test_Runner(t *testing.T) {
 		t.Run(tc.testCase, func(t *testing.T){
 			t.Parallel()
 
-			// TODO: search output for expected messages
 			logBuffer := bytes.Buffer{}
-			log := slog.New(slog.NewTextHandler(bufio.NewWriter(&logBuffer), nil))
+			log := slog.New(slog.NewTextHandler(&logBuffer, nil))
 
 			grafanaMock := httptest.NewServer(http.HandlerFunc(grafanaMockHandler))
 			grafanaInstance, _ := provisioner.NewReadOnlyGrafanaVM(grafanaMock.URL, "admin", "admin")
@@ -173,10 +186,6 @@ func Test_Runner(t *testing.T) {
 			// execute test
 			err = tr.Exec(context.TODO())
 
-			if err == nil && tc.expectErr == "" {
-				return
-			}
-
 			if err == nil && tc.expectErr != "" {
 				t.Fatalf("should had failed with %q", tc.expectErr)
 			}
@@ -185,6 +194,11 @@ func Test_Runner(t *testing.T) {
 			// The TestRunner should return different error types to facilitate validations
 			if err != nil && (tc.expectErr == "" || !strings.Contains(err.Error(), tc.expectErr)) {
 				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if tc.expectMsg != "" && !strings.Contains(logBuffer.String(), tc.expectMsg) {
+				t.Log(logBuffer.String())
+				t.Fatalf("should had reported: %q", tc.expectMsg)
 			}
 		})
 	}
