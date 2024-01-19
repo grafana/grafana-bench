@@ -28,11 +28,12 @@ type K6RunSummary struct {
 }
 
 // Execute the test
-func K6ExecTest(log *slog.Logger, testFile string, scenarioName string, runIdentifier string, env map[string]string, args ...string) (K6RunSummary, error) {
+func K6ExecTest(log *slog.Logger, verbose bool, testFile string, scenarioName string, runIdentifier string, env map[string]string, args ...string) (K6RunSummary, error) {
 	jsonFile := getJsonOutputFilename(testFile)
 
 	// build the command with buffer
 	cmd, buf := prepareK6Command(
+		verbose,
 		runIdentifier,
 		testFile,
 		jsonFile,
@@ -89,7 +90,7 @@ var K6CloudOutputIDPattern = regexp.MustCompile(`(\d+)$`)
 
 // prepareK6Command builds the command with output set to standard output and a
 // buffer and passes the cmd and buffer back to be executed and parsed
-func prepareK6Command(identifier, testFile, jsonFile string, envVars map[string]string, args ...string) (*exec.Cmd, *bytes.Buffer) {
+func prepareK6Command(verbose bool, identifier, testFile, jsonFile string, envVars map[string]string, args ...string) (*exec.Cmd, *bytes.Buffer, ) {
 	defaultArgs := []string{
 		"run",
 		testFile,
@@ -108,8 +109,12 @@ func prepareK6Command(identifier, testFile, jsonFile string, envVars map[string]
 	}
 
 	buf := bytes.NewBuffer(nil)
-	cmd.Stdout = io.MultiWriter(buf, os.Stderr)
-	cmd.Stderr = os.Stderr
+	if verbose {
+		cmd.Stdout = io.MultiWriter(buf, os.Stderr)
+		cmd.Stderr = os.Stderr
+	} else {
+		cmd.Stdout = buf
+	}
 
 	return cmd, buf
 }

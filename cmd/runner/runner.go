@@ -15,6 +15,7 @@ import (
 
 type TestRunner struct {
 	Log              *slog.Logger
+	Verbose          bool
 	RunIdentifier    string
 	Type             TestType
 	Trigger          string
@@ -31,6 +32,7 @@ type TestRunner struct {
 
 func NewTestRunner(
 	log *slog.Logger,
+	verbose bool,
 	testTrigger string,
 	testType TestType,
 	tests []string,
@@ -45,6 +47,7 @@ func NewTestRunner(
 
 	return &TestRunner{
 		Log:              log,
+		Verbose:          verbose,
 		Trigger:          testTrigger,
 		Type:             testType,
 		Tests:            tests,
@@ -219,6 +222,7 @@ func (t *TestRunner) execTest(ctx context.Context, env map[string]string, args..
 		// run command send output to cloud
 		k6Summary, err := K6ExecTest(
 			t.Log,
+			t.Verbose,
 			testFile,
 			scenarioName,
 			t.RunIdentifier,
