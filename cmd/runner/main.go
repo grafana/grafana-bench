@@ -13,6 +13,7 @@ import (
 	"github.com/grafana/grafana-bench/bench/provisioner"
 	"github.com/grafana/grafana-bench/bench/utils"
 	"github.com/grafana/grafana-bench/bench/utils/env"
+	"github.com/grafana/grafana-bench/bench/utils/version"
 )
 
 var benchRevision = "local"
@@ -91,6 +92,10 @@ func testRunnerFromArgs(log *slog.Logger, args []string) (*TestRunner, error) {
 		if err != nil {
 			return nil, fmt.Errorf("getting version from file %s: %w", revisionFile, err)
 		}
+	}
+
+	if benchRevision == "" {
+		benchRevision = version.BenchVersion()
 	}
 
 	grafanaInstance, err := provisioner.NewReadOnlyGrafanaVM(address, username, password)
