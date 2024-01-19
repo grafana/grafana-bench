@@ -122,20 +122,17 @@ func Test_Runner(t *testing.T) {
 		options   []testRunnerOption
 		testType  TestType
 		tests     []string
-		handler   http.HandlerFunc
 		expectErr string
 	}{
 		{
 			testCase: "passing test",
 			testType: SmokeTest,
 			tests:    []string{"k6tests/pass.js"},
-			handler:  grafanaMockHandler,
 		},
 		{
 			testCase: "failing test",
 			testType: SmokeTest,
 			tests:    []string{"k6tests/fail.js"},
-			handler:  grafanaMockHandler,
 		},
 		{
 			testCase:  "wrong credentials",
@@ -144,7 +141,6 @@ func Test_Runner(t *testing.T) {
 			},
 			testType:  SmokeTest,
 			tests:     []string{"k6tests/pass.js"},
-			handler:   grafanaMockHandler,
 			expectErr: loginError,
 		},
 	}
@@ -159,7 +155,7 @@ func Test_Runner(t *testing.T) {
 			logBuffer := bytes.Buffer{}
 			log := slog.New(slog.NewTextHandler(bufio.NewWriter(&logBuffer), nil))
 
-			grafanaMock := httptest.NewServer(http.HandlerFunc(tc.handler))
+			grafanaMock := httptest.NewServer(http.HandlerFunc(grafanaMockHandler))
 			grafanaInstance, _ := provisioner.NewReadOnlyGrafanaVM(grafanaMock.URL, "admin", "admin")
 
 			// create test runner with test-specific options
