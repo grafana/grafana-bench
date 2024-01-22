@@ -216,6 +216,11 @@ func (t *TestRunner) execTest(ctx context.Context, env map[string]string, args..
 		//
 	}
 
+	// add or override environment variables passed to execution
+	for k, v := range env {
+		envVars[k] = v
+	}
+
 	// run k6 tests
 	var (
 		startTime     = time.Now()
