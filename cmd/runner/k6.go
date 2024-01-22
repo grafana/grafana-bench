@@ -138,7 +138,8 @@ func parseK6CloudIdentifiersFromCLIOutput(log *slog.Logger, b []byte) (string, s
 			return "", url, fmt.Errorf("K6 cloud output id not found! this should not happen if we have a correctly formed url")
 		}
 	} else {
-		return "", "", fmt.Errorf("URL not found")
+		log.Info("K6 URL not found")
+		return "", "", nil
 	}
 }
 

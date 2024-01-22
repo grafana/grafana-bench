@@ -156,17 +156,28 @@ type TestSuiteRunSummary struct {
 }
 
 // load test runs 100 iteration(default specified in test suite) of each test
-// specified and reports to k6 cloud
+// specified and reports to k6 cloud if credentials are set
 func (t *TestRunner) loadTest(ctx context.Context) error {
-	// ky cloud environment variables
-	envVars := map[string]string{
-		"K6_CLOUD_TOKEN": t.K6CloudToken,
-		"K6_CLOUD_PROJECT_ID": t.K6CloudProjectID,
-		"K6_CLOUD_TRACES_ENABLED": "true",
+	// k6 cloud environment variables
+	var (
+		k6Env map[string]string
+		k6Args []string
+	)
+	if t.K6CloudProjectID != "" && t.K6CloudToken != "" {
+		k6Env = map[string]string{
+			"K6_CLOUD_TOKEN": t.K6CloudToken,
+			"K6_CLOUD_PROJECT_ID": t.K6CloudProjectID,
+			"K6_CLOUD_TRACES_ENABLED": "true",
+		}
+		k6Args = []string{"--out", "cloud"}
+	} else {
+		t.Log.Warn("running load tests with cloud output disabled." +
+			" Pass a K6 Token and project ID to report output to cloud",
+		)
 	}
 
 	// exec test and redirect output to cloud
-	_, err := t.execTest(ctx, envVars, "--out", "cloud")
+	_, err := t.execTest(ctx, k6Env, k6Args...)
 
 	return err
 }

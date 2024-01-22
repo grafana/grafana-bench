@@ -72,10 +72,20 @@ func grafanaMockHandler(rw http.ResponseWriter, r *http.Request) {
 
 type testRunnerOption func(*TestRunner) error
 
-func WithInvalidUserCredentials() testRunnerOption {
+// configure TestRunner with invalid grafana credentials
+func WithInvalidGrafanaCredentials() testRunnerOption {
 	return func(t *TestRunner) error {
 		t.GrafanaInstance.User = "invalid"
 		t.GrafanaInstance.ServicePassword = "invalid"
+		return nil
+	}
+}
+
+// configure TestRunner with invalid K6 credentials
+func WithInvalidK6Credentials() testRunnerOption {
+	return func(t *TestRunner) error {
+		t.K6CloudProjectID = "INVALID_ID"
+		t.K6CloudToken = "INVALID_TOKEN"
 		return nil
 	}
 }
@@ -115,6 +125,8 @@ const loginError = "Error logging into grafana instance"
 
 const testSuiteFailed = "test suite failed. Too many test failures"
 
+const missingK6credentials = "running load tests with cloud output disabled"
+
 func Test_Runner(t *testing.T) {
 	t.Parallel()
 
@@ -127,8 +139,22 @@ func Test_Runner(t *testing.T) {
 		expectMsg string
 	}{
 		{
-			testCase: "passing test",
+			testCase: "passing test (load)",
 			testType: SmokeTest,
+			tests:    []string{"k6tests/pass.js"},
+		},
+		{
+			testCase: "passing test without k6 token (smoke)",
+			testType: LoadTest,
+			tests:    []string{"k6tests/pass.js"},
+			expectMsg: missingK6credentials,
+		},
+		{
+			testCase: "load test with invalid k6 tokens",
+			options:   []testRunnerOption{
+				WithInvalidK6Credentials(),
+			},
+			testType: LoadTest,
 			tests:    []string{"k6tests/pass.js"},
 		},
 		{
@@ -151,7 +177,7 @@ func Test_Runner(t *testing.T) {
 		{
 			testCase:  "wrong credentials",
 			options:   []testRunnerOption{
-				WithInvalidUserCredentials(),
+				WithInvalidGrafanaCredentials(),
 			},
 			testType:  SmokeTest,
 			tests:     []string{"k6tests/pass.js"},
