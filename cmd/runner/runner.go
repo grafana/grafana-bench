@@ -64,7 +64,6 @@ func NewTestRunner(
 func (t *TestRunner) Exec(ctx context.Context) error {
 	log := t.Log.With("svc", "boot-test-runner")
 
-	// TODO implement a timeout of some sort
 	log.Info("Waiting for grafana server...", "address", t.GrafanaInstance.ServiceAddress())
 
 	grafanaCtx, _ := context.WithTimeout(ctx, t.GrafanaTimeout)
