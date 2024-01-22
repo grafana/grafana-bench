@@ -90,6 +90,22 @@ func WithInvalidK6Credentials() testRunnerOption {
 	}
 }
 
+// configure TestRunner with a dashboard URL template
+func WithDashboard() testRunnerOption {
+	return func(t *TestRunner) error {
+		t.DashboardURL = "http://localhost/dashboard?env={{.SuiteRun}}"
+		return nil
+	}
+}
+
+// configure TestRunner with an invalid dashboard template
+func WithInvalidDashboard() testRunnerOption {
+	return func(t *TestRunner) error {
+		t.DashboardURL = "http://localhost/dashboard?env={{.InvalidVar}}"
+		return nil
+	}
+}
+
 func testRunnerForTesting(
 	log *slog.Logger,
 	testType TestType,
@@ -110,6 +126,7 @@ func testRunnerForTesting(
 		time.Second,     // grafana liveness probe timeout
 		"local",         // machine spec
 		"devel",         // bench revision
+		"",              // dashboard URL
 	)
 
 	// apply options
@@ -127,27 +144,31 @@ const testSuiteFailed = "test suite failed. Too many test failures"
 
 const missingK6credentials = "running load tests with cloud output disabled"
 
+const dashboard = "See dashboard"
+
+const invalidDashboard = "invalid template substitution"
+
 func Test_Runner(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct{
-		testCase  string
-		options   []testRunnerOption
-		testType  TestType
-		tests     []string
-		expectErr string
-		expectMsg string
+		testCase   string
+		options    []testRunnerOption
+		testType   TestType
+		tests      []string
+		expectErr  string
+		expectMsgs []string
 	}{
 		{
 			testCase: "passing test (load)",
-			testType: SmokeTest,
-			tests:    []string{"k6tests/pass.js"},
+			testType:  SmokeTest,
+			tests:     []string{"k6tests/pass.js"},
 		},
 		{
-			testCase: "passing test without k6 token (smoke)",
-			testType: LoadTest,
-			tests:    []string{"k6tests/pass.js"},
-			expectMsg: missingK6credentials,
+			testCase:  "passing test without k6 token (smoke)",
+			testType:  LoadTest,
+			tests:     []string{"k6tests/pass.js"},
+			expectMsgs:[]string{ missingK6credentials },
 		},
 		{
 			testCase: "load test with invalid k6 tokens",
@@ -158,10 +179,31 @@ func Test_Runner(t *testing.T) {
 			tests:    []string{"k6tests/pass.js"},
 		},
 		{
-			testCase: "failing test (smoke)",
-			testType: SmokeTest,
-			tests:    []string{"k6tests/fail.js"},
-			expectMsg: testSuiteFailed,
+			testCase:   "failing test (smoke)",
+			testType:   SmokeTest,
+			tests:      []string{"k6tests/fail.js"},
+			expectMsgs: []string{testSuiteFailed},
+		},
+		{
+			testCase:   "failing test with dashboard (smoke)",
+			options:   []testRunnerOption{
+				WithDashboard(),
+			},
+			testType:   SmokeTest,
+			tests:      []string{"k6tests/fail.js"},
+			expectMsgs: []string{
+				testSuiteFailed,
+				dashboard,
+			},
+		},
+		{
+			testCase:   "failing test with invalid dashboard (smoke)",
+			testType:   SmokeTest,
+			options:   []testRunnerOption{
+				WithInvalidDashboard(),
+			},
+			tests:      []string{"k6tests/fail.js"},
+			expectErr: invalidDashboard,
 		},
 		{
 			testCase: "failing test (load)",
@@ -169,10 +211,10 @@ func Test_Runner(t *testing.T) {
 			tests:    []string{"k6tests/fail.js"},
 		},
 		{
-			testCase: "missing test (smoke)",
-			testType: SmokeTest,
-			tests:    []string{"k6tests/missing.js"},
-			expectMsg: testSuiteFailed,
+			testCase:   "missing test (smoke)",
+			testType:   SmokeTest,
+			tests:      []string{"k6tests/missing.js"},
+			expectMsgs: []string{testSuiteFailed},
 		},
 		{
 			testCase:  "wrong credentials",
@@ -222,9 +264,11 @@ func Test_Runner(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			if tc.expectMsg != "" && !strings.Contains(logBuffer.String(), tc.expectMsg) {
-				t.Log(logBuffer.String())
-				t.Fatalf("should had reported: %q", tc.expectMsg)
+			for _, msg := range tc.expectMsgs {
+				if !strings.Contains(logBuffer.String(), msg) {
+					t.Log(logBuffer.String())
+					t.Fatalf("should had reported: %q", msg)
+				}
 			}
 		})
 	}

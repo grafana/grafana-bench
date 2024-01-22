@@ -59,6 +59,7 @@ func testRunnerFromArgs(log *slog.Logger, args []string) (*TestRunner, error) {
 		k6CloudProjectId string
 		grafanaTimeout   time.Duration
 		benchRevision    string
+		dashboardURL     string
 		verbose          bool
 	)
 
@@ -77,6 +78,11 @@ func testRunnerFromArgs(log *slog.Logger, args []string) (*TestRunner, error) {
 	fs.StringVar(&k6CloudToken, "k6-cloud-token", "", "K6 cloud access token. If not set K6_CLOUD_TOKEN environment variable is used")
 	fs.StringVar(&k6CloudProjectId, "k6-cloud-project", "", "K6 cloud project ID. If not set K6_CLOUD_PROJECT_ID environment variable is used")
 	fs.BoolVar(&verbose, "verbose", true, "show k6 test outputs")
+	fs.StringVar(&dashboardURL, "dashboard", "", "Template for the smoke test suite execution dashboard URL." +
+		"\nSupports the substitution of the following variables:" +
+		"\n    SuiteRun: identifier of the suite run"+
+		"\nExample: http://localhost/dashboards?run={{.SuiteRun}}",
+	)
 
 	err := fs.Parse(args)
 	if err != nil {
@@ -145,6 +151,7 @@ func testRunnerFromArgs(log *slog.Logger, args []string) (*TestRunner, error) {
 		grafanaTimeout,
 		machineSpec,
 		benchRevision,
+		dashboardURL,
 	), nil
 }
 

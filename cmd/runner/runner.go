@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"log/slog"
@@ -8,6 +9,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/grafana/grafana-bench/bench/provisioner"
@@ -28,6 +30,7 @@ type TestRunner struct {
 	GrafanaVersion   string
 	MachineSpec      string
 	BenchRevision    string
+	DashboardURL     string
 }
 
 func NewTestRunner(
@@ -43,6 +46,7 @@ func NewTestRunner(
 	grafanaTimeout time.Duration,
 	machineSpec string,
 	benchRevision string,
+	dashboardURL string, 
 ) *TestRunner {
 
 	return &TestRunner{
@@ -58,6 +62,7 @@ func NewTestRunner(
 		GrafanaTimeout:   grafanaTimeout,
 		MachineSpec:      machineSpec,
 		BenchRevision:    benchRevision,
+		DashboardURL:     dashboardURL,
 	}
 }
 
@@ -190,13 +195,48 @@ func (t *TestRunner) smokeTest(ctx context.Context) error {
 		return err
 	}
 
+	// TODO: remove reference to dashboard. This seems particular to the hosted grafana CIs
 	if summary.AnyFailures {
-		// TODO: remove reference to dashboard? This seems particular to the hosted grafana R
-               dashboardUrl := fmt.Sprintf("https://ops.grafana-ops.net/d/d3381df1-fa32-4955-994a-e6a8bca58025/test-runs?var-SuiteRun=%s", t.RunIdentifier)
-               t.Log.With(t.logTags()...).Error("test suite failed. Too many test failures. Review logs or see dashboard: " + dashboardUrl)
+		var dashboardMsg string
+		if t.DashboardURL != "" {
+			dashboard, err := t.getDashboardURL()
+			if err != nil {
+				return fmt.Errorf("getting URL dashboard: %w", err)
+			}
+			dashboardMsg = " See dashboard: " + dashboard
+		}
+
+		t.Log.With(t.logTags()...).Error("test suite failed. Too many test failures." + dashboardMsg)
 	}
 
 	return nil
+}
+
+func (t *TestRunner)getDashboardURL() (string, error) {
+	if t.DashboardURL == "" {
+		return "", fmt.Errorf("URL template is empty")
+	}
+
+	template, err := template.New("dashboard").Parse(t.DashboardURL)
+	if err != nil {
+		return "", fmt.Errorf("error parsing template %w", err)
+	}
+
+	// substitution variables
+	// TODO: define more substitution variables
+	vars := struct{
+		SuiteRun string
+	}{
+		SuiteRun: t.RunIdentifier,
+	}
+
+	dashboardURL := bytes.Buffer{}
+	err = template.Execute(&dashboardURL, vars)
+	if err != nil {
+		return "", fmt.Errorf("invalid template substitution: %w", err)
+	}
+
+	return dashboardURL.String(), nil
 }
 
 // execute test suite
