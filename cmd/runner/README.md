@@ -24,9 +24,9 @@ It is also possible to execute a single test by pointing to a `.js` file.
 
 Each test is parameterized via environment variables following [grafana-api-tests conventions](https://github.com/grafana/grafana-api-tests/blob/main/README.md#common-environment-variables).
 
-For `load`` tests, if the [GCK6 credentials](https://grafana.com/docs/grafana-cloud/k6/author-run/tokens-and-cli-authentication/) are provided, the test results will be sent to Grafana Cloud K6.
+For load tests, if the `--cloud-output` flag is `true`, the test results will be sent to Grafana Cloud k6. The [GCK6 credentials](https://grafana.com/docs/grafana-cloud/k6/author-run/tokens-and-cli-authentication/) must be provided as environment variables or as arguments to the test runner (`--k6-cloud-project` and `--k6-cloud-token`).
 
-To get more detail of the available options, use the command:
+To get more details of the available options, use the command:
 
 ```sh
 go run ./cmd/runner --help
