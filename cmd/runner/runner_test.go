@@ -149,13 +149,13 @@ func testRunnerForTesting(
 
 const loginError = "Error logging into grafana instance"
 
-const testSuiteFailed = "test suite failed. Too many test failures"
+const testSuiteFailedMessage = "test suite failed. Too many test failures"
 
-const missingK6credentials = "running load tests with cloud output disabled"
+const cloudOutputDisabledMessage = "running load tests with cloud output disabled"
 
-const dashboard = "See dashboard"
+const dashboardMessage = "See dashboard"
 
-const invalidDashboard = "invalid template substitution"
+const invalidDashboardError = "invalid template substitution"
 
 const cloudOutputParsingErrorMessage = "error parsing cloud run from K6 summary"
 
@@ -181,7 +181,7 @@ func Test_Runner(t *testing.T) {
 			testCase:   "passing test without k6 token (smoke)",
 			testType:   LoadTest,
 			tests:      []string{"k6tests/pass.js"},
-			expectMsgs: []string{missingK6credentials},
+			expectMsgs: []string{cloudOutputDisabledMessage},
 		},
 		{
 			testCase: "load test without k6 config",
@@ -206,7 +206,7 @@ func Test_Runner(t *testing.T) {
 			testCase:   "failing test (smoke)",
 			testType:   SmokeTest,
 			tests:      []string{"k6tests/fail.js"},
-			expectMsgs: []string{testSuiteFailed},
+			expectMsgs: []string{testSuiteFailedMessage},
 		},
 		{
 			testCase: "failing test with dashboard (smoke)",
@@ -216,8 +216,8 @@ func Test_Runner(t *testing.T) {
 			testType:   SmokeTest,
 			tests:      []string{"k6tests/fail.js"},
 			expectMsgs: []string{
-				testSuiteFailed,
-				dashboard,
+				testSuiteFailedMessage,
+				dashboardMessage,
 			},
 		},
 		{
@@ -227,7 +227,7 @@ func Test_Runner(t *testing.T) {
 				WithInvalidDashboard(),
 			},
 			tests:     []string{"k6tests/fail.js"},
-			expectErr: invalidDashboard,
+			expectErr: invalidDashboardError,
 		},
 		{
 			testCase: "failing test (load)",
@@ -238,7 +238,7 @@ func Test_Runner(t *testing.T) {
 			testCase:   "missing test (smoke)",
 			testType:   SmokeTest,
 			tests:      []string{"k6tests/missing.js"},
-			expectMsgs: []string{testSuiteFailed},
+			expectMsgs: []string{testSuiteFailedMessage},
 		},
 		{
 			testCase:  "wrong credentials",
