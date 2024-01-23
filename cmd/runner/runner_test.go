@@ -14,10 +14,10 @@ import (
 	"github.com/grafana/grafana-bench/bench/provisioner"
 )
 
-var grafanaBuildInfo = map[string]interface{} {
-	"buildInfo": map[string]interface{} {
-		"version": "10.x.0-test",
-		"commit": "a3b9ec21db4e50a90e049132723af118dc3f39b3",
+var grafanaBuildInfo = map[string]interface{}{
+	"buildInfo": map[string]interface{}{
+		"version":    "10.x.0-test",
+		"commit":     "a3b9ec21db4e50a90e049132723af118dc3f39b3",
 		"buildstamp": 1705409435,
 	},
 }
@@ -29,7 +29,7 @@ func grafanaMockHandler(rw http.ResponseWriter, r *http.Request) {
 	case "/login":
 		var loginInfo map[string]interface{}
 		buff := bytes.Buffer{}
-		_, err  := buff.ReadFrom(r.Body)
+		_, err := buff.ReadFrom(r.Body)
 		if err != nil {
 			rw.WriteHeader(http.StatusInternalServerError)
 			return
@@ -48,7 +48,7 @@ func grafanaMockHandler(rw http.ResponseWriter, r *http.Request) {
 		}
 
 		// return session cookie it is expected by VMInstance
-		rw.Header().Add("Set-Cookie","grafana_session=ffffffffffffffffffffffffffffffff; Path=/; Max-Age=2592000; HttpOnly; SameSite=Lax")
+		rw.Header().Add("Set-Cookie", "grafana_session=ffffffffffffffffffffffffffffffff; Path=/; Max-Age=2592000; HttpOnly; SameSite=Lax")
 
 	// returns only the build info. TODO: add other attributes to response
 	case "/api/frontend/settings":
@@ -119,7 +119,7 @@ func testRunnerForTesting(
 	testType TestType,
 	tests []string,
 	grafanaInstance *provisioner.VMInstance,
-	opts...testRunnerOption,
+	opts ...testRunnerOption,
 ) (*TestRunner, error) {
 	tr := NewTestRunner(
 		log,
@@ -140,7 +140,7 @@ func testRunnerForTesting(
 
 	// apply options
 	for _, opt := range opts {
-		if err := opt(tr);  err != nil {
+		if err := opt(tr); err != nil {
 			return nil, err
 		}
 	}
@@ -164,7 +164,7 @@ const missingK6CloudConfigError = "k6 Token and project ID are required for clou
 func Test_Runner(t *testing.T) {
 	t.Parallel()
 
-	testCases := []struct{
+	testCases := []struct {
 		testCase   string
 		options    []testRunnerOption
 		testType   TestType
@@ -174,8 +174,8 @@ func Test_Runner(t *testing.T) {
 	}{
 		{
 			testCase: "passing test (load)",
-			testType:  SmokeTest,
-			tests:     []string{"k6tests/pass.js"},
+			testType: SmokeTest,
+			tests:    []string{"k6tests/pass.js"},
 		},
 		{
 			testCase:   "passing test without k6 token (smoke)",
@@ -213,8 +213,8 @@ func Test_Runner(t *testing.T) {
 			options: []testRunnerOption{
 				WithDashboard(),
 			},
-			testType:   SmokeTest,
-			tests:      []string{"k6tests/fail.js"},
+			testType: SmokeTest,
+			tests:    []string{"k6tests/fail.js"},
 			expectMsgs: []string{
 				testSuiteFailedMessage,
 				dashboardMessage,
@@ -241,8 +241,8 @@ func Test_Runner(t *testing.T) {
 			expectMsgs: []string{testSuiteFailedMessage},
 		},
 		{
-			testCase:  "wrong credentials",
-			options:   []testRunnerOption{
+			testCase: "wrong credentials",
+			options: []testRunnerOption{
 				WithInvalidGrafanaCredentials(),
 			},
 			testType:  SmokeTest,
@@ -254,7 +254,7 @@ func Test_Runner(t *testing.T) {
 	for _, tc := range testCases {
 		tc := tc
 
-		t.Run(tc.testCase, func(t *testing.T){
+		t.Run(tc.testCase, func(t *testing.T) {
 			t.Parallel()
 
 			logBuffer := bytes.Buffer{}

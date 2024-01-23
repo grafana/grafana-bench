@@ -62,7 +62,7 @@ func K6ExecTest(log *slog.Logger, verbose bool, cloudOutput bool, testFile strin
 	}
 
 	var (
-		cloudId string
+		cloudId  string
 		cloudURL string
 	)
 	if cloudOutput {
@@ -96,7 +96,7 @@ var K6CloudOutputIDPattern = regexp.MustCompile(`(\d+)$`)
 
 // prepareK6Command builds the command with output set to standard output and a
 // buffer and passes the cmd and buffer back to be executed and parsed
-func prepareK6Command(verbose bool, identifier, testFile, jsonFile string, envVars map[string]string, args ...string) (*exec.Cmd, *bytes.Buffer, ) {
+func prepareK6Command(verbose bool, identifier, testFile, jsonFile string, envVars map[string]string, args ...string) (*exec.Cmd, *bytes.Buffer) {
 	defaultArgs := []string{
 		"run",
 		testFile,

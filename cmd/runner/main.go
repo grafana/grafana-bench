@@ -4,11 +4,10 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log/slog"
 	"os"
 	"strings"
 	"time"
-
-	"log/slog"
 
 	"github.com/grafana/grafana-bench/bench/provisioner"
 	"github.com/grafana/grafana-bench/bench/utils"
@@ -68,7 +67,7 @@ func testRunnerFromArgs(log *slog.Logger, args []string) (*TestRunner, error) {
 	fs.StringVar(&testTrigger, "trigger", "local", "test trigger")
 	fs.StringVar(&testType, "type", "smoke", "test type. Allowed values: 'smoke', 'load'")
 	fs.StringVar(&address, "instance", "http://localhost:3000", "url to grafana instance")
-	fs.DurationVar(&grafanaTimeout, "timeout", 30 * time.Second, "timeout for waiting grafana to be live")
+	fs.DurationVar(&grafanaTimeout, "timeout", 30*time.Second, "timeout for waiting grafana to be live")
 	fs.StringVar(&username, "user", "admin", "grafana user name. Can be overridden by the GRAFANA_USER environment variable")
 	fs.StringVar(&password, "password", "admin", "grafana password. Can be overridden by the GRAFANA_PASSWORD environment variable")
 	fs.StringVar(&machineSpec, "spec", "", "grafana instance machine spec")
@@ -80,8 +79,8 @@ func testRunnerFromArgs(log *slog.Logger, args []string) (*TestRunner, error) {
 	fs.StringVar(&k6CloudProjectId, "k6-cloud-project", "", "K6 cloud project ID. If not set K6_CLOUD_PROJECT_ID environment variable is used")
 	fs.BoolVar(&verbose, "verbose", true, "show k6 test outputs")
 	fs.BoolVar(&cloudOutput, "cloud-output", false, "send output to GCK6. Requires setting the GCK6 project ID and access token.")
-	fs.StringVar(&dashboardURL, "dashboard", "", "Template for the smoke test suite execution dashboard URL." +
-		"\nSupports the substitution of the following variables:" +
+	fs.StringVar(&dashboardURL, "dashboard", "", "Template for the smoke test suite execution dashboard URL."+
+		"\nSupports the substitution of the following variables:"+
 		"\n    SuiteRun: identifier of the suite run"+
 		"\nExample: http://localhost/dashboards?run={{.SuiteRun}}",
 	)

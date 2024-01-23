@@ -126,11 +126,13 @@ var iterationOutput1 = `
      iterations.....................: 1      2.765958/s
      vus............................: 0      min=0      max=7
 `
+
 var iterationOutput100 = `
      iteration_duration.............: avg=549.7ms  min=155.53ms med=223.41ms max=31.76s   p(90)=310.04ms p(95)=409.85ms
      iterations.....................: 100    2.765958/s
      vus............................: 0      min=0      max=7
 `
+
 var iterationOuputMissing = `
      http_reqs......................: 202    5.587236/s
      iteration_duration.............: avg=549.7ms  min=155.53ms med=223.41ms max=31.76s   p(90)=310.04ms p(95)=409.85ms

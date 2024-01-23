@@ -50,7 +50,6 @@ func NewTestRunner(
 	benchRevision string,
 	dashboardURL string,
 ) *TestRunner {
-
 	return &TestRunner{
 		Log:              log,
 		Verbose:          verbose,
@@ -74,7 +73,9 @@ func (t *TestRunner) Exec(ctx context.Context) error {
 
 	log.Info("Waiting for grafana server...", "address", t.GrafanaInstance.ServiceAddress())
 
-	grafanaCtx, _ := context.WithTimeout(ctx, t.GrafanaTimeout)
+	grafanaCtx, cancel := context.WithTimeout(ctx, t.GrafanaTimeout)
+	defer cancel()
+	
 	err := t.GrafanaInstance.WaitForLiveGrafana(grafanaCtx)
 	if err != nil {
 		return fmt.Errorf("checking Grafana is Live... %w", err)
@@ -131,8 +132,8 @@ func getScenarioName(filename string) string {
 
 // logTags formats the test runner's attributes as log attributes
 // TODO: check for missing attributes (for example add test type?)
-func (t *TestRunner)logTags() []any {
-	return []any {
+func (t *TestRunner) logTags() []any {
+	return []any{
 		"testTrigger", t.Trigger,
 		"benchVersion", t.BenchRevision,
 		"apiTestsVersion", t.TestRevision,
@@ -168,7 +169,7 @@ type TestSuiteRunSummary struct {
 func (t *TestRunner) loadTest(ctx context.Context) error {
 	// k6 cloud environment variables
 	var (
-		k6Env map[string]string
+		k6Env  map[string]string
 		k6Args []string
 	)
 	if t.CloudOutput {
@@ -217,7 +218,7 @@ func (t *TestRunner) smokeTest(ctx context.Context) error {
 	return nil
 }
 
-func (t *TestRunner)getDashboardURL() (string, error) {
+func (t *TestRunner) getDashboardURL() (string, error) {
 	if t.DashboardURL == "" {
 		return "", fmt.Errorf("URL template is empty")
 	}
@@ -229,7 +230,7 @@ func (t *TestRunner)getDashboardURL() (string, error) {
 
 	// substitution variables
 	// TODO: define more substitution variables
-	vars := struct{
+	vars := struct {
 		SuiteRun string
 	}{
 		SuiteRun: t.RunIdentifier,
@@ -245,7 +246,7 @@ func (t *TestRunner)getDashboardURL() (string, error) {
 }
 
 // execute test suite
-func (t *TestRunner) execTest(ctx context.Context, env map[string]string, args...string) (TestSuiteRunSummary, error) {
+func (t *TestRunner) execTest(ctx context.Context, env map[string]string, args ...string) (TestSuiteRunSummary, error) {
 	// set common test execution variables
 	envVars := map[string]string{
 		"MACHINE_SPEC":        t.MachineSpec,
@@ -304,11 +305,11 @@ func (t *TestRunner) execTest(ctx context.Context, env map[string]string, args..
 			"scenarioName", scenarioName,
 			"folder", path.Dir(testFile),
 			"testFile", path.Base(testFile),
-			"order", strconv.Itoa(iteration+1),
+			"order", strconv.Itoa(iteration + 1),
 		}
 		t.Log.With(t.logTags()...).
 			With(testTags...).
-			Info("testrun", k6RunLogtags(k6Summary)...,)
+			Info("testrun", k6RunLogtags(k6Summary)...)
 	}
 
 	totalScenarioDurations := prettyMS(totalDuration)
