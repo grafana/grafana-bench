@@ -28,7 +28,7 @@ type K6RunSummary struct {
 }
 
 // Execute the test
-func K6ExecTest(log *slog.Logger, verbose bool, testFile string, scenarioName string, runIdentifier string, env map[string]string, args ...string) (K6RunSummary, error) {
+func K6ExecTest(log *slog.Logger, verbose bool, cloudOutput bool, testFile string, scenarioName string, runIdentifier string, env map[string]string, args ...string) (K6RunSummary, error) {
 	jsonFile := getJsonOutputFilename(testFile)
 
 	// build the command with buffer
@@ -61,9 +61,15 @@ func K6ExecTest(log *slog.Logger, verbose bool, testFile string, scenarioName st
 		log.Warn("error processing json file", "error", err)
 	}
 
-	cloudId, cloudURL, err := parseK6CloudIdentifiersFromCLIOutput(log, buf.Bytes())
-	if err != nil {
-		log.Warn("error parsing cloud run from K6 summary", "error", err)
+	var (
+		cloudId string
+		cloudURL string
+	)
+	if cloudOutput {
+		cloudId, cloudURL, err = parseK6CloudIdentifiersFromCLIOutput(log, buf.Bytes())
+		if err != nil {
+			log.Warn("error parsing cloud run from K6 summary", "error", err)
+		}
 	}
 
 	iterations, err := parseIterationCountFromCLIOutput(buf.Bytes())

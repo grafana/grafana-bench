@@ -18,6 +18,7 @@ import (
 type TestRunner struct {
 	Log              *slog.Logger
 	Verbose          bool
+	CloudOutput      bool
 	RunIdentifier    string
 	Type             TestType
 	Trigger          string
@@ -36,6 +37,7 @@ type TestRunner struct {
 func NewTestRunner(
 	log *slog.Logger,
 	verbose bool,
+	cloudOutput bool,
 	testTrigger string,
 	testType TestType,
 	tests []string,
@@ -46,12 +48,13 @@ func NewTestRunner(
 	grafanaTimeout time.Duration,
 	machineSpec string,
 	benchRevision string,
-	dashboardURL string, 
+	dashboardURL string,
 ) *TestRunner {
 
 	return &TestRunner{
 		Log:              log,
 		Verbose:          verbose,
+		CloudOutput:      cloudOutput,
 		Trigger:          testTrigger,
 		Type:             testType,
 		Tests:            tests,
@@ -168,17 +171,19 @@ func (t *TestRunner) loadTest(ctx context.Context) error {
 		k6Env map[string]string
 		k6Args []string
 	)
-	if t.K6CloudProjectID != "" && t.K6CloudToken != "" {
+	if t.CloudOutput {
+		if t.K6CloudProjectID == "" || t.K6CloudToken == "" {
+			return fmt.Errorf("k6 Token and project ID are required for cloud output")
+		}
+
 		k6Env = map[string]string{
-			"K6_CLOUD_TOKEN": t.K6CloudToken,
-			"K6_CLOUD_PROJECT_ID": t.K6CloudProjectID,
+			"K6_CLOUD_TOKEN":          t.K6CloudToken,
+			"K6_CLOUD_PROJECT_ID":     t.K6CloudProjectID,
 			"K6_CLOUD_TRACES_ENABLED": "true",
 		}
 		k6Args = []string{"--out", "cloud"}
 	} else {
-		t.Log.Warn("running load tests with cloud output disabled." +
-			" Pass a K6 Token and project ID to report output to cloud",
-		)
+		t.Log.Warn("running load tests with cloud output disabled.")
 	}
 
 	// exec test and redirect output to cloud
@@ -188,7 +193,7 @@ func (t *TestRunner) loadTest(ctx context.Context) error {
 }
 
 // smokeTest runs a single iteration of each test specified and does not report
-// to k6 cloud 
+// to k6 cloud
 func (t *TestRunner) smokeTest(ctx context.Context) error {
 	summary, err := t.execTest(ctx, map[string]string{})
 	if err != nil {
@@ -278,6 +283,7 @@ func (t *TestRunner) execTest(ctx context.Context, env map[string]string, args..
 		k6Summary, err := K6ExecTest(
 			t.Log,
 			t.Verbose,
+			t.CloudOutput,
 			testFile,
 			scenarioName,
 			t.RunIdentifier,

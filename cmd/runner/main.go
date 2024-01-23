@@ -61,6 +61,7 @@ func testRunnerFromArgs(log *slog.Logger, args []string) (*TestRunner, error) {
 		benchRevision    string
 		dashboardURL     string
 		verbose          bool
+		cloudOutput      bool
 	)
 
 	fs := flag.NewFlagSet("test runner", flag.ContinueOnError)
@@ -78,6 +79,7 @@ func testRunnerFromArgs(log *slog.Logger, args []string) (*TestRunner, error) {
 	fs.StringVar(&k6CloudToken, "k6-cloud-token", "", "K6 cloud access token. If not set K6_CLOUD_TOKEN environment variable is used")
 	fs.StringVar(&k6CloudProjectId, "k6-cloud-project", "", "K6 cloud project ID. If not set K6_CLOUD_PROJECT_ID environment variable is used")
 	fs.BoolVar(&verbose, "verbose", true, "show k6 test outputs")
+	fs.BoolVar(&cloudOutput, "cloud-output", false, "send output to GCK6. Requires setting the GCK6 project ID and access token.")
 	fs.StringVar(&dashboardURL, "dashboard", "", "Template for the smoke test suite execution dashboard URL." +
 		"\nSupports the substitution of the following variables:" +
 		"\n    SuiteRun: identifier of the suite run"+
@@ -141,6 +143,7 @@ func testRunnerFromArgs(log *slog.Logger, args []string) (*TestRunner, error) {
 	return NewTestRunner(
 		log,
 		verbose,
+		cloudOutput,
 		testTrigger,
 		trt,
 		testFiles,

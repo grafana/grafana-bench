@@ -81,6 +81,14 @@ func WithInvalidGrafanaCredentials() testRunnerOption {
 	}
 }
 
+// configure TestRunner with cloud output
+func WithCloudOutput() testRunnerOption {
+	return func(t *TestRunner) error {
+		t.CloudOutput = true
+		return nil
+	}
+}
+
 // configure TestRunner with invalid K6 credentials
 func WithInvalidK6Credentials() testRunnerOption {
 	return func(t *TestRunner) error {
@@ -115,18 +123,19 @@ func testRunnerForTesting(
 ) (*TestRunner, error) {
 	tr := NewTestRunner(
 		log,
-		false,           // prevent k6 test output in test output
-		"test",          // trigger
+		false,  // prevent k6 test output in test output
+		false,  // prevent sending output to cloud
+		"test", // trigger
 		testType,
 		tests,
-		"test",          // test suite version
-		"",              // k6Cloud project
-		"",              // k6Cloud token
+		"test", // test suite version
+		"",     // k6Cloud project
+		"",     // k6Cloud token
 		grafanaInstance,
-		time.Second,     // grafana liveness probe timeout
-		"local",         // machine spec
-		"devel",         // bench revision
-		"",              // dashboard URL
+		time.Second, // grafana liveness probe timeout
+		"local",     // machine spec
+		"devel",     // bench revision
+		"",          // dashboard URL
 	)
 
 	// apply options
@@ -148,6 +157,10 @@ const dashboard = "See dashboard"
 
 const invalidDashboard = "invalid template substitution"
 
+const cloudOutputParsingErrorMessage = "error parsing cloud run from K6 summary"
+
+const missingK6CloudConfigError = "k6 Token and project ID are required for cloud output"
+
 func Test_Runner(t *testing.T) {
 	t.Parallel()
 
@@ -165,18 +178,29 @@ func Test_Runner(t *testing.T) {
 			tests:     []string{"k6tests/pass.js"},
 		},
 		{
-			testCase:  "passing test without k6 token (smoke)",
-			testType:  LoadTest,
-			tests:     []string{"k6tests/pass.js"},
-			expectMsgs:[]string{ missingK6credentials },
+			testCase:   "passing test without k6 token (smoke)",
+			testType:   LoadTest,
+			tests:      []string{"k6tests/pass.js"},
+			expectMsgs: []string{missingK6credentials},
 		},
 		{
-			testCase: "load test with invalid k6 tokens",
-			options:   []testRunnerOption{
+			testCase: "load test without k6 config",
+			options: []testRunnerOption{
+				WithCloudOutput(),
+			},
+			testType:  LoadTest,
+			tests:     []string{"k6tests/pass.js"},
+			expectErr: missingK6CloudConfigError,
+		},
+		{
+			testCase: "load test with invalid k6 config",
+			options: []testRunnerOption{
+				WithCloudOutput(),
 				WithInvalidK6Credentials(),
 			},
-			testType: LoadTest,
-			tests:    []string{"k6tests/pass.js"},
+			testType:   LoadTest,
+			tests:      []string{"k6tests/pass.js"},
+			expectMsgs: []string{cloudOutputParsingErrorMessage},
 		},
 		{
 			testCase:   "failing test (smoke)",
@@ -185,8 +209,8 @@ func Test_Runner(t *testing.T) {
 			expectMsgs: []string{testSuiteFailed},
 		},
 		{
-			testCase:   "failing test with dashboard (smoke)",
-			options:   []testRunnerOption{
+			testCase: "failing test with dashboard (smoke)",
+			options: []testRunnerOption{
 				WithDashboard(),
 			},
 			testType:   SmokeTest,
@@ -197,12 +221,12 @@ func Test_Runner(t *testing.T) {
 			},
 		},
 		{
-			testCase:   "failing test with invalid dashboard (smoke)",
-			testType:   SmokeTest,
-			options:   []testRunnerOption{
+			testCase: "failing test with invalid dashboard (smoke)",
+			testType: SmokeTest,
+			options: []testRunnerOption{
 				WithInvalidDashboard(),
 			},
-			tests:      []string{"k6tests/fail.js"},
+			tests:     []string{"k6tests/fail.js"},
 			expectErr: invalidDashboard,
 		},
 		{
@@ -225,7 +249,7 @@ func Test_Runner(t *testing.T) {
 			tests:     []string{"k6tests/pass.js"},
 			expectErr: loginError,
 		},
-	 }
+	}
 
 	for _, tc := range testCases {
 		tc := tc
@@ -250,14 +274,14 @@ func Test_Runner(t *testing.T) {
 			if err != nil {
 				t.Fatalf("failed to setup test %v", err)
 			}
-			
+
 			// execute test
 			err = tr.Exec(context.TODO())
 
 			if err == nil && tc.expectErr != "" {
 				t.Fatalf("should had failed with %q", tc.expectErr)
 			}
-			
+
 			// FIXME: checking for specific error text is fragile.
 			// The TestRunner should return different error types to facilitate validations
 			if err != nil && (tc.expectErr == "" || !strings.Contains(err.Error(), tc.expectErr)) {
