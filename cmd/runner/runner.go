@@ -75,7 +75,7 @@ func (t *TestRunner) Exec(ctx context.Context) error {
 
 	grafanaCtx, cancel := context.WithTimeout(ctx, t.GrafanaTimeout)
 	defer cancel()
-	
+
 	err := t.GrafanaInstance.WaitForLiveGrafana(grafanaCtx)
 	if err != nil {
 		return fmt.Errorf("checking Grafana is Live... %w", err)
@@ -130,9 +130,9 @@ func getScenarioName(filename string) string {
 	return strings.Join(parts, "")
 }
 
-// logTags formats the test runner's attributes as log attributes
+// suiteRunLogAttrs formats the test runner's attributes as log attributes
 // TODO: check for missing attributes (for example add test type?)
-func (t *TestRunner) logTags() []any {
+func (t *TestRunner) suiteRunLogAttrs() []any {
 	return []any{
 		"testTrigger", t.Trigger,
 		"benchVersion", t.BenchRevision,
@@ -143,8 +143,8 @@ func (t *TestRunner) logTags() []any {
 	}
 }
 
-// k6RunLogtags returns the k6RunSummary attributes formatted as lot attributes
-func k6RunLogtags(k K6RunSummary) []any {
+// testRunLogAttrs returns the k6RunSummary attributes formatted as log attributes
+func testRunLogAttrs(k K6RunSummary) []any {
 	return []any{
 		"iterations", k.Iterations,
 		"k6CloudUrl", k.CloudURL,
@@ -215,7 +215,7 @@ func (t *TestRunner) smokeTest(ctx context.Context) error {
 			dashboardMsg = " See dashboard: " + dashboard
 		}
 
-		t.Log.With(t.logTags()...).Error("test suite failed. Too many test failures." + dashboardMsg)
+		t.Log.With(t.suiteRunLogAttrs()...).Error("test suite failed. Too many test failures." + dashboardMsg)
 	}
 
 	return nil
@@ -312,15 +312,15 @@ func (t *TestRunner) execTest(ctx context.Context, env map[string]string, args .
 			"testFile", path.Base(testFile),
 			"order", strconv.Itoa(iteration + 1),
 		}
-		t.Log.With(t.logTags()...).
+		t.Log.With(t.suiteRunLogAttrs()...).
 			With(testTags...).
-			Info("testrun", k6RunLogtags(k6Summary)...)
+			Info("testrun", testRunLogAttrs(k6Summary)...)
 	}
 
 	totalScenarioDurations := prettyMS(totalDuration)
 	benchDuration := prettyMS(float32(time.Since(startTime).Milliseconds()))
 
-	t.Log.With(t.logTags()...).Info("suiteRun",
+	t.Log.With(t.suiteRunLogAttrs()...).Info("suiteRun",
 		"startTime", startTime.Format(time.RFC3339),
 		"totalScenarioDurations", totalScenarioDurations,
 		"duration", benchDuration,
