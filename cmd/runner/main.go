@@ -15,8 +15,6 @@ import (
 	"github.com/grafana/grafana-bench/bench/utils/version"
 )
 
-var benchRevision = "local"
-
 func main() {
 	log := slog.New(slog.NewTextHandler(os.Stderr, nil))
 	log = log.With("svc", "test-runner")
