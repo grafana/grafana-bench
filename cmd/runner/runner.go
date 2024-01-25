@@ -201,7 +201,10 @@ func (t *TestRunner) smokeTest(ctx context.Context) error {
 		return err
 	}
 
-	// TODO: remove reference to dashboard. This seems particular to the hosted grafana CIs
+	// NOTE this block of code performs substitution on a user defined url. e.g.
+	// http://mygrafana.com/b/?suiteRun={suiteRun}
+	// This functionality is ALPHA and may be removed in favor of outputting
+	// the suiteRun ID and leaving it up to the user.
 	if summary.AnyFailures {
 		var dashboardMsg string
 		if t.DashboardURL != "" {
@@ -218,6 +221,8 @@ func (t *TestRunner) smokeTest(ctx context.Context) error {
 	return nil
 }
 
+// getDashboardURL takes t.DashboardURL and substitutes {{.SuiteRun}} for t.RunIdentifier
+// this functionality may be deprecated in the future.
 func (t *TestRunner) getDashboardURL() (string, error) {
 	if t.DashboardURL == "" {
 		return "", fmt.Errorf("URL template is empty")
