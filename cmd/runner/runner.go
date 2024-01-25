@@ -69,9 +69,7 @@ func NewTestRunner(
 }
 
 func (t *TestRunner) Exec(ctx context.Context) error {
-	log := t.Log.With("svc", "boot-test-runner")
-
-	log.Info("Waiting for grafana server...", "address", t.GrafanaInstance.ServiceAddress())
+	t.Log.Info("Waiting for grafana server...", "address", t.GrafanaInstance.ServiceAddress())
 
 	grafanaCtx, cancel := context.WithTimeout(ctx, t.GrafanaTimeout)
 	defer cancel()
@@ -80,7 +78,7 @@ func (t *TestRunner) Exec(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("checking Grafana is Live... %w", err)
 	}
-	log.Info("Grafana server is ready!")
+	t.Log.Info("Grafana server is ready!")
 
 	t.GrafanaVersion, err = provisioner.GetGrafanaBuildVersion(t.GrafanaInstance)
 	if err != nil {
@@ -89,8 +87,6 @@ func (t *TestRunner) Exec(ctx context.Context) error {
 
 	t.RunIdentifier = t.newRunIdentifier()
 	t.Log.Info("suite identifier", "identifier", t.RunIdentifier)
-
-	t.Log = log.With("svc", fmt.Sprintf("%s-test-runner", t.Type.Name()))
 
 	if t.Type == SmokeTest {
 		return t.smokeTest(ctx)

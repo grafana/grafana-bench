@@ -16,8 +16,8 @@ import (
 )
 
 func main() {
-	log := slog.New(slog.NewTextHandler(os.Stderr, nil))
-	log = log.With("svc", "test-runner")
+	log := slog.New(slog.NewTextHandler(os.Stderr, nil)).
+		With("svc", "test-runner")
 
 	runner, err := testRunnerFromArgs(log, os.Args[1:])
 	if err != nil {
