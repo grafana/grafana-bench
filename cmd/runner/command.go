@@ -25,6 +25,7 @@ type TestRunCommand struct {
 
 // NewTestRunnerCommand creates e test runner command using CLI arguments 
 func NewTestRunnerCommand(log *slog.Logger, args []string)  (cmd.Command, error) {
+	log = log.With("svc", "test-runner")
 	var (
 		testTrigger      string
 		testType         string
@@ -137,14 +138,6 @@ func NewTestRunnerCommand(log *slog.Logger, args []string)  (cmd.Command, error)
 		dashboardURL,
 	)
 
-	// TODO: review attributes reported in this log message
-	log.Info("test runner params",
-		"testType", runner.Type.Name(),
-		"tests", runner.Tests,
-		"grafanaInstance", runner.GrafanaInstance.Host,
-		"k6ProjectId", runner.K6CloudProjectID,
-	)	
-	
 	return &TestRunCommand{
 		log:     log,
 		runner: *runner,
@@ -153,6 +146,15 @@ func NewTestRunnerCommand(log *slog.Logger, args []string)  (cmd.Command, error)
 
 // Exec runs the TestRunnerCommand
 func (c *TestRunCommand)Exec(ctx context.Context) error {
+	// TODO: review attributes reported in this log message
+	c.log.Info(
+		"test runner params",
+		"testType", c.runner.Type.Name(),
+		"tests", c.runner.Tests,
+		"grafanaInstance", c.runner.GrafanaInstance.Host,
+		"k6ProjectId", c.runner.K6CloudProjectID,
+	)
+
 	return c.runner.Exec(ctx)
 }
 
