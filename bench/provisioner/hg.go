@@ -72,12 +72,19 @@ func (d *HGDriver) Destroy(ctx context.Context, ps *ProvisionState) error {
 // specified and reports to k6 cloud
 func loadTest(ctx context.Context, ps *ProvisionState, tr *tester.TestRun, machineSpec string) error {
 	envVars := map[string]string{
-		"MACHINE_SPEC":            machineSpec,
-		"TEST_TYPE":               tr.Type.String(),
-		"TEST_SUITE_REVISION":     tr.SuiteRevision,
-		"GT_URL":                  ps.GrafanaInstance.SchemeServiceAddress(),
-		"GT_USERNAME":             ps.GrafanaInstance.ServiceUser,
-		"GT_PASSWORD":             ps.GrafanaInstance.ServicePassword,
+		"MACHINE_SPEC":        machineSpec,
+		"TEST_TYPE":           tr.Type.String(),
+		"TEST_SUITE_REVISION": tr.SuiteRevision,
+		"GRAFANA_URL":         ps.GrafanaInstance.SchemeServiceAddress(),
+		"GRAFANA_USERNAME":    ps.GrafanaInstance.ServiceUser,
+		"GRAFANA_PASSWORD":    ps.GrafanaInstance.ServicePassword,
+
+		// remove me after we update grafana/grafana-api-tests
+		"GT_URL":      ps.GrafanaInstance.SchemeServiceAddress(),
+		"GT_USERNAME": ps.GrafanaInstance.ServiceUser,
+		"GT_PASSWORD": ps.GrafanaInstance.ServicePassword,
+		//
+
 		"K6_CLOUD_TOKEN":          tr.K6CloudToken,
 		"K6_CLOUD_PROJECT_ID":     tr.K6CloudProjectId,
 		"K6_CLOUD_TRACES_ENABLED": "true",

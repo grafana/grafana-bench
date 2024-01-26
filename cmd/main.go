@@ -57,7 +57,11 @@ func main() {
 func hgtest(ctx context.Context, log *slog.Logger, benchSvc *bench.BenchService, benchCfg *bench.BenchServiceCfg, testType, address, username, password, tests string) error {
 	log = log.With("svc", "hgtest")
 
-	grafanaInstance := provisioner.NewReadOnlyGrafanaVM(address, username, password)
+	grafanaInstance, err := provisioner.NewReadOnlyGrafanaVM(address, username, password)
+	if err != nil {
+		return err
+	}
+
 	provisioner.WaitForLiveGrafana(log, grafanaInstance.ServiceAddress())
 
 	grafanaVersion, err := provisioner.GetGrafanaBuildVersion(grafanaInstance)

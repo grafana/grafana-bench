@@ -1,12 +1,14 @@
 package provisioner
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/url"
 	"os"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/grafana/grafana-bench/bench/utils"
 	"golang.org/x/crypto/ssh"
@@ -33,10 +35,10 @@ type VMInstance struct {
 // Takes a fully qualified address such as https://jefflevinslunch.grafana.net
 // and populates the service fields based on the address. If a port is not
 // included in the address, it will be determined based on the scheme
-func NewReadOnlyGrafanaVM(address, grafanaUser, grafanaPassword string) *VMInstance {
+func NewReadOnlyGrafanaVM(address, grafanaUser, grafanaPassword string) (*VMInstance, error) {
 	scheme, host, port, err := parseServiceAddress(address)
 	if err != nil {
-		panic(fmt.Errorf("error parsing grafana uri: %w", err))
+		return nil, fmt.Errorf("error parsing grafana uri: %w", err)
 	}
 
 	return &VMInstance{
@@ -45,7 +47,7 @@ func NewReadOnlyGrafanaVM(address, grafanaUser, grafanaPassword string) *VMInsta
 		ServiceScheme:   scheme,
 		ServiceUser:     grafanaUser,
 		ServicePassword: grafanaPassword,
-	}
+	}, nil
 }
 
 // parseServiceAddress takes an address such as
@@ -197,4 +199,32 @@ func formatEnv(env map[string]string) string {
 		envVars += fmt.Sprintf("%s=\"%s\" ", strings.ToUpper(k), strings.TrimSpace(v))
 	}
 	return envVars
+}
+
+
+// Wait for the grafana instance to start up
+func (v *VMInstance) WaitForLiveGrafana(ctx context.Context) error {
+	if v.IsLive() {
+		return nil
+	}
+
+	timer := time.NewTicker(time.Second)
+	defer timer.Stop()
+
+	for {
+		select {
+		case <- timer.C:
+			if v.IsLive() {
+				return nil
+			}
+		case <- ctx.Done():
+			return ctx.Err()
+		}
+	}
+}
+
+// checks if grafana is alive
+func (v *VMInstance)IsLive() bool {
+	_, err := net.Dial("tcp", v.ServiceAddress())
+	return err == nil
 }
