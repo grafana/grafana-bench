@@ -1,4 +1,4 @@
-package main
+package runner
 
 import (
 	"context"
@@ -9,39 +9,22 @@ import (
 	"strings"
 	"time"
 
+	"github.com/grafana/grafana-bench/cmd"
 	"github.com/grafana/grafana-bench/bench/provisioner"
 	"github.com/grafana/grafana-bench/bench/utils"
 	"github.com/grafana/grafana-bench/bench/utils/env"
 	"github.com/grafana/grafana-bench/bench/utils/version"
 )
 
-func main() {
-	log := slog.New(slog.NewTextHandler(os.Stderr, nil)).
-		With("svc", "test-runner")
 
-	runner, err := testRunnerFromArgs(log, os.Args[1:])
-	if err != nil {
-		log.Error("parsing parameters", "error", err)
-		os.Exit(1)
-	}
-
-	log.Info("Bench run params",
-		"testType", runner.Type.Name(),
-		"tests", runner.Tests,
-		"grafanaInstance", runner.GrafanaInstance.Host,
-		"k6ProjectId", runner.K6CloudProjectID,
-	)
-
-	// ENTRYPOINT to start actually running the tests
-	err = runner.Exec(context.Background())
-	if err != nil {
-		log.Error(err.Error())
-		os.Exit(1)
-	}
+// TestRunnerCommand implements the Command interface
+type TestRunCommand struct {
+	log *slog.Logger
+	runner TestRunner
 }
 
-// read test runner specification from CLI args
-func testRunnerFromArgs(log *slog.Logger, args []string) (*TestRunner, error) {
+// NewTestRunnerCommand creates e test runner command using CLI arguments 
+func NewTestRunnerCommand(log *slog.Logger, args []string)  (cmd.Command, error) {
 	var (
 		testTrigger      string
 		testType         string
@@ -137,7 +120,7 @@ func testRunnerFromArgs(log *slog.Logger, args []string) (*TestRunner, error) {
 		return nil, fmt.Errorf("getting test list: %w", err)
 	}
 
-	return NewTestRunner(
+	runner := NewTestRunner(
 		log,
 		verbose,
 		k6CloudOutput,
@@ -152,7 +135,25 @@ func testRunnerFromArgs(log *slog.Logger, args []string) (*TestRunner, error) {
 		machineSpec,
 		benchRevision,
 		dashboardURL,
-	), nil
+	)
+
+	// TODO: review attributes reported in this log message
+	log.Info("test runner params",
+		"testType", runner.Type.Name(),
+		"tests", runner.Tests,
+		"grafanaInstance", runner.GrafanaInstance.Host,
+		"k6ProjectId", runner.K6CloudProjectID,
+	)	
+	
+	return &TestRunCommand{
+		log:     log,
+		runner: *runner,
+	}, nil 
+}
+
+// Exec runs the TestRunnerCommand
+func (c *TestRunCommand)Exec(ctx context.Context) error {
+	return c.runner.Exec(ctx)
 }
 
 // read test revision from test file
