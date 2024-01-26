@@ -44,6 +44,9 @@ The test subcommand is a wrapper around running grafana-api-tests against a graf
 
 The test runner executes a set of tests passed as parameter and reports the results.
 
+> Executing tests requires to have `k6` binary installed in the machine that executes the `bench test` command.
+> It can be installed it using the `go install go.k6.io/k6@latest` command or following any of the other suggested [installation procedures](https://grafana.com/docs/k6/latest/get-started/installation/)
+
 It can be executed with the following command:
 
 ```sh
