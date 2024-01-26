@@ -45,9 +45,9 @@ func testRunnerFromArgs(log *slog.Logger, args []string) (*TestRunner, error) {
 	var (
 		testTrigger      string
 		testType         string
-		address          string
-		username         string
-		password         string
+		grafanaUrl       string
+		grafanaUsername  string
+		grafanaPassword  string
 		machineSpec      string
 		revision         string
 		revisionFile     string
@@ -58,25 +58,25 @@ func testRunnerFromArgs(log *slog.Logger, args []string) (*TestRunner, error) {
 		benchRevision    string
 		dashboardURL     string
 		verbose          bool
-		cloudOutput      bool
+		k6CloudOutput    bool
 	)
 
 	fs := flag.NewFlagSet("test runner", flag.ContinueOnError)
-	fs.StringVar(&testTrigger, "trigger", "local", "test trigger")
-	fs.StringVar(&testType, "type", "smoke", "test type. Allowed values: 'smoke', 'load'")
-	fs.StringVar(&address, "instance", "http://localhost:3000", "url to grafana instance")
-	fs.DurationVar(&grafanaTimeout, "timeout", 30*time.Second, "timeout for waiting grafana to be live")
-	fs.StringVar(&username, "user", "admin", "grafana user name. Can be overridden by the GRAFANA_USER environment variable")
-	fs.StringVar(&password, "password", "admin", "grafana password. Can be overridden by the GRAFANA_PASSWORD environment variable")
-	fs.StringVar(&machineSpec, "spec", "", "grafana instance machine spec")
+	fs.StringVar(&testTrigger, "test-trigger", "local", "test trigger")
+	fs.StringVar(&testType, "test-type", "smoke", "test type. Allowed values: 'smoke', 'load'")
+	fs.StringVar(&grafanaUrl, "grafana-url", "http://localhost:3000", "url to grafana instance")
+	fs.DurationVar(&grafanaTimeout, "grafana-timeout", 30*time.Second, "timeout for waiting grafana to be live")
+	fs.StringVar(&grafanaUsername, "grafana-username", "admin", "grafana user name. Can be overridden by the GRAFANA_USER environment variable")
+	fs.StringVar(&grafanaPassword, "grafana-password", "admin", "grafana password. Can be overridden by the GRAFANA_PASSWORD environment variable")
+	fs.StringVar(&machineSpec, "machine-spec", "", "grafana instance machine spec")
 	// TODO: add default value as the revision is used to generate the run id
-	fs.StringVar(&revision, "revision", "", "test suite revision. Has precedence over revision-file")
-	fs.StringVar(&revisionFile, "revision-file", "", "path to a file with the test revision")
+	fs.StringVar(&revision, "test-suite-revision", "", "test suite revision. Has precedence over test-suite-revision-file")
+	fs.StringVar(&revisionFile, "test-suite-revision-file", "", "path to a file with the test suite revision")
 	fs.StringVar(&benchRevision, "bench-revision", "", "grafana bench revision")
 	fs.StringVar(&k6CloudToken, "k6-cloud-token", "", "K6 cloud access token. If not set K6_CLOUD_TOKEN environment variable is used")
 	fs.StringVar(&k6CloudProjectId, "k6-cloud-project", "", "K6 cloud project ID. If not set K6_CLOUD_PROJECT_ID environment variable is used")
-	fs.BoolVar(&verbose, "verbose", true, "show k6 test outputs")
-	fs.BoolVar(&cloudOutput, "cloud-output", false, "send output to GCK6. Requires setting the GCK6 project ID and access token.")
+	fs.BoolVar(&verbose, "verbose", true, "show test outputs")
+	fs.BoolVar(&k6CloudOutput, "k6-cloud-output", false, "send output to GCK6. Requires setting the GCK6 project ID and access token.")
 	fs.StringVar(&dashboardURL, "dashboard", "", "Template for the smoke test suite execution dashboard URL."+
 		"\nSupports the substitution of the following variables:"+
 		"\n    SuiteRun: identifier of the suite run"+
@@ -105,14 +105,14 @@ func testRunnerFromArgs(log *slog.Logger, args []string) (*TestRunner, error) {
 		benchRevision = version.BenchVersion()
 	}
 
-	grafanaInstance, err := provisioner.NewReadOnlyGrafanaVM(address, username, password)
+	grafanaInstance, err := provisioner.NewReadOnlyGrafanaVM(grafanaUrl, grafanaUsername, grafanaPassword)
 	if err != nil {
 		return nil, err
 	}
 
 	// override grafana user and password from environment variables if they are set
-	username = env.EnvOrDefault("GRAFANA_USER", username)
-	password = env.EnvOrDefault("GRAFANA_PASSWORD", password)
+	grafanaUsername = env.EnvOrDefault("GRAFANA_USER", grafanaUsername)
+	grafanaPassword = env.EnvOrDefault("GRAFANA_PASSWORD", grafanaPassword)
 
 	if k6CloudToken == "" {
 		k6CloudToken = env.EnvOrDefault("K6_CLOUD_TOKEN", "")
@@ -140,7 +140,7 @@ func testRunnerFromArgs(log *slog.Logger, args []string) (*TestRunner, error) {
 	return NewTestRunner(
 		log,
 		verbose,
-		cloudOutput,
+		k6CloudOutput,
 		testTrigger,
 		trt,
 		testFiles,

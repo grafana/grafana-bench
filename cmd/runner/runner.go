@@ -18,7 +18,7 @@ import (
 type TestRunner struct {
 	Log              *slog.Logger
 	Verbose          bool
-	CloudOutput      bool
+	K6CloudOutput    bool
 	RunIdentifier    string
 	Type             TestType
 	Trigger          string
@@ -53,7 +53,7 @@ func NewTestRunner(
 	return &TestRunner{
 		Log:              log,
 		Verbose:          verbose,
-		CloudOutput:      cloudOutput,
+		K6CloudOutput:    cloudOutput,
 		Trigger:          testTrigger,
 		Type:             testType,
 		Tests:            tests,
@@ -168,7 +168,7 @@ func (t *TestRunner) loadTest(ctx context.Context) error {
 		k6Env  map[string]string
 		k6Args []string
 	)
-	if t.CloudOutput {
+	if t.K6CloudOutput {
 		if t.K6CloudProjectID == "" || t.K6CloudToken == "" {
 			return fmt.Errorf("k6 Token and project ID are required for cloud output")
 		}
@@ -285,7 +285,7 @@ func (t *TestRunner) execTest(ctx context.Context, env map[string]string, args .
 		k6Summary, err := K6ExecTest(
 			t.Log,
 			t.Verbose,
-			t.CloudOutput,
+			t.K6CloudOutput,
 			testFile,
 			scenarioName,
 			t.RunIdentifier,

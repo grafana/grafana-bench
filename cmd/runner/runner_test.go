@@ -84,7 +84,7 @@ func WithInvalidGrafanaCredentials() testRunnerOption {
 // configure TestRunner with cloud output
 func WithCloudOutput() testRunnerOption {
 	return func(t *TestRunner) error {
-		t.CloudOutput = true
+		t.K6CloudOutput = true
 		return nil
 	}
 }
