@@ -88,6 +88,13 @@ func (t *TestRunner) Exec(ctx context.Context) error {
 	t.RunIdentifier = t.newRunIdentifier()
 	t.Log.Info("suite identifier", "identifier", t.RunIdentifier)
 
+	k6Version, err := GetK6Version()
+	if err != nil {
+		return fmt.Errorf("getting k6 version %w", err)
+	}
+
+	t.Log.Info("using k6", "k6Version", k6Version)
+
 	if t.Type == SmokeTest {
 		return t.smokeTest(ctx)
 	} else {
