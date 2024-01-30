@@ -90,7 +90,7 @@ func (t *TestRunner) Exec(ctx context.Context) error {
 
 	k6Version, err := GetK6Version()
 	if err != nil {
-		return fmt.Errorf("getting k6 version %w. verify k6 is installed and in your PATH", err)
+		return fmt.Errorf("getting k6 version %w", err)
 	}
 
 	t.Log.Info("using k6", "k6Version", k6Version)
