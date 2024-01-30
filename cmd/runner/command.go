@@ -17,6 +17,25 @@ import (
 )
 
 
+// usage for test command
+const usage = `
+The bench test subcommand is a wrapper for running k6 tests against a grafana instance.
+
+usage for test runner:
+
+    bench test [options] <tests>
+
+    where the argument <tests> is the path to the tests to be executed.
+    A single .js file or a folder can be specified.
+    If it is a folder, all .js files in the folder and sub-folders will be executed as tests.
+
+Examples:
+
+    bench test --type smoke /path/to/test/folder
+
+    bench test --type load /path/to/test.js
+`
+
 // TestRunnerCommand implements the Command interface
 type TestRunCommand struct {
 	log *slog.Logger
@@ -45,7 +64,14 @@ func NewTestRunnerCommand(log *slog.Logger, args []string)  (cmd.Command, error)
 		k6CloudOutput    bool
 	)
 
-	fs := flag.NewFlagSet("test runner", flag.ContinueOnError)
+	fs := flag.NewFlagSet("test runner", flag.ExitOnError)
+	// this function will be called when the help flag is passed
+	fs.Usage = func() {
+		fmt.Println(usage)
+		fmt.Println("Arguments")
+		fs.PrintDefaults()
+	}
+
 	fs.StringVar(&testTrigger, "test-trigger", "local", "test trigger")
 	fs.StringVar(&testType, "test-type", "smoke", "test type. Allowed values: 'smoke', 'load'")
 	fs.StringVar(&grafanaUrl, "grafana-url", "http://localhost:3000", "url to grafana instance")

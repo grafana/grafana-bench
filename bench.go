@@ -23,10 +23,28 @@ func main() {
 	}
 }	
 
+// usage text
+const usage = `
+bench provides a CLI interface for executing diverse actions implemented as sub-commands
+
+usage of bench:
+    bench <subcommand>
+
+subcommands:
+    test   run a test suite
+
+for help on subcommands use:
+    bench <subcommand> --help|-h
+`
 
 func run(ctx context.Context, log *slog.Logger, args []string) error {
 	// this is the flag set for global flags
-	fs := flag.NewFlagSet("bench", flag.ContinueOnError)
+	fs := flag.NewFlagSet("bench", flag.ExitOnError)
+	// this function will be called when the help flag is passed
+	fs.Usage = func() {
+		fmt.Print(usage)
+		fs.PrintDefaults()
+	}
 
 
 	// parse global flags. The subcommand must be the first non flag argument
@@ -36,8 +54,11 @@ func run(ctx context.Context, log *slog.Logger, args []string) error {
 
 	}
 
+	// no subcommand specified, print usage
 	if fs.NArg() == 0 {
-		return fmt.Errorf("a sub command must be provided")
+		fmt.Print(usage)
+		fs.PrintDefaults()
+		return nil
 	}
 
 	// flag parse stops at the first non-flag argument, Args holds the remaining args
