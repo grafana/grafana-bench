@@ -47,7 +47,7 @@ go run bench.go <subcommand> --help
 
 ### test
 
-The test subcommand is a wrapper around running grafana-api-tests against a grafana instance.
+The test subcommand is a wrapper for running k6 tests against a grafana instance that gives us standard variable names ($GRAFANA_URL) and output.
 
 The test runner executes a set of tests passed as parameter and reports the results.
 
