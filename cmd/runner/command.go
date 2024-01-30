@@ -67,8 +67,8 @@ func NewTestRunnerCommand(log *slog.Logger, args []string)  (cmd.Command, error)
 	fs := flag.NewFlagSet("test runner", flag.ExitOnError)
 	// this function will be called when the help flag is passed
 	fs.Usage = func() {
-		fmt.Println(usage)
-		fmt.Println("Arguments")
+		fmt.Print(usage)
+		fmt.Print("\nArguments\n")
 		fs.PrintDefaults()
 	}
 
