@@ -2,20 +2,20 @@ package runner
 
 import (
 	"context"
-	"flag"
 	"fmt"
+	"flag"
 	"log/slog"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/grafana/grafana-bench/cmd"
 	"github.com/grafana/grafana-bench/bench/provisioner"
 	"github.com/grafana/grafana-bench/bench/utils"
 	"github.com/grafana/grafana-bench/bench/utils/env"
 	"github.com/grafana/grafana-bench/bench/utils/version"
-)
+	"github.com/grafana/grafana-bench/cmd"
 
+)
 
 // usage for test command
 const usage = `
@@ -23,17 +23,14 @@ The bench test subcommand is a wrapper for running k6 tests against a grafana in
 
 usage for test runner:
 
-    bench test [options] <tests>
+    bench test [options] --test-suite <test suite>
 
-    where the argument <tests> is the path to the tests to be executed.
-    A single .js file or a folder can be specified.
-    If it is a folder, all .js files in the folder and sub-folders will be executed as tests.
 
 Examples:
 
-    bench test --type smoke /path/to/test/folder
+    bench test --test-suite /path/to/test/folder
 
-    bench test --type load /path/to/test.js
+    bench test --test-type load --test-suite /path/to/test.js
 `
 
 // TestRunnerCommand implements the Command interface
@@ -54,7 +51,7 @@ func NewTestRunnerCommand(log *slog.Logger, args []string)  (cmd.Command, error)
 		machineSpec      string
 		revision         string
 		revisionFile     string
-		tests            string
+		testSuite        string
 		k6CloudToken     string
 		k6CloudProjectId string
 		grafanaTimeout   time.Duration
@@ -92,10 +89,17 @@ func NewTestRunnerCommand(log *slog.Logger, args []string)  (cmd.Command, error)
 		"\n    SuiteRun: identifier of the suite run"+
 		"\nExample: http://localhost/dashboards?run={{.SuiteRun}}",
 	)
+	fs.StringVar(&testSuite, "test-suite", "", "path to the tests to be executed." +
+		"\nA single .js file or a directory can be specified." +
+		"\nIf a directory is specified, all .js files in the directory and its sub-directories will be executed as tests.")
 
 	err := fs.Parse(args)
 	if err != nil {
 		return nil, err
+	}
+
+	if testSuite ==  "" {
+		return nil, fmt.Errorf("tests must be specified")
 	}
 
 	trt, err := ParseTestType(testType)
@@ -132,17 +136,7 @@ func NewTestRunnerCommand(log *slog.Logger, args []string)  (cmd.Command, error)
 		k6CloudProjectId = env.EnvOrDefault("K6_CLOUD_PROJECT_ID", "")
 	}
 
-	// the test is specified as an argument after the flags
-	switch fs.NArg() {
-	case 0:
-		return nil, fmt.Errorf("tests must be specified")
-	case 1:
-		tests = fs.Arg(0)
-	default:
-		return nil, fmt.Errorf("expected one test argument got %d: %s", fs.NArg(), fs.Args())
-	}
-
-	testFiles, err := getTestFiles(tests)
+	testFiles, err := getTestFiles(testSuite)
 	if err != nil {
 		return nil, fmt.Errorf("getting test list: %w", err)
 	}

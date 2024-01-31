@@ -57,16 +57,15 @@ The test runner executes a set of tests passed as parameter and reports the resu
 It can be executed with the following command:
 
 ```sh
-go run bench.go [options] test [test options] <tests>
+go run bench.go [options] test [test options] --test-suite <test-suite>
 ```
 
-Supports two kinds of test executions:
-* smoke: execute tests and reports failures
+Supports two kinds of test executions defined by the `test-type` option:
+* smoke: execute tests and reports failures (default)
 * load: execute tests and report execution stats to GCK6
 
-Tests are defined by pointing to a folder. All `.js` files in this folder and its sub-folders will be considered a test and executed
-
-It is also possible to execute a single test by pointing to a `.js` file.
+The tests to be executed are defined by the `--test-suite` option. It can be a directory or a single `.js` file.
+If a directory is specified, all `.js` files in the directory and its sub-directories will be considered a test and executed.
 
 Each test is parameterized via environment variables following [grafana-api-tests conventions](https://github.com/grafana/grafana-api-tests/blob/main/README.md#common-environment-variables).
 

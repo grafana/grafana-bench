@@ -50,4 +50,4 @@ docker run --rm \
     --k6-cloud-project="$K6_CLOUD_PROJECT_ID" \
     --k6-cloud-token="$K6_CLOUD_TOKEN" \
     --k6-cloud-output="$K6_CLOUD_OUTPUT" \
-    "$1"
+    --test-suite "$1"
