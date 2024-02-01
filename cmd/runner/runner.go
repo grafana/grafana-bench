@@ -131,7 +131,7 @@ func getScenarioName(filename string) string {
 func (t *TestRunner) suiteRunLogAttrs() []any {
 	return []any{
 		"testTrigger", t.Trigger,
-		"benchRevision", t.BenchRevision,
+		"benchVersion", t.BenchRevision,
 		"apiTestsVersion", t.TestRevision,
 		"suiteRun", t.RunIdentifier,
 		"grafanaUrl", t.GrafanaInstance.Host,
