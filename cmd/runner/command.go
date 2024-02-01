@@ -1,8 +1,6 @@
 package runner
 
 import (
-	"context"
-	"flag"
 	"fmt"
 	"log/slog"
 	"os"
@@ -13,33 +11,16 @@ import (
 	"github.com/grafana/grafana-bench/bench/provisioner"
 	"github.com/grafana/grafana-bench/bench/utils"
 	"github.com/grafana/grafana-bench/bench/utils/env"
-	"github.com/grafana/grafana-bench/cmd"
+	"github.com/spf13/cobra"
 )
 
-// usage for test command
-const usage = `
-The bench test subcommand is a wrapper for running k6 tests against a grafana instance.
-
-usage for test runner:
-
-    bench test [options] --test-suite <test suite>
-
-
-Examples:
-
+const examples =`
     bench test --test-suite /path/to/test/folder
-
-    bench test --test-type load --test-suite /path/to/test.js
+    bench test --test-type load --test-suite /path/to/test.js"
 `
 
-// TestRunnerCommand implements the Command interface
-type TestRunCommand struct {
-	log    *slog.Logger
-	runner TestRunner
-}
-
 // NewTestRunnerCommand creates e test runner command using CLI arguments
-func NewTestRunnerCommand(log *slog.Logger, args []string) (cmd.Command, error) {
+func NewTestRunnerCommand(log *slog.Logger) *cobra.Command {
 	log = log.With("svc", "test-runner")
 	var (
 		testTrigger      string
@@ -60,14 +41,83 @@ func NewTestRunnerCommand(log *slog.Logger, args []string) (cmd.Command, error) 
 		k6CloudOutput    bool
 	)
 
-	fs := flag.NewFlagSet("test runner", flag.ExitOnError)
-	// this function will be called when the help flag is passed
-	fs.Usage = func() {
-		fmt.Print(usage)
-		fmt.Print("\nArguments\n")
-		fs.PrintDefaults()
+	cmd := cobra.Command{
+		// test-suite is a mandatory option. highlight in the help
+		Use:   "test --test-suite /path/to/test/suite",
+		Short: "bench test runner",
+		Long:  "test subcommand is a wrapper for running k6 tests against a grafana instance",
+		Example: examples,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			trt, err := ParseTestType(testType)
+			if err != nil {
+				return err
+			}
+
+			// If revision-file and revision are specified, revision has precedence
+			if revision == "" && revisionFile != "" {
+				revision, err = getTestRevision(revisionFile)
+				if err != nil {
+					return fmt.Errorf("getting version from file %s: %w", revisionFile, err)
+				}
+			}
+
+			if benchRevision == "" {
+				benchRevision = bench.Revision()
+			}
+
+			grafanaInstance, err := provisioner.NewReadOnlyGrafanaVM(grafanaUrl, grafanaUsername, grafanaPassword)
+			if err != nil {
+				return err
+			}
+
+			// override grafana user and password from environment variables if they are set
+			grafanaUsername = env.EnvOrDefault("GRAFANA_USER", grafanaUsername)
+			grafanaPassword = env.EnvOrDefault("GRAFANA_PASSWORD", grafanaPassword)
+
+			if k6CloudToken == "" {
+				k6CloudToken = env.EnvOrDefault("K6_CLOUD_TOKEN", "")
+			}
+
+			if k6CloudProjectId == "" {
+				k6CloudProjectId = env.EnvOrDefault("K6_CLOUD_PROJECT_ID", "")
+			}
+
+			testFiles, err := getTestFiles(testSuite)
+			if err != nil {
+				return fmt.Errorf("getting test list: %w", err)
+			}
+
+			runner := NewTestRunner(
+				log,
+				verbose,
+				k6CloudOutput,
+				testTrigger,
+				trt,
+				testFiles,
+				revision,
+				k6CloudProjectId,
+				k6CloudToken,
+				grafanaInstance,
+				grafanaTimeout,
+				machineSpec,
+				benchRevision,
+				dashboardURL,
+			)
+	
+			// TODO: review attributes reported in this log message
+			log.Info(
+				"test runner params",
+				"testType", runner.Type.Name(),
+				"tests", runner.Tests,
+				"grafanaInstance", runner.GrafanaInstance.Host,
+				"k6ProjectId", runner.K6CloudProjectID,
+			)
+
+			return runner.Exec(cmd.Context())
+		},
 	}
 
+	fs := cmd.Flags()
 	fs.StringVar(&testTrigger, "test-trigger", "local", "test trigger")
 	fs.StringVar(&testType, "test-type", "smoke", "test type. Allowed values: 'smoke', 'load'")
 	fs.StringVar(&grafanaUrl, "grafana-url", "http://localhost:3000", "url to grafana instance")
@@ -91,91 +141,11 @@ func NewTestRunnerCommand(log *slog.Logger, args []string) (cmd.Command, error) 
 	fs.StringVar(&testSuite, "test-suite", "", "path to the tests to be executed."+
 		"\nA single .js file or a directory can be specified."+
 		"\nIf a directory is specified, all .js files in the directory and its sub-directories will be executed as tests.")
+	cmd.MarkFlagRequired("test-suite")
 
-	err := fs.Parse(args)
-	if err != nil {
-		return nil, err
-	}
-
-	if testSuite == "" {
-		return nil, fmt.Errorf("tests must be specified")
-	}
-
-	trt, err := ParseTestType(testType)
-	if err != nil {
-		return nil, err
-	}
-
-	// If revision-file and revision are specified, revision has precedence
-	if revision == "" && revisionFile != "" {
-		revision, err = getTestRevision(revisionFile)
-		if err != nil {
-			return nil, fmt.Errorf("getting version from file %s: %w", revisionFile, err)
-		}
-	}
-
-	if benchRevision == "" {
-		benchRevision = bench.Revision()
-	}
-
-	grafanaInstance, err := provisioner.NewReadOnlyGrafanaVM(grafanaUrl, grafanaUsername, grafanaPassword)
-	if err != nil {
-		return nil, err
-	}
-
-	// override grafana user and password from environment variables if they are set
-	grafanaUsername = env.EnvOrDefault("GRAFANA_USER", grafanaUsername)
-	grafanaPassword = env.EnvOrDefault("GRAFANA_PASSWORD", grafanaPassword)
-
-	if k6CloudToken == "" {
-		k6CloudToken = env.EnvOrDefault("K6_CLOUD_TOKEN", "")
-	}
-
-	if k6CloudProjectId == "" {
-		k6CloudProjectId = env.EnvOrDefault("K6_CLOUD_PROJECT_ID", "")
-	}
-
-	testFiles, err := getTestFiles(testSuite)
-	if err != nil {
-		return nil, fmt.Errorf("getting test list: %w", err)
-	}
-
-	runner := NewTestRunner(
-		log,
-		verbose,
-		k6CloudOutput,
-		testTrigger,
-		trt,
-		testFiles,
-		revision,
-		k6CloudProjectId,
-		k6CloudToken,
-		grafanaInstance,
-		grafanaTimeout,
-		machineSpec,
-		benchRevision,
-		dashboardURL,
-	)
-
-	return &TestRunCommand{
-		log:    log,
-		runner: *runner,
-	}, nil
+	return &cmd
 }
 
-// Exec runs the TestRunnerCommand
-func (c *TestRunCommand) Exec(ctx context.Context) error {
-	// TODO: review attributes reported in this log message
-	c.log.Info(
-		"test runner params",
-		"testType", c.runner.Type.Name(),
-		"tests", c.runner.Tests,
-		"grafanaInstance", c.runner.GrafanaInstance.Host,
-		"k6ProjectId", c.runner.K6CloudProjectID,
-	)
-
-	return c.runner.Exec(ctx)
-}
 
 // read test revision from test file
 func getTestRevision(revisionFile string) (string, error) {

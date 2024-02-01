@@ -12,6 +12,11 @@ require (
 )
 
 require (
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/spf13/pflag v1.0.5 // indirect
+)
+
+require (
 	cloud.google.com/go v0.110.4 // indirect
 	cloud.google.com/go/compute v1.22.0 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
@@ -22,6 +27,7 @@ require (
 	github.com/google/s2a-go v0.1.4 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.5 // indirect
 	github.com/googleapis/gax-go/v2 v2.12.0 // indirect
+	github.com/spf13/cobra v1.8.0
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/net v0.12.0 // indirect
 	golang.org/x/oauth2 v0.10.0 // indirect
