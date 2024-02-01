@@ -2,19 +2,18 @@ package runner
 
 import (
 	"context"
-	"fmt"
 	"flag"
+	"fmt"
 	"log/slog"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/grafana/grafana-bench/bench"
 	"github.com/grafana/grafana-bench/bench/provisioner"
 	"github.com/grafana/grafana-bench/bench/utils"
 	"github.com/grafana/grafana-bench/bench/utils/env"
-	"github.com/grafana/grafana-bench/bench/utils/version"
 	"github.com/grafana/grafana-bench/cmd"
-
 )
 
 // usage for test command
@@ -35,12 +34,12 @@ Examples:
 
 // TestRunnerCommand implements the Command interface
 type TestRunCommand struct {
-	log *slog.Logger
+	log    *slog.Logger
 	runner TestRunner
 }
 
-// NewTestRunnerCommand creates e test runner command using CLI arguments 
-func NewTestRunnerCommand(log *slog.Logger, args []string)  (cmd.Command, error) {
+// NewTestRunnerCommand creates e test runner command using CLI arguments
+func NewTestRunnerCommand(log *slog.Logger, args []string) (cmd.Command, error) {
 	log = log.With("svc", "test-runner")
 	var (
 		testTrigger      string
@@ -89,8 +88,8 @@ func NewTestRunnerCommand(log *slog.Logger, args []string)  (cmd.Command, error)
 		"\n    SuiteRun: identifier of the suite run"+
 		"\nExample: http://localhost/dashboards?run={{.SuiteRun}}",
 	)
-	fs.StringVar(&testSuite, "test-suite", "", "path to the tests to be executed." +
-		"\nA single .js file or a directory can be specified." +
+	fs.StringVar(&testSuite, "test-suite", "", "path to the tests to be executed."+
+		"\nA single .js file or a directory can be specified."+
 		"\nIf a directory is specified, all .js files in the directory and its sub-directories will be executed as tests.")
 
 	err := fs.Parse(args)
@@ -98,7 +97,7 @@ func NewTestRunnerCommand(log *slog.Logger, args []string)  (cmd.Command, error)
 		return nil, err
 	}
 
-	if testSuite ==  "" {
+	if testSuite == "" {
 		return nil, fmt.Errorf("tests must be specified")
 	}
 
@@ -116,7 +115,7 @@ func NewTestRunnerCommand(log *slog.Logger, args []string)  (cmd.Command, error)
 	}
 
 	if benchRevision == "" {
-		benchRevision = version.BenchVersion()
+		benchRevision = bench.Revision()
 	}
 
 	grafanaInstance, err := provisioner.NewReadOnlyGrafanaVM(grafanaUrl, grafanaUsername, grafanaPassword)
@@ -159,13 +158,13 @@ func NewTestRunnerCommand(log *slog.Logger, args []string)  (cmd.Command, error)
 	)
 
 	return &TestRunCommand{
-		log:     log,
+		log:    log,
 		runner: *runner,
-	}, nil 
+	}, nil
 }
 
 // Exec runs the TestRunnerCommand
-func (c *TestRunCommand)Exec(ctx context.Context) error {
+func (c *TestRunCommand) Exec(ctx context.Context) error {
 	// TODO: review attributes reported in this log message
 	c.log.Info(
 		"test runner params",
