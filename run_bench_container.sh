@@ -1,7 +1,7 @@
 #! /usr/bin/env sh
 
 # This script is used for testing and iterating on Bench from inside a container.
-# ./run_bech_container.sh tests/dashboards/dashboard_create.js .env
+# ./run_bech_container.sh dashboards/dashboard_create.js .env
 #
 # 1. the first argument is path to folder or test file. the file is relative
 #    to the volume mounted in the container. 
@@ -42,4 +42,5 @@ docker run --rm \
   --volume="$TEST_LOCATION:/home/bench/tests" \
   grafana-bench-dev test \
     --test-type="smoke" \
-    --test-suite "tests/$1"
+    --test-suite-base="tests" \
+    --test-suite "$1"

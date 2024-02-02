@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path"
 	"strings"
 	"time"
 
@@ -32,6 +33,7 @@ func NewTestRunnerCommand(log *slog.Logger) *cobra.Command {
 		testSuiteRevision string
 		revisionFile      string
 		testSuite         string
+		testSuiteBase     string
 		k6CloudToken      string
 		k6CloudProjectId  string
 		grafanaTimeout    time.Duration
@@ -82,7 +84,7 @@ func NewTestRunnerCommand(log *slog.Logger) *cobra.Command {
 				k6CloudProjectId = env.EnvOrDefault("K6_CLOUD_PROJECT_ID", "")
 			}
 
-			testFiles, err := getTestFiles(testSuite)
+			testFiles, err := getTestFiles(testSuiteBase, testSuite)
 			if err != nil {
 				return fmt.Errorf("getting test list: %w", err)
 			}
@@ -142,10 +144,11 @@ func NewTestRunnerCommand(log *slog.Logger) *cobra.Command {
 		"\nA single .js file or a directory can be specified."+
 		"\nIf a directory is specified, all .js files in the directory and its sub-directories will be executed as tests.")
 	cmd.MarkFlagRequired("test-suite")
+	fs.StringVar(&testSuiteBase, "test-suite-base","", "base directory for searching test suites." +
+		"\nIf specified, it is prefixed to the --test-suite.")
 
 	return &cmd
 }
-
 
 // read test suite revision from file
 func getTestSuiteRevision(revisionFile string) (string, error) {
@@ -164,23 +167,24 @@ func getTestSuiteRevision(revisionFile string) (string, error) {
 // tests=dashboards will run all files in dashboards/**.*.js
 //
 // If TestSuite is blank, assume we want to run everything in dist/**.*.js
-func getTestFiles(tests string) ([]string, error) {
+func getTestFiles(baseDir string, tests string) ([]string, error) {
+	testSuitePath := path.Join(baseDir, tests)
 	// single file if we have .js extension
-	if strings.Contains(tests, ".js") {
-		exists, _ := utils.PathExists(tests)
+	if strings.Contains(testSuitePath, ".js") {
+		exists, _ := utils.PathExists(testSuitePath)
 		if !exists {
-			return nil, fmt.Errorf("test file %s was not found", tests)
+			return nil, fmt.Errorf("test file %s was not found", testSuitePath)
 		}
-		return []string{tests}, nil
+		return []string{testSuitePath}, nil
 	}
 
-	files, err := utils.GlobByExtension(tests, ".js")
+	files, err := utils.GlobByExtension(testSuitePath, ".js")
 	if err != nil {
 		return nil, err
 	}
 
 	if len(files) == 0 {
-		return nil, fmt.Errorf("no test files found at %s", tests)
+		return nil, fmt.Errorf("no test files found at %s", testSuitePath)
 	}
 
 	return files, nil
