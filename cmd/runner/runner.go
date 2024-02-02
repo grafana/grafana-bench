@@ -16,22 +16,22 @@ import (
 )
 
 type TestRunner struct {
-	Log              *slog.Logger
-	Verbose          bool
-	K6CloudOutput    bool
-	RunIdentifier    string
-	Type             TestType
-	Trigger          string
-	TestRevision     string
-	Tests            []string
-	K6CloudToken     string
-	K6CloudProjectID string
-	GrafanaInstance  *provisioner.VMInstance
-	GrafanaTimeout   time.Duration
-	GrafanaVersion   string
-	MachineSpec      string
-	BenchRevision    string
-	DashboardURL     string
+	Log               *slog.Logger
+	Verbose           bool
+	K6CloudOutput     bool
+	RunIdentifier     string
+	Type              TestType
+	Trigger           string
+	TestSuiteRevision string
+	Tests             []string
+	K6CloudToken      string
+	K6CloudProjectID  string
+	GrafanaInstance   *provisioner.VMInstance
+	GrafanaTimeout    time.Duration
+	GrafanaVersion    string
+	MachineSpec       string
+	BenchRevision     string
+	DashboardURL      string
 }
 
 func NewTestRunner(
@@ -51,20 +51,20 @@ func NewTestRunner(
 	dashboardURL string,
 ) *TestRunner {
 	return &TestRunner{
-		Log:              log,
-		Verbose:          verbose,
-		K6CloudOutput:    cloudOutput,
-		Trigger:          testTrigger,
-		Type:             testType,
-		Tests:            tests,
-		TestRevision:     testRevision,
-		K6CloudToken:     k6CloudToken,
-		K6CloudProjectID: k6CloudProjectId,
-		GrafanaInstance:  grafanaInstance,
-		GrafanaTimeout:   grafanaTimeout,
-		MachineSpec:      machineSpec,
-		BenchRevision:    benchRevision,
-		DashboardURL:     dashboardURL,
+		Log:               log,
+		Verbose:           verbose,
+		K6CloudOutput:     cloudOutput,
+		Trigger:           testTrigger,
+		Type:              testType,
+		Tests:             tests,
+		TestSuiteRevision: testRevision,
+		K6CloudToken:      k6CloudToken,
+		K6CloudProjectID:  k6CloudProjectId,
+		GrafanaInstance:   grafanaInstance,
+		GrafanaTimeout:    grafanaTimeout,
+		MachineSpec:       machineSpec,
+		BenchRevision:     benchRevision,
+		DashboardURL:      dashboardURL,
 	}
 }
 
@@ -105,7 +105,7 @@ func (t *TestRunner) newRunIdentifier() string {
 	return fmt.Sprintf("%s-%s-api-tests-%s-graf-%s",
 		t.Type.Name(),
 		time.Now().UTC().Format("15:04:05"),
-		t.TestRevision,
+		t.TestSuiteRevision,
 		t.GrafanaVersion,
 	)
 }
@@ -132,7 +132,7 @@ func (t *TestRunner) suiteRunLogAttrs() []any {
 	return []any{
 		"testTrigger", t.Trigger,
 		"benchRevision", t.BenchRevision,
-		"testSuiteRevision", t.TestRevision,
+		"testSuiteRevision", t.TestSuiteRevision,
 		"suiteRun", t.RunIdentifier,
 		"grafanaUrl", t.GrafanaInstance.Host,
 		"grafanaVersion", t.GrafanaVersion,
@@ -252,7 +252,7 @@ func (t *TestRunner) execTest(ctx context.Context, env map[string]string, args .
 	envVars := map[string]string{
 		"MACHINE_SPEC":        t.MachineSpec,
 		"TEST_TYPE":           t.Type.Name(),
-		"TEST_SUITE_REVISION": t.TestRevision,
+		"TEST_SUITE_REVISION": t.TestSuiteRevision,
 		// TODO unify variable names
 		"GRAFANA_URL":      t.GrafanaInstance.SchemeServiceAddress(),
 		"GRAFANA_USERNAME": t.GrafanaInstance.ServiceUser,
@@ -336,7 +336,7 @@ func (t *TestRunner) newTestIdentifier(filename string) string {
 		filepath.Base(filename),
 		time.Now().UTC().Format("15:04:05"),
 		t.Type.Name(),
-		t.TestRevision,
+		t.TestSuiteRevision,
 		t.GrafanaVersion,
 	)
 }

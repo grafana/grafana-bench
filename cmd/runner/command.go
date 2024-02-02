@@ -23,22 +23,22 @@ const examples =`
 func NewTestRunnerCommand(log *slog.Logger) *cobra.Command {
 	log = log.With("svc", "test-runner")
 	var (
-		testTrigger      string
-		testType         string
-		grafanaUrl       string
-		grafanaUsername  string
-		grafanaPassword  string
-		machineSpec      string
-		revision         string
-		revisionFile     string
-		testSuite        string
-		k6CloudToken     string
-		k6CloudProjectId string
-		grafanaTimeout   time.Duration
-		benchRevision    string
-		dashboardURL     string
-		verbose          bool
-		k6CloudOutput    bool
+		testTrigger       string
+		testType          string
+		grafanaUrl        string
+		grafanaUsername   string
+		grafanaPassword   string
+		machineSpec       string
+		testSuiteRevision string
+		revisionFile      string
+		testSuite         string
+		k6CloudToken      string
+		k6CloudProjectId  string
+		grafanaTimeout    time.Duration
+		benchRevision     string
+		dashboardURL      string
+		verbose           bool
+		k6CloudOutput     bool
 	)
 
 	cmd := cobra.Command{
@@ -53,9 +53,9 @@ func NewTestRunnerCommand(log *slog.Logger) *cobra.Command {
 				return err
 			}
 
-			// If revision-file and revision are specified, revision has precedence
-			if revision == "" && revisionFile != "" {
-				revision, err = getTestRevision(revisionFile)
+			// If revision-file and test-suite-revision are specified, test-suite-revision has precedence
+			if testSuiteRevision == "" && revisionFile != "" {
+				testSuiteRevision, err = getTestSuiteRevision(revisionFile)
 				if err != nil {
 					return fmt.Errorf("getting version from file %s: %w", revisionFile, err)
 				}
@@ -94,7 +94,7 @@ func NewTestRunnerCommand(log *slog.Logger) *cobra.Command {
 				testTrigger,
 				trt,
 				testFiles,
-				revision,
+				testSuiteRevision,
 				k6CloudProjectId,
 				k6CloudToken,
 				grafanaInstance,
@@ -126,7 +126,7 @@ func NewTestRunnerCommand(log *slog.Logger) *cobra.Command {
 	fs.StringVar(&grafanaPassword, "grafana-password", "admin", "grafana password. Can be overridden by the GRAFANA_PASSWORD environment variable")
 	fs.StringVar(&machineSpec, "machine-spec", "", "grafana instance machine spec")
 	// TODO: add default value as the revision is used to generate the run id
-	fs.StringVar(&revision, "test-suite-revision", "", "test suite revision. Has precedence over test-suite-revision-file")
+	fs.StringVar(&testSuiteRevision, "test-suite-revision", "", "test suite revision. Has precedence over test-suite-revision-file")
 	fs.StringVar(&revisionFile, "test-suite-revision-file", "", "path to a file with the test suite revision")
 	fs.StringVar(&benchRevision, "bench-revision", "", "grafana bench revision")
 	fs.StringVar(&k6CloudToken, "k6-cloud-token", "", "K6 cloud access token. If not set K6_CLOUD_TOKEN environment variable is used")
@@ -147,11 +147,11 @@ func NewTestRunnerCommand(log *slog.Logger) *cobra.Command {
 }
 
 
-// read test revision from test file
-func getTestRevision(revisionFile string) (string, error) {
+// read test suite revision from file
+func getTestSuiteRevision(revisionFile string) (string, error) {
 	bytes, err := os.ReadFile(revisionFile)
 	if err != nil {
-		return "", fmt.Errorf("getting test version version from %w", err)
+		return "", fmt.Errorf("getting test suite revision  from %w", err)
 	}
 	return strings.TrimSpace(string(bytes)), nil
 }
