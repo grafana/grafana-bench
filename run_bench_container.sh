@@ -13,7 +13,7 @@
 # 2. the second is path to .env file. see below for defaults
 
 # build a test container
-if docker build --platform=linux/amd64 -t grafana-bench-test .; then
+if docker build --platform=linux/amd64 -t grafana-bench-dev .; then
   echo "build succeeded"
 else
   echo "build failed"
@@ -42,7 +42,7 @@ K6_CLOUD_OUTPUT=${K6_CLOUD_OUTPUT:-"false"}
 docker run --rm \
   --platform=linux/amd64 \
   --volume="$TEST_LOCATION:/home/bench/tests" \
-  grafana-bench-test test \
+  grafana-bench-dev test \
     --test-type="$TEST_TYPE" \
     --grafana-url="$GRAFANA_ADDRESS" \
     --grafana-username="$GRAFANA_USER" \
