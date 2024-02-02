@@ -22,6 +22,7 @@ type TestRunner struct {
 	RunIdentifier     string
 	Type              TestType
 	Trigger           string
+	TestSuiteName     string
 	TestSuiteRevision string
 	Tests             []string
 	K6CloudToken      string
@@ -41,6 +42,7 @@ func NewTestRunner(
 	testTrigger string,
 	testType TestType,
 	tests []string,
+	testSuiteName,
 	testRevision string,
 	k6CloudProjectId,
 	k6CloudToken string,
@@ -57,6 +59,7 @@ func NewTestRunner(
 		Trigger:           testTrigger,
 		Type:              testType,
 		Tests:             tests,
+		TestSuiteName:     testSuiteName,
 		TestSuiteRevision: testRevision,
 		K6CloudToken:      k6CloudToken,
 		K6CloudProjectID:  k6CloudProjectId,
@@ -96,15 +99,15 @@ func (t *TestRunner) Exec(ctx context.Context) error {
 }
 
 // newRunIdentifier creates an identifier to link tests together when querying
-// test output
-//
-// smoke-13:37:35-api-tests-cb5adc0-graf-10.2.0-60657
-// load-13:37:35-api-tests-cb5adc0-graf-10.2.0-60657
+// test output using the format {type}-{time}-{test suite}-{sha}-graf-{version}
+// Examples:
+//     smoke-13:37:35-api-tests-cb5adc0-graf-10.2.0-60657
+//     load-13:37:35-api-tests-cb5adc0-graf-10.2.0-60657
 func (t *TestRunner) newRunIdentifier() string {
-	// {type}-{time}-api-tests-{sha}-graf-{version}
-	return fmt.Sprintf("%s-%s-api-tests-%s-graf-%s",
+	return fmt.Sprintf("%s-%s-%s-%s-graf-%s",
 		t.Type.Name(),
 		time.Now().UTC().Format("15:04:05"),
+		t.TestSuiteName,
 		t.TestSuiteRevision,
 		t.GrafanaVersion,
 	)
@@ -329,13 +332,14 @@ func (t *TestRunner) execTest(ctx context.Context, env map[string]string, args .
 	}, nil
 }
 
-// dashboardCreate.js-13:37:35-smoke-api-tests-cb5adc0-graf-10.2.0-60657
+// returns a test identifier of the form {filename}-{time}-{type}-{test suite}-{sha}-graf-{version}
+// Example: dashboardCreate.js-13:37:35-smoke-api-tests-cb5adc0-graf-10.2.0-60657
 func (t *TestRunner) newTestIdentifier(filename string) string {
-	// {filename}-{time}-{type}-api-tests-{sha}-graf-{version}
-	return fmt.Sprintf("%s-%s-%s-api-tests-%s-graf-%s",
+	return fmt.Sprintf("%s-%s-%s-%s-%s-graf-%s",
 		filepath.Base(filename),
 		time.Now().UTC().Format("15:04:05"),
 		t.Type.Name(),
+		t.TestSuiteName,
 		t.TestSuiteRevision,
 		t.GrafanaVersion,
 	)
