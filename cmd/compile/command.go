@@ -6,11 +6,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const examples = `
+bench compile --target-dir work/tests  \
+    --test-suite-repo git@github.com:grafana/grafana-api-tests \
+    --test-suite-revision main
+`
+
 // NewCmd returns a new test compile command
 func NewCmd(log *slog.Logger) *cobra.Command {
 	log = log.With("svc", "test-compiler")
 	var (
-		baseDir           string
+		targetDir         string
 		testSuiteRepo     string
 		testSuiteRevision string
 	)
@@ -19,11 +25,11 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		Use:     "compile",
 		Short:   "bench test compiler",
 		Long:    "bench compile subcommand retrieves and builds a test suite from a given source location",
-		Example: "",
+		Example: examples,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			compiler := NewTestCompiler(
 				log,
-				baseDir,
+				targetDir,
 				testSuiteRepo,
 				testSuiteRevision,
 			)
@@ -33,10 +39,14 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	}
 
 	fs := cmd.Flags()
-	fs.StringVar(&baseDir,"base-dir", "", "base directory for compiling test into. Defaults to current work directory")
+	//FIXME: find a better name
+	fs.StringVar(&targetDir,"target-dir", "", "directory for checking the test into." +
+		"\nIf exists, it is assumed the test suite repository is already checked out in it.")
 	fs.StringVar(&testSuiteRepo, "test-suite-repo", "", "repository to grab test suite from")
 	fs.StringVar(&testSuiteRevision, "test-suite-revision", "", "test suite revision to compile." + 
-		"\nIf not provided, the latest from 'main' branch is compiled.")
+		"\nCan make reference to a branch (local or remote) or a specific commit hash" +
+		"\nIf not provided and the repo is already checked out in the base dir, the current branch is compiled." +
+		"\nOtherwise the main branch from the remote repository is compiled")
 
 	return &cmd
 }
