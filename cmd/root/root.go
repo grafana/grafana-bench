@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/grafana/grafana-bench/cmd/runner"
+	"github.com/grafana/grafana-bench/cmd/test"
 	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
 )
@@ -45,7 +45,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	rootCmd.PersistentFlags().StringVar(&envFile, "env", "", "path to a file with the environment variables."+
 		"\nIf none is specified and a .env files exists in the work directory, it will be used")
 
-	rootCmd.AddCommand(runner.NewTestRunnerCommand(log))
+	rootCmd.AddCommand(test.NewCmd(log))
 
 	return rootCmd
 }

@@ -1,4 +1,4 @@
-package runner
+package test
 
 import (
 	"fmt"
@@ -16,13 +16,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const examples =`
+const examples = `
     bench test --test-suite /path/to/test/folder
     bench test --test-type load --test-suite /path/to/test.js"
 `
 
-// NewTestRunnerCommand creates e test runner command using CLI arguments
-func NewTestRunnerCommand(log *slog.Logger) *cobra.Command {
+// NewCmd creates a new test command
+func NewCmd(log *slog.Logger) *cobra.Command {
 	log = log.With("svc", "test-runner")
 	var (
 		testTrigger       string
@@ -47,9 +47,9 @@ func NewTestRunnerCommand(log *slog.Logger) *cobra.Command {
 
 	cmd := cobra.Command{
 		// test-suite is a mandatory option. highlight in the help
-		Use:   "test --test-suite /path/to/test/suite",
-		Short: "bench test runner",
-		Long:  "test subcommand is a wrapper for running k6 tests against a grafana instance",
+		Use:     "test --test-suite /path/to/test/suite",
+		Short:   "bench test runner",
+		Long:    "test subcommand is a wrapper for running k6 tests against a grafana instance",
 		Example: examples,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			trt, err := ParseTestType(testType)
@@ -113,7 +113,7 @@ func NewTestRunnerCommand(log *slog.Logger) *cobra.Command {
 				benchRevision,
 				dashboardURL,
 			)
-	
+
 			// TODO: review attributes reported in this log message
 			log.Info(
 				"test runner params",
@@ -152,9 +152,9 @@ func NewTestRunnerCommand(log *slog.Logger) *cobra.Command {
 		"\nA single .js file or a directory can be specified."+
 		"\nIf a directory is specified, all .js files in the directory and its sub-directories will be executed as tests.")
 	cmd.MarkFlagRequired("test-suite")
-	fs.StringVar(&testSuiteBase, "test-suite-base","", "base directory for searching test suites." +
+	fs.StringVar(&testSuiteBase, "test-suite-base", "", "base directory for searching test suites."+
 		"\nIf specified, it is prefixed to the --test-suite.")
-	fs.StringVar(&testSuiteName, "test-suite-name", "", "test suite name. If not specified, the last component of --test-suite will be used." +
+	fs.StringVar(&testSuiteName, "test-suite-name", "", "test suite name. If not specified, the last component of --test-suite will be used."+
 		"\nFor example --test-suite /path/to/testsuite will give a test suite name of 'testsuite'.")
 
 	return &cmd

@@ -1,4 +1,4 @@
-package runner
+package test
 
 import (
 	"bytes"
@@ -101,8 +101,9 @@ func (t *TestRunner) Exec(ctx context.Context) error {
 // newRunIdentifier creates an identifier to link tests together when querying
 // test output using the format {type}-{time}-{test suite}-{sha}-graf-{version}
 // Examples:
-//     smoke-13:37:35-api-tests-cb5adc0-graf-10.2.0-60657
-//     load-13:37:35-api-tests-cb5adc0-graf-10.2.0-60657
+//
+//	smoke-13:37:35-api-tests-cb5adc0-graf-10.2.0-60657
+//	load-13:37:35-api-tests-cb5adc0-graf-10.2.0-60657
 func (t *TestRunner) newRunIdentifier() string {
 	return fmt.Sprintf("%s-%s-%s-%s-graf-%s",
 		t.Type.Name(),
