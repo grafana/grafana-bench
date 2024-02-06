@@ -94,6 +94,27 @@ func K6ExecTest(log *slog.Logger, verbose bool, cloudOutput bool, testFile strin
 var k6CloudOutputURLPattern = regexp.MustCompile(`\s*cloud\s*\(([^)]+)\)`)
 var K6CloudOutputIDPattern = regexp.MustCompile(`(\d+)$`)
 
+// patternq to match k6 version output
+var k6VersionPatter = regexp.MustCompile(`v([0-9]+)(\.[0-9]+)?(\.[0-9]+)?`)
+
+// GetK6Version checks the version of the k6 binary installed locally, returns error if none is installed
+func GetK6Version() (string, error) {
+	stdout := bytes.Buffer{}
+	k6Cmd := exec.Command("k6", "version")
+	k6Cmd.Stdout = &stdout
+
+	err := k6Cmd.Run()
+	if err != nil {
+		return "", err
+	}
+
+	k6Version := k6VersionPatter.Find(stdout.Bytes())
+	if len(k6Version) == 0 {
+		return "", fmt.Errorf("could not determine k6 version")
+	}
+	return string(k6Version), nil
+}
+
 // prepareK6Command builds the command with output set to standard output and a
 // buffer and passes the cmd and buffer back to be executed and parsed
 func prepareK6Command(verbose bool, identifier, testFile, jsonFile string, envVars map[string]string, args ...string) (*exec.Cmd, *bytes.Buffer) {
