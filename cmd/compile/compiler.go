@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/grafana/grafana-bench/bench/utils"
@@ -68,7 +69,7 @@ func (tc *TestCompiler)CompileTestSuite(ctx context.Context) error {
 	}
 
 	// if we don't specify a revision, assume we want to run exactly what is
-	// there. e.g. local development
+	// there. e.g. local development. Otherwise, proceed to checkout the revision
 	if tc.TestSuiteRevision != "" {
 		// check current branch. Don't do anything if it's the same as what is
 		// currently there.
@@ -84,8 +85,10 @@ func (tc *TestCompiler)CompileTestSuite(ctx context.Context) error {
 
 		// if we are not in the requested branch
 		if branch.Name().Short() != tc.TestSuiteRevision {
-			// TODO: check if this necessary
-			err = repo.Fetch(&git.FetchOptions{})
+			// fetch remote refs and make them appear as local refs
+			err = repo.Fetch(&git.FetchOptions{
+				RefSpecs: []config.RefSpec{"refs/*:refs/*"},
+			})
 			if err != nil  && !errors.Is(err, git.NoErrAlreadyUpToDate) {
 				return fmt.Errorf("fetching references %w", err)
 			}
