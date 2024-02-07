@@ -1,4 +1,4 @@
-package main
+package test
 
 import (
 	"bytes"
@@ -16,22 +16,23 @@ import (
 )
 
 type TestRunner struct {
-	Log              *slog.Logger
-	Verbose          bool
-	K6CloudOutput    bool
-	RunIdentifier    string
-	Type             TestType
-	Trigger          string
-	TestRevision     string
-	Tests            []string
-	K6CloudToken     string
-	K6CloudProjectID string
-	GrafanaInstance  *provisioner.VMInstance
-	GrafanaTimeout   time.Duration
-	GrafanaVersion   string
-	MachineSpec      string
-	BenchRevision    string
-	DashboardURL     string
+	Log               *slog.Logger
+	Verbose           bool
+	K6CloudOutput     bool
+	RunIdentifier     string
+	Type              TestType
+	Trigger           string
+	TestSuiteName     string
+	TestSuiteRevision string
+	Tests             []string
+	K6CloudToken      string
+	K6CloudProjectID  string
+	GrafanaInstance   *provisioner.VMInstance
+	GrafanaTimeout    time.Duration
+	GrafanaVersion    string
+	MachineSpec       string
+	BenchRevision     string
+	DashboardURL      string
 }
 
 func NewTestRunner(
@@ -41,6 +42,7 @@ func NewTestRunner(
 	testTrigger string,
 	testType TestType,
 	tests []string,
+	testSuiteName,
 	testRevision string,
 	k6CloudProjectId,
 	k6CloudToken string,
@@ -51,20 +53,21 @@ func NewTestRunner(
 	dashboardURL string,
 ) *TestRunner {
 	return &TestRunner{
-		Log:              log,
-		Verbose:          verbose,
-		K6CloudOutput:    cloudOutput,
-		Trigger:          testTrigger,
-		Type:             testType,
-		Tests:            tests,
-		TestRevision:     testRevision,
-		K6CloudToken:     k6CloudToken,
-		K6CloudProjectID: k6CloudProjectId,
-		GrafanaInstance:  grafanaInstance,
-		GrafanaTimeout:   grafanaTimeout,
-		MachineSpec:      machineSpec,
-		BenchRevision:    benchRevision,
-		DashboardURL:     dashboardURL,
+		Log:               log,
+		Verbose:           verbose,
+		K6CloudOutput:     cloudOutput,
+		Trigger:           testTrigger,
+		Type:              testType,
+		Tests:             tests,
+		TestSuiteName:     testSuiteName,
+		TestSuiteRevision: testRevision,
+		K6CloudToken:      k6CloudToken,
+		K6CloudProjectID:  k6CloudProjectId,
+		GrafanaInstance:   grafanaInstance,
+		GrafanaTimeout:    grafanaTimeout,
+		MachineSpec:       machineSpec,
+		BenchRevision:     benchRevision,
+		DashboardURL:      dashboardURL,
 	}
 }
 
@@ -103,16 +106,17 @@ func (t *TestRunner) Exec(ctx context.Context) error {
 }
 
 // newRunIdentifier creates an identifier to link tests together when querying
-// test output
+// test output using the format {type}-{time}-{test suite}-{sha}-graf-{version}
+// Examples:
 //
-// smoke-13:37:35-api-tests-cb5adc0-graf-10.2.0-60657
-// load-13:37:35-api-tests-cb5adc0-graf-10.2.0-60657
+//	smoke-13:37:35-api-tests-cb5adc0-graf-10.2.0-60657
+//	load-13:37:35-api-tests-cb5adc0-graf-10.2.0-60657
 func (t *TestRunner) newRunIdentifier() string {
-	// {type}-{time}-api-tests-{sha}-graf-{version}
-	return fmt.Sprintf("%s-%s-api-tests-%s-graf-%s",
+	return fmt.Sprintf("%s-%s-%s-%s-graf-%s",
 		t.Type.Name(),
 		time.Now().UTC().Format("15:04:05"),
-		t.TestRevision,
+		t.TestSuiteName,
+		t.TestSuiteRevision,
 		t.GrafanaVersion,
 	)
 }
@@ -138,8 +142,8 @@ func getScenarioName(filename string) string {
 func (t *TestRunner) suiteRunLogAttrs() []any {
 	return []any{
 		"testTrigger", t.Trigger,
-		"benchVersion", t.BenchRevision,
-		"apiTestsVersion", t.TestRevision,
+		"benchRevision", t.BenchRevision,
+		"testSuiteRevision", t.TestSuiteRevision,
 		"suiteRun", t.RunIdentifier,
 		"grafanaUrl", t.GrafanaInstance.Host,
 		"grafanaVersion", t.GrafanaVersion,
@@ -259,7 +263,7 @@ func (t *TestRunner) execTest(ctx context.Context, env map[string]string, args .
 	envVars := map[string]string{
 		"MACHINE_SPEC":        t.MachineSpec,
 		"TEST_TYPE":           t.Type.Name(),
-		"TEST_SUITE_REVISION": t.TestRevision,
+		"TEST_SUITE_REVISION": t.TestSuiteRevision,
 		// TODO unify variable names
 		"GRAFANA_URL":      t.GrafanaInstance.SchemeServiceAddress(),
 		"GRAFANA_USERNAME": t.GrafanaInstance.ServiceUser,
@@ -336,14 +340,15 @@ func (t *TestRunner) execTest(ctx context.Context, env map[string]string, args .
 	}, nil
 }
 
-// dashboardCreate.js-13:37:35-smoke-api-tests-cb5adc0-graf-10.2.0-60657
+// returns a test identifier of the form {filename}-{time}-{type}-{test suite}-{sha}-graf-{version}
+// Example: dashboardCreate.js-13:37:35-smoke-api-tests-cb5adc0-graf-10.2.0-60657
 func (t *TestRunner) newTestIdentifier(filename string) string {
-	// {filename}-{time}-{type}-api-tests-{sha}-graf-{version}
-	return fmt.Sprintf("%s-%s-%s-api-tests-%s-graf-%s",
+	return fmt.Sprintf("%s-%s-%s-%s-%s-graf-%s",
 		filepath.Base(filename),
 		time.Now().UTC().Format("15:04:05"),
 		t.Type.Name(),
-		t.TestRevision,
+		t.TestSuiteName,
+		t.TestSuiteRevision,
 		t.GrafanaVersion,
 	)
 }

@@ -1,4 +1,4 @@
-package main
+package test
 
 import (
 	"bytes"
@@ -128,6 +128,7 @@ func testRunnerForTesting(
 		"test", // trigger
 		testType,
 		tests,
+		"test", // test suite name
 		"test", // test suite version
 		"",     // k6Cloud project
 		"",     // k6Cloud token

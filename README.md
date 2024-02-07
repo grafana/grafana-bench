@@ -1,61 +1,67 @@
+
 # Grafana Bench
-Grafana bench is a tool to load test Grafana. It utilizes
-https://github.com/grafana/grafana-build and https://github.com/grafana/grafana-api-tests to build and test a grafana on the platform and architecture of your choosing.
 
-## Setup
-### Dependencies
-A. Install mage, k6, and docker for your OS
-B. Make sure you have access to github.com/grafana/grafana-api-tests. If you need to do any javascript bundling for your tests, you may need node + yarn
+Grafana bench is a tool to build, provision, and test Grafana.
 
-### Config
-Copy .env.sample to .env and set variables.
-These can be overridden by environment variables.
+It's built on top of [Grafana Build](https://github.com/grafana/grafana-build), Terraform, K6, and [Grafana API Tests](https://github.com/grafana/grafana-api-tests) to build and test a grafana on the platform and architecture of your choosing.
 
-## Usage
-** Note, the first time you run one of these commands may take a while,
-sequential runs will be faster due to caching of builds etc.
+## Library
 
-### Testing an already running Grafana
-By default we assume Grafana is running on localhost:3000 with username admin/admin.
+Grafana bench implements a series of functionalities for building, provisioning and testing Grafana.
+This building blocks can be used to build testing pipelines
 
-### Using the build pipeline
+See more info in the [bench library documentation](./bench/README.md)
 
-`mage bench {test}`
+> !! Using the library is deprecated in favor of using the CLI interface
 
-where test is the path in the api tests repo inside the test/ folder. 
-You can specify a folder or file. e.g. `mage bench dashboards` or ` mage bench dashboards/dashboard_create.js`
+## CLI interface
 
-The bench command will handle building, provisioning, and testing the instance. The build step will ensure that the specified version exists in your local build cache so that it can be provisioned. If you specify a `GCP_CREDS_FILE` environment variable, this will utilize the remote buildcache and allow you to push/pull existing builds otherwise it will use your local buildcache.
-
-You can change the version of grafana you're testing by setting the `GRAFANA_REVISION` environment variable either with `branch:{branchname}` or `commit:{commitSHA}`
-
-When a run is performed, a state ID is generated and state is written to a folder. By default that is `{root}/work/provision/{stateID}` you can then use that state in successive runs.
-
-If you're doing local development on a test suite or otherwise you can use the command `mage run` (When you ctrl + c the process will stop) and `STATE={stateID} mage test {test}` in another window. 
-
-If you want to report your results to k6 cloud, set the `REPORT_CLOUD` environment variable to true and specify `K6_CLOUD_PROJECT_ID` and `K6_CLOUD_TOKEN`
-
-### Environment Variables / Flags
-See https://github.com/grafana/grafana-bench/blob/main/bench/cfg.go
+Grafana bench provided a CLI interface for executing diverse actions implemented as sub-commands.
 
 
-```.sh
-# CLI options
-export GRAFANA_REVISION=branch:main
-export GRAFANA_ARCH=linux/amd64
-export PROVISION_DRIVER=local
-export PROVISION_STATE=
+To invoke the test runner use the following command from grafana bench's project root directory:
 
-# GCP credentials
-export GCP_CREDS_FILE=
-
-# K6
-export REPORT_CLOUD=false
-export K6_CLOUD_PROJECT_ID=
-export K6_CLOUD_TOKEN=
-
-# Grafana
-export GRAFANA_ADDRESS=http://localhost:3000
-export GRAFANA_USER=admin
-export GRAFANA_PASSWORD=admin
+```sh
+go run bench.go [options] <sub command> [subcommand options]
 ```
+
+To get more details of the available options, use the command:
+
+```sh
+go run bench.go --help
+```
+
+To get more details of the available options for an specific subcommand, use the command:
+
+```sh
+go run bench.go <subcommand> --help
+```
+
+## Sub Commands
+
+### test
+
+The test subcommand is a wrapper for running k6 tests against a grafana instance.
+
+The test runner executes a set of tests passed as parameter and reports the results.
+
+> Executing tests requires to have `k6` binary installed in the machine that executes the `bench test` command.
+> It can be installed it using the `go install go.k6.io/k6@latest` command or following any of the other suggested [installation procedures](https://grafana.com/docs/k6/latest/get-started/installation/)
+
+It can be executed with the following command:
+
+```sh
+go run bench.go [options] test [test options] --test-suite <test-suite>
+```
+
+Supports two kinds of test executions defined by the `test-type` option:
+* smoke: execute tests and reports failures (default)
+* load: execute tests and report execution stats to GCK6
+
+The tests to be executed are defined by the `--test-suite` option. It can be a directory or a single `.js` file.
+If a directory is specified, all `.js` files in the directory and its sub-directories will be considered a test and executed.
+
+Each test is parameterized via environment variables following [grafana-api-tests conventions](https://github.com/grafana/grafana-api-tests/blob/main/README.md#common-environment-variables).
+
+For load tests, if the `--k6-cloud-output` flag is `true`, the test results will be sent to Grafana Cloud k6. The [GCK6 credentials](https://grafana.com/docs/grafana-cloud/k6/author-run/tokens-and-cli-authentication/) must be provided as environment variables or as arguments to the test runner (`--k6-cloud-project` and `--k6-cloud-token`).
+

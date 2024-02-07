@@ -21,12 +21,13 @@ RUN --mount=type=cache,id=go-build-${TARGETOS}-${TARGETARCH}${TARGETVARIANT},tar
                 go mod download -x
 
 # now copy the rest of the source and build
+COPY bench.go ./bench.go
 COPY cmd ./cmd
 COPY bench ./bench
 RUN --mount=type=cache,id=go-build-${TARGETOS}-${TARGETARCH}${TARGETVARIANT},target=/root/.cache/go-build \
         --mount=type=cache,id=go-pkg-${TARGETOS}-${TARGETARCH}${TARGETVARIANT},target=/go/pkg \
             CGO_ENABLED=0 \
-                go build -ldflags="-X main.benchRevision=${BENCH_REVISION}" -trimpath -o grafana-bench ./cmd
+                go build -ldflags="-X github.com/grafana/grafana-bench/bench.revision=${BENCH_REVISION}" -trimpath -o grafana-bench .
 
 FROM grafana/k6:latest AS k6
 FROM alpine:3.18 AS runtime
@@ -52,6 +53,5 @@ ENV K6_BROWSER_ARGS=no-sandbox
 
 WORKDIR /home/bench
 RUN mkdir /home/bench/tests
-
 
 ENTRYPOINT ["grafana-bench"]
