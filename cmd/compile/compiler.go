@@ -37,7 +37,7 @@ func NewTestCompiler(
 	}
 }
 
-// PackTests collects and builds tests from a source repository
+// CompileTestSuite collects and builds tests from a source repository
 func (tc *TestCompiler)CompileTestSuite(ctx context.Context) error {
 	var (
 		repo *git.Repository
@@ -53,7 +53,7 @@ func (tc *TestCompiler)CompileTestSuite(ctx context.Context) error {
 		}
 
 	} else {
-		tc.Log.Info("cloning build suite")
+		tc.Log.Info("cloning test suite")
 		repo, err = git.PlainClone(
 			tc.TargetDir,
 			false,
@@ -64,7 +64,7 @@ func (tc *TestCompiler)CompileTestSuite(ctx context.Context) error {
 		)
 		
 		if err != nil {
-			return fmt.Errorf("checking out test repo %s: %w", tc.TestSuiteRepo, err)
+			return fmt.Errorf("checking out test suite repo %s: %w", tc.TestSuiteRepo, err)
 		}
 	}
 
@@ -112,7 +112,7 @@ func (tc *TestCompiler)CompileTestSuite(ctx context.Context) error {
 				Hash: *revisionHash,
 			})
 			if err != nil {
-				return fmt.Errorf("checking out test suite revision %q from repo %w", tc.TestSuiteRevision, err)
+				return fmt.Errorf("checking out test suite revision %q: %w", tc.TestSuiteRevision, err)
 			}
 		}
 	}
@@ -127,7 +127,7 @@ func (tc *TestCompiler)CompileTestSuite(ctx context.Context) error {
 	err = utils.DoInDir(workDir, tc.TargetDir, func() error {
 		cmdMake := exec.Command("make", "build")
 		if err := utils.ExecStdout(cmdMake); err != nil {
-			return fmt.Errorf("Error building test suite: %w", err)
+			return fmt.Errorf("building test suite: %w", err)
 		}
 
 		return nil
