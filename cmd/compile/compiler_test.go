@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
 )
 
 const makefileContent = `
@@ -58,7 +59,9 @@ func Test_Compiler(t *testing.T) {
 		t.Fatalf("adding makefile: %v", err)
 	}
 
-	commitHash, err := wt.Commit("add makefile", &git.CommitOptions{})
+	commitHash, err := wt.Commit("add makefile", &git.CommitOptions{
+		Author: &object.Signature{Name: "grafana bench", Email: "bench-testing@grafana.com"},
+	})
 	if err != nil {
 		t.Fatalf("committing makefile: %v", err)
 	}
