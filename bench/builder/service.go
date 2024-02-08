@@ -24,14 +24,12 @@ type BuilderService struct {
 
 // Creates a new build service and resolves the build suite
 func NewBuildSvc(log *slog.Logger, buildcache *buildcache.BuildCache, localdir string) *BuilderService {
-	// TODO remove this. don't have a need for nested folders
-	buildSuiteDir := filepath.Join(localdir)
-
 	return &BuilderService{
-		Log:           log.With("svc", "builder"),
-		LocalDir:      localdir,
-		BuildCache:    buildcache,
-		buildSuiteDir: buildSuiteDir,
+		Log:        log.With("svc", "builder"),
+		LocalDir:   localdir,
+		BuildCache: buildcache,
+		// this is nested otherwise running git cli looks at bench repo
+		buildSuiteDir: filepath.Join(localdir, "grafana-build"),
 	}
 }
 
@@ -73,7 +71,10 @@ func (bs *BuilderService) New(ctx context.Context, grafanaRevision, arch string)
 
 // Resolves build suite. Always updates to latest version
 func (bs *BuilderService) ResolveBuildSuite() error {
-	exists, _ := utils.PathExists(bs.buildSuiteDir)
+	exists, err := utils.PathExists(bs.buildSuiteDir)
+	if err != nil {
+		return fmt.Errorf("Error resolving build suite. Path inaccessible %s %w", bs.buildSuiteDir, err)
+	}
 
 	// If exist, update to latest
 	if exists {

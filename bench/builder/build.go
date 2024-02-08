@@ -53,8 +53,6 @@ func (b *Build) Run(ctx context.Context) error {
 		return err
 	}
 
-	// check if build in cache first
-
 	// do the build
 	err := utils.DoInDir(b.LocalDir, b.buildSuiteDir, func() error {
 		// cmd - note, verbose and distro must be provided at the end of the command
