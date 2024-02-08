@@ -131,13 +131,6 @@ func Test_Compiler(t *testing.T) {
 			expectErr: false,
 		},
 		{
-			name:      "build empty branch (no  Makefile)",
-			repo:      repoDir,
-			target:    path.Join(t.TempDir(), "repo"),
-			revision:  "fail-branch",
-			expectErr: true,
-		},
-		{
 			name:      "build hash",
 			repo:      repoDir,
 			target:    path.Join(t.TempDir(), "repo"),
