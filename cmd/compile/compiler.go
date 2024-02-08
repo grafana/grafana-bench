@@ -86,6 +86,7 @@ func (tc *TestCompiler)CompileTestSuite(ctx context.Context) error {
 		// if we are not in the requested branch
 		if branch.Name().Short() != tc.TestSuiteRevision {
 			// fetch remote refs and make them appear as local refs
+			// assumes this is a cloned repository with an 'origin' remote
 			err = repo.Fetch(&git.FetchOptions{
 				RefSpecs: []config.RefSpec{"refs/*:refs/*"},
 			})
