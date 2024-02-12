@@ -74,7 +74,21 @@ func Test_Compiler(t *testing.T) {
 		t.Fatalf("creating branch: %v", err)
 	}
 
-	// 5. clone locally (used to test reuse of already cloned repos)
+	// 5. create a tag 'v0.0.0'
+	tagName := "v0.0.0"
+	_, err = repo.CreateTag(
+		tagName,
+		commitHash,
+		&git.CreateTagOptions{
+			Tagger: &object.Signature{Name: "grafana bench", Email: "bench-testing@grafana.com"},
+			Message: "release v0.0.0",
+		},
+	)
+	if err != nil {
+		t.Fatalf("creating tag: %v", err)
+	}
+
+	// 6. clone locally (used to test reuse of already cloned repos)
 	clonedRepo := t.TempDir()
 	_, err = git.PlainClone(
 		clonedRepo,
@@ -127,7 +141,14 @@ func Test_Compiler(t *testing.T) {
 			name:      "build test branch",
 			repo:      repoDir,
 			target:    path.Join(t.TempDir(), "repo"),
-			revision:  "test-branch",
+			revision:  branchName,
+			expectErr: false,
+		},
+		{
+			name:      "build tag",
+			repo:      repoDir,
+			target:    path.Join(t.TempDir(), "repo"),
+			revision:  tagName,
 			expectErr: false,
 		},
 		{
