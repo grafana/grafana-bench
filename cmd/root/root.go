@@ -6,7 +6,9 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/grafana/grafana-bench/cmd/compile"
 	"github.com/grafana/grafana-bench/cmd/test"
+
 	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
 )
@@ -46,6 +48,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		"\nIf none is specified and a .env files exists in the work directory, it will be used")
 
 	rootCmd.AddCommand(test.NewCmd(log))
+	rootCmd.AddCommand(compile.NewCmd(log))
 
 	return rootCmd
 }
