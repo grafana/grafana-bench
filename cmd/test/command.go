@@ -69,14 +69,14 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				benchRevision = bench.Revision()
 			}
 
+			// override grafana user and password from environment variables if they are set
+			grafanaUsername = env.EnvOrDefault("GRAFANA_USER", grafanaUsername)
+			grafanaPassword = env.EnvOrDefault("GRAFANA_PASSWORD", grafanaPassword)
+
 			grafanaInstance, err := provisioner.NewReadOnlyGrafanaVM(grafanaUrl, grafanaUsername, grafanaPassword)
 			if err != nil {
 				return err
 			}
-
-			// override grafana user and password from environment variables if they are set
-			grafanaUsername = env.EnvOrDefault("GRAFANA_USER", grafanaUsername)
-			grafanaPassword = env.EnvOrDefault("GRAFANA_PASSWORD", grafanaPassword)
 
 			if k6CloudToken == "" {
 				k6CloudToken = env.EnvOrDefault("K6_CLOUD_TOKEN", "")
