@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 	"path"
 	"path/filepath"
 	"strconv"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"github.com/grafana/grafana-bench/bench/provisioner"
+	"github.com/grafana/grafana-bench/bench/utils"
 )
 
 type TestRunner struct {
@@ -22,9 +24,10 @@ type TestRunner struct {
 	RunIdentifier     string
 	Type              TestType
 	Trigger           string
+	TestSuiteBase     string
+	TestSuite         string
 	TestSuiteName     string
 	TestSuiteRevision string
-	Tests             []string
 	K6CloudToken      string
 	K6CloudProjectID  string
 	GrafanaInstance   *provisioner.VMInstance
@@ -41,7 +44,8 @@ func NewTestRunner(
 	cloudOutput bool,
 	testTrigger string,
 	testType TestType,
-	tests []string,
+	testSuiteBase string,
+	testSuite string,
 	testSuiteName,
 	testRevision string,
 	k6CloudProjectId,
@@ -58,7 +62,8 @@ func NewTestRunner(
 		K6CloudOutput:     cloudOutput,
 		Trigger:           testTrigger,
 		Type:              testType,
-		Tests:             tests,
+		TestSuiteBase:     testSuiteBase,
+		TestSuite:         testSuite,
 		TestSuiteName:     testSuiteName,
 		TestSuiteRevision: testRevision,
 		K6CloudToken:      k6CloudToken,
@@ -286,8 +291,12 @@ func (t *TestRunner) execTest(ctx context.Context, env map[string]string, args .
 		anyFailures   = false
 	)
 
+	tests, err := t.getTestFiles()
+	if err != nil {
+		return TestSuiteRunSummary{}, fmt.Errorf("getting test list: %w", err)
+	}
 	// run the tests
-	for iteration, testFile := range t.Tests {
+	for iteration, testFile := range tests {
 		scenarioName := getScenarioName(testFile)
 		// set the scenario name so it's accessible from the test
 		envVars["SCENARIO_NAME"] = scenarioName
@@ -311,11 +320,16 @@ func (t *TestRunner) execTest(ctx context.Context, env map[string]string, args .
 		totalDuration += k6Summary.Durations.TotalDuration
 		anyFailures = anyFailures || k6Summary.AnyFailures
 
+		// get the path to the test relative to the TestSuiteBase if any
+		// we don't need to check for errors because how the test path is constructed
+		rootDir, _ := filepath.Abs(t.TestSuiteBase)
+		testFolder, _  := filepath.Rel(rootDir, filepath.Dir(testFile))
+
 		// test complete log
 		testTags := []any{
 			"testRun", t.newTestIdentifier(testFile),
 			"scenarioName", scenarioName,
-			"folder", path.Dir(testFile),
+			"folder", testFolder,
 			"testFile", path.Base(testFile),
 			"order", strconv.Itoa(iteration + 1),
 		}
@@ -351,4 +365,52 @@ func (t *TestRunner) newTestIdentifier(filename string) string {
 		t.TestSuiteRevision,
 		t.GrafanaVersion,
 	)
+}
+
+// getTestFiles returns the list of tests to execute.
+// If tests points to a file with a js extension run that single file.
+// If it points to a directory all of the .js files in it are recursively searched.
+// tests=dashboard_read.js will run dashboard_read.js.
+// tests=dashboards will run all files in dashboards/**.*.js.
+func (t *TestRunner) getTestFiles() ([]string, error) {
+	if filepath.IsAbs(t.TestSuite) {
+		return nil, fmt.Errorf("test suite must be a relative to base dir. Got %q", t.TestSuite)
+	}
+
+	testSuitePath, err := filepath.Abs(path.Join(t.TestSuiteBase, t.TestSuite))
+	if err != nil {
+		return nil, fmt.Errorf("getting path to test suite %w", err)
+	}
+
+	exists, _ := utils.PathExists(testSuitePath)
+	if !exists {
+		return nil, fmt.Errorf("test suite %s not found", testSuitePath)
+	}
+
+	fileInfo, err := os.Stat(testSuitePath)
+	if err != nil {
+		return nil, fmt.Errorf("opening test suite at %s: %w", testSuitePath, err)
+	}
+
+	// test suite points to a directory
+	if fileInfo.IsDir() {
+		files, err := utils.GlobByExtension(testSuitePath, ".js")
+		if err != nil {
+			return nil, err
+		}
+
+		if len(files) == 0 {
+			return nil, fmt.Errorf("no test files found at %s", testSuitePath)
+		}
+
+		return files, nil
+	}
+
+	// is a file, we expect a single .js file
+	testSuiteFile := path.Base(testSuitePath)
+	if !strings.HasSuffix(testSuiteFile, ".js") {
+		return nil, fmt.Errorf("expected a .js file got %s", testSuiteFile)
+	}
+
+	return []string{testSuitePath}, nil
 }
