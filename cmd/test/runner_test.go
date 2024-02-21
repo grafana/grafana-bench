@@ -117,7 +117,7 @@ func WithInvalidDashboard() testRunnerOption {
 func testRunnerForTesting(
 	log *slog.Logger,
 	testType TestType,
-	tests []string,
+	testSuite string,
 	grafanaInstance *provisioner.VMInstance,
 	opts ...testRunnerOption,
 ) (*TestRunner, error) {
@@ -127,7 +127,8 @@ func testRunnerForTesting(
 		false,  // prevent sending output to cloud
 		"test", // trigger
 		testType,
-		tests,
+		"",        // base dir
+		testSuite, // test suite path
 		"test", // test suite name
 		"test", // test suite version
 		"",     // k6Cloud project
@@ -150,6 +151,8 @@ func testRunnerForTesting(
 
 const loginError = "Error logging into grafana instance"
 
+const testSuiteMissingError = "not found"
+
 const testSuiteFailedMessage = "test suite failed. Too many test failures"
 
 const cloudOutputDisabledMessage = "running load tests with cloud output disabled"
@@ -169,19 +172,19 @@ func Test_Runner(t *testing.T) {
 		testCase   string
 		options    []testRunnerOption
 		testType   TestType
-		tests      []string
+		testSuite  string
 		expectErr  string
 		expectMsgs []string
 	}{
 		{
-			testCase: "passing test (load)",
-			testType: SmokeTest,
-			tests:    []string{"k6tests/pass.js"},
+			testCase:  "passing test (load)",
+			testType:  SmokeTest,
+			testSuite: "k6tests/pass.js",
 		},
 		{
 			testCase:   "passing test without k6 token (smoke)",
 			testType:   LoadTest,
-			tests:      []string{"k6tests/pass.js"},
+			testSuite:  "k6tests/pass.js",
 			expectMsgs: []string{cloudOutputDisabledMessage},
 		},
 		{
@@ -190,7 +193,7 @@ func Test_Runner(t *testing.T) {
 				WithCloudOutput(),
 			},
 			testType:  LoadTest,
-			tests:     []string{"k6tests/pass.js"},
+			testSuite:  "k6tests/pass.js",
 			expectErr: missingK6CloudConfigError,
 		},
 		{
@@ -200,13 +203,13 @@ func Test_Runner(t *testing.T) {
 				WithInvalidK6Credentials(),
 			},
 			testType:   LoadTest,
-			tests:      []string{"k6tests/pass.js"},
+			testSuite:  "k6tests/pass.js",
 			expectMsgs: []string{cloudOutputParsingErrorMessage},
 		},
 		{
 			testCase:   "failing test (smoke)",
 			testType:   SmokeTest,
-			tests:      []string{"k6tests/fail.js"},
+			testSuite:  "k6tests/fail.js",
 			expectMsgs: []string{testSuiteFailedMessage},
 		},
 		{
@@ -215,7 +218,7 @@ func Test_Runner(t *testing.T) {
 				WithDashboard(),
 			},
 			testType: SmokeTest,
-			tests:    []string{"k6tests/fail.js"},
+			testSuite:  "k6tests/fail.js",
 			expectMsgs: []string{
 				testSuiteFailedMessage,
 				dashboardMessage,
@@ -227,18 +230,24 @@ func Test_Runner(t *testing.T) {
 			options: []testRunnerOption{
 				WithInvalidDashboard(),
 			},
-			tests:     []string{"k6tests/fail.js"},
+			testSuite:  "k6tests/fail.js",
 			expectErr: invalidDashboardError,
 		},
 		{
 			testCase: "failing test (load)",
 			testType: SmokeTest,
-			tests:    []string{"k6tests/fail.js"},
+			testSuite:  "k6tests/fail.js",
 		},
 		{
 			testCase:   "missing test (smoke)",
 			testType:   SmokeTest,
-			tests:      []string{"k6tests/missing.js"},
+			testSuite:  "k6tests/missing.js",
+			expectErr:  testSuiteMissingError,
+		},
+		{
+			testCase:   "test suite directory - one fails (smoke)",
+			testType:   SmokeTest,
+			testSuite:  "k6tests/",
 			expectMsgs: []string{testSuiteFailedMessage},
 		},
 		{
@@ -247,7 +256,7 @@ func Test_Runner(t *testing.T) {
 				WithInvalidGrafanaCredentials(),
 			},
 			testType:  SmokeTest,
-			tests:     []string{"k6tests/pass.js"},
+			testSuite: "k6tests/pass.js",
 			expectErr: loginError,
 		},
 	}
@@ -268,7 +277,7 @@ func Test_Runner(t *testing.T) {
 			tr, err := testRunnerForTesting(
 				log,
 				tc.testType,
-				tc.tests,
+				tc.testSuite,
 				grafanaInstance,
 				tc.options...,
 			)

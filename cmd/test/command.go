@@ -5,13 +5,11 @@ import (
 	"log/slog"
 	"os"
 	"path"
-	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/grafana/grafana-bench/bench"
 	"github.com/grafana/grafana-bench/bench/provisioner"
-	"github.com/grafana/grafana-bench/bench/utils"
 	"github.com/grafana/grafana-bench/bench/utils/env"
 	"github.com/spf13/cobra"
 )
@@ -86,14 +84,16 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				k6CloudProjectId = env.EnvOrDefault("K6_CLOUD_PROJECT_ID", "")
 			}
 
-			testSuitePath, testFiles, err := getTestFiles(testSuiteBase, testSuite)
-			if err != nil {
-				return fmt.Errorf("getting test files: %w", err)
+			// if the name of the test suite was not given, use the last element of the test suit path as name
+			if testSuiteName == "" {
+				testSuiteName = strings.TrimSuffix(path.Base(testSuite), ".js")
 			}
 
-			// if the name of the test suite was not given, use the last element of the test path as name
-			if testSuiteName == "" {
-				testSuiteName = strings.TrimSuffix(path.Base(testSuitePath), ".js")
+			if testSuiteBase == "" {
+				testSuiteBase, err = os.Getwd()
+				if err != nil {
+					return fmt.Errorf("getting work directory %w", err)
+				}
 			}
 
 			runner := NewTestRunner(
@@ -102,7 +102,8 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				k6CloudOutput,
 				testTrigger,
 				trt,
-				testFiles,
+				testSuiteBase,
+				testSuite,
 				testSuiteName,
 				testSuiteRevision,
 				k6CloudProjectId,
@@ -118,7 +119,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			log.Info(
 				"test runner params",
 				"testType", runner.Type.Name(),
-				"tests", runner.Tests,
 				"grafanaInstance", runner.GrafanaInstance.Host,
 				"k6ProjectId", runner.K6CloudProjectID,
 			)
@@ -149,10 +149,11 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		"\nExample: http://localhost/dashboards?run={{.SuiteRun}}",
 	)
 	fs.StringVar(&testSuite, "test-suite", "", "path to the tests to be executed."+
+	        "\nThe path must be relative to the base dir (which defaults to the current directory)." +
 		"\nA single .js file or a directory can be specified."+
 		"\nIf a directory is specified, all .js files in the directory and its sub-directories will be executed as tests.")
 	cmd.MarkFlagRequired("test-suite")
-	fs.StringVar(&testSuiteBase, "test-suite-base", "", "base directory for searching test suites."+
+	fs.StringVar(&testSuiteBase, "test-suite-base", "", "base directory for searching test suites. Defaults to current directory"+
 		"\nIf specified, it is prefixed to the --test-suite.")
 	fs.StringVar(&testSuiteName, "test-suite-name", "", "test suite name. If not specified, the last component of --test-suite will be used."+
 		"\nFor example --test-suite /path/to/testsuite will give a test suite name of 'testsuite'.")
@@ -169,47 +170,3 @@ func getTestSuiteRevision(revisionFile string) (string, error) {
 	return strings.TrimSpace(string(bytes)), nil
 }
 
-// getTestFiles returns the path to the test suite and the list of tests to execute.
-// The path prefixed with the basedir, which can be empty.
-// If tests points to a file with a js extension run that single file.
-// If it it points to a directory all of the .js files in it are recursively searched.
-// tests=dashboard_read.js will run dashboard_read.js.
-// tests=dashboards will run all files in dashboards/**.*.js.
-func getTestFiles(baseDir string, tests string) (string, []string, error) {
-	testSuitePath, err := filepath.Abs(path.Join(baseDir, tests))
-	if err != nil {
-		return "", nil, fmt.Errorf("getting path to test suite %w", err)
-	}
-
-	exists, _ := utils.PathExists(testSuitePath)
-	if !exists {
-		return "", nil, fmt.Errorf("test suite %s was not found", testSuitePath)
-	}
-
-	fileInfo, err := os.Stat(testSuitePath)
-	if err != nil {
-		return "", nil, fmt.Errorf("opening test suite at %s: %w", testSuitePath, err)
-	}
-
-	// test suite points to a directory
-	if fileInfo.IsDir() {
-		files, err := utils.GlobByExtension(testSuitePath, ".js")
-		if err != nil {
-			return "", nil, err
-		}
-
-		if len(files) == 0 {
-			return "", nil, fmt.Errorf("no test files found at %s", testSuitePath)
-		}
-
-		return testSuitePath, files, nil
-	}
-
-	// is a file, we expect a single .js file
-	testSuiteFile := path.Base(testSuitePath)
-	if !strings.HasSuffix(testSuiteFile, ".js") {
-		return "", nil, fmt.Errorf("expected a .js file got %s", testSuiteFile)
-	}
-
-	return testSuitePath, []string{testSuitePath}, nil
-}
