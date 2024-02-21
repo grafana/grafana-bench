@@ -24,9 +24,17 @@ fi
 
 # source the .env file
 if [ "$#" -eq 3 ]; then
-  . "$3"
+  DOTENV=$(readlink -e "$3")
+  if [ -z "$DOTENV" ]; then 
+    echo "env file not found"
+    exit 1
+  fi
 else
-  . ./.env
+  DOTENV=$(readlink -e .env)
+fi
+
+if [ ! -z "$DOTENV" ]; then
+  DOTENV_VOLUME="--volume=$DOTENV:/home/bench/.env"
 fi
 
 # location of tests on disk
@@ -35,7 +43,7 @@ TESTSUITE_BASE=$(readlink -e $1)
 docker run --rm \
   --network host \
   --platform=linux/amd64 \
-  --volume="$TESTSUITE_BASE:/home/bench/tests" \
+  $DOTENV_VOLUME --volume="$TESTSUITE_BASE:/home/bench/tests" \
   grafana-bench-dev test \
     --test-type="smoke" \
     --test-suite-base="tests" \
