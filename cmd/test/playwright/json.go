@@ -2,6 +2,7 @@ package playwright
 
 import "time"
 
+// the entire output running playwright json reporter
 type PlaywrightJsonOutput struct {
 	Config struct {
 		ConfigFile     string `json:"configFile"`
@@ -19,7 +20,7 @@ type PlaywrightJsonOutput struct {
 			ActualWorkers int `json:"actualWorkers"`
 		} `json:"metadata"`
 		PreserveOutput  string  `json:"preserveOutput"`
-		Reporter        [][]any `json:"reporter"` // eg. ['json', { outputFile: './output.json' }]
+		Reporter        [][]any `json:"reporter"` // eg. [['line'],['json', { outputFile: './output.json' }]]
 		ReportSlowTests struct {
 			Max       int `json:"max"`
 			Threshold int `json:"threshold"`
@@ -42,63 +43,8 @@ type PlaywrightJsonOutput struct {
 		Workers         int    `json:"workers"`
 		WebServer       any    `json:"webServer"`
 	} `json:"config"`
-	Suites []struct {
-		Title  string `json:"title"`
-		File   string `json:"file"`
-		Column int    `json:"column"`
-		Line   int    `json:"line"`
-		Specs  []struct {
-			Title string   `json:"title"`
-			Ok    bool     `json:"ok"`
-			Tags  []string `json:"tags"`
-			Tests []struct {
-				Timeout        int    `json:"timeout"`
-				Annotations    []any  `json:"annotations"`
-				ExpectedStatus string `json:"expectedStatus"`
-				ProjectID      string `json:"projectId"`
-				ProjectName    string `json:"projectName"`
-				Results        []struct {
-					WorkerIndex int    `json:"workerIndex"`
-					Status      string `json:"status"`
-					Duration    int    `json:"duration"`
-					Error       struct {
-						Message  string
-						Stack    string
-						LocaFion struct {
-							Cile   string
-							Lolumn int
-							Line   int
-						}
-						Snippet string
-					} `json:"error"`
-					Errors []struct {
-						Location struct {
-							File   string
-							Column int
-							Line   int
-						}
-						message string
-					} `json:"errors"`
-					Stdout        []any     `json:"stdout"`
-					Stderr        []any     `json:"stderr"`
-					Retry         int       `json:"retry"`
-					StartTime     time.Time `json:"startTime"`
-					Attachments   []any     `json:"attachments"`
-					errorLocation struct {
-						File   string
-						Column int
-						Line   int
-					}
-				} `json:"results"`
-				Status string `json:"status"`
-			} `json:"tests"`
-			ID     string `json:"id"`
-			File   string `json:"file"`
-			Line   int    `json:"line"`
-			Column int    `json:"column"`
-		} `json:"specs"`
-	} `json:"suites"`
-	Errors []any `json:"errors"`
+	Suites []Suites `json:"suites"`
+	Errors []any    `json:"errors"`
 	Stats  struct {
 		StartTime  time.Time `json:"startTime"`
 		Duration   float64   `json:"duration"`
@@ -107,4 +53,71 @@ type PlaywrightJsonOutput struct {
 		Unexpected int       `json:"unexpected"`
 		Flaky      int       `json:"flaky"`
 	} `json:"stats"`
+}
+
+// This corresponds to the files of the test eg. smoke.spec.js
+type Suites struct {
+	Title  string  `json:"title"`
+	File   string  `json:"file"`
+	Column int     `json:"column"`
+	Line   int     `json:"line"`
+	Specs  []Specs `json:"specs"`
+}
+
+// This corresponds to the a individual of the test in a file eg. descript('should do something', () => {})
+type Specs struct {
+	Title  string   `json:"title"`
+	Ok     bool     `json:"ok"`
+	Tags   []string `json:"tags"`
+	Tests  []Test   `json:"tests"`
+	ID     string   `json:"id"`
+	File   string   `json:"file"`
+	Line   int      `json:"line"`
+	Column int      `json:"column"`
+}
+
+// So far can only find one of these per spec.
+type Test struct {
+	Timeout        int       `json:"timeout"`
+	Annotations    []any     `json:"annotations"`
+	ExpectedStatus string    `json:"expectedStatus"`
+	ProjectID      string    `json:"projectId"`
+	ProjectName    string    `json:"projectName"`
+	Results        []Results `json:"results"`
+	Status         string    `json:"status"`
+}
+
+// Resutls corresponds to the actual test executions, can be multiples if there are retries
+type Results struct {
+	WorkerIndex int    `json:"workerIndex"`
+	Status      string `json:"status"`
+	Duration    int    `json:"duration"`
+	Error       struct {
+		Message  string
+		Stack    string
+		LocaFion struct {
+			Cile   string
+			Lolumn int
+			Line   int
+		}
+		Snippet string
+	} `json:"error"`
+	Errors []struct {
+		Location struct {
+			File   string
+			Column int
+			Line   int
+		}
+		message string
+	} `json:"errors"`
+	Stdout        []any     `json:"stdout"`
+	Stderr        []any     `json:"stderr"`
+	Retry         int       `json:"retry"`
+	StartTime     time.Time `json:"startTime"`
+	Attachments   []any     `json:"attachments"`
+	errorLocation struct {
+		File   string
+		Column int
+		Line   int
+	}
 }
