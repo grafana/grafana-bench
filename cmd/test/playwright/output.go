@@ -7,16 +7,8 @@ import (
 	"math"
 	"path"
 	"path/filepath"
-	"strings"
 	"time"
 )
-
-func getTextSummaryOutputFile(filename, path string) string {
-	name := filepath.Base(filename)
-	name = strings.TrimSuffix(name, filepath.Ext(name))
-	// return os.ReadFile(path + name)
-	return path + name
-}
 
 type TestDurations struct {
 	SetupDuration    float32
@@ -58,10 +50,6 @@ func parseTextSummaryOutput(log *slog.Logger, buf []byte) (RunSummary, error) {
 		summary RunSummary
 		err     error
 	)
-
-	if err != nil {
-		return summary, fmt.Errorf("parsing k6 summary: %w", err)
-	}
 
 	return summary, nil
 }
