@@ -1,0 +1,639 @@
+{
+    "config": {
+        "configFile": "/Users/timmulqueen/projects/grafana-plugin-tests/playwright.config.js",
+        "rootDir": "/Users/timmulqueen/projects/grafana-plugin-tests/tests",
+        "forbidOnly": false,
+        "fullyParallel": false,
+        "globalSetup": null,
+        "globalTeardown": null,
+        "globalTimeout": 0,
+        "grep": {},
+        "grepInvert": null,
+        "maxFailures": 0,
+        "metadata": {
+            "actualWorkers": 2
+        },
+        "preserveOutput": "always",
+        "reporter": [
+            [
+                "html",
+                null
+            ],
+            [
+                "json",
+                {
+                    "outputFile": "./playwright-report/report.json"
+                }
+            ],
+            [
+                "/Users/timmulqueen/projects/grafana-plugin-tests/node_modules/@skilbourn/playwright-report-summary/dist/index.js",
+                {
+                    "outputFile": "./playwright-report/summary.txt"
+                }
+            ]
+        ],
+        "reportSlowTests": {
+            "max": 5,
+            "threshold": 15000
+        },
+        "quiet": false,
+        "projects": [
+            {
+                "outputDir": "/Users/timmulqueen/projects/grafana-plugin-tests/test-results",
+                "repeatEach": 1,
+                "retries": 2,
+                "id": "auth",
+                "name": "auth",
+                "testDir": "/Users/timmulqueen/projects/grafana-plugin-tests/node_modules/@grafana/plugin-e2e/dist/auth",
+                "testIgnore": [],
+                "testMatch": [
+                    "/.*\\.js/"
+                ],
+                "timeout": 30000
+            },
+            {
+                "outputDir": "/Users/timmulqueen/projects/grafana-plugin-tests/test-results",
+                "repeatEach": 1,
+                "retries": 2,
+                "id": "run-tests",
+                "name": "run-tests",
+                "testDir": "/Users/timmulqueen/projects/grafana-plugin-tests/tests",
+                "testIgnore": [],
+                "testMatch": [
+                    "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+                ],
+                "timeout": 30000
+            }
+        ],
+        "shard": null,
+        "updateSnapshots": "missing",
+        "version": "1.42.1",
+        "workers": 5,
+        "webServer": null
+    },
+    "suites": [
+        {
+            "title": "../node_modules/@grafana/plugin-e2e/dist/auth/auth.setup.js",
+            "file": "../node_modules/@grafana/plugin-e2e/dist/auth/auth.setup.js",
+            "column": 0,
+            "line": 0,
+            "specs": [
+                {
+                    "title": "authenticate",
+                    "ok": true,
+                    "tags": [
+                        "grafana/plugin-e2e/dist/auth/auth.setup.js"
+                    ],
+                    "tests": [
+                        {
+                            "timeout": 30000,
+                            "annotations": [],
+                            "expectedStatus": "passed",
+                            "projectId": "auth",
+                            "projectName": "auth",
+                            "results": [
+                                {
+                                    "workerIndex": 0,
+                                    "status": "passed",
+                                    "duration": 101,
+                                    "errors": [],
+                                    "stdout": [],
+                                    "stderr": [],
+                                    "retry": 0,
+                                    "startTime": "2024-03-07T11:34:58.992Z",
+                                    "attachments": []
+                                }
+                            ],
+                            "status": "expected"
+                        }
+                    ],
+                    "id": "f376efe52c54b1a876fd-bddfeef17adb8bfc8c92",
+                    "file": "../node_modules/@grafana/plugin-e2e/dist/auth/auth.setup.js",
+                    "line": 4,
+                    "column": 16
+                }
+            ]
+        },
+        {
+            "title": "failures.test.ts",
+            "file": "failures.test.ts",
+            "column": 0,
+            "line": 0,
+            "specs": [
+                {
+                    "title": "should fail due to missing file",
+                    "ok": false,
+                    "tags": [],
+                    "tests": [
+                        {
+                            "timeout": 30000,
+                            "annotations": [],
+                            "expectedStatus": "passed",
+                            "projectId": "run-tests",
+                            "projectName": "run-tests",
+                            "results": [
+                                {
+                                    "workerIndex": 1,
+                                    "status": "failed",
+                                    "duration": 2532,
+                                    "error": {
+                                        "message": "Error: ENOENT: no such file or directory, open '/Users/timmulqueen/projects/grafana-plugin-tests/provisioning/datasources/jfkladsjfkldasjdfklasjlk.yml'",
+                                        "stack": "Error: ENOENT: no such file or directory, open '/Users/timmulqueen/projects/grafana-plugin-tests/provisioning/datasources/jfkladsjfkldasjdfklasjlk.yml'"
+                                    },
+                                    "errors": [
+                                        {
+                                            "message": "Error: ENOENT: no such file or directory, open '/Users/timmulqueen/projects/grafana-plugin-tests/provisioning/datasources/jfkladsjfkldasjdfklasjlk.yml'"
+                                        }
+                                    ],
+                                    "stdout": [],
+                                    "stderr": [],
+                                    "retry": 0,
+                                    "startTime": "2024-03-07T11:34:59.286Z",
+                                    "attachments": []
+                                },
+                                {
+                                    "workerIndex": 3,
+                                    "status": "failed",
+                                    "duration": 2124,
+                                    "error": {
+                                        "message": "Error: ENOENT: no such file or directory, open '/Users/timmulqueen/projects/grafana-plugin-tests/provisioning/datasources/jfkladsjfkldasjdfklasjlk.yml'",
+                                        "stack": "Error: ENOENT: no such file or directory, open '/Users/timmulqueen/projects/grafana-plugin-tests/provisioning/datasources/jfkladsjfkldasjdfklasjlk.yml'"
+                                    },
+                                    "errors": [
+                                        {
+                                            "message": "Error: ENOENT: no such file or directory, open '/Users/timmulqueen/projects/grafana-plugin-tests/provisioning/datasources/jfkladsjfkldasjdfklasjlk.yml'"
+                                        }
+                                    ],
+                                    "stdout": [],
+                                    "stderr": [],
+                                    "retry": 1,
+                                    "startTime": "2024-03-07T11:35:02.428Z",
+                                    "attachments": []
+                                },
+                                {
+                                    "workerIndex": 4,
+                                    "status": "failed",
+                                    "duration": 2101,
+                                    "error": {
+                                        "message": "Error: ENOENT: no such file or directory, open '/Users/timmulqueen/projects/grafana-plugin-tests/provisioning/datasources/jfkladsjfkldasjdfklasjlk.yml'",
+                                        "stack": "Error: ENOENT: no such file or directory, open '/Users/timmulqueen/projects/grafana-plugin-tests/provisioning/datasources/jfkladsjfkldasjdfklasjlk.yml'"
+                                    },
+                                    "errors": [
+                                        {
+                                            "message": "Error: ENOENT: no such file or directory, open '/Users/timmulqueen/projects/grafana-plugin-tests/provisioning/datasources/jfkladsjfkldasjdfklasjlk.yml'"
+                                        }
+                                    ],
+                                    "stdout": [],
+                                    "stderr": [],
+                                    "retry": 2,
+                                    "startTime": "2024-03-07T11:35:04.857Z",
+                                    "attachments": []
+                                }
+                            ],
+                            "status": "unexpected"
+                        }
+                    ],
+                    "id": "59347eaae706a9d2b94f-f028b3ccf58d690983a7",
+                    "file": "failures.test.ts",
+                    "line": 3,
+                    "column": 5
+                },
+                {
+                    "title": "should fail due to expect",
+                    "ok": false,
+                    "tags": [],
+                    "tests": [
+                        {
+                            "timeout": 30000,
+                            "annotations": [],
+                            "expectedStatus": "passed",
+                            "projectId": "run-tests",
+                            "projectName": "run-tests",
+                            "results": [
+                                {
+                                    "workerIndex": 5,
+                                    "status": "failed",
+                                    "duration": 1578,
+                                    "error": {
+                                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\nExpected: \u001b[32m\"Grafana\"\u001b[39m\nReceived: \u001b[31m\"\u001b[7mData sources - Connections - \u001b[27mGrafana\"\u001b[39m",
+                                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\nExpected: \u001b[32m\"Grafana\"\u001b[39m\nReceived: \u001b[31m\"\u001b[7mData sources - Connections - \u001b[27mGrafana\"\u001b[39m\n    at /Users/timmulqueen/projects/grafana-plugin-tests/tests/failures.test.ts:18:32",
+                                        "location": {
+                                            "file": "/Users/timmulqueen/projects/grafana-plugin-tests/tests/failures.test.ts",
+                                            "column": 32,
+                                            "line": 18
+                                        },
+                                        "snippet": "\u001b[0m \u001b[90m 16 |\u001b[39m     expect(\u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mtitle())\u001b[33m.\u001b[39mtoEqual(\u001b[32m'Grafana'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 17 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m'/datasources'\u001b[39m\u001b[33m,\u001b[39m { waitUntil\u001b[33m:\u001b[39m \u001b[32m'networkidle'\u001b[39m })\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 18 |\u001b[39m     expect(\u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mtitle())\u001b[33m.\u001b[39mtoEqual(title)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m    |\u001b[39m                                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 19 |\u001b[39m })\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 20 |\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 21 |\u001b[39m test(\u001b[32m'should fail due to missing element'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page\u001b[33m,\u001b[39m panelEditPage }) \u001b[33m=>\u001b[39m {\u001b[0m"
+                                    },
+                                    "errors": [
+                                        {
+                                            "location": {
+                                                "file": "/Users/timmulqueen/projects/grafana-plugin-tests/tests/failures.test.ts",
+                                                "column": 32,
+                                                "line": 18
+                                            },
+                                            "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\nExpected: \u001b[32m\"Grafana\"\u001b[39m\nReceived: \u001b[31m\"\u001b[7mData sources - Connections - \u001b[27mGrafana\"\u001b[39m\n\n\u001b[0m \u001b[90m 16 |\u001b[39m     expect(\u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mtitle())\u001b[33m.\u001b[39mtoEqual(\u001b[32m'Grafana'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 17 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m'/datasources'\u001b[39m\u001b[33m,\u001b[39m { waitUntil\u001b[33m:\u001b[39m \u001b[32m'networkidle'\u001b[39m })\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 18 |\u001b[39m     expect(\u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mtitle())\u001b[33m.\u001b[39mtoEqual(title)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m    |\u001b[39m                                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 19 |\u001b[39m })\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 20 |\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 21 |\u001b[39m test(\u001b[32m'should fail due to missing element'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page\u001b[33m,\u001b[39m panelEditPage }) \u001b[33m=>\u001b[39m {\u001b[0m\n\n\u001b[2m    at /Users/timmulqueen/projects/grafana-plugin-tests/tests/failures.test.ts:18:32\u001b[22m"
+                                        }
+                                    ],
+                                    "stdout": [],
+                                    "stderr": [],
+                                    "retry": 0,
+                                    "startTime": "2024-03-07T11:35:07.285Z",
+                                    "attachments": [],
+                                    "errorLocation": {
+                                        "file": "/Users/timmulqueen/projects/grafana-plugin-tests/tests/failures.test.ts",
+                                        "column": 32,
+                                        "line": 18
+                                    }
+                                },
+                                {
+                                    "workerIndex": 6,
+                                    "status": "failed",
+                                    "duration": 1535,
+                                    "error": {
+                                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\nExpected: \u001b[32m\"Grafana\"\u001b[39m\nReceived: \u001b[31m\"\u001b[7mData sources - Connections - \u001b[27mGrafana\"\u001b[39m",
+                                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\nExpected: \u001b[32m\"Grafana\"\u001b[39m\nReceived: \u001b[31m\"\u001b[7mData sources - Connections - \u001b[27mGrafana\"\u001b[39m\n    at /Users/timmulqueen/projects/grafana-plugin-tests/tests/failures.test.ts:18:32",
+                                        "location": {
+                                            "file": "/Users/timmulqueen/projects/grafana-plugin-tests/tests/failures.test.ts",
+                                            "column": 32,
+                                            "line": 18
+                                        },
+                                        "snippet": "\u001b[0m \u001b[90m 16 |\u001b[39m     expect(\u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mtitle())\u001b[33m.\u001b[39mtoEqual(\u001b[32m'Grafana'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 17 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m'/datasources'\u001b[39m\u001b[33m,\u001b[39m { waitUntil\u001b[33m:\u001b[39m \u001b[32m'networkidle'\u001b[39m })\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 18 |\u001b[39m     expect(\u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mtitle())\u001b[33m.\u001b[39mtoEqual(title)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m    |\u001b[39m                                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 19 |\u001b[39m })\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 20 |\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 21 |\u001b[39m test(\u001b[32m'should fail due to missing element'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page\u001b[33m,\u001b[39m panelEditPage }) \u001b[33m=>\u001b[39m {\u001b[0m"
+                                    },
+                                    "errors": [
+                                        {
+                                            "location": {
+                                                "file": "/Users/timmulqueen/projects/grafana-plugin-tests/tests/failures.test.ts",
+                                                "column": 32,
+                                                "line": 18
+                                            },
+                                            "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\nExpected: \u001b[32m\"Grafana\"\u001b[39m\nReceived: \u001b[31m\"\u001b[7mData sources - Connections - \u001b[27mGrafana\"\u001b[39m\n\n\u001b[0m \u001b[90m 16 |\u001b[39m     expect(\u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mtitle())\u001b[33m.\u001b[39mtoEqual(\u001b[32m'Grafana'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 17 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m'/datasources'\u001b[39m\u001b[33m,\u001b[39m { waitUntil\u001b[33m:\u001b[39m \u001b[32m'networkidle'\u001b[39m })\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 18 |\u001b[39m     expect(\u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mtitle())\u001b[33m.\u001b[39mtoEqual(title)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m    |\u001b[39m                                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 19 |\u001b[39m })\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 20 |\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 21 |\u001b[39m test(\u001b[32m'should fail due to missing element'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page\u001b[33m,\u001b[39m panelEditPage }) \u001b[33m=>\u001b[39m {\u001b[0m\n\n\u001b[2m    at /Users/timmulqueen/projects/grafana-plugin-tests/tests/failures.test.ts:18:32\u001b[22m"
+                                        }
+                                    ],
+                                    "stdout": [],
+                                    "stderr": [],
+                                    "retry": 1,
+                                    "startTime": "2024-03-07T11:35:09.211Z",
+                                    "attachments": [],
+                                    "errorLocation": {
+                                        "file": "/Users/timmulqueen/projects/grafana-plugin-tests/tests/failures.test.ts",
+                                        "column": 32,
+                                        "line": 18
+                                    }
+                                },
+                                {
+                                    "workerIndex": 7,
+                                    "status": "failed",
+                                    "duration": 1515,
+                                    "error": {
+                                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\nExpected: \u001b[32m\"Grafana\"\u001b[39m\nReceived: \u001b[31m\"\u001b[7mData sources - Connections - \u001b[27mGrafana\"\u001b[39m",
+                                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\nExpected: \u001b[32m\"Grafana\"\u001b[39m\nReceived: \u001b[31m\"\u001b[7mData sources - Connections - \u001b[27mGrafana\"\u001b[39m\n    at /Users/timmulqueen/projects/grafana-plugin-tests/tests/failures.test.ts:18:32",
+                                        "location": {
+                                            "file": "/Users/timmulqueen/projects/grafana-plugin-tests/tests/failures.test.ts",
+                                            "column": 32,
+                                            "line": 18
+                                        },
+                                        "snippet": "\u001b[0m \u001b[90m 16 |\u001b[39m     expect(\u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mtitle())\u001b[33m.\u001b[39mtoEqual(\u001b[32m'Grafana'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 17 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m'/datasources'\u001b[39m\u001b[33m,\u001b[39m { waitUntil\u001b[33m:\u001b[39m \u001b[32m'networkidle'\u001b[39m })\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 18 |\u001b[39m     expect(\u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mtitle())\u001b[33m.\u001b[39mtoEqual(title)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m    |\u001b[39m                                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 19 |\u001b[39m })\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 20 |\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 21 |\u001b[39m test(\u001b[32m'should fail due to missing element'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page\u001b[33m,\u001b[39m panelEditPage }) \u001b[33m=>\u001b[39m {\u001b[0m"
+                                    },
+                                    "errors": [
+                                        {
+                                            "location": {
+                                                "file": "/Users/timmulqueen/projects/grafana-plugin-tests/tests/failures.test.ts",
+                                                "column": 32,
+                                                "line": 18
+                                            },
+                                            "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // deep equality\u001b[22m\n\nExpected: \u001b[32m\"Grafana\"\u001b[39m\nReceived: \u001b[31m\"\u001b[7mData sources - Connections - \u001b[27mGrafana\"\u001b[39m\n\n\u001b[0m \u001b[90m 16 |\u001b[39m     expect(\u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mtitle())\u001b[33m.\u001b[39mtoEqual(\u001b[32m'Grafana'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 17 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m'/datasources'\u001b[39m\u001b[33m,\u001b[39m { waitUntil\u001b[33m:\u001b[39m \u001b[32m'networkidle'\u001b[39m })\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 18 |\u001b[39m     expect(\u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mtitle())\u001b[33m.\u001b[39mtoEqual(title)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m    |\u001b[39m                                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 19 |\u001b[39m })\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 20 |\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 21 |\u001b[39m test(\u001b[32m'should fail due to missing element'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page\u001b[33m,\u001b[39m panelEditPage }) \u001b[33m=>\u001b[39m {\u001b[0m\n\n\u001b[2m    at /Users/timmulqueen/projects/grafana-plugin-tests/tests/failures.test.ts:18:32\u001b[22m"
+                                        }
+                                    ],
+                                    "stdout": [],
+                                    "stderr": [],
+                                    "retry": 2,
+                                    "startTime": "2024-03-07T11:35:11.085Z",
+                                    "attachments": [],
+                                    "errorLocation": {
+                                        "file": "/Users/timmulqueen/projects/grafana-plugin-tests/tests/failures.test.ts",
+                                        "column": 32,
+                                        "line": 18
+                                    }
+                                }
+                            ],
+                            "status": "unexpected"
+                        }
+                    ],
+                    "id": "59347eaae706a9d2b94f-78c27cf0feb8f32d96fe",
+                    "file": "failures.test.ts",
+                    "line": 13,
+                    "column": 5
+                },
+                {
+                    "title": "should fail due to missing element",
+                    "ok": false,
+                    "tags": [],
+                    "tests": [
+                        {
+                            "timeout": 30000,
+                            "annotations": [],
+                            "expectedStatus": "passed",
+                            "projectId": "run-tests",
+                            "projectName": "run-tests",
+                            "results": [
+                                {
+                                    "workerIndex": 8,
+                                    "status": "timedOut",
+                                    "duration": 30001,
+                                    "error": {
+                                        "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m",
+                                        "stack": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                                    },
+                                    "errors": [
+                                        {
+                                            "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                                        },
+                                        {
+                                            "location": {
+                                                "file": "/Users/timmulqueen/projects/grafana-plugin-tests/tests/failures.test.ts",
+                                                "column": 5,
+                                                "line": 23
+                                            },
+                                            "message": "Error: locator.click: Test timeout of 30000ms exceeded.\nCall log:\n  \u001b[2m- waiting for locator('[data-testid=\"data-testid toggle-viz-picker\"]')\u001b[22m\n\n\n\u001b[0m \u001b[90m 21 |\u001b[39m test(\u001b[32m'should fail due to missing element'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page\u001b[33m,\u001b[39m panelEditPage }) \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[0m \u001b[90m 22 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m'/datasources'\u001b[39m\u001b[33m,\u001b[39m { waitUntil\u001b[33m:\u001b[39m \u001b[32m'networkidle'\u001b[39m })\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 23 |\u001b[39m     \u001b[36mawait\u001b[39m panelEditPage\u001b[33m.\u001b[39msetVisualization(\u001b[32m'Table'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m    |\u001b[39m     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 24 |\u001b[39m })\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 25 |\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 26 |\u001b[39m test(\u001b[32m'should fail due to type error in test'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\u001b[0m\n\n\u001b[2m    at PanelEditPage.setVisualization (/Users/timmulqueen/projects/grafana-plugin-tests/node_modules/@grafana/plugin-e2e/dist/models/pages/PanelEditPage.js:106:102)\u001b[22m\n\u001b[2m    at /Users/timmulqueen/projects/grafana-plugin-tests/tests/failures.test.ts:23:5\u001b[22m"
+                                        }
+                                    ],
+                                    "stdout": [],
+                                    "stderr": [],
+                                    "retry": 0,
+                                    "startTime": "2024-03-07T11:35:12.935Z",
+                                    "attachments": []
+                                },
+                                {
+                                    "workerIndex": 9,
+                                    "status": "timedOut",
+                                    "duration": 30000,
+                                    "error": {
+                                        "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m",
+                                        "stack": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                                    },
+                                    "errors": [
+                                        {
+                                            "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                                        },
+                                        {
+                                            "location": {
+                                                "file": "/Users/timmulqueen/projects/grafana-plugin-tests/tests/failures.test.ts",
+                                                "column": 5,
+                                                "line": 23
+                                            },
+                                            "message": "Error: locator.click: Test timeout of 30000ms exceeded.\nCall log:\n  \u001b[2m- waiting for locator('[data-testid=\"data-testid toggle-viz-picker\"]')\u001b[22m\n\n\n\u001b[0m \u001b[90m 21 |\u001b[39m test(\u001b[32m'should fail due to missing element'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page\u001b[33m,\u001b[39m panelEditPage }) \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[0m \u001b[90m 22 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m'/datasources'\u001b[39m\u001b[33m,\u001b[39m { waitUntil\u001b[33m:\u001b[39m \u001b[32m'networkidle'\u001b[39m })\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 23 |\u001b[39m     \u001b[36mawait\u001b[39m panelEditPage\u001b[33m.\u001b[39msetVisualization(\u001b[32m'Table'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m    |\u001b[39m     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 24 |\u001b[39m })\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 25 |\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 26 |\u001b[39m test(\u001b[32m'should fail due to type error in test'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\u001b[0m\n\n\u001b[2m    at PanelEditPage.setVisualization (/Users/timmulqueen/projects/grafana-plugin-tests/node_modules/@grafana/plugin-e2e/dist/models/pages/PanelEditPage.js:106:102)\u001b[22m\n\u001b[2m    at /Users/timmulqueen/projects/grafana-plugin-tests/tests/failures.test.ts:23:5\u001b[22m"
+                                        }
+                                    ],
+                                    "stdout": [],
+                                    "stderr": [],
+                                    "retry": 1,
+                                    "startTime": "2024-03-07T11:35:43.355Z",
+                                    "attachments": []
+                                },
+                                {
+                                    "workerIndex": 10,
+                                    "status": "timedOut",
+                                    "duration": 29999,
+                                    "error": {
+                                        "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m",
+                                        "stack": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                                    },
+                                    "errors": [
+                                        {
+                                            "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                                        },
+                                        {
+                                            "location": {
+                                                "file": "/Users/timmulqueen/projects/grafana-plugin-tests/tests/failures.test.ts",
+                                                "column": 5,
+                                                "line": 23
+                                            },
+                                            "message": "Error: locator.click: Test timeout of 30000ms exceeded.\nCall log:\n  \u001b[2m- waiting for locator('[data-testid=\"data-testid toggle-viz-picker\"]')\u001b[22m\n\n\n\u001b[0m \u001b[90m 21 |\u001b[39m test(\u001b[32m'should fail due to missing element'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page\u001b[33m,\u001b[39m panelEditPage }) \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[0m \u001b[90m 22 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m'/datasources'\u001b[39m\u001b[33m,\u001b[39m { waitUntil\u001b[33m:\u001b[39m \u001b[32m'networkidle'\u001b[39m })\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 23 |\u001b[39m     \u001b[36mawait\u001b[39m panelEditPage\u001b[33m.\u001b[39msetVisualization(\u001b[32m'Table'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m    |\u001b[39m     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 24 |\u001b[39m })\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 25 |\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 26 |\u001b[39m test(\u001b[32m'should fail due to type error in test'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\u001b[0m\n\n\u001b[2m    at PanelEditPage.setVisualization (/Users/timmulqueen/projects/grafana-plugin-tests/node_modules/@grafana/plugin-e2e/dist/models/pages/PanelEditPage.js:106:102)\u001b[22m\n\u001b[2m    at /Users/timmulqueen/projects/grafana-plugin-tests/tests/failures.test.ts:23:5\u001b[22m"
+                                        }
+                                    ],
+                                    "stdout": [],
+                                    "stderr": [],
+                                    "retry": 2,
+                                    "startTime": "2024-03-07T11:36:13.876Z",
+                                    "attachments": []
+                                }
+                            ],
+                            "status": "unexpected"
+                        }
+                    ],
+                    "id": "59347eaae706a9d2b94f-d48668021d31c1f80436",
+                    "file": "failures.test.ts",
+                    "line": 21,
+                    "column": 5
+                },
+                {
+                    "title": "should fail due to type error in test",
+                    "ok": false,
+                    "tags": [],
+                    "tests": [
+                        {
+                            "timeout": 30000,
+                            "annotations": [],
+                            "expectedStatus": "passed",
+                            "projectId": "run-tests",
+                            "projectName": "run-tests",
+                            "results": [
+                                {
+                                    "workerIndex": 11,
+                                    "status": "failed",
+                                    "duration": 1415,
+                                    "error": {
+                                        "message": "Error: This is a random javascript type error failure",
+                                        "stack": "Error: This is a random javascript type error failure\n    at /Users/timmulqueen/projects/grafana-plugin-tests/tests/failures.test.ts:28:11",
+                                        "location": {
+                                            "file": "/Users/timmulqueen/projects/grafana-plugin-tests/tests/failures.test.ts",
+                                            "column": 11,
+                                            "line": 28
+                                        },
+                                        "snippet": "\u001b[0m \u001b[90m 26 |\u001b[39m test(\u001b[32m'should fail due to type error in test'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[0m \u001b[90m 27 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m'/datasources'\u001b[39m\u001b[33m,\u001b[39m { waitUntil\u001b[33m:\u001b[39m \u001b[32m'networkidle'\u001b[39m })\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 28 |\u001b[39m     \u001b[36mthrow\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mError\u001b[39m(\u001b[32m'This is a random javascript type error failure'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m    |\u001b[39m           \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 29 |\u001b[39m })\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 30 |\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 31 |\u001b[39m\u001b[0m"
+                                    },
+                                    "errors": [
+                                        {
+                                            "location": {
+                                                "file": "/Users/timmulqueen/projects/grafana-plugin-tests/tests/failures.test.ts",
+                                                "column": 11,
+                                                "line": 28
+                                            },
+                                            "message": "Error: This is a random javascript type error failure\n\n\u001b[0m \u001b[90m 26 |\u001b[39m test(\u001b[32m'should fail due to type error in test'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[0m \u001b[90m 27 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m'/datasources'\u001b[39m\u001b[33m,\u001b[39m { waitUntil\u001b[33m:\u001b[39m \u001b[32m'networkidle'\u001b[39m })\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 28 |\u001b[39m     \u001b[36mthrow\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mError\u001b[39m(\u001b[32m'This is a random javascript type error failure'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m    |\u001b[39m           \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 29 |\u001b[39m })\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 30 |\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 31 |\u001b[39m\u001b[0m\n\n\u001b[2m    at /Users/timmulqueen/projects/grafana-plugin-tests/tests/failures.test.ts:28:11\u001b[22m"
+                                        }
+                                    ],
+                                    "stdout": [],
+                                    "stderr": [],
+                                    "retry": 0,
+                                    "startTime": "2024-03-07T11:36:44.385Z",
+                                    "attachments": [],
+                                    "errorLocation": {
+                                        "file": "/Users/timmulqueen/projects/grafana-plugin-tests/tests/failures.test.ts",
+                                        "column": 11,
+                                        "line": 28
+                                    }
+                                },
+                                {
+                                    "workerIndex": 12,
+                                    "status": "failed",
+                                    "duration": 1387,
+                                    "error": {
+                                        "message": "Error: This is a random javascript type error failure",
+                                        "stack": "Error: This is a random javascript type error failure\n    at /Users/timmulqueen/projects/grafana-plugin-tests/tests/failures.test.ts:28:11",
+                                        "location": {
+                                            "file": "/Users/timmulqueen/projects/grafana-plugin-tests/tests/failures.test.ts",
+                                            "column": 11,
+                                            "line": 28
+                                        },
+                                        "snippet": "\u001b[0m \u001b[90m 26 |\u001b[39m test(\u001b[32m'should fail due to type error in test'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[0m \u001b[90m 27 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m'/datasources'\u001b[39m\u001b[33m,\u001b[39m { waitUntil\u001b[33m:\u001b[39m \u001b[32m'networkidle'\u001b[39m })\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 28 |\u001b[39m     \u001b[36mthrow\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mError\u001b[39m(\u001b[32m'This is a random javascript type error failure'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m    |\u001b[39m           \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 29 |\u001b[39m })\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 30 |\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 31 |\u001b[39m\u001b[0m"
+                                    },
+                                    "errors": [
+                                        {
+                                            "location": {
+                                                "file": "/Users/timmulqueen/projects/grafana-plugin-tests/tests/failures.test.ts",
+                                                "column": 11,
+                                                "line": 28
+                                            },
+                                            "message": "Error: This is a random javascript type error failure\n\n\u001b[0m \u001b[90m 26 |\u001b[39m test(\u001b[32m'should fail due to type error in test'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[0m \u001b[90m 27 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m'/datasources'\u001b[39m\u001b[33m,\u001b[39m { waitUntil\u001b[33m:\u001b[39m \u001b[32m'networkidle'\u001b[39m })\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 28 |\u001b[39m     \u001b[36mthrow\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mError\u001b[39m(\u001b[32m'This is a random javascript type error failure'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m    |\u001b[39m           \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 29 |\u001b[39m })\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 30 |\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 31 |\u001b[39m\u001b[0m\n\n\u001b[2m    at /Users/timmulqueen/projects/grafana-plugin-tests/tests/failures.test.ts:28:11\u001b[22m"
+                                        }
+                                    ],
+                                    "stdout": [],
+                                    "stderr": [],
+                                    "retry": 1,
+                                    "startTime": "2024-03-07T11:36:46.223Z",
+                                    "attachments": [],
+                                    "errorLocation": {
+                                        "file": "/Users/timmulqueen/projects/grafana-plugin-tests/tests/failures.test.ts",
+                                        "column": 11,
+                                        "line": 28
+                                    }
+                                },
+                                {
+                                    "workerIndex": 13,
+                                    "status": "failed",
+                                    "duration": 1779,
+                                    "error": {
+                                        "message": "Error: This is a random javascript type error failure",
+                                        "stack": "Error: This is a random javascript type error failure\n    at /Users/timmulqueen/projects/grafana-plugin-tests/tests/failures.test.ts:28:11",
+                                        "location": {
+                                            "file": "/Users/timmulqueen/projects/grafana-plugin-tests/tests/failures.test.ts",
+                                            "column": 11,
+                                            "line": 28
+                                        },
+                                        "snippet": "\u001b[0m \u001b[90m 26 |\u001b[39m test(\u001b[32m'should fail due to type error in test'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[0m \u001b[90m 27 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m'/datasources'\u001b[39m\u001b[33m,\u001b[39m { waitUntil\u001b[33m:\u001b[39m \u001b[32m'networkidle'\u001b[39m })\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 28 |\u001b[39m     \u001b[36mthrow\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mError\u001b[39m(\u001b[32m'This is a random javascript type error failure'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m    |\u001b[39m           \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 29 |\u001b[39m })\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 30 |\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 31 |\u001b[39m\u001b[0m"
+                                    },
+                                    "errors": [
+                                        {
+                                            "location": {
+                                                "file": "/Users/timmulqueen/projects/grafana-plugin-tests/tests/failures.test.ts",
+                                                "column": 11,
+                                                "line": 28
+                                            },
+                                            "message": "Error: This is a random javascript type error failure\n\n\u001b[0m \u001b[90m 26 |\u001b[39m test(\u001b[32m'should fail due to type error in test'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[0m \u001b[90m 27 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m'/datasources'\u001b[39m\u001b[33m,\u001b[39m { waitUntil\u001b[33m:\u001b[39m \u001b[32m'networkidle'\u001b[39m })\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 28 |\u001b[39m     \u001b[36mthrow\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mError\u001b[39m(\u001b[32m'This is a random javascript type error failure'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m    |\u001b[39m           \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 29 |\u001b[39m })\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 30 |\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 31 |\u001b[39m\u001b[0m\n\n\u001b[2m    at /Users/timmulqueen/projects/grafana-plugin-tests/tests/failures.test.ts:28:11\u001b[22m"
+                                        }
+                                    ],
+                                    "stdout": [],
+                                    "stderr": [],
+                                    "retry": 2,
+                                    "startTime": "2024-03-07T11:36:47.972Z",
+                                    "attachments": [],
+                                    "errorLocation": {
+                                        "file": "/Users/timmulqueen/projects/grafana-plugin-tests/tests/failures.test.ts",
+                                        "column": 11,
+                                        "line": 28
+                                    }
+                                }
+                            ],
+                            "status": "unexpected"
+                        }
+                    ],
+                    "id": "59347eaae706a9d2b94f-467c54f0ba0f9137f7d8",
+                    "file": "failures.test.ts",
+                    "line": 26,
+                    "column": 5
+                }
+            ]
+        },
+        {
+            "title": "smoke.test.ts",
+            "file": "smoke.test.ts",
+            "column": 0,
+            "line": 0,
+            "specs": [
+                {
+                    "title": "data query should return values 1 and 3",
+                    "ok": true,
+                    "tags": [],
+                    "tests": [
+                        {
+                            "timeout": 30000,
+                            "annotations": [],
+                            "expectedStatus": "passed",
+                            "projectId": "run-tests",
+                            "projectName": "run-tests",
+                            "results": [
+                                {
+                                    "workerIndex": 2,
+                                    "status": "passed",
+                                    "duration": 2854,
+                                    "errors": [],
+                                    "stdout": [],
+                                    "stderr": [],
+                                    "retry": 0,
+                                    "startTime": "2024-03-07T11:34:59.285Z",
+                                    "attachments": []
+                                }
+                            ],
+                            "status": "expected"
+                        }
+                    ],
+                    "id": "4a239ced0e52b6754d8b-c8ba8aeed86fb34fc818",
+                    "file": "smoke.test.ts",
+                    "line": 3,
+                    "column": 5
+                },
+                {
+                    "title": "should redirect to start page when permissions to navigate to page is missing",
+                    "ok": true,
+                    "tags": [],
+                    "tests": [
+                        {
+                            "timeout": 30000,
+                            "annotations": [],
+                            "expectedStatus": "passed",
+                            "projectId": "run-tests",
+                            "projectName": "run-tests",
+                            "results": [
+                                {
+                                    "workerIndex": 2,
+                                    "status": "passed",
+                                    "duration": 1565,
+                                    "errors": [],
+                                    "stdout": [],
+                                    "stderr": [],
+                                    "retry": 0,
+                                    "startTime": "2024-03-07T11:35:02.516Z",
+                                    "attachments": []
+                                }
+                            ],
+                            "status": "expected"
+                        }
+                    ],
+                    "id": "4a239ced0e52b6754d8b-30bac972d50ce0d504bd",
+                    "file": "smoke.test.ts",
+                    "line": 11,
+                    "column": 5
+                }
+            ]
+        }
+    ],
+    "errors": [],
+    "stats": {
+        "startTime": "2024-03-07T11:34:58.768Z",
+        "duration": 111140.61499999999,
+        "expected": 3,
+        "skipped": 0,
+        "unexpected": 4,
+        "flaky": 0
+    }
+}
