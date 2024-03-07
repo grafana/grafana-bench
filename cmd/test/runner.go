@@ -296,7 +296,7 @@ func (t *TestRunner) execTest(ctx context.Context, env map[string]string, args .
 		return TestSuiteRunSummary{}, fmt.Errorf("getting test list: %w", err)
 	}
 	// run the tests
-	for iteration, testFile := range tests {
+	for order, testFile := range tests {
 		scenarioName := getScenarioName(testFile)
 		// set the scenario name so it's accessible from the test
 		envVars["SCENARIO_NAME"] = scenarioName
@@ -331,7 +331,7 @@ func (t *TestRunner) execTest(ctx context.Context, env map[string]string, args .
 			"scenarioName", scenarioName,
 			"folder", testFolder,
 			"testFile", path.Base(testFile),
-			"order", strconv.Itoa(iteration + 1),
+			"order", strconv.Itoa(order + 1),
 		}
 		t.Log.With(t.suiteRunLogAttrs()...).
 			With(testTags...).
