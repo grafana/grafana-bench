@@ -64,7 +64,7 @@ type Suites struct {
 	Specs  []Specs `json:"specs"`
 }
 
-// This corresponds to the a individual of the test in a file eg. descript('should do something', () => {})
+// This corresponds to the a individual of the test in a file eg. test('should do something', () => {})
 type Specs struct {
 	Title  string   `json:"title"`
 	Ok     bool     `json:"ok"`
