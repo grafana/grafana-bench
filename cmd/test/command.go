@@ -68,7 +68,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			}
 
 			if benchRevision == "" {
-				benchRevision = bench.Revision()
+				benchRevision = env.EnvOrDefault("BENCH_REVISION", bench.Revision())
 			}
 
 			// override grafana user and password from environment variables if they are set
@@ -145,7 +145,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	fs.StringVar(&testSuiteRevision, "test-suite-revision", "", "test suite revision. If not set TEST_SUITE_REVISION environment variable is used. " +
 		"\nHas precedence over test-suite-revision-file")
 	fs.StringVar(&revisionFile, "test-suite-revision-file", "", "path to a file with the test suite revision")
-	fs.StringVar(&benchRevision, "bench-revision", "", "grafana bench revision")
+	fs.StringVar(&benchRevision, "bench-revision", "", "grafana bench revision. If not set BENCH_REVISION environment variable is used.")
 	fs.StringVar(&k6CloudToken, "k6-cloud-token", "", "K6 cloud access token. If not set K6_CLOUD_TOKEN environment variable is used")
 	fs.StringVar(&k6CloudProjectId, "k6-cloud-project", "", "K6 cloud project ID. If not set K6_CLOUD_PROJECT_ID environment variable is used")
 	fs.BoolVar(&verbose, "verbose", true, "show test outputs")
