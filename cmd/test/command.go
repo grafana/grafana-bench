@@ -31,7 +31,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		machineSpec       string
 		testSuiteName     string
 		testSuiteRevision string
-		revisionFile      string
 		testSuite         string
 		testSuiteBase     string
 		k6CloudToken      string
@@ -57,14 +56,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 
 			if testSuiteRevision == ""  {
 				testSuiteRevision = env.EnvOrDefault("TEST_SUITE_REVISION", "")
-			}
-
-			// TODO: deprecate revision file
-			if testSuiteRevision == "" && revisionFile != "" {
-				testSuiteRevision, err = getTestSuiteRevision(revisionFile)
-				if err != nil {
-					return fmt.Errorf("getting test suite revision from file %s: %w", revisionFile, err)
-				}
 			}
 
 			if benchRevision == "" {
@@ -142,9 +133,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	fs.StringVar(&grafanaPassword, "grafana-password", "admin", "grafana password. Can be overridden by the GRAFANA_PASSWORD environment variable")
 	fs.StringVar(&machineSpec, "machine-spec", "", "grafana instance machine spec")
 	// TODO: add default value as the revision is used to generate the run id
-	fs.StringVar(&testSuiteRevision, "test-suite-revision", "", "test suite revision. If not set TEST_SUITE_REVISION environment variable is used. " +
-		"\nHas precedence over test-suite-revision-file")
-	fs.StringVar(&revisionFile, "test-suite-revision-file", "", "path to a file with the test suite revision")
+	fs.StringVar(&testSuiteRevision, "test-suite-revision", "", "test suite revision. If not set TEST_SUITE_REVISION environment variable is used")
 	fs.StringVar(&benchRevision, "bench-revision", "", "grafana bench revision. If not set BENCH_REVISION environment variable is used.")
 	fs.StringVar(&k6CloudToken, "k6-cloud-token", "", "K6 cloud access token. If not set K6_CLOUD_TOKEN environment variable is used")
 	fs.StringVar(&k6CloudProjectId, "k6-cloud-project", "", "K6 cloud project ID. If not set K6_CLOUD_PROJECT_ID environment variable is used")
