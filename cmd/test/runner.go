@@ -227,7 +227,8 @@ func (t *TestRunner) smokeTest(ctx context.Context) error {
 			dashboardMsg = " See dashboard: " + dashboard
 		}
 
-		t.Log.With(t.suiteRunLogAttrs()...).Error("test suite failed. Too many test failures." + dashboardMsg)
+		t.Log.With(t.suiteRunLogAttrs()...).
+			Error("test suite failed. Too many test failures." + dashboardMsg)
 	}
 
 	return nil
@@ -263,7 +264,11 @@ func (t *TestRunner) getDashboardURL() (string, error) {
 }
 
 // execute test suite
-func (t *TestRunner) execTest(ctx context.Context, env map[string]string, args ...string) (TestSuiteRunSummary, error) {
+func (t *TestRunner) execTest(
+	ctx context.Context,
+	env map[string]string,
+	args ...string,
+) (TestSuiteRunSummary, error) {
 	// set common test execution variables
 	envVars := map[string]string{
 		"MACHINE_SPEC":        t.MachineSpec,
@@ -323,7 +328,7 @@ func (t *TestRunner) execTest(ctx context.Context, env map[string]string, args .
 		// get the path to the test relative to the TestSuiteBase if any
 		// we don't need to check for errors because how the test path is constructed
 		rootDir, _ := filepath.Abs(t.TestSuiteBase)
-		testFolder, _  := filepath.Rel(rootDir, filepath.Dir(testFile))
+		testFolder, _ := filepath.Rel(rootDir, filepath.Dir(testFile))
 
 		// test complete log
 		testTags := []any{
@@ -335,7 +340,7 @@ func (t *TestRunner) execTest(ctx context.Context, env map[string]string, args .
 		}
 		t.Log.With(t.suiteRunLogAttrs()...).
 			With(testTags...).
-			Info("testrun", testRunLogAttrs(k6Summary)...)
+			Info("testRun", testRunLogAttrs(k6Summary)...)
 	}
 
 	totalScenarioDurations := prettyMS(totalDuration)
