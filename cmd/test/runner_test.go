@@ -48,7 +48,8 @@ func grafanaMockHandler(rw http.ResponseWriter, r *http.Request) {
 		}
 
 		// return session cookie it is expected by VMInstance
-		rw.Header().Add("Set-Cookie", "grafana_session=ffffffffffffffffffffffffffffffff; Path=/; Max-Age=2592000; HttpOnly; SameSite=Lax")
+		rw.Header().
+			Add("Set-Cookie", "grafana_session=ffffffffffffffffffffffffffffffff; Path=/; Max-Age=2592000; HttpOnly; SameSite=Lax")
 
 	// returns only the build info. TODO: add other attributes to response
 	case "/api/frontend/settings":
@@ -129,10 +130,10 @@ func testRunnerForTesting(
 		testType,
 		"",        // base dir
 		testSuite, // test suite path
-		"test", // test suite name
-		"test", // test suite version
-		"",     // k6Cloud project
-		"",     // k6Cloud token
+		"test",    // test suite name
+		"test",    // test suite version
+		"",        // k6Cloud project
+		"",        // k6Cloud token
 		grafanaInstance,
 		time.Second, // grafana liveness probe timeout
 		"local",     // machine spec
@@ -149,21 +150,27 @@ func testRunnerForTesting(
 	return tr, nil
 }
 
-const loginError = "Error logging into grafana instance"
+const (
+	loginError = "Error logging into grafana instance"
 
-const testSuiteMissingError = "not found"
+	testSuiteMissingError = "not found"
 
-const testSuiteFailedMessage = "test suite failed. Too many test failures"
+	testSuiteFailedMessage = "test suite failed. Too many test failures"
 
-const cloudOutputDisabledMessage = "running load tests with cloud output disabled"
+	cloudOutputDisabledMessage = "running load tests with cloud output disabled"
 
-const dashboardMessage = "See dashboard"
+	dashboardMessage = "See dashboard"
 
-const invalidDashboardError = "invalid template substitution"
+	invalidDashboardError = "invalid template substitution"
 
-const cloudOutputParsingErrorMessage = "error parsing cloud run from K6 summary"
+	cloudOutputParsingErrorMessage = "error parsing cloud run from K6 summary"
 
-const missingK6CloudConfigError = "k6 Token and project ID are required for cloud output"
+	missingK6CloudConfigError = "k6 Token and project ID are required for cloud output"
+
+	testRunMessage = "msg=testRun"
+
+	suiteRunMessage = "msg=suiteRun"
+)
 
 func Test_Runner(t *testing.T) {
 	t.Parallel()
@@ -177,9 +184,10 @@ func Test_Runner(t *testing.T) {
 		expectMsgs []string
 	}{
 		{
-			testCase:  "passing test (load)",
-			testType:  SmokeTest,
-			testSuite: "k6tests/pass.js",
+			testCase:   "passing test (load)",
+			testType:   SmokeTest,
+			testSuite:  "k6tests/pass.js",
+			expectMsgs: []string{testRunMessage, suiteRunMessage},
 		},
 		{
 			testCase:   "passing test without k6 token (smoke)",
@@ -193,7 +201,7 @@ func Test_Runner(t *testing.T) {
 				WithCloudOutput(),
 			},
 			testType:  LoadTest,
-			testSuite:  "k6tests/pass.js",
+			testSuite: "k6tests/pass.js",
 			expectErr: missingK6CloudConfigError,
 		},
 		{
@@ -217,8 +225,8 @@ func Test_Runner(t *testing.T) {
 			options: []testRunnerOption{
 				WithDashboard(),
 			},
-			testType: SmokeTest,
-			testSuite:  "k6tests/fail.js",
+			testType:  SmokeTest,
+			testSuite: "k6tests/fail.js",
 			expectMsgs: []string{
 				testSuiteFailedMessage,
 				dashboardMessage,
@@ -230,19 +238,19 @@ func Test_Runner(t *testing.T) {
 			options: []testRunnerOption{
 				WithInvalidDashboard(),
 			},
-			testSuite:  "k6tests/fail.js",
+			testSuite: "k6tests/fail.js",
 			expectErr: invalidDashboardError,
 		},
 		{
-			testCase: "failing test (load)",
-			testType: SmokeTest,
-			testSuite:  "k6tests/fail.js",
+			testCase:  "failing test (load)",
+			testType:  SmokeTest,
+			testSuite: "k6tests/fail.js",
 		},
 		{
-			testCase:   "missing test (smoke)",
-			testType:   SmokeTest,
-			testSuite:  "k6tests/missing.js",
-			expectErr:  testSuiteMissingError,
+			testCase:  "missing test (smoke)",
+			testType:  SmokeTest,
+			testSuite: "k6tests/missing.js",
+			expectErr: testSuiteMissingError,
 		},
 		{
 			testCase:   "test suite directory - one fails (smoke)",
@@ -271,7 +279,11 @@ func Test_Runner(t *testing.T) {
 			log := slog.New(slog.NewTextHandler(&logBuffer, nil))
 
 			grafanaMock := httptest.NewServer(http.HandlerFunc(grafanaMockHandler))
-			grafanaInstance, _ := provisioner.NewReadOnlyGrafanaVM(grafanaMock.URL, "admin", "admin")
+			grafanaInstance, _ := provisioner.NewReadOnlyGrafanaVM(
+				grafanaMock.URL,
+				"admin",
+				"admin",
+			)
 
 			// create test runner with test-specific options
 			tr, err := testRunnerForTesting(
