@@ -31,7 +31,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		machineSpec       string
 		testSuiteName     string
 		testSuiteRevision string
-		revisionFile      string
 		testSuite         string
 		testSuiteBase     string
 		k6CloudToken      string
@@ -55,16 +54,12 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				return err
 			}
 
-			// If revision-file and test-suite-revision are specified, test-suite-revision has precedence
-			if testSuiteRevision == "" && revisionFile != "" {
-				testSuiteRevision, err = getTestSuiteRevision(revisionFile)
-				if err != nil {
-					return fmt.Errorf("getting version from file %s: %w", revisionFile, err)
-				}
+			if testSuiteRevision == ""  {
+				testSuiteRevision = env.EnvOrDefault("TEST_SUITE_REVISION", "")
 			}
 
 			if benchRevision == "" {
-				benchRevision = bench.Revision()
+				benchRevision = env.EnvOrDefault("BENCH_REVISION", bench.Revision())
 			}
 
 			// override grafana user and password from environment variables if they are set
@@ -84,9 +79,11 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				k6CloudProjectId = env.EnvOrDefault("K6_CLOUD_PROJECT_ID", "")
 			}
 
-			// if the name of the test suite was not given, use the last element of the test suit path as name
+			// if the name of the test suite was not given as a flag or environment variable
+			// use the last element of the test suit path as name
 			if testSuiteName == "" {
-				testSuiteName = strings.TrimSuffix(path.Base(testSuite), ".js")
+				defaultTestSuiteName := strings.TrimSuffix(path.Base(testSuite), ".js")
+				testSuiteName = env.EnvOrDefault("TEST_SUITE_NAME", defaultTestSuiteName)
 			}
 
 			if testSuiteBase == "" {
@@ -136,9 +133,8 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	fs.StringVar(&grafanaPassword, "grafana-password", "admin", "grafana password. Can be overridden by the GRAFANA_PASSWORD environment variable")
 	fs.StringVar(&machineSpec, "machine-spec", "", "grafana instance machine spec")
 	// TODO: add default value as the revision is used to generate the run id
-	fs.StringVar(&testSuiteRevision, "test-suite-revision", "", "test suite revision. Has precedence over test-suite-revision-file")
-	fs.StringVar(&revisionFile, "test-suite-revision-file", "", "path to a file with the test suite revision")
-	fs.StringVar(&benchRevision, "bench-revision", "", "grafana bench revision")
+	fs.StringVar(&testSuiteRevision, "test-suite-revision", "", "test suite revision. If not set TEST_SUITE_REVISION environment variable is used")
+	fs.StringVar(&benchRevision, "bench-revision", "", "grafana bench revision. If not set BENCH_REVISION environment variable is used.")
 	fs.StringVar(&k6CloudToken, "k6-cloud-token", "", "K6 cloud access token. If not set K6_CLOUD_TOKEN environment variable is used")
 	fs.StringVar(&k6CloudProjectId, "k6-cloud-project", "", "K6 cloud project ID. If not set K6_CLOUD_PROJECT_ID environment variable is used")
 	fs.BoolVar(&verbose, "verbose", true, "show test outputs")
@@ -155,7 +151,8 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	cmd.MarkFlagRequired("test-suite")
 	fs.StringVar(&testSuiteBase, "test-suite-base", "", "base directory for searching test suites. Defaults to current directory"+
 		"\nIf specified, it is prefixed to the --test-suite.")
-	fs.StringVar(&testSuiteName, "test-suite-name", "", "test suite name. If not specified, the last component of --test-suite will be used."+
+	fs.StringVar(&testSuiteName, "test-suite-name", "", "test suite name. If not specified, TEST_SUITE_NAME environment variable is used." +
+	"\nDefaults to the last component of --test-suite."+
 		"\nFor example --test-suite /path/to/testsuite will give a test suite name of 'testsuite'.")
 
 	return &cmd
