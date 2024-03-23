@@ -32,6 +32,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		testSuiteName     string
 		testSuiteRevision string
 		testSuite         string
+		revisionFile      string
 		testSuiteBase     string
 		k6CloudToken      string
 		k6CloudProjectId  string
@@ -54,8 +55,17 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				return err
 			}
 
-			if testSuiteRevision == ""  {
+			// take the environment variable first
+			if testSuiteRevision == "" {
 				testSuiteRevision = env.EnvOrDefault("TEST_SUITE_REVISION", "")
+			}
+
+			// If revision-file and test-suite-revision are specified, test-suite-revision has precedence
+			if testSuiteRevision == "" && revisionFile != "" {
+				testSuiteRevision, err = getTestSuiteRevision(revisionFile)
+				if err != nil {
+					return fmt.Errorf("getting version from file %s: %w", revisionFile, err)
+				}
 			}
 
 			if benchRevision == "" {
@@ -66,7 +76,11 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			grafanaUsername = env.EnvOrDefault("GRAFANA_USER", grafanaUsername)
 			grafanaPassword = env.EnvOrDefault("GRAFANA_PASSWORD", grafanaPassword)
 
-			grafanaInstance, err := provisioner.NewReadOnlyGrafanaVM(grafanaUrl, grafanaUsername, grafanaPassword)
+			grafanaInstance, err := provisioner.NewReadOnlyGrafanaVM(
+				grafanaUrl,
+				grafanaUsername,
+				grafanaPassword,
+			)
 			if err != nil {
 				return err
 			}
@@ -128,32 +142,92 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	fs.StringVar(&testTrigger, "test-trigger", "local", "test trigger")
 	fs.StringVar(&testType, "test-type", "smoke", "test type. Allowed values: 'smoke', 'load'")
 	fs.StringVar(&grafanaUrl, "grafana-url", "http://localhost:3000", "url to grafana instance")
-	fs.DurationVar(&grafanaTimeout, "grafana-timeout", 30*time.Second, "timeout for waiting grafana to be live")
-	fs.StringVar(&grafanaUsername, "grafana-username", "admin", "grafana user name. Can be overridden by the GRAFANA_USER environment variable")
-	fs.StringVar(&grafanaPassword, "grafana-password", "admin", "grafana password. Can be overridden by the GRAFANA_PASSWORD environment variable")
+	fs.DurationVar(
+		&grafanaTimeout,
+		"grafana-timeout",
+		30*time.Second,
+		"timeout for waiting grafana to be live",
+	)
+	fs.StringVar(
+		&grafanaUsername,
+		"grafana-username",
+		"admin",
+		"grafana user name. Can be overridden by the GRAFANA_USER environment variable",
+	)
+	fs.StringVar(
+		&grafanaPassword,
+		"grafana-password",
+		"admin",
+		"grafana password. Can be overridden by the GRAFANA_PASSWORD environment variable",
+	)
 	fs.StringVar(&machineSpec, "machine-spec", "", "grafana instance machine spec")
+	fs.StringVar(
+		&revisionFile,
+		"test-suite-revision-file",
+		"",
+		"path to a file with the test suite revision",
+	)
 	// TODO: add default value as the revision is used to generate the run id
-	fs.StringVar(&testSuiteRevision, "test-suite-revision", "", "test suite revision. If not set TEST_SUITE_REVISION environment variable is used")
-	fs.StringVar(&benchRevision, "bench-revision", "", "grafana bench revision. If not set BENCH_REVISION environment variable is used.")
-	fs.StringVar(&k6CloudToken, "k6-cloud-token", "", "K6 cloud access token. If not set K6_CLOUD_TOKEN environment variable is used")
-	fs.StringVar(&k6CloudProjectId, "k6-cloud-project", "", "K6 cloud project ID. If not set K6_CLOUD_PROJECT_ID environment variable is used")
+	fs.StringVar(
+		&testSuiteRevision,
+		"test-suite-revision",
+		"",
+		"test suite revision. If not set TEST_SUITE_REVISION environment variable is used",
+	)
+	fs.StringVar(
+		&benchRevision,
+		"bench-revision",
+		"",
+		"grafana bench revision. If not set BENCH_REVISION environment variable is used.",
+	)
+	fs.StringVar(
+		&k6CloudToken,
+		"k6-cloud-token",
+		"",
+		"K6 cloud access token. If not set K6_CLOUD_TOKEN environment variable is used",
+	)
+	fs.StringVar(
+		&k6CloudProjectId,
+		"k6-cloud-project",
+		"",
+		"K6 cloud project ID. If not set K6_CLOUD_PROJECT_ID environment variable is used",
+	)
 	fs.BoolVar(&verbose, "verbose", true, "show test outputs")
-	fs.BoolVar(&k6CloudOutput, "k6-cloud-output", false, "send output to GCK6. Requires setting the GCK6 project ID and access token.")
-	fs.StringVar(&dashboardURL, "dashboard", "", "Template for the smoke test suite execution dashboard URL."+
-		"\nSupports the substitution of the following variables:"+
-		"\n    SuiteRun: identifier of the suite run"+
-		"\nExample: http://localhost/dashboards?run={{.SuiteRun}}",
+	fs.BoolVar(
+		&k6CloudOutput,
+		"k6-cloud-output",
+		false,
+		"send output to GCK6. Requires setting the GCK6 project ID and access token.",
+	)
+	fs.StringVar(
+		&dashboardURL,
+		"dashboard",
+		"",
+		"Template for the smoke test suite execution dashboard URL."+
+			"\nSupports the substitution of the following variables:"+
+			"\n    SuiteRun: identifier of the suite run"+
+			"\nExample: http://localhost/dashboards?run={{.SuiteRun}}",
 	)
 	fs.StringVar(&testSuite, "test-suite", "", "path to the tests to be executed."+
-	        "\nThe path must be relative to the base dir (which defaults to the current directory)." +
+		"\nThe path must be relative to the base dir (which defaults to the current directory)."+
 		"\nA single .js file or a directory can be specified."+
 		"\nIf a directory is specified, all .js files in the directory and its sub-directories will be executed as tests.")
 	cmd.MarkFlagRequired("test-suite")
-	fs.StringVar(&testSuiteBase, "test-suite-base", "", "base directory for searching test suites. Defaults to current directory"+
-		"\nIf specified, it is prefixed to the --test-suite.")
-	fs.StringVar(&testSuiteName, "test-suite-name", "", "test suite name. If not specified, TEST_SUITE_NAME environment variable is used." +
-	"\nDefaults to the last component of --test-suite."+
-		"\nFor example --test-suite /path/to/testsuite will give a test suite name of 'testsuite'.")
+	fs.StringVar(
+		&testSuiteBase,
+		"test-suite-base",
+		"",
+		"base directory for searching test suites. Defaults to current directory"+
+			"\nIf specified, it is prefixed to the --test-suite.",
+	)
+	fs.StringVar(
+		&testSuiteName,
+		"test-suite-name",
+		"",
+		"test suite name. If not specified, TEST_SUITE_NAME environment variable is used."+
+			"\nDefaults to the last component of --test-suite."+
+			"\nFor example --test-suite /path/to/testsuite will give a test suite name of 'testsuite'.",
+	)
 
 	return &cmd
 }
@@ -166,4 +240,3 @@ func getTestSuiteRevision(revisionFile string) (string, error) {
 	}
 	return strings.TrimSpace(string(bytes)), nil
 }
-
