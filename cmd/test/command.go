@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/grafana/grafana-bench/bench"
-	"github.com/grafana/grafana-bench/bench/provisioner"
+	"github.com/grafana/grafana-bench/pkg/grafana"
 	"github.com/grafana/grafana-bench/bench/utils/env"
 	"github.com/spf13/cobra"
 )
@@ -76,7 +76,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			grafanaUsername = env.EnvOrDefault("GRAFANA_USER", grafanaUsername)
 			grafanaPassword = env.EnvOrDefault("GRAFANA_PASSWORD", grafanaPassword)
 
-			grafanaInstance, err := provisioner.NewReadOnlyGrafanaVM(
+			grafanaInstance, err := grafana.NewInstance(
 				grafanaUrl,
 				grafanaUsername,
 				grafanaPassword,
@@ -136,7 +136,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			log.Info(
 				"test runner params",
 				"testType", testType,
-				"grafanaInstance", runner.GrafanaInstance.Host,
+				"grafanaInstance", runner.GrafanaInstance.Address(),
 				"k6ProjectId", k6CloudProjectId,
 			)
 

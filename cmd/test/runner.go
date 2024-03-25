@@ -9,13 +9,13 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/grafana/grafana-bench/bench/provisioner"
+	"github.com/grafana/grafana-bench/pkg/grafana"
 )
 
 type TestRunner struct {
 	Log             *slog.Logger
 	Trigger         string
-	GrafanaInstance *provisioner.VMInstance
+	GrafanaInstance grafana.GrafanaInstance
 	GrafanaTimeout  time.Duration
 	GrafanaVersion  string
 	MachineSpec     string
@@ -27,7 +27,7 @@ type TestRunner struct {
 func NewTestRunner(
 	log *slog.Logger,
 	testTrigger string,
-	grafanaInstance *provisioner.VMInstance,
+	grafanaInstance grafana.GrafanaInstance,
 	grafanaTimeout time.Duration,
 	machineSpec string,
 	benchRevision string,
@@ -47,7 +47,7 @@ func NewTestRunner(
 }
 
 func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite TestSuite) error {
-	t.Log.Info("Waiting for grafana server...", "address", t.GrafanaInstance.ServiceAddress())
+	t.Log.Info("Waiting for grafana server...", "address", t.GrafanaInstance.Address())
 
 	grafanaCtx, cancel := context.WithTimeout(ctx, t.GrafanaTimeout)
 	defer cancel()
@@ -58,7 +58,7 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite TestSuit
 	}
 	t.Log.Info("Grafana server is ready!")
 
-	t.GrafanaVersion, err = provisioner.GetGrafanaBuildVersion(t.GrafanaInstance)
+	t.GrafanaVersion, err = t.GrafanaInstance.GetGrafanaBuildVersion()
 	if err != nil {
 		return fmt.Errorf("getting grafana version %w", err)
 	}
@@ -72,12 +72,12 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite TestSuit
 		"TEST_TYPE":           testType.Name(),
 		"TEST_SUITE_REVISION": suite.Revision,
 		// TODO unify variable names
-		"GRAFANA_URL":      t.GrafanaInstance.SchemeServiceAddress(),
-		"GRAFANA_USERNAME": t.GrafanaInstance.ServiceUser,
-		"GRAFANA_PASSWORD": t.GrafanaInstance.ServicePassword,
-		"GT_URL":           t.GrafanaInstance.SchemeServiceAddress(),
-		"GT_USERNAME":      t.GrafanaInstance.ServiceUser,
-		"GT_PASSWORD":      t.GrafanaInstance.ServicePassword,
+		"GRAFANA_URL":      t.GrafanaInstance.Address(),
+		"GRAFANA_USERNAME": t.GrafanaInstance.UserName(),
+		"GRAFANA_PASSWORD": t.GrafanaInstance.Password(),
+		"GT_URL":           t.GrafanaInstance.Address(),
+		"GT_USERNAME":      t.GrafanaInstance.UserName(),
+		"GT_PASSWORD":      t.GrafanaInstance.Password(),
 		// ----
 	}
 
@@ -102,7 +102,7 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite TestSuit
 	// http://mygrafana.com/b/?suiteRun={suiteRun}
 	// This functionality is ALPHA and may be removed in favor of outputting
 	// the suiteRun ID and leaving it up to the user.
-	if  anyFailures{
+	if anyFailures {
 		var dashboardMsg string
 		if t.DashboardURL != "" {
 			dashboard, err := t.getDashboardURL(runIdentifier)
@@ -156,7 +156,7 @@ func (t *TestRunner) suiteLogAttrs(suite TestSuite, runIdentifier string) []any 
 		"testTrigger", t.Trigger,
 		"benchRevision", t.BenchRevision,
 		"testSuiteRevision", suite.Revision,
-		"grafanaUrl", t.GrafanaInstance.Host,
+		"grafanaUrl", t.GrafanaInstance.Address(),
 		"grafanaVersion", t.GrafanaVersion,
 		"testExecutor", t.Executor.Name(),
 	}
@@ -165,15 +165,15 @@ func (t *TestRunner) suiteLogAttrs(suite TestSuite, runIdentifier string) []any 
 // suiteRunLogAttrs formats the test runner's attributes as log attributes
 // TODO: check for missing attributes (for example add test type?)
 func (t *TestRunner) suiteRunLogAttrs(suiteRun SuiteRunSummary) []any {
-       return []any{
-               "startTime", suiteRun.StartTime.Format(time.RFC3339),
-               "totalScenarioDurations", suiteRun.ScenariosDuration,
-               "duration", suiteRun.TotalDuration,
-	       "testsExecuted", suiteRun.TestsExecuted,
-	       "testsPassed", suiteRun.TestsPassed,
-	       "testsFailed", suiteRun.TestsFailed,
-	       "testsError", suiteRun.TestsError,
-       }
+	return []any{
+		"startTime", suiteRun.StartTime.Format(time.RFC3339),
+		"totalScenarioDurations", suiteRun.ScenariosDuration,
+		"duration", suiteRun.TotalDuration,
+		"testsExecuted", suiteRun.TestsExecuted,
+		"testsPassed", suiteRun.TestsPassed,
+		"testsFailed", suiteRun.TestsFailed,
+		"testsError", suiteRun.TestsError,
+	}
 }
 
 // testRunLogAttrs returns the k6RunSummary attributes formatted as log attributes
