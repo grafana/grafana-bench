@@ -1,151 +1,89 @@
 package grafana
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/julienschmidt/httprouter"
 )
 
-var grafanaBuildInfo = map[string]interface{}{
-	"buildInfo": map[string]interface{}{
-		"version":    "10.x.0-test",
-		"commit":     "a3b9ec21db4e50a90e049132723af118dc3f39b3",
-		"buildstamp": 1705409435,
-	},
+const (
+	grafanaBuildInfo   = "{\"buildInfo\": {\"version\": \"10.x.0-test\", \"commit\": \"a3b9ec21db4e50a90e049132723af118dc3f39b3\", \"buildstamp\": 1705409435}}"
+	grafana_session    = "grafana_session=ffffffffffffffffffffffffffffffff; Path=/; Max-Age=2592000; HttpOnly; SameSite=Lax"
+	invalidUserMessage = "{\"message\": \"Invalid username or password\"}"
+	logedInMessage     = "{\"message\":\"Logged in\", \"redirectUrl\":\"/\""
+)
+
+type response struct {
+	Status  int
+	Body    string
+	Headers map[string]string
 }
 
-const grafana_session = "grafana_session=ffffffffffffffffffffffffffffffff; Path=/; Max-Age=2592000; HttpOnly; SameSite=Lax"
-
-type grafanaMock struct {
-	status   int
-	user     string
-	password string
-	buildInfo map[string]interface{}
+func loginHandler(rw http.ResponseWriter, r *http.Request) {
+	rw.Header().Add("Set-Cookie", grafana_session)
+	rw.WriteHeader(http.StatusOK)
+	rw.Write([]byte(logedInMessage))
 }
 
-type grafanaMockOptions func(*grafanaMock)
+func invalidLoginHandler(rw http.ResponseWriter, r *http.Request) {
+	rw.WriteHeader(http.StatusUnauthorized)
+	rw.Write([]byte(invalidUserMessage))
+}
 
-// force return status
-func WithStatus(status int) grafanaMockOptions {
-	return func(m *grafanaMock) {
-		m.status = status
+func serverErrorHandler(rw http.ResponseWriter, r *http.Request) {
+	rw.WriteHeader(http.StatusInternalServerError)
+}
+
+func buildInfoHandler(rw http.ResponseWriter, r *http.Request) {
+	rw.WriteHeader(http.StatusOK)
+	rw.Header().Add("Content-Type", "application/json")
+	rw.Write([]byte(grafanaBuildInfo))
+}
+
+type routerOption func(r *httprouter.Router)
+
+func WithResponse(method string, route string, handler http.HandlerFunc) routerOption {
+	return func(m *httprouter.Router) {
+		m.HandlerFunc(method, route, handler)
 	}
 }
 
-// change default credentials
-func WithCredentials(user string, password string) grafanaMockOptions {
-	return func(m *grafanaMock) {
-		m.user = user
-		m.password = password
-	}
-}
-func newGrafanaMock(options...grafanaMockOptions) *grafanaMock {
-	mock := &grafanaMock{
-		user: "admin",
-		password: "admin",
-		status: http.StatusOK,
-		buildInfo: grafanaBuildInfo,
-	}
+func newGrafanaMock(options ...routerOption) *httprouter.Router {
+	// set default responses
+	mock := httprouter.New()
 
-	for _, optionFunction := range options {
-		optionFunction(mock)
+	for _, optFunc := range options {
+		optFunc(mock)
 	}
-
 	return mock
-}
-
-// Mocks grafana endpoints needed for the runner.
-// Does not mock endpoints needed by tests!
-func (g *grafanaMock) Handler(rw http.ResponseWriter, r *http.Request) {
-	if g.status != http.StatusOK {
-		rw.WriteHeader(g.status)
-		return
-	}
-
-	switch r.URL.Path {
-	case "/login":
-		var loginInfo map[string]interface{}
-		buff := bytes.Buffer{}
-		_, err := buff.ReadFrom(r.Body)
-		if err != nil {
-			rw.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		err = json.Unmarshal(buff.Bytes(), &loginInfo)
-		if err != nil {
-			rw.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		// check for default user and password
-		if loginInfo["user"] != g.user || loginInfo["password"] != g.password {
-			rw.WriteHeader(http.StatusUnauthorized)
-			rw.Write([]byte("{\"message\": \"Invalid username or password\"}"))
-			return
-		}
-
-		// return session cookie it is expected by VMInstance
-		rw.Header().
-			Add("Set-Cookie", grafana_session)
-		rw.Write([]byte("{\"message\":\"Logged in\", \"redirectUrl\":\"/\""))
-
-	// returns only the build info. TODO: add other attributes to response
-	case "/api/frontend/settings":
-		buff, err := json.Marshal(g.buildInfo)
-		if err != nil {
-			rw.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		_, err = rw.Write(buff)
-		if err != nil {
-			rw.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		rw.Header().Add("Content-Type", "application/json")
-	default:
-		rw.WriteHeader(http.StatusNotImplemented)
-	}
-}
-
-type grafanaInstanceOption func(*grafanaInstance) error
-
-
-// configure TestRunner with invalid grafana credentials
-func WithInvalidGrafanaCredentials() grafanaInstanceOption {
-	return func(g *grafanaInstance) error {
-		g.user = "invalid"
-		g.password = "invalid"
-		return nil
-	}
 }
 
 func Test_Login(t *testing.T) {
 	t.Parallel()
 
-	testCases := []struct{
+	testCases := []struct {
 		testCase  string
-		mock      *grafanaMock
+		mock      *httprouter.Router
 		expectErr error
 	}{
 		{
 			testCase: "valid credentials",
-			mock:  newGrafanaMock(),
+			mock: newGrafanaMock(
+				WithResponse("POST", "/login", loginHandler),
+			),
 			expectErr: nil,
 		},
 		{
-			testCase: "invalid credentials",
-			mock:  newGrafanaMock(WithCredentials("admin", "other password")),
+			testCase:  "invalid credentials",
+			mock:      newGrafanaMock(WithResponse("POST", "/login", invalidLoginHandler)),
 			expectErr: InvalidCredentialsError,
 		},
 		{
-			testCase: "server error",
-			mock:  newGrafanaMock(WithStatus(http.StatusInternalServerError)),
+			testCase:  "server error",
+			mock:      newGrafanaMock(WithResponse("POST", "/login", serverErrorHandler)),
 			expectErr: FailedRequestError,
 		},
 	}
@@ -154,7 +92,7 @@ func Test_Login(t *testing.T) {
 		tc := tc
 		t.Run(tc.testCase, func(t *testing.T) {
 			t.Parallel()
-			mockServer := httptest.NewServer(http.HandlerFunc(tc.mock.Handler))
+			mockServer := httptest.NewServer(tc.mock)
 			instance, err := NewInstance(mockServer.URL, "admin", "admin")
 			if err != nil {
 				t.Fatalf("unexpected error in test setup %v", err)
