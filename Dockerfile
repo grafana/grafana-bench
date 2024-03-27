@@ -24,6 +24,7 @@ RUN --mount=type=cache,id=go-build-${TARGETOS}-${TARGETARCH}${TARGETVARIANT},tar
 COPY bench.go ./bench.go
 COPY cmd ./cmd
 COPY bench ./bench
+COPY pkg ./pkg
 RUN --mount=type=cache,id=go-build-${TARGETOS}-${TARGETARCH}${TARGETVARIANT},target=/root/.cache/go-build \
         --mount=type=cache,id=go-pkg-${TARGETOS}-${TARGETARCH}${TARGETVARIANT},target=/go/pkg \
             CGO_ENABLED=0 \
