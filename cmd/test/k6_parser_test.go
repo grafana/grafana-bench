@@ -1,8 +1,6 @@
 package test
 
 import (
-	"log/slog"
-	"os"
 	"testing"
 )
 
@@ -22,8 +20,6 @@ var sampleCloudRunOutput = `
 `
 
 func TestParseK6CloudIdentifiersFromCLIOutput(t *testing.T) {
-	log := slog.New(slog.NewTextHandler(os.Stderr, nil))
-
 	testCases := []struct {
 		title       string
 		input       []byte
@@ -49,7 +45,7 @@ func TestParseK6CloudIdentifiersFromCLIOutput(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.title, func(t *testing.T) {
-			id, url, err := parseK6CloudIdentifiersFromCLIOutput(log, testCase.input)
+			id, url, err := parseK6CloudIdentifiersFromCLIOutput(testCase.input)
 
 			if (err != nil) != testCase.wantErr {
 				t.Errorf("Expected error: %v, but got error: %v", testCase.wantErr, err)

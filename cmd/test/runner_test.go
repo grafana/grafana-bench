@@ -71,6 +71,24 @@ func grafanaMockHandler(rw http.ResponseWriter, r *http.Request) {
 	}
 }
 
+
+type dummyExecutor struct {
+	summary SuiteRunSummary
+}
+
+func (d dummyExecutor) Name() string {
+	return "test-mock"
+}
+
+func (d dummyExecutor) 	ExecTestSuite(
+	ctx context.Context,
+	suite TestSuite,
+	env map[string]string,
+) (SuiteRunSummary, error) {
+	return d.summary, nil
+}
+
+
 type testRunnerOption func(*TestRunner) error
 
 // configure TestRunner with invalid grafana credentials
@@ -78,23 +96,6 @@ func WithInvalidGrafanaCredentials() testRunnerOption {
 	return func(t *TestRunner) error {
 		t.GrafanaInstance.User = "invalid"
 		t.GrafanaInstance.ServicePassword = "invalid"
-		return nil
-	}
-}
-
-// configure TestRunner with cloud output
-func WithCloudOutput() testRunnerOption {
-	return func(t *TestRunner) error {
-		t.K6CloudOutput = true
-		return nil
-	}
-}
-
-// configure TestRunner with invalid K6 credentials
-func WithInvalidK6Credentials() testRunnerOption {
-	return func(t *TestRunner) error {
-		t.K6CloudProjectID = "INVALID_ID"
-		t.K6CloudToken = "INVALID_TOKEN"
 		return nil
 	}
 }
@@ -117,28 +118,19 @@ func WithInvalidDashboard() testRunnerOption {
 
 func testRunnerForTesting(
 	log *slog.Logger,
-	testType TestType,
-	testSuite string,
 	grafanaInstance *provisioner.VMInstance,
+	executor TestExecutor,
 	opts ...testRunnerOption,
 ) (*TestRunner, error) {
 	tr := NewTestRunner(
 		log,
-		false,  // prevent k6 test output in test output
-		false,  // prevent sending output to cloud
-		"test", // trigger
-		testType,
-		"",        // base dir
-		testSuite, // test suite path
-		"test",    // test suite name
-		"test",    // test suite version
-		"",        // k6Cloud project
-		"",        // k6Cloud token
+		"test",       // trigger
 		grafanaInstance,
 		time.Second, // grafana liveness probe timeout
 		"local",     // machine spec
 		"devel",     // bench revision
 		"",          // dashboard URL
+		executor,
 	)
 
 	// apply options
@@ -153,24 +145,40 @@ func testRunnerForTesting(
 const (
 	loginError = "Error logging into grafana instance"
 
-	testSuiteMissingError = "not found"
-
-	testSuiteFailedMessage = "test suite failed. Too many test failures"
-
-	cloudOutputDisabledMessage = "running load tests with cloud output disabled"
-
 	dashboardMessage = "See dashboard"
 
 	invalidDashboardError = "invalid template substitution"
 
-	cloudOutputParsingErrorMessage = "error parsing cloud run from K6 summary"
-
-	missingK6CloudConfigError = "k6 Token and project ID are required for cloud output"
-
-	testRunMessage = "msg=testRun"
-
-	suiteRunMessage = "msg=suiteRun"
+ 	testSuiteFailedMessage = "test suite failed. Too many test failures"
 )
+
+func failedSuiteSummary() SuiteRunSummary {
+	return SuiteRunSummary{
+		StartTime: time.Now(),
+		TestsExecuted: 1,
+		TestsFailed: 1,
+		TestRuns: []TestRun{
+			{ 
+				Status: TestFailed,
+				Order: 1,
+			},
+		},
+	}
+}
+
+func passingSuiteSummary() SuiteRunSummary {
+	return SuiteRunSummary{
+		StartTime: time.Now(),
+		TestsExecuted: 1,
+		TestsPassed: 1,
+		TestRuns: []TestRun{
+			{ 
+				Status: TestPassed,
+				Order: 1,
+			},
+		},
+	}
+}
 
 func Test_Runner(t *testing.T) {
 	t.Parallel()
@@ -178,93 +186,39 @@ func Test_Runner(t *testing.T) {
 	testCases := []struct {
 		testCase   string
 		options    []testRunnerOption
-		testType   TestType
-		testSuite  string
+		summary    SuiteRunSummary
 		expectErr  string
 		expectMsgs []string
 	}{
 		{
-			testCase:   "passing test (load)",
-			testType:   SmokeTest,
-			testSuite:  "k6tests/pass.js",
-			expectMsgs: []string{testRunMessage, suiteRunMessage},
-		},
-		{
-			testCase:   "passing test without k6 token (smoke)",
-			testType:   LoadTest,
-			testSuite:  "k6tests/pass.js",
-			expectMsgs: []string{cloudOutputDisabledMessage},
-		},
-		{
-			testCase: "load test without k6 config",
-			options: []testRunnerOption{
-				WithCloudOutput(),
-			},
-			testType:  LoadTest,
-			testSuite: "k6tests/pass.js",
-			expectErr: missingK6CloudConfigError,
-		},
-		{
-			testCase: "load test with invalid k6 config",
-			options: []testRunnerOption{
-				WithCloudOutput(),
-				WithInvalidK6Credentials(),
-			},
-			testType:   LoadTest,
-			testSuite:  "k6tests/pass.js",
-			expectMsgs: []string{cloudOutputParsingErrorMessage},
-		},
-		{
-			testCase:   "failing test (smoke)",
-			testType:   SmokeTest,
-			testSuite:  "k6tests/fail.js",
+			testCase: "failing suite",
+			summary: failedSuiteSummary(),
 			expectMsgs: []string{testSuiteFailedMessage},
 		},
 		{
-			testCase: "failing test with dashboard (smoke)",
+			testCase: "failing suite with dashboard",
+			summary: failedSuiteSummary(),
 			options: []testRunnerOption{
 				WithDashboard(),
 			},
-			testType:  SmokeTest,
-			testSuite: "k6tests/fail.js",
 			expectMsgs: []string{
 				testSuiteFailedMessage,
 				dashboardMessage,
 			},
 		},
 		{
-			testCase: "failing test with invalid dashboard (smoke)",
-			testType: SmokeTest,
+			testCase: "failing suite with invalid dashboard",
+			summary: failedSuiteSummary(),
 			options: []testRunnerOption{
 				WithInvalidDashboard(),
 			},
-			testSuite: "k6tests/fail.js",
 			expectErr: invalidDashboardError,
-		},
-		{
-			testCase:  "failing test (load)",
-			testType:  SmokeTest,
-			testSuite: "k6tests/fail.js",
-		},
-		{
-			testCase:  "missing test (smoke)",
-			testType:  SmokeTest,
-			testSuite: "k6tests/missing.js",
-			expectErr: testSuiteMissingError,
-		},
-		{
-			testCase:   "test suite directory - one fails (smoke)",
-			testType:   SmokeTest,
-			testSuite:  "k6tests/",
-			expectMsgs: []string{testSuiteFailedMessage},
 		},
 		{
 			testCase: "wrong credentials",
 			options: []testRunnerOption{
 				WithInvalidGrafanaCredentials(),
 			},
-			testType:  SmokeTest,
-			testSuite: "k6tests/pass.js",
 			expectErr: loginError,
 		},
 	}
@@ -279,26 +233,28 @@ func Test_Runner(t *testing.T) {
 			log := slog.New(slog.NewTextHandler(&logBuffer, nil))
 
 			grafanaMock := httptest.NewServer(http.HandlerFunc(grafanaMockHandler))
-			grafanaInstance, _ := provisioner.NewReadOnlyGrafanaVM(
-				grafanaMock.URL,
-				"admin",
-				"admin",
-			)
+			grafanaInstance, _ := provisioner.NewReadOnlyGrafanaVM(grafanaMock.URL, "admin", "admin")
+
+			executor := dummyExecutor{summary: tc.summary}
 
 			// create test runner with test-specific options
 			tr, err := testRunnerForTesting(
 				log,
-				tc.testType,
-				tc.testSuite,
 				grafanaInstance,
+				executor,
 				tc.options...,
 			)
 			if err != nil {
-				t.Fatalf("failed to setup test %v", err)
+				t.Fatalf("failed to setup test runner %v", err)
+			}
+
+			suite := TestSuite{
+				Path: "testsuite",
+				Revision: "test",
 			}
 
 			// execute test
-			err = tr.Exec(context.TODO())
+			err = tr.Exec(context.TODO(), SmokeTest, suite)
 
 			if err == nil && tc.expectErr != "" {
 				t.Fatalf("should had failed with %q", tc.expectErr)

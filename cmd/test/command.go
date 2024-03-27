@@ -93,8 +93,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				k6CloudProjectId = env.EnvOrDefault("K6_CLOUD_PROJECT_ID", "")
 			}
 
-			// if the name of the test suite was not given as a flag or environment variable
-			// use the last element of the test suit path as name
+			// if the name of the test suite was not given, use the last element of the test suit path as name
 			if testSuiteName == "" {
 				defaultTestSuiteName := strings.TrimSuffix(path.Base(testSuite), ".js")
 				testSuiteName = env.EnvOrDefault("TEST_SUITE_NAME", defaultTestSuiteName)
@@ -107,34 +106,41 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				}
 			}
 
-			runner := NewTestRunner(
+			suite := TestSuite{
+				Name:     testSuiteName,
+				BaseDir:  testSuiteBase,
+				Path:     testSuite,
+				Revision: testSuiteRevision,
+			}
+
+			executor := NewK6TestExecutor(
 				log,
 				verbose,
 				k6CloudOutput,
-				testTrigger,
-				trt,
-				testSuiteBase,
-				testSuite,
-				testSuiteName,
-				testSuiteRevision,
-				k6CloudProjectId,
 				k6CloudToken,
+				k6CloudProjectId,
+			)
+
+			runner := NewTestRunner(
+				log,
+				testTrigger,
 				grafanaInstance,
 				grafanaTimeout,
 				machineSpec,
 				benchRevision,
 				dashboardURL,
+				executor,
 			)
 
 			// TODO: review attributes reported in this log message
 			log.Info(
 				"test runner params",
-				"testType", runner.Type.Name(),
+				"testType", testType,
 				"grafanaInstance", runner.GrafanaInstance.Host,
-				"k6ProjectId", runner.K6CloudProjectID,
+				"k6ProjectId", k6CloudProjectId,
 			)
 
-			return runner.Exec(cmd.Context())
+			return runner.Exec(cmd.Context(), trt, suite)
 		},
 	}
 
