@@ -36,11 +36,11 @@ type GrafanaInstance interface {
 }
 
 var (
-	DefaultGrafanaTimeout   = time.Second * 30
-	DefaultGrafanaBackoff   = time.Second
-	FailedRequestError      = errors.New("Failed request")
-	InvalidCredentialsError = errors.New("Invalid credentials")
-	NotAvailableError       = errors.New("Instance not available")
+	DefaultGrafanaTimeout     = time.Second * 30
+	DefaultGrafanaBackoff     = time.Second
+	FailedRequestError        = errors.New("Failed request")
+	InvalidCredentialsError   = errors.New("Invalid credentials")
+	InstanceNotAvailableError = errors.New("Instance not available")
 )
 
 type grafanaInstance struct {
@@ -147,7 +147,7 @@ func (g *grafanaInstance) WaitForLiveGrafana(ctx context.Context) error {
 			}
 		case <-ctxTimeout.Done():
 			if errors.Is(context.DeadlineExceeded, ctx.Err()) {
-				return NotAvailableError
+				return InstanceNotAvailableError
 			}
 			return ctx.Err()
 		}
@@ -160,7 +160,7 @@ func (g *grafanaInstance) isLive() bool {
 	return err == nil
 }
 
-// GetGrafanaSession returns a session cookie
+// getGrafanaSessionCookie returns a session cookie and logs in if none is set
 func (g *grafanaInstance) getGrafanaSessionCookie() (*http.Cookie, error) {
 	if g.session != nil {
 		return g.session, nil
@@ -188,27 +188,51 @@ func (g *grafanaInstance) getGrafanaSessionCookie() (*http.Cookie, error) {
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("Request failed: %w", err)
-	}
-	defer resp.Body.Close()
 
-	// check response status code
-	responsePayload, _ := io.ReadAll(resp.Body)
+	deadline := time.Now().Add(g.timeout)
 
-	switch resp.StatusCode {
-	case http.StatusOK:
-		if len(resp.Cookies()) == 0 {
-			return nil, fmt.Errorf("no session returned %s", string(responsePayload))
+	for {
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("Request failed: %w", err)
 		}
+		defer resp.Body.Close()
 
-		g.session = resp.Cookies()[0]
-		return g.session, nil
-	case http.StatusUnauthorized:
-		return nil, fmt.Errorf("%w: login. : %s", InvalidCredentialsError, responsePayload)
-	default:
-		return nil, fmt.Errorf("%w: login. statusCode: %d, response: %s", FailedRequestError, resp.StatusCode, responsePayload)
+		// check response status code
+		responsePayload, _ := io.ReadAll(resp.Body)
+
+		switch resp.StatusCode {
+		case http.StatusServiceUnavailable:
+			if time.Now().After(deadline) {
+				return nil, fmt.Errorf(
+					"%w timeout of '%.2fs' exceeded: %s",
+					InstanceNotAvailableError,
+					g.timeout.Seconds(),
+					responsePayload,
+				)
+			}
+			time.Sleep(g.backoff)
+			continue
+
+		case http.StatusOK:
+			if len(resp.Cookies()) == 0 {
+				return nil, fmt.Errorf("no session returned %s", string(responsePayload))
+			}
+
+			g.session = resp.Cookies()[0]
+			return g.session, nil
+
+		case http.StatusUnauthorized:
+			return nil, fmt.Errorf("%w: login. : %s", InvalidCredentialsError, responsePayload)
+
+		default:
+			return nil, fmt.Errorf(
+				"%w: login. statusCode: %d, response: %s",
+				FailedRequestError,
+				resp.StatusCode,
+				responsePayload,
+			)
+		}
 	}
 }
 
@@ -249,6 +273,7 @@ func (g *grafanaInstance) GetGrafanaBuildVersion() (string, error) {
 
 // parseAddress takes an address and returns its scheme, host and port components
 // Examples:
+//
 //   https://instance:3000 returns (https, instance.net, 3000)
 //   http://instance.grafana.net returns (http, instance, 80) (port inferred from scheme)
 //   instance:3000 returns an error (cannot infer the schema from port)

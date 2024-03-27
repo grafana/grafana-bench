@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -16,6 +17,7 @@ const (
 	session_cookie     = "grafana_session=" + grafana_session + "; Path=/; Max-Age=2592000; HttpOnly; SameSite=Lax"
 	invalidUserMessage = "{\"message\": \"Invalid username or password\"}"
 	loggedInMessage    = "{\"message\":\"Logged in\", \"redirectUrl\":\"/\""
+	loadingMessage     = "{\"message\":\"Your instance is loading, and will be ready shortly.\"}"
 )
 
 type response struct {
@@ -50,6 +52,22 @@ type routerOption func(r *httprouter.Router)
 func WithResponse(method string, route string, handler http.HandlerFunc) routerOption {
 	return func(m *httprouter.Router) {
 		m.HandlerFunc(method, route, handler)
+	}
+}
+
+// register a handler that returns 503 until a delay has passed
+func With503Response(delay time.Duration, method string, route string, handler http.HandlerFunc) routerOption {
+	return func(m *httprouter.Router) {
+		deadline := time.Now().Add(delay)
+		m.HandlerFunc(method, route, func(rw http.ResponseWriter, r *http.Request) {
+			if time.Now().Before(deadline) {
+				rw.WriteHeader(http.StatusServiceUnavailable)
+				rw.Write([]byte(loadingMessage))
+				return
+			}
+
+			handler(rw, r)
+		})
 	}
 }
 
@@ -88,6 +106,16 @@ func Test_GetGrafanaSession(t *testing.T) {
 			mock:      newGrafanaMock(WithResponse("POST", "/login", serverErrorHandler)),
 			expectErr: FailedRequestError,
 		},
+		{
+			testCase:  "server loading",
+			mock:      newGrafanaMock(With503Response(3*time.Second, "POST", "/login", loginHandler)),
+			expectErr: nil,
+		},
+		{
+			testCase:  "timeout waiting server",
+			mock:      newGrafanaMock(With503Response(5*time.Second, "POST", "/login", loginHandler)),
+			expectErr: InstanceNotAvailableError,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -95,7 +123,7 @@ func Test_GetGrafanaSession(t *testing.T) {
 		t.Run(tc.testCase, func(t *testing.T) {
 			t.Parallel()
 			mockServer := httptest.NewServer(tc.mock)
-			instance, err := NewInstance(mockServer.URL, "admin", "admin")
+			instance, err := NewInstance(mockServer.URL, "admin", "admin", WithTimeout(time.Second*3))
 			if err != nil {
 				t.Fatalf("unexpected error in test setup %v", err)
 			}
@@ -162,4 +190,3 @@ func Test_GetGrafanaBuildVersion(t *testing.T) {
 		})
 	}
 }
-

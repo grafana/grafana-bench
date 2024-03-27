@@ -28,12 +28,11 @@ func (d dummyExecutor) ExecTestSuite(
 	return d.summary, nil
 }
 
-
 type mockGrafanaInstanceOption func(*mockGrafanaInstance)
 
 func withGrafanaNotAlive() mockGrafanaInstanceOption {
 	return func(m *mockGrafanaInstance) {
-		m.err = grafana.NotAvailableError
+		m.err = grafana.InstanceNotAvailableError
 	}
 }
 
@@ -75,8 +74,6 @@ func (m *mockGrafanaInstance) GetGrafanaBuildVersion() (string, error) {
 func (m *mockGrafanaInstance) GetGrafanaSession() (string, error) {
 	return m.session.Value, m.err
 }
-
-
 
 func newMockGrafanaInstance(opts...mockGrafanaInstanceOption) *mockGrafanaInstance {
 	mock := &mockGrafanaInstance{
