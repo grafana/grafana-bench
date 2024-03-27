@@ -10,10 +10,12 @@ import (
 )
 
 const (
-	grafanaBuildInfo   = "{\"buildInfo\": {\"version\": \"10.x.0-test\", \"commit\": \"a3b9ec21db4e50a90e049132723af118dc3f39b3\", \"buildstamp\": 1705409435}}"
-	grafana_session    = "grafana_session=ffffffffffffffffffffffffffffffff; Path=/; Max-Age=2592000; HttpOnly; SameSite=Lax"
+	grafanaVersion     = "10.x.0-test"
+	grafanaBuildInfo   = "{\"buildInfo\": {\"version\": \""+ grafanaVersion +"\", \"commit\": \"a3b9ec21db4e50a90e049132723af118dc3f39b3\", \"buildstamp\": 1705409435}}"
+	grafana_session    = "ffffffffffffffffffffffffffffffff"
+	session_cookie     = "grafana_session=" + grafana_session + "; Path=/; Max-Age=2592000; HttpOnly; SameSite=Lax"
 	invalidUserMessage = "{\"message\": \"Invalid username or password\"}"
-	logedInMessage     = "{\"message\":\"Logged in\", \"redirectUrl\":\"/\""
+	loggedInMessage     = "{\"message\":\"Logged in\", \"redirectUrl\":\"/\""
 )
 
 type response struct {
@@ -23,9 +25,9 @@ type response struct {
 }
 
 func loginHandler(rw http.ResponseWriter, r *http.Request) {
-	rw.Header().Add("Set-Cookie", grafana_session)
+	rw.Header().Add("Set-Cookie", session_cookie)
 	rw.WriteHeader(http.StatusOK)
-	rw.Write([]byte(logedInMessage))
+	rw.Write([]byte(loggedInMessage))
 }
 
 func invalidLoginHandler(rw http.ResponseWriter, r *http.Request) {
@@ -61,7 +63,7 @@ func newGrafanaMock(options ...routerOption) *httprouter.Router {
 	return mock
 }
 
-func Test_Login(t *testing.T) {
+func Test_GetGrafanaSession(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
@@ -98,10 +100,64 @@ func Test_Login(t *testing.T) {
 				t.Fatalf("unexpected error in test setup %v", err)
 			}
 
-			_, err = instance.GetGrafanaSession()
+			session, err := instance.GetGrafanaSession()
 
 			if !errors.Is(err, tc.expectErr) {
 				t.Fatalf("unexpected error expected: '%v' got '%v'", tc.expectErr, err)
+			}
+
+			if tc.expectErr == nil && session.Value != grafana_session {
+				t.Fatalf("invalid session expected %q got %q", grafana_session, session.Value)
+			}
+
+		})
+	}
+}
+
+func Test_GetGrafanaBuildVersion(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		testCase  string
+		mock      *httprouter.Router
+		expectErr error
+	}{
+		{
+			testCase: "valid credentials",
+			mock: newGrafanaMock(
+				WithResponse("POST", "/login", loginHandler),
+				WithResponse("GET", "/api/frontend/settings", buildInfoHandler),
+			),
+			expectErr: nil,
+		},
+		{
+			testCase: "invalid credentials",
+			mock: newGrafanaMock(
+				WithResponse("POST", "/login", invalidLoginHandler),
+				WithResponse("GET", "/api/frontend/settings", buildInfoHandler),
+			),
+			expectErr: InvalidCredentialsError,
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.testCase, func(t *testing.T) {
+			t.Parallel()
+			mockServer := httptest.NewServer(tc.mock)
+			instance, err := NewInstance(mockServer.URL, "admin", "admin")
+			if err != nil {
+				t.Fatalf("unexpected error in test setup %v", err)
+			}
+
+			version, err := instance.GetGrafanaBuildVersion()
+
+			if !errors.Is(err, tc.expectErr) {
+				t.Fatalf("unexpected error expected: '%v' got '%v'", tc.expectErr, err)
+			}
+
+			if tc.expectErr == nil && version != grafanaVersion {
+				t.Fatalf("invalid version expected %q got %q", grafanaVersion, version)
 			}
 		})
 	}
