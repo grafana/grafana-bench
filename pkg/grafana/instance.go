@@ -25,17 +25,19 @@ type GrafanaInstance interface {
 	// Password returns the password for the grafana user
 	Password() string
 
-	// WaitForLiveGrafana wait for the grafana instance to start up
-	WaitForLiveGrafana(ctx context.Context) error
-
 	// GetGrafanaBuildVersio returns the build version of the grafana instance
 	GetGrafanaBuildVersion() (string, error)
 
-	// GetGrafanaSession logs into grafana instance and returns a session cookie
-	GetGrafanaSession() (*http.Cookie, error)
+	// GetGrafanaSession returns the current grafana session. Logs in if none is active
+	GetGrafanaSession() (string, error)
+
+	// WaitForLiveGrafana waits until the grafana instance is ready to accept requests
+	WaitForLiveGrafana(context.Context) error
 }
 
 var (
+	DefaultGrafanaTimeout   = time.Second * 30
+	DefaultGrafanaBackoff   = time.Second
 	FailedRequestError      = errors.New("Failed request")
 	InvalidCredentialsError = errors.New("Invalid credentials")
 	NotAvailableError       = errors.New("Instance not available")
@@ -46,23 +48,58 @@ type grafanaInstance struct {
 	address     string
 	user        string
 	password    string
+	session     *http.Cookie
+	timeout     time.Duration
+	backoff     time.Duration
+}
+
+type grafanaInstanceOption func(*grafanaInstance) error
+
+// Sets the grafana timeout. If 0, the default is used
+func WithTimeout(timeout time.Duration) grafanaInstanceOption {
+	return func(g *grafanaInstance) error {
+		if timeout != 0 {
+			g.timeout = timeout
+		}
+		return nil
+	}
+}
+
+// Sets the grafana backoff time. If 0, the default is used
+func WithBackoff(backoff time.Duration) grafanaInstanceOption {
+	return func(g *grafanaInstance) error {
+		if backoff != 0 {
+			g.backoff = backoff
+		}
+		return nil
+	}
 }
 
 // NewGrafanaInstance creates a reference to access a grafana instance
 // Takes a fully qualified address such as https://jefflevinslunch.grafana.net
 // and a user credentials
-func NewInstance(address, user, password string) (GrafanaInstance, error) {
+func NewInstance(address, user, password string, opts...grafanaInstanceOption) (GrafanaInstance, error) {
 	scheme, host, port, err := parseAddress(address)
 	if err != nil {
 		return nil, err
 	}
 
-	return &grafanaInstance{
+	instance := &grafanaInstance{
 		host:     fmt.Sprintf("%s:%s", host, port),
 		address:  fmt.Sprintf("%s://%s:%s", scheme, host, port),
 		user:     user,
 		password: password,
-	}, nil
+		timeout:  DefaultGrafanaTimeout,
+		backoff:  DefaultGrafanaBackoff,
+	}
+
+	for _, optFunc := range opts {
+		if err = optFunc(instance); err != nil {
+			return nil, fmt.Errorf("invalid option %v", err)
+		}
+	}
+
+	return instance, nil
 }
 
 // Address returns the url to access the grafana instance
@@ -80,13 +117,26 @@ func (g *grafanaInstance) Password() string {
 	return g.password
 }
 
-// Wait for the grafana instance to start up
+// GetSession returns the current grafana session value
+func (g *grafanaInstance) GetGrafanaSession() (string, error) {
+	session, err := g.getGrafanaSessionCookie()
+	if err != nil {
+		return "", err
+	}
+
+	return session.Value, nil
+}
+
+// wait for the grafana instance to start up
 func (g *grafanaInstance) WaitForLiveGrafana(ctx context.Context) error {
+	ctxTimeout, cancel := context.WithTimeout(ctx, g.timeout)
+	defer cancel()
+
 	if g.isLive() {
 		return nil
 	}
 
-	timer := time.NewTicker(time.Second)
+	timer := time.NewTicker(g.backoff)
 	defer timer.Stop()
 
 	for {
@@ -95,7 +145,7 @@ func (g *grafanaInstance) WaitForLiveGrafana(ctx context.Context) error {
 			if g.isLive() {
 				return nil
 			}
-		case <-ctx.Done():
+		case <-ctxTimeout.Done():
 			if errors.Is(context.DeadlineExceeded, ctx.Err()) {
 				return NotAvailableError
 			}
@@ -110,8 +160,12 @@ func (g *grafanaInstance) isLive() bool {
 	return err == nil
 }
 
-// logs into grafana instance and returns a session cookie
-func (g *grafanaInstance) GetGrafanaSession() (*http.Cookie, error) {
+// GetGrafanaSession returns a session cookie
+func (g *grafanaInstance) getGrafanaSessionCookie() (*http.Cookie, error) {
+	if g.session != nil {
+		return g.session, nil
+	}
+
 	loginURL := g.Address() + "/login"
 
 	loginPayload := struct {
@@ -148,7 +202,9 @@ func (g *grafanaInstance) GetGrafanaSession() (*http.Cookie, error) {
 		if len(resp.Cookies()) == 0 {
 			return nil, fmt.Errorf("no session returned %s", string(responsePayload))
 		}
-		return resp.Cookies()[0], nil
+
+		g.session = resp.Cookies()[0]
+		return g.session, nil
 	case http.StatusUnauthorized:
 		return nil, fmt.Errorf("%w: login. : %s", InvalidCredentialsError, responsePayload)
 	default:
@@ -157,12 +213,12 @@ func (g *grafanaInstance) GetGrafanaSession() (*http.Cookie, error) {
 }
 
 func (g *grafanaInstance) GetGrafanaBuildVersion() (string, error) {
-	grafanaSession, err := g.GetGrafanaSession()
+	grafanaSession, err := g.getGrafanaSessionCookie()
 	if err != nil {
 		return "", err
 	}
 
-	targetURL := g.Address() + "/api/frontend/settings"
+	targetURL := g.address + "/api/frontend/settings"
 	req, err := http.NewRequest("GET", targetURL, nil)
 	if err != nil {
 		return "", fmt.Errorf("Failed to create request: %w", err)

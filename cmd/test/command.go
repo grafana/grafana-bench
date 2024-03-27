@@ -80,6 +80,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				grafanaUrl,
 				grafanaUsername,
 				grafanaPassword,
+				grafana.WithTimeout(grafanaTimeout),
 			)
 			if err != nil {
 				return err
@@ -125,7 +126,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				log,
 				testTrigger,
 				grafanaInstance,
-				grafanaTimeout,
 				machineSpec,
 				benchRevision,
 				dashboardURL,

@@ -16,7 +16,6 @@ type TestRunner struct {
 	Log             *slog.Logger
 	Trigger         string
 	GrafanaInstance grafana.GrafanaInstance
-	GrafanaTimeout  time.Duration
 	GrafanaVersion  string
 	MachineSpec     string
 	BenchRevision   string
@@ -28,7 +27,6 @@ func NewTestRunner(
 	log *slog.Logger,
 	testTrigger string,
 	grafanaInstance grafana.GrafanaInstance,
-	grafanaTimeout time.Duration,
 	machineSpec string,
 	benchRevision string,
 	dashboardURL string,
@@ -38,7 +36,6 @@ func NewTestRunner(
 		Log:             log,
 		Trigger:         testTrigger,
 		GrafanaInstance: grafanaInstance,
-		GrafanaTimeout:  grafanaTimeout,
 		MachineSpec:     machineSpec,
 		BenchRevision:   benchRevision,
 		DashboardURL:    dashboardURL,
@@ -49,10 +46,7 @@ func NewTestRunner(
 func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite TestSuite) error {
 	t.Log.Info("Waiting for grafana server...", "address", t.GrafanaInstance.Address())
 
-	grafanaCtx, cancel := context.WithTimeout(ctx, t.GrafanaTimeout)
-	defer cancel()
-
-	err := t.GrafanaInstance.WaitForLiveGrafana(grafanaCtx)
+	err := t.GrafanaInstance.WaitForLiveGrafana(ctx)
 	if err != nil {
 		return fmt.Errorf("checking Grafana is Live... %w", err)
 	}

@@ -11,11 +11,11 @@ import (
 
 const (
 	grafanaVersion     = "10.x.0-test"
-	grafanaBuildInfo   = "{\"buildInfo\": {\"version\": \""+ grafanaVersion +"\", \"commit\": \"a3b9ec21db4e50a90e049132723af118dc3f39b3\", \"buildstamp\": 1705409435}}"
+	grafanaBuildInfo   = "{\"buildInfo\": {\"version\": \"" + grafanaVersion + "\", \"commit\": \"a3b9ec21db4e50a90e049132723af118dc3f39b3\", \"buildstamp\": 1705409435}}"
 	grafana_session    = "ffffffffffffffffffffffffffffffff"
 	session_cookie     = "grafana_session=" + grafana_session + "; Path=/; Max-Age=2592000; HttpOnly; SameSite=Lax"
 	invalidUserMessage = "{\"message\": \"Invalid username or password\"}"
-	loggedInMessage     = "{\"message\":\"Logged in\", \"redirectUrl\":\"/\""
+	loggedInMessage    = "{\"message\":\"Logged in\", \"redirectUrl\":\"/\""
 )
 
 type response struct {
@@ -106,8 +106,8 @@ func Test_GetGrafanaSession(t *testing.T) {
 				t.Fatalf("unexpected error expected: '%v' got '%v'", tc.expectErr, err)
 			}
 
-			if tc.expectErr == nil && session.Value != grafana_session {
-				t.Fatalf("invalid session expected %q got %q", grafana_session, session.Value)
+			if tc.expectErr == nil && session != grafana_session {
+				t.Fatalf("invalid session expected %q got %q", grafana_session, session)
 			}
 
 		})
@@ -162,3 +162,4 @@ func Test_GetGrafanaBuildVersion(t *testing.T) {
 		})
 	}
 }
+

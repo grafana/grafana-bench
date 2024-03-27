@@ -72,8 +72,8 @@ func (m *mockGrafanaInstance) GetGrafanaBuildVersion() (string, error) {
 	return m.version, m.err
 }
 
-func (m *mockGrafanaInstance) GetGrafanaSession() (*http.Cookie, error) {
-	return m.session, m.err
+func (m *mockGrafanaInstance) GetGrafanaSession() (string, error) {
+	return m.session.Value, m.err
 }
 
 
@@ -125,7 +125,6 @@ func testRunnerForTesting(
 		log,
 		"test", // trigger
 		grafanaInstance,
-		time.Second, // grafana liveness probe timeout
 		"local",     // machine spec
 		"devel",     // bench revision
 		"",          // dashboard URL
