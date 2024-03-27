@@ -151,7 +151,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	fs.DurationVar(
 		&grafanaTimeout,
 		"grafana-timeout",
-		30*time.Second,
+		grafana.DefaultGrafanaTimeout,
 		"timeout for waiting grafana to be live",
 	)
 	fs.StringVar(

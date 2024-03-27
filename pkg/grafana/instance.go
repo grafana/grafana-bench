@@ -36,7 +36,7 @@ type GrafanaInstance interface {
 }
 
 var (
-	DefaultGrafanaTimeout     = time.Second * 30
+	DefaultGrafanaTimeout     = time.Second * 60
 	DefaultGrafanaBackoff     = time.Second
 	FailedRequestError        = errors.New("Failed request")
 	InvalidCredentialsError   = errors.New("Invalid credentials")
