@@ -20,12 +20,6 @@ const (
 	loadingMessage     = "{\"message\":\"Your instance is loading, and will be ready shortly.\"}"
 )
 
-type response struct {
-	Status  int
-	Body    string
-	Headers map[string]string
-}
-
 func loginHandler(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Add("Set-Cookie", session_cookie)
 	rw.WriteHeader(http.StatusOK)
