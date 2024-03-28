@@ -189,6 +189,12 @@ func Test_Runner(t *testing.T) {
 		expectMsgs []string
 	}{
 		{
+			testCase: "passing suite",
+			instance: newMockGrafanaInstance(),
+			summary: passingSuiteSummary(),
+			expectMsgs: []string{},
+		},
+		{
 			testCase: "failing suite",
 			instance: newMockGrafanaInstance(),
 			summary: failedSuiteSummary(),
