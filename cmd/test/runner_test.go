@@ -145,6 +145,8 @@ const (
 	invalidDashboardError = "invalid template substitution"
 
 	testSuiteFailedMessage = "test suite failed. Too many test failures"
+
+	grafanaNotAliveError   = "Instance not available"
 )
 
 func failedSuiteSummary() SuiteRunSummary {
@@ -219,6 +221,13 @@ func Test_Runner(t *testing.T) {
 				WithInvalidGrafanaCredentials(),
 			),
 			expectErr: loginError,
+		},
+		{
+			testCase: "grafana not available",
+			instance:  newMockGrafanaInstance(
+				withGrafanaNotAlive(),
+			),
+			expectErr: grafanaNotAliveError,
 		},
 	}
 
