@@ -10,7 +10,7 @@ import (
 
 	"github.com/grafana/grafana-bench/bench"
 	"github.com/grafana/grafana-bench/pkg/grafana"
-	"github.com/grafana/grafana-bench/bench/utils/env"
+	"github.com/grafana/grafana-bench/pkg/utils/env"
 	"github.com/spf13/cobra"
 )
 
