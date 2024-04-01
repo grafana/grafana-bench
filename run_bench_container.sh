@@ -9,42 +9,43 @@
 # 3. the third (optional) is path to .env file.
 
 # source the .env file
-if [ "$#" -lt 2]; then
-  echo "base dir and test suite are required"
-  exit 1
+if [ "$#" -lt 2 ]; then
+	echo "base dir and test suite are required"
+	exit 1
 fi
 
 # build a test container
 if docker build --platform=linux/amd64 -t grafana-bench-dev .; then
-  echo "build succeeded"
+	echo "build succeeded"
 else
-  echo "build failed"
-  exit 1
+	echo "build failed"
+	exit 1
 fi
 
 # source the .env file
 if [ "$#" -eq 3 ]; then
-  DOTENV=$(readlink -e "$3")
-  if [ -z "$DOTENV" ]; then 
-    echo "env file not found"
-    exit 1
-  fi
+	DOTENV=$(realpath -e "$3")
+	if [ -z "$DOTENV" ]; then
+		echo "env file not found"
+		exit 1
+	fi
 else
-  DOTENV=$(readlink -e .env)
+	DOTENV=$(realpath -e .env)
 fi
 
 if [ ! -z "$DOTENV" ]; then
-  DOTENV_VOLUME="--volume=$DOTENV:/home/bench/.env"
+	DOTENV_VOLUME="--volume=$DOTENV:/home/bench/.env"
 fi
 
 # location of tests on disk
-TESTSUITE_BASE=$(readlink -e $1)
+TESTSUITE_BASE=$(realpath -e "$1")
 
 docker run --rm \
-  --network host \
-  --platform=linux/amd64 \
-  $DOTENV_VOLUME --volume="$TESTSUITE_BASE:/home/bench/tests" \
-  grafana-bench-dev test \
-    --test-type="smoke" \
-    --test-suite-base="tests" \
-    --test-suite "$2"
+	--network host \
+	--platform=linux/amd64 \
+	$DOTENV_VOLUME --volume="$TESTSUITE_BASE:/home/bench/tests" \
+	grafana-bench-dev test \
+	--test-type="smoke" \
+	--test-trigger="rrc" \
+	--test-suite-base="tests" \
+	--test-suite "$2"
