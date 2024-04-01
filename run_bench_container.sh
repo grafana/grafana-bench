@@ -1,7 +1,7 @@
 #! /usr/bin/env sh
 
 # This script is used for testing and iterating on Bench from inside a container.
-# ./run_bech_container.sh dashboards/dashboard_create.js .env
+# ./run_bech_container.sh work/test/suite/dist/tests dashboards/dashboard_create.js .env
 #
 # 1. the first argument is the path to base folder to find test suites
 #    mounted in the container to  /home/bench/tests.
@@ -22,7 +22,7 @@ else
 	exit 1
 fi
 
-# source the .env file
+# get path of dotenv file
 if [ "$#" -eq 3 ]; then
 	DOTENV=$(realpath -e "$3")
 	if [ -z "$DOTENV" ]; then
@@ -33,6 +33,7 @@ else
 	DOTENV=$(realpath -e .env)
 fi
 
+# build mount portion of .env file
 if [ ! -z "$DOTENV" ]; then
 	DOTENV_VOLUME="--volume=$DOTENV:/home/bench/.env"
 fi
@@ -43,7 +44,8 @@ TESTSUITE_BASE=$(realpath -e "$1")
 docker run --rm \
 	--network host \
 	--platform=linux/amd64 \
-	$DOTENV_VOLUME --volume="$TESTSUITE_BASE:/home/bench/tests" \
+	$DOTENV_VOLUME \
+	--volume="$TESTSUITE_BASE:/home/bench/tests" \
 	grafana-bench-dev test \
 	--test-type="smoke" \
 	--test-trigger="rrc" \
