@@ -3,7 +3,8 @@ package version
 import (
 	"fmt"
 
-	"github.com/grafana/grafana-bench/bench"
+	"github.com/grafana/grafana-bench/pkg/revision"
+
 	"github.com/spf13/cobra"
 )
 
@@ -15,7 +16,7 @@ func NewCmd() *cobra.Command {
 		Long:    "Outputs bench version to stdout",
 		Example: "bench version",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Println(bench.Revision())
+			fmt.Println(revision.BenchRevision())
 			return nil
 		},
 	}

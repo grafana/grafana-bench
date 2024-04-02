@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/grafana/grafana-bench/bench/utils"
+	"github.com/grafana/grafana-bench/pkg/utils"
 )
 
 const (

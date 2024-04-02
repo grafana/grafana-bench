@@ -8,9 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/grafana/grafana-bench/bench"
-	"github.com/grafana/grafana-bench/bench/utils/env"
 	"github.com/grafana/grafana-bench/pkg/grafana"
+	"github.com/grafana/grafana-bench/pkg/revision"
+	"github.com/grafana/grafana-bench/pkg/utils/env"
+
 	"github.com/spf13/cobra"
 )
 
@@ -69,7 +70,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			}
 
 			if benchRevision == "" {
-				benchRevision = env.EnvOrDefault("BENCH_REVISION", bench.Revision())
+				benchRevision = env.EnvOrDefault("BENCH_REVISION", revision.BenchRevision())
 			}
 
 			// override grafana user and password from environment variables if they are set

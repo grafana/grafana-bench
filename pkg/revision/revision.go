@@ -1,14 +1,14 @@
 // Package version provide information about the build version
-package bench
+package revision
 
 import (
 	"runtime/debug"
 )
 
-// revision is the bench build version.
-var revision = ""
+// bench is the bench build version.
+var bench = ""
 
-// Revision returns the version of the currently executed bench
+// BenchRevision returns the version of the currently executed bench
 //
 // If the bench is installed from the repository, go populates the build version in the debug
 // information.
@@ -17,12 +17,12 @@ var revision = ""
 //
 // In this cases, the revision can be set using a compile flag when building the executable:
 //
-//	-ldflags='-X github.com/grafana/grafana-bench/bench.revision=<revision>'
+//	-ldflags='-X github.com/grafana/grafana-bench/pkg/revision.bench=<revision>'
 //
 // See for more details on go pseudo-version: https://github.com/golang/go/issues/50603
-func Revision() string {
-	if revision != "" {
-		return revision
+func BenchRevision() string {
+	if bench != "" {
+		return bench
 	}
 
 	// try to find build version from golang tool chain
