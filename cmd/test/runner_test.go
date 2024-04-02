@@ -37,7 +37,7 @@ func withGrafanaNotAlive() mockGrafanaInstanceOption {
 }
 
 func WithInvalidGrafanaCredentials() mockGrafanaInstanceOption {
-	return func(m *mockGrafanaInstance)  {
+	return func(m *mockGrafanaInstance) {
 		m.err = grafana.InvalidCredentialsError
 	}
 }
@@ -75,14 +75,14 @@ func (m *mockGrafanaInstance) GetGrafanaSession() (string, error) {
 	return m.session.Value, m.err
 }
 
-func newMockGrafanaInstance(opts...mockGrafanaInstanceOption) *mockGrafanaInstance {
+func newMockGrafanaInstance(opts ...mockGrafanaInstanceOption) *mockGrafanaInstance {
 	mock := &mockGrafanaInstance{
 		user:     "admin",
 		password: "admin",
 		err:      nil,
 		version:  "test",
-		session:  &http.Cookie{
-			Name: "grafana_session",
+		session: &http.Cookie{
+			Name:  "grafana_session",
 			Value: "fake_grafana_session",
 		},
 	}
@@ -122,9 +122,9 @@ func testRunnerForTesting(
 		log,
 		"test", // trigger
 		grafanaInstance,
-		"local",     // machine spec
-		"devel",     // bench revision
-		"",          // dashboard URL
+		"local", // machine spec
+		"devel", // bench revision
+		"",      // dashboard URL
 		executor,
 	)
 
@@ -146,7 +146,7 @@ const (
 
 	testSuiteFailedMessage = "test suite failed. Too many test failures"
 
-	grafanaNotAliveError   = "Instance not available"
+	grafanaNotAliveError = "Instance not available"
 )
 
 func failedSuiteSummary() SuiteRunSummary {
@@ -189,21 +189,21 @@ func Test_Runner(t *testing.T) {
 		expectMsgs []string
 	}{
 		{
-			testCase: "passing suite",
-			instance: newMockGrafanaInstance(),
-			summary: passingSuiteSummary(),
+			testCase:   "passing suite",
+			instance:   newMockGrafanaInstance(),
+			summary:    passingSuiteSummary(),
 			expectMsgs: []string{},
 		},
 		{
-			testCase: "failing suite",
-			instance: newMockGrafanaInstance(),
-			summary: failedSuiteSummary(),
+			testCase:   "failing suite",
+			instance:   newMockGrafanaInstance(),
+			summary:    failedSuiteSummary(),
 			expectMsgs: []string{testSuiteFailedMessage},
 		},
 		{
 			testCase: "failing suite with dashboard",
 			instance: newMockGrafanaInstance(),
-			summary: failedSuiteSummary(),
+			summary:  failedSuiteSummary(),
 			options: []testRunnerOption{
 				WithDashboard(),
 			},
@@ -215,7 +215,7 @@ func Test_Runner(t *testing.T) {
 		{
 			testCase: "failing suite with invalid dashboard",
 			instance: newMockGrafanaInstance(),
-			summary: failedSuiteSummary(),
+			summary:  failedSuiteSummary(),
 			options: []testRunnerOption{
 				WithInvalidDashboard(),
 			},
@@ -223,14 +223,14 @@ func Test_Runner(t *testing.T) {
 		},
 		{
 			testCase: "invalid credentials",
-			instance:  newMockGrafanaInstance(
+			instance: newMockGrafanaInstance(
 				WithInvalidGrafanaCredentials(),
 			),
 			expectErr: loginError,
 		},
 		{
 			testCase: "grafana not available",
-			instance:  newMockGrafanaInstance(
+			instance: newMockGrafanaInstance(
 				withGrafanaNotAlive(),
 			),
 			expectErr: grafanaNotAliveError,

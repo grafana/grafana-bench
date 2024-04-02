@@ -11,6 +11,7 @@ import (
 	"github.com/grafana/grafana-bench/pkg/grafana"
 	"github.com/grafana/grafana-bench/pkg/revision"
 	"github.com/grafana/grafana-bench/pkg/utils/env"
+
 	"github.com/spf13/cobra"
 )
 

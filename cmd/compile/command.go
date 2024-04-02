@@ -39,13 +39,13 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	}
 
 	fs := cmd.Flags()
-	//FIXME: find a better name
-	fs.StringVar(&targetDir,"target-dir", "", "directory for checking the test into." +
+	// FIXME: find a better name
+	fs.StringVar(&targetDir, "target-dir", "", "directory for checking the test into."+
 		"\nIf exists, it is assumed the test suite repository is already checked out in it.")
 	fs.StringVar(&testSuiteRepo, "test-suite-repo", "", "repository to grab test suite from")
-	fs.StringVar(&testSuiteRevision, "test-suite-revision", "", "test suite revision to compile." + 
-		"\nCan make reference to a branch (local or remote), a tag or a specific commit hash" +
-		"\nIf not provided and the repo is already checked out in the base dir, the current branch is compiled." +
+	fs.StringVar(&testSuiteRevision, "test-suite-revision", "", "test suite revision to compile."+
+		"\nCan make reference to a branch (local or remote), a tag or a specific commit hash"+
+		"\nIf not provided and the repo is already checked out in the base dir, the current branch is compiled."+
 		"\nOtherwise the main branch from the remote repository is compiled")
 
 	return &cmd
