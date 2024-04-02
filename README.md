@@ -3,16 +3,8 @@
 
 Grafana bench is a tool to build, provision, and test Grafana.
 
-It's built on top of [Grafana Build](https://github.com/grafana/grafana-build), Terraform, K6, and [Grafana API Tests](https://github.com/grafana/grafana-api-tests) to build and test a grafana on the platform and architecture of your choosing.
+It's built on top of k6, and [Grafana API Tests](https://github.com/grafana/grafana-api-tests) to build and test a grafana on the platform and architecture of your choosing.
 
-## Library
-
-Grafana bench implements a series of functionalities for building, provisioning and testing Grafana.
-This building blocks can be used to build testing pipelines
-
-See more info in the [bench library documentation](./bench/README.md)
-
-> !! Using the library is deprecated in favor of using the CLI interface
 
 ## CLI interface
 
@@ -64,4 +56,3 @@ If a directory is specified, all `.js` files in the directory and its sub-direct
 Each test is parameterized via environment variables following [grafana-api-tests conventions](https://github.com/grafana/grafana-api-tests/blob/main/README.md#common-environment-variables).
 
 For load tests, if the `--k6-cloud-output` flag is `true`, the test results will be sent to Grafana Cloud k6. The [GCK6 credentials](https://grafana.com/docs/grafana-cloud/k6/author-run/tokens-and-cli-authentication/) must be provided as environment variables or as arguments to the test runner (`--k6-cloud-project` and `--k6-cloud-token`).
-
