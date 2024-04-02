@@ -16,6 +16,7 @@ var revision = ""
 // When running it using go run or building using go build, the version is set by go to "(devel)"
 //
 // In this cases, the revision can be set using a compile flag when building the executable:
+//
 //	-ldflags='-X github.com/grafana/grafana-bench/bench.revision=<revision>'
 //
 // See for more details on go pseudo-version: https://github.com/golang/go/issues/50603
