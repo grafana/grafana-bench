@@ -54,7 +54,7 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite TestSuit
 
 	t.GrafanaVersion, err = t.GrafanaInstance.GetGrafanaBuildVersion()
 	if err != nil {
-		return fmt.Errorf("getting grafana version %w", err)
+		return fmt.Errorf("getting grafana version: %w", err)
 	}
 
 	runIdentifier := t.newRunIdentifier(testType, suite)
