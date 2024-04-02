@@ -224,7 +224,7 @@ func (g *grafanaInstance) getGrafanaSessionCookie() (*http.Cookie, error) {
 			return g.session, nil
 
 		case http.StatusUnauthorized:
-			return nil, fmt.Errorf("%w: login. : %s", InvalidCredentialsError, responsePayload)
+			return nil, InvalidCredentialsError
 
 		case http.StatusBadRequest:
 			if strings.Contains(string(responsePayload), "auth.client.notConfigured") {
