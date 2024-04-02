@@ -41,6 +41,7 @@ var (
 	FailedRequestError        = errors.New("Failed request")
 	InvalidCredentialsError   = errors.New("Invalid credentials")
 	InstanceNotAvailableError = errors.New("Instance not available")
+	LoginDisableError         = errors.New("Login disabled")
 )
 
 type grafanaInstance struct {
@@ -224,6 +225,18 @@ func (g *grafanaInstance) getGrafanaSessionCookie() (*http.Cookie, error) {
 
 		case http.StatusUnauthorized:
 			return nil, fmt.Errorf("%w: login. : %s", InvalidCredentialsError, responsePayload)
+
+		case http.StatusBadRequest:
+			if strings.Contains(string(responsePayload), "auth.client.notConfigured") {
+				return nil, LoginDisableError
+			}
+
+			return nil, fmt.Errorf(
+				"%w: login. statusCode: %d, response: %s",
+				FailedRequestError,
+				resp.StatusCode,
+				responsePayload,
+			)
 
 		default:
 			return nil, fmt.Errorf(

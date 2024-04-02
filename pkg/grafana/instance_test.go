@@ -11,13 +11,14 @@ import (
 )
 
 const (
-	grafanaVersion     = "10.x.0-test"
-	grafanaBuildInfo   = "{\"buildInfo\": {\"version\": \"" + grafanaVersion + "\", \"commit\": \"a3b9ec21db4e50a90e049132723af118dc3f39b3\", \"buildstamp\": 1705409435}}"
-	grafana_session    = "ffffffffffffffffffffffffffffffff"
-	session_cookie     = "grafana_session=" + grafana_session + "; Path=/; Max-Age=2592000; HttpOnly; SameSite=Lax"
-	invalidUserMessage = "{\"message\": \"Invalid username or password\"}"
-	loggedInMessage    = "{\"message\":\"Logged in\", \"redirectUrl\":\"/\""
-	loadingMessage     = "{\"message\":\"Your instance is loading, and will be ready shortly.\"}"
+	grafanaVersion       = "10.x.0-test"
+	grafanaBuildInfo     = "{\"buildInfo\": {\"version\": \"" + grafanaVersion + "\", \"commit\": \"a3b9ec21db4e50a90e049132723af118dc3f39b3\", \"buildstamp\": 1705409435}}"
+	grafana_session      = "ffffffffffffffffffffffffffffffff"
+	session_cookie       = "grafana_session=" + grafana_session + "; Path=/; Max-Age=2592000; HttpOnly; SameSite=Lax"
+	invalidUserMessage   = "{\"message\": \"Invalid username or password\"}"
+	loggedInMessage      = "{\"message\":\"Logged in\", \"redirectUrl\":\"/\""
+	loadingMessage       = "{\"message\":\"Your instance is loading, and will be ready shortly.\"}"
+	loginDisabledMessage = "{\"message\":\"Bad request\",\"messageId\":\"auth.client.notConfigured\"}"
 )
 
 func loginHandler(rw http.ResponseWriter, r *http.Request) {
@@ -29,6 +30,11 @@ func loginHandler(rw http.ResponseWriter, r *http.Request) {
 func invalidLoginHandler(rw http.ResponseWriter, r *http.Request) {
 	rw.WriteHeader(http.StatusUnauthorized)
 	rw.Write([]byte(invalidUserMessage))
+}
+
+func loginDisbledHandler(rw http.ResponseWriter, r *http.Request) {
+	rw.WriteHeader(http.StatusBadRequest)
+	rw.Write([]byte(loginDisabledMessage))
 }
 
 func serverErrorHandler(rw http.ResponseWriter, r *http.Request) {
@@ -109,6 +115,11 @@ func Test_GetGrafanaSession(t *testing.T) {
 			testCase:  "timeout waiting server",
 			mock:      newGrafanaMock(With503Response(5*time.Second, "POST", "/login", loginHandler)),
 			expectErr: InstanceNotAvailableError,
+		},
+		{
+			testCase:  "login disabled",
+			mock:      newGrafanaMock(WithResponse("POST", "/login", loginDisbledHandler)),
+			expectErr: LoginDisableError,
 		},
 	}
 
