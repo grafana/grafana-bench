@@ -55,7 +55,7 @@ jobs:
             grafana-bench-test:latest
       - name: check k6 browser
         run: |
-          docker run --rm -it --entrypoint='' grafana-bench-test:latest k6 run ./CI/browser_test.js
+          docker run --rm --entrypoint='' grafana-bench-test:latest k6 run ./CI/browser_test.js
 
   #test-pr-container:
   #  runs-on: ubuntu-latest
