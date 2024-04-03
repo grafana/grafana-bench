@@ -84,7 +84,7 @@ jobs:
   publish-main:
     # only publish to main
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [build-pr-container, test-pr-container]
+    needs: [build-pr-container]
     runs-on: ubuntu-latest
     env:
       DOCKER_CLI_EXPERIMENTAL: enabled
