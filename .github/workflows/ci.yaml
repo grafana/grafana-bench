@@ -60,7 +60,7 @@ jobs:
           tags: localhost:5000/grafana-bench-test:latest
       - name: check k6 browser
         run: |
-          docker run --rm --entrypoint='' localhost:5000/grafana-bench-test:latest k6 run ./CI/browser_test.js
+          docker run --rm --entrypoint='' --volume="./CI/:/CI/" localhost:5000/grafana-bench-test:latest k6 run /CI/browser_test.js
 
   #test-pr-container:
   #  runs-on: ubuntu-latest
