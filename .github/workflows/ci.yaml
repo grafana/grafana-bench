@@ -50,7 +50,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           build-args: |
             BENCH_REVISION=${{ github.sha }}
-          push: true
+          push: false
           tags: |
             grafana-bench-test:latest
       - name: check k6 browser
