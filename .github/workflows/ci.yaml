@@ -79,8 +79,6 @@ jobs:
   # TODO, find a way to tag and push the multiarchitecture from
   # build-pr-container step instead of rebuilding
   publish-main:
-    # only publish to main
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [build-pr-container, test-pr-container]
     runs-on: ubuntu-latest
     env:
