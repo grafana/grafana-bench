@@ -32,12 +32,12 @@ jobs:
     env:
       DOCKER_CLI_EXPERIMENTAL: enabled
     steps:
-      - name: docker login (github)
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: jalevin # TODO don't use personal github
-          password: ${{ secrets.JEFF_PAT }} # TODO don't use PAT
+      #- name: docker login (github)
+      #  uses: docker/login-action@v3
+      #  with:
+      #    registry: ghcr.io
+      #    username: jalevin # TODO don't use personal github
+      #    password: ${{ secrets.JEFF_PAT }} # TODO don't use PAT
       - uses: actions/checkout@v4
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -52,7 +52,11 @@ jobs:
             BENCH_REVISION=${{ github.sha }}
           push: true
           tags: |
-            ghcr.io/grafana/grafana-bench:${{ github.sha }}
+            grafana-bench-test:latest
+            #ghcr.io/grafana/grafana-bench:${{ github.sha }}
+      - name: check k6 browser
+        run: |
+          docker run --rm -it --entrypoint='' grafana-bench-test:latest k6 run ./CI/browser_test.js
 
   test-pr-container:
     runs-on: ubuntu-latest
