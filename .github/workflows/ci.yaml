@@ -60,7 +60,7 @@ jobs:
           tags: localhost:5000/grafana-bench-test:latest
       - name: check k6 browser
         run: |
-          docker run --rm --entrypoint='' --volume="./CI/:/CI/" --volume="./screenshots:/screenshots" localhost:5000/grafana-bench-test:latest k6 run /CI/browser_test.js
+          docker run --rm --entrypoint='' --volume="./CI/:/CI/" --volume="./screenshots:screenshots/" localhost:5000/grafana-bench-test:latest k6 run /CI/browser_test.js
       - name: archive screenshots
         uses: actions/upload-artifact@v3
         with:
