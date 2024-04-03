@@ -53,31 +53,30 @@ jobs:
           push: true
           tags: |
             grafana-bench-test:latest
-            #ghcr.io/grafana/grafana-bench:${{ github.sha }}
       - name: check k6 browser
         run: |
           docker run --rm -it --entrypoint='' grafana-bench-test:latest k6 run ./CI/browser_test.js
 
-  test-pr-container:
-    runs-on: ubuntu-latest
-    needs: [build-pr-container]
-    container:
-      image: ghcr.io/grafana/grafana-bench:${{ github.sha }}
-      env:
-        GRAFANA_ADDRESS: PURPOSEFULLY_INVALID
-        GRAFANA_USER: PURPOSEFULLY_INVALID
-        GRAFANA_PASSWORD: PURPOSEFULLY_INVALID
-      options: --user root
-    steps:
-      - uses: actions/checkout@v4
-      - name: run browser check
-        run: |
-          k6 run ./CI/browser_test.js
-      - name: Archive screenshots
-        uses: actions/upload-artifact@v3
-        with:
-          name: screenshots
-          path: screenshots
+  #test-pr-container:
+  #  runs-on: ubuntu-latest
+  #  needs: [build-pr-container]
+  #  container:
+  #    image: ghcr.io/grafana/grafana-bench:${{ github.sha }}
+  #    env:
+  #      GRAFANA_ADDRESS: PURPOSEFULLY_INVALID
+  #      GRAFANA_USER: PURPOSEFULLY_INVALID
+  #      GRAFANA_PASSWORD: PURPOSEFULLY_INVALID
+  #    options: --user root
+  #  steps:
+  #    - uses: actions/checkout@v4
+  #    - name: run browser check
+  #      run: |
+  #        k6 run ./CI/browser_test.js
+  #    - name: Archive screenshots
+  #      uses: actions/upload-artifact@v3
+  #      with:
+  #        name: screenshots
+  #        path: screenshots
 
   # publish container on build and test in main
   # TODO, find a way to tag and push the multiarchitecture from
