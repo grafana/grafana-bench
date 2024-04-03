@@ -25,7 +25,7 @@ jobs:
     - name: Build
       run: go build -v ./...
 
-  build-pr-container:
+  test-container:
     runs-on: ubuntu-latest
     # run local registry that buildx can push to
     services:
@@ -89,7 +89,7 @@ jobs:
   publish-main:
     # only publish to main
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [build-pr-container]
+    needs: [test-bench, test-container]
     runs-on: ubuntu-latest
     env:
       DOCKER_CLI_EXPERIMENTAL: enabled
