@@ -11,7 +11,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
@@ -27,8 +26,13 @@ jobs:
       run: go build -v ./...
 
   build-pr-container:
-    needs: test-bench
     runs-on: ubuntu-latest
+    # run local registry that buildx can push to
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
     env:
       DOCKER_CLI_EXPERIMENTAL: enabled
     steps:
@@ -43,6 +47,8 @@ jobs:
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: network=host
       - name: build container
         uses: docker/build-push-action@v5
         with:
@@ -50,12 +56,11 @@ jobs:
           platforms: linux/amd64,linux/arm64
           build-args: |
             BENCH_REVISION=${{ github.sha }}
-          push: false
-          tags: |
-            grafana-bench-test:latest
+          load: true
+          tags: localhost:5000/grafana-bench-test:latest
       - name: check k6 browser
         run: |
-          docker run --rm --entrypoint='' grafana-bench-test:latest k6 run ./CI/browser_test.js
+          docker run --rm --entrypoint='' localhost:5000/grafana-bench-test:latest k6 run ./CI/browser_test.js
 
   #test-pr-container:
   #  runs-on: ubuntu-latest
