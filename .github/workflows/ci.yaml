@@ -1,5 +1,10 @@
 name: test-bench-image
 
+# These permissions are needed to assume roles from Github's OIDC.
+permissions:
+  contents: read
+  id-token: write
+
 on:
   push:
     branches: ["main"]
@@ -36,12 +41,6 @@ jobs:
     env:
       DOCKER_CLI_EXPERIMENTAL: enabled
     steps:
-      #- name: docker login (github)
-      #  uses: docker/login-action@v3
-      #  with:
-      #    registry: ghcr.io
-      #    username: jalevin # TODO don't use personal github
-      #    password: ${{ secrets.JEFF_PAT }} # TODO don't use PAT
       - uses: actions/checkout@v4
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -53,7 +52,6 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          #platforms: linux/amd64,linux/arm64
           build-args: |
             BENCH_REVISION=${{ github.sha }}
           load: true
@@ -68,22 +66,19 @@ jobs:
           path: screenshots
 
   # publish container on build and test in main
-  # TODO, find a way to tag and push the multiarchitecture from
-  # build-pr-container step instead of rebuilding
   publish-main:
-    # only publish on merge to main
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [test-bench, test-container]
     runs-on: ubuntu-latest
     env:
       DOCKER_CLI_EXPERIMENTAL: enabled
     steps:
-      - name: docker login (github)
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: jalevin # TODO don't use personal github
-          password: ${{ secrets.JEFF_PAT }} # TODO don't use PAT
+      #- name: docker login (github)
+        #uses: docker/login-action@v3
+        #with:
+        #  registry: ghcr.io
+        #  username: jalevin # TODO don't use personal github
+        #  password: ${{ secrets.JEFF_PAT }} # TODO don't use PAT
       - name: Docker Login (GCR)
         uses: docker/login-action@v3
         with:
@@ -99,10 +94,24 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64 #,linux/arm64
           build-args: |
             BENCH_REVISION=${{ github.sha }}
           push: true
           tags: |
-            ghcr.io/grafana/grafana-bench:latest
+            #ghcr.io/grafana/grafana-bench:latest
             us.gcr.io/kubernetes-dev/grafana-bench:latest
+
+  publish-gar:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [test-bench, test-container]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: grafana/shared-workflows/actions/push-to-gar-docker@main
+        id: push-to-gar
+        with:
+          environment: "prod"
+          image_name: grafana-bench
+          tags: |-
+            "latest"
