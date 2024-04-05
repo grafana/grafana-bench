@@ -52,7 +52,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          build-args: |
+          build-args: |-
             BENCH_REVISION=${{ github.sha }}
           load: true
           tags: localhost:5000/grafana-bench-test:latest
@@ -73,12 +73,6 @@ jobs:
     env:
       DOCKER_CLI_EXPERIMENTAL: enabled
     steps:
-      #- name: docker login (github)
-        #uses: docker/login-action@v3
-        #with:
-        #  registry: ghcr.io
-        #  username: jalevin # TODO don't use personal github
-        #  password: ${{ secrets.JEFF_PAT }} # TODO don't use PAT
       - name: Docker Login (GCR)
         uses: docker/login-action@v3
         with:
@@ -95,11 +89,10 @@ jobs:
         with:
           context: .
           platforms: linux/amd64 #,linux/arm64
-          build-args: |
+          build-args: |-
             BENCH_REVISION=${{ github.sha }}
           push: true
           tags: |
-            #ghcr.io/grafana/grafana-bench:latest
             us.gcr.io/kubernetes-dev/grafana-bench:latest
 
   publish-gar:
@@ -113,5 +106,7 @@ jobs:
         with:
           environment: "prod"
           image_name: grafana-bench
+          build-args: |-
+            BENCH_REVISION=${{ github.sha }}
           tags: |-
             "latest"
