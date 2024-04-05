@@ -112,6 +112,7 @@ jobs:
     needs: [test-bench, test-container]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: grafana/shared-workflows/actions/push-to-gar-docker@main
         id: push-to-gar
         with:
