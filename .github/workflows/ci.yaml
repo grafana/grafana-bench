@@ -116,8 +116,6 @@ jobs:
       - uses: grafana/shared-workflows/actions/push-to-gar-docker@main
         id: push-to-gar
         with:
-          #registry: "<YOUR-GAR>" # e.g. us-docker.pkg.dev, optional
           image_name: grafana-bench
           tags: |-
             "latest"
-          context: "." # e.g. "." - where the Dockerfile is
