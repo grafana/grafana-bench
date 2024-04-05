@@ -108,7 +108,7 @@ jobs:
             us.gcr.io/kubernetes-dev/grafana-bench:latest
 
   publish-gar:
-    :if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    #if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [test-bench, test-container]
     runs-on: ubuntu-latest
     steps:
