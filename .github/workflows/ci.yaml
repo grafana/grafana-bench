@@ -106,5 +106,7 @@ jobs:
         with:
           environment: "prod"
           image_name: grafana-bench
+          build-args: |
+            BENCH_REVISION=${{ github.sha }}
           tags: |-
             "latest"
