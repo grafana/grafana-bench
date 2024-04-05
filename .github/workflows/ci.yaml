@@ -1,5 +1,14 @@
 name: test-bench-image
 
+env:
+  ENVIRONMENT: "prod"
+  IMAGE_NAME: "grafana-bench"
+
+# These permissions are needed to assume roles from Github's OIDC.
+permissions:
+  contents: read
+  id-token: write
+
 on:
   push:
     branches: ["main"]
@@ -63,7 +72,7 @@ jobs:
   # publish container on build and test in main
   publish-main:
     # only publish on merge to main
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    #if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [test-bench, test-container]
     runs-on: ubuntu-latest
     env:
@@ -98,3 +107,16 @@ jobs:
             ghcr.io/grafana/grafana-bench:latest
             ghcr.io/grafana/grafana-bench:latest
             us.gcr.io/kubernetes-dev/grafana-bench:latest
+
+  publish-gar:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [test-bench, test-container]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: grafana/shared-workflows/actions/push-to-gar-docker@main
+        id: push-to-gar
+        with:
+          #registry: "<YOUR-GAR>" # e.g. us-docker.pkg.dev, optional
+          tags: |-
+            "latest"
+          context: "." # e.g. "." - where the Dockerfile is
