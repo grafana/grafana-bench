@@ -180,13 +180,13 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		&grafanaUsername,
 		"grafana-username",
 		"admin",
-		"grafana user name. Can be overridden by the GRAFANA_USER environment variable",
+		"grafana user name. Overridden by the GRAFANA_USER environment variable",
 	)
 	fs.StringVar(
 		&grafanaPassword,
 		"grafana-password",
 		"admin",
-		"grafana password. Can be overridden by the GRAFANA_PASSWORD environment variable",
+		"grafana password. Overridden by the GRAFANA_PASSWORD environment variable",
 	)
 	fs.StringVar(&machineSpec, "machine-spec", "", "grafana instance machine spec")
 	fs.StringVar(
@@ -239,7 +239,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	fs.StringVar(&testSuite, "test-suite", "", "path to the tests to be executed."+
 		"\nThe path must be relative to the base dir (which defaults to the current directory)."+
 		"\nA single .js file or a directory can be specified."+
-		"\nIf a directory is specified, all .js files in the directory and its sub-directories will be executed as tests.")
+		"\nIf a directory is specified, all .js files in the directory and its sub-directories will be executed.")
 	cmd.MarkFlagRequired("test-suite")
 	fs.StringVar(
 		&testSuiteBase,
