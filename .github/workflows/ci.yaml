@@ -36,12 +36,6 @@ jobs:
     env:
       DOCKER_CLI_EXPERIMENTAL: enabled
     steps:
-      #- name: docker login (github)
-      #  uses: docker/login-action@v3
-      #  with:
-      #    registry: ghcr.io
-      #    username: jalevin # TODO don't use personal github
-      #    password: ${{ secrets.JEFF_PAT }} # TODO don't use PAT
       - uses: actions/checkout@v4
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -53,7 +47,6 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          #platforms: linux/amd64,linux/arm64
           build-args: |
             BENCH_REVISION=${{ github.sha }}
           load: true
@@ -68,8 +61,6 @@ jobs:
           path: screenshots
 
   # publish container on build and test in main
-  # TODO, find a way to tag and push the multiarchitecture from
-  # build-pr-container step instead of rebuilding
   publish-main:
     # only publish on merge to main
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -104,5 +95,6 @@ jobs:
             BENCH_REVISION=${{ github.sha }}
           push: true
           tags: |
+            ghcr.io/grafana/grafana-bench:latest
             ghcr.io/grafana/grafana-bench:latest
             us.gcr.io/kubernetes-dev/grafana-bench:latest
