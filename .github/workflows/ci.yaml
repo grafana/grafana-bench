@@ -107,14 +107,12 @@ jobs:
     #if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [test-bench, test-container]
     runs-on: ubuntu-latest
-    env:
-      ENVIRONMENT: "prod"
-      IMAGE_NAME: "grafana-bench"
     steps:
       - uses: actions/checkout@v4
       - uses: grafana/shared-workflows/actions/push-to-gar-docker@main
-
         id: push-to-gar
         with:
+          environment: "prod"
+          image_name: grafana-bench
           tags: |-
             "latest"
