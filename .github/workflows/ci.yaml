@@ -59,14 +59,16 @@ jobs:
           tags: localhost:5000/grafana-bench-test:latest
       - name: check k6 browser
         run: |
-          docker run --rm --entrypoint='' --volume="./CI/:/CI/" --volume="./screenshots:/home/bench/screenshots/" localhost:5000/grafana-bench-test:latest k6 run /CI/browser_test.js
+          docker run --rm --entrypoint='k6' \
+            --volume="./CI/:/CI/" --volume="./screenshots:/home/bench/screenshots/" \
+            localhost:5000/grafana-bench-test:latest run /CI/browser_test.js
       - name: archive screenshots
         uses: actions/upload-artifact@v3
         with:
           name: screenshots
           path: screenshots
 
-  # publish container on build and test in main
+  # publish as latest in dev
   publish-main:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [test-bench, test-container]
@@ -97,7 +99,7 @@ jobs:
             us.gcr.io/kubernetes-dev/grafana-bench:latest
 
   publish-gar:
-    # publish only tagged versions
+    # publish to prod only tagged versions
     if: ${{ startsWith(github.ref, 'refs/tags/v') }}
     needs: [test-bench, test-container]
     runs-on: ubuntu-latest
