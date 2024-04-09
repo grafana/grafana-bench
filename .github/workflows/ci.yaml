@@ -86,6 +86,7 @@ jobs:
           build-args: |-
             BENCH_REVISION=${{ github.sha }}
           tags: |-
+            ${{ github.sha }}
             "latest"
 
   publish-gar-prod:
