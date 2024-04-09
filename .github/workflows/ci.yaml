@@ -80,6 +80,9 @@ jobs:
         with:
           environment: "dev"
           image_name: grafana-bench
+          platforms: |-
+            "linux/amd64"
+            "linux/arm64"
           build-args: |-
             BENCH_REVISION=${{ github.sha }}
           tags: |-
@@ -97,6 +100,9 @@ jobs:
         with:
           environment: "prod"
           image_name: grafana-bench
+          platforms: |-
+            "linux/amd64"
+            "linux/arm64"
           build-args: |-
             BENCH_REVISION=${{ github.sha }}
           tags: |-
