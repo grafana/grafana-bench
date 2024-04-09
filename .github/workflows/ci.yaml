@@ -68,37 +68,24 @@ jobs:
           name: screenshots
           path: screenshots
 
-  # publish as latest in dev
-  publish-main:
+  publish-gar-dev:
+    # publish to dev latest from main
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [test-bench, test-container]
     runs-on: ubuntu-latest
-    env:
-      DOCKER_CLI_EXPERIMENTAL: enabled
     steps:
-      - name: Docker Login (GCR)
-        uses: docker/login-action@v3
-        with:
-          registry: us.gcr.io
-          username: _json_key
-          password: ${{ secrets.GCP_CONTAINERS_SA_JSON }}
       - uses: actions/checkout@v4
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: build container
-        uses: docker/build-push-action@v5
+      - uses: grafana/shared-workflows/actions/push-to-gar-docker@main
+        id: push-to-gar
         with:
-          context: .
-          platforms: linux/amd64 #,linux/arm64
+          environment: "dev"
+          image_name: grafana-bench
           build-args: |-
             BENCH_REVISION=${{ github.sha }}
-          push: true
-          tags: |
-            us.gcr.io/kubernetes-dev/grafana-bench:latest
+          tags: |-
+            "latest"
 
-  publish-gar:
+  publish-gar-prod:
     # publish to prod only tagged versions
     if: ${{ startsWith(github.ref, 'refs/tags/v') }}
     needs: [test-bench, test-container]
