@@ -1,0 +1,24 @@
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version: "1.22"
+  generate-docs:
+    needs: [main]
+    uses: grafana/shared-workflows/.github/workflows/publish-techdocs.yaml@main
+    secrets: inherit
+    with:
+      namespace: default
+      kind: component
+      name: grafana-release-guild
