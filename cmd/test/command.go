@@ -20,6 +20,27 @@ const examples = `
     bench test --test-type load --test-suite /path/to/test.js"
 `
 
+const longDescription = `
+test subcommand is a wrapper for running a suite of k6 tests against a grafana
+instance.
+
+The tests to be executed are defined by the --test-suite option.
+
+Tests are parameterized via environment variables following grafana-api-tests
+conventions[1].
+
+Supports two kinds of test executions defined by the --test-type option:
+* smoke: execute tests and reports failures (default)
+* load: execute tests and report execution stats to GCK6
+
+For load tests, if the --k6-cloud-output flag is true, the test results will be
+sent to Grafana Cloud k6. The GCK6 credentials[2] must be provided as
+environment variables or as arguments (--k6-cloud-project and --k6-cloud-token)
+
+[1] https://github.com/grafana/grafana-api-tests/blob/main/README.md#common-environment-variables
+[2] https://grafana.com/docs/grafana-cloud/k6/author-run/tokens-and-cli-authentication/
+`
+
 // NewCmd creates a new test command
 func NewCmd(log *slog.Logger) *cobra.Command {
 	log = log.With("svc", "test-runner")
@@ -48,7 +69,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		// test-suite is a mandatory option. highlight in the help
 		Use:     "test --test-suite /path/to/test/suite",
 		Short:   "bench test runner",
-		Long:    "test subcommand is a wrapper for running k6 tests against a grafana instance",
+		Long:    longDescription,
 		Example: examples,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			trt, err := ParseTestType(testType)
@@ -159,13 +180,13 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		&grafanaUsername,
 		"grafana-username",
 		"admin",
-		"grafana user name. Can be overridden by the GRAFANA_USER environment variable",
+		"grafana user name. Overridden by the GRAFANA_USER environment variable",
 	)
 	fs.StringVar(
 		&grafanaPassword,
 		"grafana-password",
 		"admin",
-		"grafana password. Can be overridden by the GRAFANA_PASSWORD environment variable",
+		"grafana password. Overridden by the GRAFANA_PASSWORD environment variable",
 	)
 	fs.StringVar(&machineSpec, "machine-spec", "", "grafana instance machine spec")
 	fs.StringVar(
@@ -218,7 +239,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	fs.StringVar(&testSuite, "test-suite", "", "path to the tests to be executed."+
 		"\nThe path must be relative to the base dir (which defaults to the current directory)."+
 		"\nA single .js file or a directory can be specified."+
-		"\nIf a directory is specified, all .js files in the directory and its sub-directories will be executed as tests.")
+		"\nIf a directory is specified, all .js files in the directory and its sub-directories will be executed.")
 	cmd.MarkFlagRequired("test-suite")
 	fs.StringVar(
 		&testSuiteBase,
