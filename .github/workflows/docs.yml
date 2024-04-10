@@ -1,3 +1,4 @@
+name: Publish TechDocs
 on:
   pull_request:
     branches:
@@ -25,5 +26,5 @@ jobs:
     with:
       namespace: default
       kind: component
-      name: grafana-backend-services
+      name: grafana-bench
       default-working-directory: ./docs/
