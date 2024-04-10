@@ -1,4 +1,7 @@
-docs_dir: docs
+# To run locally
+# npx techdocs-cli serve -v -c mkdocs.yml
+
+docs_dir: ./docs/
 edit_uri: edit/main/docs/
 markdown_extensions:
   - admonition
@@ -13,6 +16,9 @@ markdown_extensions:
           format: !!python/name:pymdownx.superfences.fence_code_format
 nav:
   - bench.md
+  - bench_version.md
+  - bench_compile.md
+  - bench_test.md
 repo_url: https://github.com/grafana/grafana-bench
 site_name: Grafana Bench
 theme:
@@ -23,7 +29,5 @@ theme:
   name: material
   palette:
     scheme: none
-extra_css:
-# - stylesheets/fix-footer.css
 plugins:
-# - techdocs-core
+  - techdocs-core
