@@ -1,7 +1,7 @@
 # To run locally
 # npx techdocs-cli serve -v -c mkdocs.yml
 
-docs_dir: ./docs/
+docs_dir: docs/
 edit_uri: edit/main/docs/
 markdown_extensions:
   - admonition
