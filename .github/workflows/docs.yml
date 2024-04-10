@@ -23,4 +23,3 @@ jobs:
       namespace: default
       kind: component
       name: grafana-bench
-      default-working-directory: ./docs/
