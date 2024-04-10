@@ -45,7 +45,7 @@ func NewK6TestExecutor(
 	cloudProjectID string,
 ) *K6TestExecutor {
 	return &K6TestExecutor{
-		Log:            log,
+		Log:            log.With("executor", "k6"),
 		Verbose:        verbose,
 		CloudOutput:    cloudOutput,
 		CloudToken:     cloudToken,
