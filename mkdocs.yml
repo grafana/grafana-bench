@@ -1,0 +1,30 @@
+docs_dir: docs
+  #edit_uri: edit/main/docs/
+markdown_extensions:
+  - admonition
+  - extra
+  - toc:
+      permalink: true
+      toc_depth: 3
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+nav:
+  - index.md
+repo_url: https://github.com/grafana/grafana-bench
+site_name: Grafana Bench
+theme:
+  features:
+    - content.action.edit
+    - content.code.copy
+    - navigation.footer
+  name: material
+  palette:
+    scheme: none
+extra_css:
+# - stylesheets/fix-footer.css
+plugins:
+# - techdocs-core
+
