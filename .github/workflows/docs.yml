@@ -26,3 +26,4 @@ jobs:
       namespace: default
       kind: component
       name: grafana-backend-services
+      default-working-directory: ./docs/
