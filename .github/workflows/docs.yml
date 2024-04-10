@@ -20,7 +20,7 @@ jobs:
           go-version: "1.22"
   generate-docs:
     needs: "publish-docs"
-    uses: grafana/shared-workflows/.github/workflows/publish-techdocs.yaml@362873a
+    uses: grafana/shared-workflows/.github/workflows/publish-techdocs.yaml@main
     secrets: inherit
     with:
       namespace: default
