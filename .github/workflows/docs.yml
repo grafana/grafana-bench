@@ -4,9 +4,6 @@ on:
       - main
 
         # START HERE.
-        # figure out how to generate docs
-        # think about a task file or makefile for repo
-        # finish mkdocs.yml
         # update workflow
         # run workflow
 
@@ -23,7 +20,7 @@ jobs:
           go-version: "1.22"
   generate-docs:
     needs: "publish-docs"
-    uses: grafana/shared-workflows/.github/workflows/publish-techdocs.yaml@main
+    uses: grafana/shared-workflows/.github/workflows/publish-techdocs.yaml@362873a
     secrets: inherit
     with:
       namespace: default
