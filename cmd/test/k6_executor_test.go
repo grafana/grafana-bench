@@ -128,7 +128,7 @@ func TestK6Executor(t *testing.T) {
 		{
 			testCase:  "passing test",
 			testSuite: "k6tests/pass.js",
-			expectSummary: &e.SuiteRunSummary{
+			expectSummary: &executor.SuiteRunSummary{
 				TestsExecuted: 1,
 				TestsPassed:   1,
 				TestRuns: []executor.TestRun{
@@ -139,7 +139,7 @@ func TestK6Executor(t *testing.T) {
 		{
 			testCase:  "failing test",
 			testSuite: "k6tests/fail.js",
-			expectSummary: &e.SuiteRunSummary{
+			expectSummary: &executor.SuiteRunSummary{
 				TestsExecuted: 1,
 				TestsFailed:   1,
 				TestRuns: []executor.TestRun{
@@ -150,7 +150,7 @@ func TestK6Executor(t *testing.T) {
 		{
 			testCase:  "error test",
 			testSuite: "k6tests/abort.js",
-			expectSummary: &e.SuiteRunSummary{
+			expectSummary: &executor.SuiteRunSummary{
 				TestsExecuted: 1,
 				TestsError:    1,
 				TestRuns: []executor.TestRun{
@@ -166,7 +166,7 @@ func TestK6Executor(t *testing.T) {
 		{
 			testCase:  "test suite directory",
 			testSuite: "k6tests/",
-			expectSummary: &e.SuiteRunSummary{
+			expectSummary: &executor.SuiteRunSummary{
 				TestsExecuted: 3,
 				TestsError:    1,
 				TestsFailed:   1,
