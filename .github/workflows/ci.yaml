@@ -1,5 +1,10 @@
 name: test-bench-image
 
+# These permissions are needed to assume roles from Github's OIDC.
+permissions:
+  contents: read
+  id-token: write
+
 on:
   push:
     branches: ["main"]
@@ -11,7 +16,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
@@ -26,70 +30,49 @@ jobs:
     - name: Build
       run: go build -v ./...
 
-  build-pr-container:
-    needs: test-bench
+  test-container:
     runs-on: ubuntu-latest
+    # run local registry that buildx can push to
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
     env:
       DOCKER_CLI_EXPERIMENTAL: enabled
     steps:
-      - name: docker login (github)
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: jalevin # TODO don't use personal github
-          password: ${{ secrets.JEFF_PAT }} # TODO don't use PAT
       - uses: actions/checkout@v4
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: network=host
       - name: build container
         uses: docker/build-push-action@v5
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
-          build-args: |
+          build-args: |-
             BENCH_REVISION=${{ github.sha }}
-          push: true
-          tags: |
-            ghcr.io/grafana/grafana-bench:${{ github.sha }}
-
-  test-pr-container:
-    runs-on: ubuntu-latest
-    needs: [build-pr-container]
-    container:
-      image: ghcr.io/grafana/grafana-bench:${{ github.sha }}
-      env:
-        GRAFANA_ADDRESS: PURPOSEFULLY_INVALID
-        GRAFANA_USER: PURPOSEFULLY_INVALID
-        GRAFANA_PASSWORD: PURPOSEFULLY_INVALID
-      options: --user root
-    steps:
-      - uses: actions/checkout@v4
-      - name: run browser check
+          load: true
+          tags: localhost:5000/grafana-bench-test:latest
+      - name: check k6 browser
         run: |
-          k6 run ./CI/browser_test.js
-      - name: Archive screenshots
+          docker run --rm --entrypoint='' --volume="./CI/:/CI/" --volume="./screenshots:/home/bench/screenshots/" localhost:5000/grafana-bench-test:latest k6 run /CI/browser_test.js
+      - name: archive screenshots
         uses: actions/upload-artifact@v3
         with:
           name: screenshots
           path: screenshots
 
   # publish container on build and test in main
-  # TODO, find a way to tag and push the multiarchitecture from
-  # build-pr-container step instead of rebuilding
   publish-main:
-    needs: [build-pr-container, test-pr-container]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [test-bench, test-container]
     runs-on: ubuntu-latest
     env:
       DOCKER_CLI_EXPERIMENTAL: enabled
     steps:
-      - name: docker login (github)
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: jalevin # TODO don't use personal github
-          password: ${{ secrets.JEFF_PAT }} # TODO don't use PAT
       - name: Docker Login (GCR)
         uses: docker/login-action@v3
         with:
@@ -105,10 +88,25 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
-          build-args: |
+          platforms: linux/amd64 #,linux/arm64
+          build-args: |-
             BENCH_REVISION=${{ github.sha }}
           push: true
           tags: |
-            ghcr.io/grafana/grafana-bench:latest
             us.gcr.io/kubernetes-dev/grafana-bench:latest
+
+  publish-gar:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [test-bench, test-container]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: grafana/shared-workflows/actions/push-to-gar-docker@main
+        id: push-to-gar
+        with:
+          environment: "prod"
+          image_name: grafana-bench
+          build-args: |-
+            BENCH_REVISION=${{ github.sha }}
+          tags: |-
+            "latest"

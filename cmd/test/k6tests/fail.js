@@ -1,5 +1,13 @@
-import exec from 'k6/execution';
+import { check } from 'k6'
+
+export let options = {
+   thresholds: {
+        checks: ["rate >= 1"]
+   }
+}
 
 export default function(){
-        exec.test.abort("failed")
+        check({}, {
+                "failed": () => false
+        })
 }
