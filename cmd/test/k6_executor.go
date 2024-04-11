@@ -162,6 +162,12 @@ func (t *K6TestExecutor) ExecTestSuite(
 		suiteSummary.TestRuns = append(suiteSummary.TestRuns, summary)
 	}
 
+	if suiteSummary.TestsPassed == suiteSummary.TestsExecuted {
+		suiteSummary.Status = SuitePassed
+	} else {
+		suiteSummary.Status = SuiteFailed
+	}
+
 	suiteSummary.ScenariosDuration = scenariosDuration
 	suiteSummary.TotalDuration = float32(time.Since(suiteStartTime).Milliseconds())
 

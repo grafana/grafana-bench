@@ -21,6 +21,13 @@ type TestDurations struct {
 	TotalDuration    float32
 }
 
+type SuiteStatus string
+
+const (
+	SuitePassed SuiteStatus = "passed"
+	SuiteFailed SuiteStatus = "failed"
+)
+
 // TestRun summarizes the execution of a test
 type TestRun struct {
 	TestFolder  string
@@ -38,6 +45,7 @@ type TestRun struct {
 // TestSuiteSummary summarizes the execution of  a test suite
 type SuiteRunSummary struct {
 	StartTime         time.Time
+	Status            SuiteStatus
 	TestsExecuted     int32
 	TestsFailed       int32
 	TestsPassed       int32

@@ -99,6 +99,7 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite e.TestSu
 			Info("testRun", "testRun", testRunId)
 	}
 
+	// Deprecated. Use test suite summary's status field instead. Kept for backward compatibility
 	var anyFailures = (suiteRun.TestsFailed + suiteRun.TestsError) > 0
 
 	t.Log.With(t.testRunnerLogAttrs()...).
@@ -131,13 +132,14 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite e.TestSu
 // format: {test type}-{year}{day of year}-{hour}{min}{second}
 // Example load-2024123-140035
 func (t *TestRunner) getRunId(testType TestType) string {
+	now := time.Now().UTC()
 	return fmt.Sprintf("%s-%d%d-%d%d%d",
 		testType.Name(),
-		time.Now().UTC().Year(),
-		time.Now().UTC().YearDay(),
-		time.Now().UTC().Hour(),
-		time.Now().UTC().Minute(),
-		time.Now().UTC().Second(),
+		now.Year(),
+		now.YearDay(),
+		now.Hour(),
+		now.Minute(),
+		now.Second(),
 	)
 }
 
@@ -180,6 +182,7 @@ func suiteRunLogAttrs(suiteRun e.SuiteRunSummary) []any {
 		"startTime", suiteRun.StartTime.Format(time.RFC3339),
 		"totalScenarioDurations", suiteRun.ScenariosDuration,
 		"duration", suiteRun.TotalDuration,
+		"status", suiteRun.Status,
 		"testsExecuted", suiteRun.TestsExecuted,
 		"testsPassed", suiteRun.TestsPassed,
 		"testsFailed", suiteRun.TestsFailed,
