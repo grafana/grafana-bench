@@ -9,6 +9,7 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/grafana/grafana-bench/pkg/executor"
 	e "github.com/grafana/grafana-bench/pkg/executor"
 )
 
@@ -62,7 +63,7 @@ func newAssertionError(message string, expected, actual any) error {
 	return fmt.Errorf("%s: expected: %v got: %v", message, expected, actual)
 }
 
-func assertTestRun(expected *e.TestRun, actual e.TestRun) error {
+func assertTestRun(expected *e.TestRun, actual executor.TestRun) error {
 	if expected == nil {
 		return nil
 	}
@@ -78,7 +79,7 @@ func assertTestRun(expected *e.TestRun, actual e.TestRun) error {
 	return nil
 }
 
-func assertSuiteSummary(expected *e.SuiteRunSummary, actual e.SuiteRunSummary) error {
+func assertSuiteSummary(expected *e.SuiteRunSummary, actual executor.SuiteRunSummary) error {
 	if expected == nil {
 		return nil
 	}
@@ -132,7 +133,7 @@ func TestK6Executor(t *testing.T) {
 				TestsExecuted: 1,
 				TestsPassed:   1,
 				TestRuns: []e.TestRun{
-					{TestFile: "pass.js", Status: e.TestPassed},
+					{TestFile: "pass.js", Status: executor.TestPassed},
 				},
 			},
 		},
@@ -143,7 +144,7 @@ func TestK6Executor(t *testing.T) {
 				TestsExecuted: 1,
 				TestsFailed:   1,
 				TestRuns: []e.TestRun{
-					{TestFile: "fail.js", Status: e.TestFailed},
+					{TestFile: "fail.js", Status: executor.TestFailed},
 				},
 			},
 		},
@@ -154,7 +155,7 @@ func TestK6Executor(t *testing.T) {
 				TestsExecuted: 1,
 				TestsError:    1,
 				TestRuns: []e.TestRun{
-					{TestFile: "abort.js", Status: e.TestError},
+					{TestFile: "abort.js", Status: executor.TestError},
 				},
 			},
 		},
@@ -172,9 +173,9 @@ func TestK6Executor(t *testing.T) {
 				TestsFailed:   1,
 				TestsPassed:   1,
 				TestRuns: []e.TestRun{
-					{TestFile: "abort.js", Status: e.TestError},
-					{TestFile: "fail.js", Status: e.TestFailed},
-					{TestFile: "pass.js", Status: e.TestPassed},
+					{TestFile: "abort.js", Status: executor.TestError},
+					{TestFile: "fail.js", Status: executor.TestFailed},
+					{TestFile: "pass.js", Status: executor.TestPassed},
 				},
 			},
 		},
@@ -205,17 +206,17 @@ func TestK6Executor(t *testing.T) {
 			logBuffer := bytes.Buffer{}
 			log := slog.New(slog.NewTextHandler(&logBuffer, nil))
 
-			suite := e.TestSuite{
+			suite := executor.TestSuite{
 				Path:     tc.testSuite,
 				Revision: "test",
 			}
 
-			executor, err := k6TestRunnerForTesting(log, tc.k6options...)
+			k6Executor, err := k6TestRunnerForTesting(log, tc.k6options...)
 			if err != nil {
 				t.Fatalf("failed to setup the k6 executor %v", err)
 			}
 
-			summary, err := executor.ExecTestSuite(context.TODO(), suite, map[string]string{})
+			summary, err := k6Executor.ExecTestSuite(context.TODO(), suite, map[string]string{})
 
 			if tc.expectErr == nil && err != nil {
 				t.Fatalf("unexpected error: %v", err)

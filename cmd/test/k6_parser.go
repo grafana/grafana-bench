@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"time"
 
-	e "github.com/grafana/grafana-bench/pkg/executor"
+	"github.com/grafana/grafana-bench/pkg/executor"
 )
 
 // pattern to match the cloud output url inside parenthesis
@@ -70,12 +70,12 @@ type Metric struct {
 // {"metric":"iteration_duration","type":"Point","data":{"time":"2023-08-09T09:02:13.291575-08:00","value":325.78425,"tags":{"SUITE_RUN":"08bf3d97-155e-42d0-a709-bab1d8c08941","group":"::setup"}}
 // {"metric":"iteration_duration","type":"Point","data":{"time":"2023-08-09T09:02:13.650349-08:00","value":358.328625,"tags":{"SUITE_RUN":"08bf3d97-155e-42d0-a709-bab1d8c08941","group":"","scenario":"createDashboard"}}}
 // {"metric":"iteration_duration","type":"Point","data":{"time":"2023-08-09T09:02:16.191412-08:00","value":2149.020291,"tags":{"SUITE_RUN":"08bf3d97-155e-42d0-a709-bab1d8c08941","group":"::teardown"}}}
-func parseDurationFromJsonFile(scenarioName, jsonFile string) (e.TestDurations, error) {
-	var td e.TestDurations
+func parseDurationFromJsonFile(scenarioName, jsonFile string) (executor.TestDurations, error) {
+	var td executor.TestDurations
 
 	file, err := os.Open(jsonFile)
 	if err != nil {
-		return e.TestDurations{}, err
+		return executor.TestDurations{}, err
 	}
 	defer file.Close()
 
@@ -88,7 +88,7 @@ func parseDurationFromJsonFile(scenarioName, jsonFile string) (e.TestDurations, 
 		var logEntry Metric
 		err := json.Unmarshal(line, &logEntry)
 		if err != nil {
-			return e.TestDurations{}, fmt.Errorf("Error unmarshalling JSON %w", err)
+			return executor.TestDurations{}, fmt.Errorf("Error unmarshalling JSON %w", err)
 		}
 
 		if logEntry.Metric != "iteration_duration" {
@@ -114,7 +114,7 @@ func parseDurationFromJsonFile(scenarioName, jsonFile string) (e.TestDurations, 
 
 	// TODO review this. not entirely sure it makes sense.
 	if err := scanner.Err(); err != nil {
-		return e.TestDurations{}, fmt.Errorf("Error reading file: %w", err)
+		return executor.TestDurations{}, fmt.Errorf("Error reading file: %w", err)
 	}
 
 	td.TotalDuration = td.SetupDuration + td.ScenarioDuration + td.TeardownDuration

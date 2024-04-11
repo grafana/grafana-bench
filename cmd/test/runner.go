@@ -9,7 +9,7 @@ import (
 	"text/template"
 	"time"
 
-	e "github.com/grafana/grafana-bench/pkg/executor"
+	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/grafana"
 )
 
@@ -21,7 +21,7 @@ type TestRunner struct {
 	MachineSpec     string
 	BenchRevision   string
 	DashboardURL    string
-	Executor        e.TestExecutor
+	Executor        executor.TestExecutor
 }
 
 func NewTestRunner(
@@ -31,7 +31,7 @@ func NewTestRunner(
 	machineSpec string,
 	benchRevision string,
 	dashboardURL string,
-	executor e.TestExecutor,
+	executor executor.TestExecutor,
 
 ) *TestRunner {
 	return &TestRunner{
@@ -45,7 +45,7 @@ func NewTestRunner(
 	}
 }
 
-func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite e.TestSuite) error {
+func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor.TestSuite) error {
 	// get an unique identification for the run
 	runId := t.getRunId(testType)
 	t.Log = t.Log.With("runId", runId)
@@ -106,7 +106,7 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite e.TestSu
 		With(suiteRunLogAttrs(suiteRun)...).
 		Info("suiteRun", "anyFailures", anyFailures)
 
-	// NOTE this block of code performs substitution on a user defined url. e.g.
+	// NOTE this block of code performs substitution on a user defined url. executor.g.
 	// http://mygrafana.com/b/?suiteRun={suiteRun}
 	// This functionality is ALPHA and may be removed in favor of outputting
 	// the suiteRun ID and leaving it up to the user.
@@ -145,7 +145,7 @@ func (t *TestRunner) getRunId(testType TestType) string {
 // returns an unique id for the suite run (DEPRECATED)
 // format: {suite name}-{suite-revision}-graf-{grafana version}-{run-id}
 // Example api-tests-ee654f-graf-10.3-load-2024123-140035
-func (t *TestRunner) getSuiteRunId(runId string, suite e.TestSuite) string {
+func (t *TestRunner) getSuiteRunId(runId string, suite executor.TestSuite) string {
 	return fmt.Sprintf("%s-%s-graf-%s-%s",
 		suite.Name,
 		suite.Revision,
@@ -167,7 +167,7 @@ func (t *TestRunner) testRunnerLogAttrs() []any {
 }
 
 // suiteLogAttrs formats suite's attributes as log attributes
-func suiteLogAttrs(suite e.TestSuite) []any {
+func suiteLogAttrs(suite executor.TestSuite) []any {
 	return []any{
 		"suiteId", fmt.Sprintf("%s-%s", suite.Name, suite.Revision),
 		"suiteIdName", suite.Name,
@@ -176,7 +176,7 @@ func suiteLogAttrs(suite e.TestSuite) []any {
 }
 
 // suiteRunLogAttrs formats suite run's attributes as log attributes
-func suiteRunLogAttrs(suiteRun e.SuiteRunSummary) []any {
+func suiteRunLogAttrs(suiteRun executor.SuiteRunSummary) []any {
 	return []any{
 		"startTime", suiteRun.StartTime.Format(time.RFC3339),
 		"totalScenarioDurations", suiteRun.ScenariosDuration,
@@ -189,7 +189,7 @@ func suiteRunLogAttrs(suiteRun e.SuiteRunSummary) []any {
 }
 
 // testRunLogAttrs returns the k6RunSummary attributes formatted as log attributes
-func testRunLogAttrs(testRun e.TestRun) []any {
+func testRunLogAttrs(testRun executor.TestRun) []any {
 	attrs := []any{
 		"folder", testRun.TestFolder,
 		"testFile", testRun.TestFile,
