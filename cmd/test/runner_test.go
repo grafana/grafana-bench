@@ -152,6 +152,7 @@ const (
 func failedSuiteSummary() SuiteRunSummary {
 	return SuiteRunSummary{
 		StartTime:     time.Now(),
+		Status:        SuiteFailed,
 		TestsExecuted: 1,
 		TestsFailed:   1,
 		TestRuns: []TestRun{
@@ -166,6 +167,7 @@ func failedSuiteSummary() SuiteRunSummary {
 func passingSuiteSummary() SuiteRunSummary {
 	return SuiteRunSummary{
 		StartTime:     time.Now(),
+		Status:        SuitePassed,
 		TestsExecuted: 1,
 		TestsPassed:   1,
 		TestRuns: []TestRun{
