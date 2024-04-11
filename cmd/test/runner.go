@@ -91,10 +91,11 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite TestSuit
 	}
 
 	for _, testRun := range suiteRun.TestRuns {
+		testRunId := fmt.Sprintf("%s-%d", runId, testRun.Order)
 		t.Log.With(t.testRunnerLogAttrs()...).
 			With(suiteLogAttrs(suite)...).
 			With(testRunLogAttrs(testRun)...).
-			Info("testRun")
+			Info("testRun", "testRun", testRunId)
 	}
 
 	var anyFailures = (suiteRun.TestsFailed + suiteRun.TestsError) > 0
