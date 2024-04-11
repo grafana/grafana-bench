@@ -98,6 +98,7 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite TestSuit
 			Info("testRun", "testRun", testRunId)
 	}
 
+	// Deprecated. Use test suite summary's status field instead. Kept for backward compatibility
 	var anyFailures = (suiteRun.TestsFailed + suiteRun.TestsError) > 0
 
 	t.Log.With(t.testRunnerLogAttrs()...).
@@ -179,6 +180,7 @@ func suiteRunLogAttrs(suiteRun SuiteRunSummary) []any {
 		"startTime", suiteRun.StartTime.Format(time.RFC3339),
 		"totalScenarioDurations", suiteRun.ScenariosDuration,
 		"duration", suiteRun.TotalDuration,
+		"status", suiteRun.Status,
 		"testsExecuted", suiteRun.TestsExecuted,
 		"testsPassed", suiteRun.TestsPassed,
 		"testsFailed", suiteRun.TestsFailed,
