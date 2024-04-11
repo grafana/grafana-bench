@@ -131,13 +131,14 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite TestSuit
 // format: {test type}-{year}{day of year}-{hour}{min}{second}
 // Example load-2024123-140035
 func (t *TestRunner)getRunId(testType TestType) string {
+	now := time.Now().UTC()
 	return fmt.Sprintf("%s-%d%d-%d%d%d",
 	       testType.Name(),
-	       time.Now().UTC().Year(),
-	       time.Now().UTC().YearDay(),
-	       time.Now().UTC().Hour(),
-	       time.Now().UTC().Minute(),
-	       time.Now().UTC().Second(),
+	       now.Year(),
+	       now.YearDay(),
+	       now.Hour(),
+	       now.Minute(),
+	       now.Second(),
 	)
 }
 
