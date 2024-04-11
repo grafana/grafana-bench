@@ -8,8 +8,6 @@ import (
 	"log/slog"
 	"sort"
 	"testing"
-
-	"github.com/grafana/grafana-bench/pkg/executor"
 )
 
 type k6TestExecutorOption func(*K6TestExecutor) error
@@ -52,7 +50,7 @@ func k6TestRunnerForTesting(
 	return te, nil
 }
 
-func sortTestRunByFilename(tr []executor.TestRun) {
+func sortTestRunByFilename(tr []TestRun) {
 	sort.Slice(tr, func(i, j int) bool {
 		return tr[i].TestFile < tr[j].TestFile
 	})
@@ -62,7 +60,7 @@ func newAssertionError(message string, expected, actual any) error {
 	return fmt.Errorf("%s: expected: %v got: %v", message, expected, actual)
 }
 
-func assertTestRun(expected *executor.TestRun, actual executor.TestRun) error {
+func assertTestRun(expected *TestRun, actual TestRun) error {
 	if expected == nil {
 		return nil
 	}
@@ -78,7 +76,7 @@ func assertTestRun(expected *executor.TestRun, actual executor.TestRun) error {
 	return nil
 }
 
-func assertSuiteSummary(expected *executor.SuiteRunSummary, actual executor.SuiteRunSummary) error {
+func assertSuiteSummary(expected *SuiteRunSummary, actual SuiteRunSummary) error {
 	if expected == nil {
 		return nil
 	}
@@ -122,39 +120,39 @@ func TestK6Executor(t *testing.T) {
 		testCase      string
 		k6options     []k6TestExecutorOption
 		testSuite     string
-		expectSummary *executor.SuiteRunSummary
+		expectSummary *SuiteRunSummary
 		expectErr     error
 	}{
 		{
 			testCase:  "passing test",
 			testSuite: "k6tests/pass.js",
-			expectSummary: &executor.SuiteRunSummary{
+			expectSummary: &SuiteRunSummary{
 				TestsExecuted: 1,
 				TestsPassed:   1,
-				TestRuns: []executor.TestRun{
-					{TestFile: "pass.js", Status: executor.TestPassed},
+				TestRuns: []TestRun{
+					{TestFile: "pass.js", Status: TestPassed},
 				},
 			},
 		},
 		{
 			testCase:  "failing test",
 			testSuite: "k6tests/fail.js",
-			expectSummary: &executor.SuiteRunSummary{
+			expectSummary: &SuiteRunSummary{
 				TestsExecuted: 1,
 				TestsFailed:   1,
-				TestRuns: []executor.TestRun{
-					{TestFile: "fail.js", Status: executor.TestFailed},
+				TestRuns: []TestRun{
+					{TestFile: "fail.js", Status: TestFailed},
 				},
 			},
 		},
 		{
 			testCase:  "error test",
 			testSuite: "k6tests/abort.js",
-			expectSummary: &executor.SuiteRunSummary{
+			expectSummary: &SuiteRunSummary{
 				TestsExecuted: 1,
 				TestsError:    1,
-				TestRuns: []executor.TestRun{
-					{TestFile: "abort.js", Status: executor.TestError},
+				TestRuns: []TestRun{
+					{TestFile: "abort.js", Status: TestError},
 				},
 			},
 		},
@@ -166,15 +164,15 @@ func TestK6Executor(t *testing.T) {
 		{
 			testCase:  "test suite directory",
 			testSuite: "k6tests/",
-			expectSummary: &executor.SuiteRunSummary{
+			expectSummary: &SuiteRunSummary{
 				TestsExecuted: 3,
 				TestsError:    1,
 				TestsFailed:   1,
 				TestsPassed:   1,
-				TestRuns: []executor.TestRun{
-					{TestFile: "abort.js", Status: executor.TestError},
-					{TestFile: "fail.js", Status: executor.TestFailed},
-					{TestFile: "pass.js", Status: executor.TestPassed},
+				TestRuns: []TestRun{
+					{TestFile: "abort.js", Status: TestError},
+					{TestFile: "fail.js", Status: TestFailed},
+					{TestFile: "pass.js", Status: TestPassed},
 				},
 			},
 		},
@@ -205,23 +203,23 @@ func TestK6Executor(t *testing.T) {
 			logBuffer := bytes.Buffer{}
 			log := slog.New(slog.NewTextHandler(&logBuffer, nil))
 
-			suite := executor.TestSuite{
+			suite := TestSuite{
 				Path:     tc.testSuite,
 				Revision: "test",
 			}
 
-			k6Executor, err := k6TestRunnerForTesting(log, tc.k6options...)
+			executor, err := k6TestRunnerForTesting(log, tc.k6options...)
 			if err != nil {
 				t.Fatalf("failed to setup the k6 executor %v", err)
 			}
 
-			summary, err := k6Executor.ExecTestSuite(context.TODO(), suite, map[string]string{})
+			summary, err := executor.ExecTestSuite(context.TODO(), suite, map[string]string{})
 
-			if tc.expectErr == nil && err != nil {
+			if tc.expectErr == nil && err != nil  {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			if tc.expectErr != nil && !errors.Is(err, tc.expectErr) {
+			if tc.expectErr != nil && !errors.Is(err, tc.expectErr)  {
 				t.Fatalf("should had failed with '%v' got: '%v'", tc.expectErr, err)
 			}
 

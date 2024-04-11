@@ -7,8 +7,6 @@ import (
 	"os"
 	"regexp"
 	"time"
-
-	"github.com/grafana/grafana-bench/pkg/executor"
 )
 
 // pattern to match the cloud output url inside parenthesis
@@ -67,15 +65,22 @@ type Metric struct {
 	} `json:"data"`
 }
 
+type TestDurations struct {
+	SetupDuration    float32
+	ScenarioDuration float32
+	TeardownDuration float32
+	TotalDuration    float32
+}
+
 // {"metric":"iteration_duration","type":"Point","data":{"time":"2023-08-09T09:02:13.291575-08:00","value":325.78425,"tags":{"SUITE_RUN":"08bf3d97-155e-42d0-a709-bab1d8c08941","group":"::setup"}}
 // {"metric":"iteration_duration","type":"Point","data":{"time":"2023-08-09T09:02:13.650349-08:00","value":358.328625,"tags":{"SUITE_RUN":"08bf3d97-155e-42d0-a709-bab1d8c08941","group":"","scenario":"createDashboard"}}}
 // {"metric":"iteration_duration","type":"Point","data":{"time":"2023-08-09T09:02:16.191412-08:00","value":2149.020291,"tags":{"SUITE_RUN":"08bf3d97-155e-42d0-a709-bab1d8c08941","group":"::teardown"}}}
-func parseDurationFromJsonFile(scenarioName, jsonFile string) (executor.TestDurations, error) {
-	var td executor.TestDurations
+func parseDurationFromJsonFile(scenarioName, jsonFile string) (TestDurations, error) {
+	var td TestDurations
 
 	file, err := os.Open(jsonFile)
 	if err != nil {
-		return executor.TestDurations{}, err
+		return TestDurations{}, err
 	}
 	defer file.Close()
 
@@ -88,7 +93,7 @@ func parseDurationFromJsonFile(scenarioName, jsonFile string) (executor.TestDura
 		var logEntry Metric
 		err := json.Unmarshal(line, &logEntry)
 		if err != nil {
-			return executor.TestDurations{}, fmt.Errorf("Error unmarshalling JSON %w", err)
+			return TestDurations{}, fmt.Errorf("Error unmarshalling JSON %w", err)
 		}
 
 		if logEntry.Metric != "iteration_duration" {
@@ -114,7 +119,7 @@ func parseDurationFromJsonFile(scenarioName, jsonFile string) (executor.TestDura
 
 	// TODO review this. not entirely sure it makes sense.
 	if err := scanner.Err(); err != nil {
-		return executor.TestDurations{}, fmt.Errorf("Error reading file: %w", err)
+		return TestDurations{}, fmt.Errorf("Error reading file: %w", err)
 	}
 
 	td.TotalDuration = td.SetupDuration + td.ScenarioDuration + td.TeardownDuration
