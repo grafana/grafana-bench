@@ -1,4 +1,4 @@
-package test
+package playwright
 
 import (
 	"context"
@@ -8,11 +8,12 @@ import (
 	"os"
 	"os/exec"
 
+	e "github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/utils"
 )
 
 const (
-// ThresholdFailed = 99 // return code when test thresholds fail
+	ThresholdFailed = 99 // return code when test thresholds fail
 )
 
 var (
@@ -60,37 +61,34 @@ func (t *PlaywrightTestExecutor) Name() string {
 	return "playwright"
 }
 
+// go run . test test --test-suite /path/to/test/folder --test-type smoke --runner playwright --test-dir "./test-repo" --test-suite-repo git@github.com:grafana/grafana-plugin-tests
 // execute test suite
 func (t *PlaywrightTestExecutor) ExecTestSuite(
 	ctx context.Context,
-	suite TestSuite,
+	suite e.TestSuite,
 	env map[string]string,
-) (SuiteRunSummary, error) {
+) (e.SuiteRunSummary, error) {
 
 	// 1. get url for repo
 	t.Log.Debug("TestSuiteRepo", t.TestSuiteRepo)
 	if t.TestSuiteRepo == "" {
-		return SuiteRunSummary{}, errMissingRepo
+		return e.SuiteRunSummary{}, errMissingRepo
 	}
 
 	t.Log.Debug("TargetDir", t.TargetDir)
 	if t.TargetDir == "" {
-		return SuiteRunSummary{}, errMissingTargetDirError
+		return e.SuiteRunSummary{}, errMissingTargetDirError
 	}
 
 	// 2. download and setup repo
 	t.Log.Debug("TestSuiteRepo", t.TestSuiteRepo, "TargetDir", t.TargetDir)
 	err := ImportSetupRepo(t.TargetDir, t.TestSuiteRepo, t.Log)
 	if err != nil {
-		return SuiteRunSummary{}, fmt.Errorf("failed to import repo: %s", err.Error())
+		return e.SuiteRunSummary{}, fmt.Errorf("failed to import repo: %s", err.Error())
 	}
 
-	// // 3. run tests
-	workDir, err := os.Getwd()
-	if err != nil {
-		return SuiteRunSummary{}, err
-	}
-	err = utils.DoInDir(workDir, t.TargetDir, func() error {
+	// 3. run tests
+	err = utils.ExecuteInDir(t.TargetDir, func() error {
 		// add a config in the repo with setup instructions
 		installCmd := exec.Command("yarn", "test")
 		if err := utils.ExecStdout(installCmd); err != nil {
@@ -99,17 +97,21 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 
 		return nil
 	})
+
+	// process might return exit code 1 but we still want to try to parse the report
 	if err != nil {
-		return SuiteRunSummary{}, err
+		t.Log.Error("failed to run tests", "error", err.Error())
 	}
 
 	file, err := os.ReadFile(fmt.Sprintf("%s/playwright-report/report.json", t.TargetDir))
 	if err != nil {
-		return SuiteRunSummary{}, fmt.Errorf("failed to read report.json: %s", err.Error())
-
+		return e.SuiteRunSummary{}, fmt.Errorf("failed to read report.json: %s", err.Error())
 	}
 
-	println("File", string(file))
+	runSummary, err := parseJsonOutput(t.Log, file)
+	if err != nil {
+		return e.SuiteRunSummary{}, fmt.Errorf("failed parsing playwright report.json into summary: %s", err.Error())
+	}
 
-	return SuiteRunSummary{}, nil
+	return runSummary, nil
 }

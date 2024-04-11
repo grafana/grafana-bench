@@ -115,9 +115,9 @@ type Results struct {
 	Retry         int       `json:"retry"`
 	StartTime     time.Time `json:"startTime"`
 	Attachments   []any     `json:"attachments"`
-	errorLocation struct {
+	ErrorLocation struct {
 		File   string
 		Column int
 		Line   int
-	}
+	} `json:"errorLocation"`
 }

@@ -1,4 +1,4 @@
-package test
+package playwright
 
 import (
 	"fmt"
@@ -11,24 +11,19 @@ import (
 )
 
 func ImportSetupRepo(targetDir, testSuiteRepo string, log *slog.Logger) error {
-	var (
-		repo *git.Repository
-		err  error
-	)
-
 	log.Info("importing test suite", "testSuiteRepo", testSuiteRepo, "targetDir", targetDir)
 
 	// clone repo if doesn't exist
 	exists, _ := utils.PathExists(targetDir)
 	if exists {
-		repo, err = git.PlainOpen(targetDir)
+		_, err := git.PlainOpen(targetDir)
 		if err != nil {
 			return fmt.Errorf("opening repo %s: %w", testSuiteRepo, err)
 		}
 
 	} else {
 		log.Info("cloning test suite")
-		repo, err = git.PlainClone(
+		_, err := git.PlainClone(
 			targetDir,
 			false,
 			&git.CloneOptions{
@@ -43,15 +38,8 @@ func ImportSetupRepo(targetDir, testSuiteRepo string, log *slog.Logger) error {
 		}
 	}
 
-	println("repo: ", repo)
 	// update repo + checkout branch
-	workDir, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("getting current work directory %w", err)
-	}
-
-	// build the tests
-	err = utils.DoInDir(workDir, targetDir, func() error {
+	err := utils.ExecuteInDir(targetDir, func() error {
 		// add a config in the repo with setup instructions
 		installCmd := exec.Command("yarn", "install")
 		if err := utils.ExecStdout(installCmd); err != nil {

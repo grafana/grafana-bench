@@ -9,11 +9,12 @@ import (
 	"testing"
 	"time"
 
+	e "github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/grafana"
 )
 
 type dummyExecutor struct {
-	summary SuiteRunSummary
+	summary e.SuiteRunSummary
 }
 
 func (d dummyExecutor) Name() string {
@@ -22,9 +23,9 @@ func (d dummyExecutor) Name() string {
 
 func (d dummyExecutor) ExecTestSuite(
 	ctx context.Context,
-	suite TestSuite,
+	suite e.TestSuite,
 	env map[string]string,
-) (SuiteRunSummary, error) {
+) (e.SuiteRunSummary, error) {
 	return d.summary, nil
 }
 
@@ -115,7 +116,7 @@ func WithInvalidDashboard() testRunnerOption {
 func testRunnerForTesting(
 	log *slog.Logger,
 	grafanaInstance grafana.GrafanaInstance,
-	executor TestExecutor,
+	executor e.TestExecutor,
 	opts ...testRunnerOption,
 ) (*TestRunner, error) {
 	tr := NewTestRunner(
@@ -149,28 +150,28 @@ const (
 	grafanaNotAliveError = "Instance not available"
 )
 
-func failedSuiteSummary() SuiteRunSummary {
-	return SuiteRunSummary{
+func failedSuiteSummary() e.SuiteRunSummary {
+	return e.SuiteRunSummary{
 		StartTime:     time.Now(),
 		TestsExecuted: 1,
 		TestsFailed:   1,
-		TestRuns: []TestRun{
+		TestRuns: []e.TestRun{
 			{
-				Status: TestFailed,
+				Status: e.TestFailed,
 				Order:  1,
 			},
 		},
 	}
 }
 
-func passingSuiteSummary() SuiteRunSummary {
-	return SuiteRunSummary{
+func passingSuiteSummary() e.SuiteRunSummary {
+	return e.SuiteRunSummary{
 		StartTime:     time.Now(),
 		TestsExecuted: 1,
 		TestsPassed:   1,
-		TestRuns: []TestRun{
+		TestRuns: []e.TestRun{
 			{
-				Status: TestPassed,
+				Status: e.TestPassed,
 				Order:  1,
 			},
 		},
@@ -184,7 +185,7 @@ func Test_Runner(t *testing.T) {
 		testCase   string
 		instance   *mockGrafanaInstance
 		options    []testRunnerOption
-		summary    SuiteRunSummary
+		summary    e.SuiteRunSummary
 		expectErr  string
 		expectMsgs []string
 	}{
@@ -259,7 +260,7 @@ func Test_Runner(t *testing.T) {
 				t.Fatalf("failed to setup test runner %v", err)
 			}
 
-			suite := TestSuite{
+			suite := e.TestSuite{
 				Path:     "testsuite",
 				Revision: "test",
 			}
