@@ -106,7 +106,7 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 		With(suiteRunLogAttrs(suiteRun)...).
 		Info("suiteRun", "anyFailures", anyFailures)
 
-	// NOTE this block of code performs substitution on a user defined url. executor.g.
+	// NOTE this block of code performs substitution on a user defined url. e.g.
 	// http://mygrafana.com/b/?suiteRun={suiteRun}
 	// This functionality is ALPHA and may be removed in favor of outputting
 	// the suiteRun ID and leaving it up to the user.
