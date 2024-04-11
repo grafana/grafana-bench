@@ -143,8 +143,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				Revision: testSuiteRevision,
 			}
 
-			fmt.Println(" 🏎️ runnerType 🏎️ ", runnerType)
-
 			var executor executor.TestExecutor
 			if runnerType == "k6" {
 				executor = NewK6TestExecutor(

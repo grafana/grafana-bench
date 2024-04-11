@@ -3,26 +3,15 @@ package playwright
 import (
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"math"
 	"path"
 
 	e "github.com/grafana/grafana-bench/pkg/executor"
 )
 
-// func newTestIdentifier(filename string, startTime time.Time, projectId string, scenario string, grafanaVersion string) string {
-// 	return fmt.Sprintf("%s-%s-%s-%s-graf-%s",
-// 		filepath.Base(filename),
-// 		startTime.Format("15:04:05"),
-// 		projectId,
-// 		scenario,
-// 		grafanaVersion,
-// 	)
-// }
-
 // parseJsonOutput parses the json output from playwright --report json and returns a slice of RunSummary
 // this will work if only one test is run and the output but will also work for if this contains an entire suite
-func parseJsonOutput(log *slog.Logger, buf []byte) (e.SuiteRunSummary, error) {
+func parseJsonOutput(buf []byte) (e.SuiteRunSummary, error) {
 	output := PlaywrightJsonOutput{}
 
 	err := json.Unmarshal(buf, &output)
@@ -112,28 +101,6 @@ func formatTestRuns(spec Specs, folder string, globalSetupDuration, globalTeardo
 			TotalDuration:    float32(scenarioTotal),
 		},
 	}
-
-	// summary := RunSummary{
-	// 	tags: RunTags{
-	// 		testRun:      newTestIdentifier(spec.File, output.Stats.StartTime, spec.Tests[0].ProjectID, spec.Title, "0.0.0"),
-	// 		scenarioName: spec.Title,
-	// 		testFile:     path.Base(spec.File),
-	// 		folder:       folder,
-	// 		order:        "0", // relevence of order?
-	// 	},
-
-	// 	AnyFailures: !spec.Ok,
-	// 	ExitCode:    0, // what are the other values here and what do they mean?
-	// 	Iterations:  fmt.Sprintf("%d", len(spec.Tests[0].Results)),
-	// 	ExitMessage: exitMessage,
-
-	// 	Durations: e.TestDurations{
-	// 		SetupDuration:    float32(output.Config.GlobalSetup),
-	// 		TeardownDuration: float32(output.Config.GlobalTeardown),
-	// 		ScenarioDuration: averageScenarioDuration,
-	// 		TotalDuration:    float32(scenarioTotal),
-	// 	},
-	// }]
 
 	return summary
 }
