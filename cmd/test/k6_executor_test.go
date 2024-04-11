@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/grafana/grafana-bench/pkg/executor"
-	e "github.com/grafana/grafana-bench/pkg/executor"
 )
 
 type k6TestExecutorOption func(*K6TestExecutor) error
@@ -53,7 +52,7 @@ func k6TestRunnerForTesting(
 	return te, nil
 }
 
-func sortTestRunByFilename(tr []e.TestRun) {
+func sortTestRunByFilename(tr []executor.TestRun) {
 	sort.Slice(tr, func(i, j int) bool {
 		return tr[i].TestFile < tr[j].TestFile
 	})
@@ -63,7 +62,7 @@ func newAssertionError(message string, expected, actual any) error {
 	return fmt.Errorf("%s: expected: %v got: %v", message, expected, actual)
 }
 
-func assertTestRun(expected *e.TestRun, actual executor.TestRun) error {
+func assertTestRun(expected *executor.TestRun, actual executor.TestRun) error {
 	if expected == nil {
 		return nil
 	}
@@ -79,7 +78,7 @@ func assertTestRun(expected *e.TestRun, actual executor.TestRun) error {
 	return nil
 }
 
-func assertSuiteSummary(expected *e.SuiteRunSummary, actual executor.SuiteRunSummary) error {
+func assertSuiteSummary(expected *executor.SuiteRunSummary, actual executor.SuiteRunSummary) error {
 	if expected == nil {
 		return nil
 	}
@@ -123,7 +122,7 @@ func TestK6Executor(t *testing.T) {
 		testCase      string
 		k6options     []k6TestExecutorOption
 		testSuite     string
-		expectSummary *e.SuiteRunSummary
+		expectSummary *executor.SuiteRunSummary
 		expectErr     error
 	}{
 		{
@@ -132,7 +131,7 @@ func TestK6Executor(t *testing.T) {
 			expectSummary: &e.SuiteRunSummary{
 				TestsExecuted: 1,
 				TestsPassed:   1,
-				TestRuns: []e.TestRun{
+				TestRuns: []executor.TestRun{
 					{TestFile: "pass.js", Status: executor.TestPassed},
 				},
 			},
@@ -143,7 +142,7 @@ func TestK6Executor(t *testing.T) {
 			expectSummary: &e.SuiteRunSummary{
 				TestsExecuted: 1,
 				TestsFailed:   1,
-				TestRuns: []e.TestRun{
+				TestRuns: []executor.TestRun{
 					{TestFile: "fail.js", Status: executor.TestFailed},
 				},
 			},
@@ -154,7 +153,7 @@ func TestK6Executor(t *testing.T) {
 			expectSummary: &e.SuiteRunSummary{
 				TestsExecuted: 1,
 				TestsError:    1,
-				TestRuns: []e.TestRun{
+				TestRuns: []executor.TestRun{
 					{TestFile: "abort.js", Status: executor.TestError},
 				},
 			},
@@ -172,7 +171,7 @@ func TestK6Executor(t *testing.T) {
 				TestsError:    1,
 				TestsFailed:   1,
 				TestsPassed:   1,
-				TestRuns: []e.TestRun{
+				TestRuns: []executor.TestRun{
 					{TestFile: "abort.js", Status: executor.TestError},
 					{TestFile: "fail.js", Status: executor.TestFailed},
 					{TestFile: "pass.js", Status: executor.TestPassed},
