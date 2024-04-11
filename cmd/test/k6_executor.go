@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/grafana/grafana-bench/pkg/executor"
-	e "github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/utils"
 )
 
@@ -75,7 +74,7 @@ func (t *K6TestExecutor) ExecTestSuite(
 	ctx context.Context,
 	suite executor.TestSuite,
 	env map[string]string,
-) (e.SuiteRunSummary, error) {
+) (executor.SuiteRunSummary, error) {
 	if t.CloudOutput && (t.CloudToken == "" || t.CloudProjectID == "") {
 		return executor.SuiteRunSummary{}, missingK6CloudConfigError
 	}
