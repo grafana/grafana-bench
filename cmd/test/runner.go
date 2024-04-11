@@ -140,7 +140,7 @@ func (t *TestRunner)getRunId(testType TestType) string {
 	)
 }
 
-// returns an unique id for the suite run
+// returns an unique id for the suite run (DEPRECATED)
 // format: {suite name}-{suite-revision}-graf-{grafana version}-{run-id}
 // Example api-tests-ee654f-graf-10.3-load-2024123-140035
 func (t *TestRunner) getSuiteRunId(runId string, suite TestSuite) string {
