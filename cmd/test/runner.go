@@ -31,6 +31,7 @@ func NewTestRunner(
 	benchRevision string,
 	dashboardURL string,
 	executor TestExecutor,
+
 ) *TestRunner {
 	return &TestRunner{
 		Log:             log,
@@ -44,6 +45,12 @@ func NewTestRunner(
 }
 
 func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite TestSuite) error {
+	// get an unique identification for the run
+	runId := t.getRunId(testType)
+	t.Log = t.Log.With("runId", runId)
+
+	t.Log.With(suiteLogAttrs(suite)...).Info("starting suite run")
+
 	t.Log.Info("Waiting for grafana server...", "address", t.GrafanaInstance.Address())
 
 	err := t.GrafanaInstance.WaitForLiveGrafana(ctx)
@@ -57,8 +64,11 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite TestSuit
 		return fmt.Errorf("getting grafana version: %w", err)
 	}
 
-	runIdentifier := t.newRunIdentifier(testType, suite)
-	t.Log.Info("suite identifier", "identifier", runIdentifier)
+	// get an unique identification for the suite run (used for backward compatibility)
+	suiteRunId := t.getSuiteRunId(runId, suite)
+	t.Log = t.Log.With("suiteRun", suiteRunId)
+
+	t.Log.With(suiteLogAttrs(suite)...).Info("starting suite run")
 
 	// set common test execution variables
 	env := map[string]string{
@@ -81,15 +91,18 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite TestSuit
 	}
 
 	for _, testRun := range suiteRun.TestRuns {
-		t.Log.With(t.suiteLogAttrs(suite, runIdentifier)...).
-			With(t.testRunLogAttrs(testRun)...).
-			Info("testRun", "testRun", t.newTestIdentifier(testType, suite, testRun))
+		testRunId := fmt.Sprintf("%s-%d", runId, testRun.Order)
+		t.Log.With(t.testRunnerLogAttrs()...).
+			With(suiteLogAttrs(suite)...).
+			With(testRunLogAttrs(testRun)...).
+			Info("testRun", "testRun", testRunId)
 	}
 
 	var anyFailures = (suiteRun.TestsFailed + suiteRun.TestsError) > 0
 
-	t.Log.With(t.suiteLogAttrs(suite, runIdentifier)...).
-		With(t.suiteRunLogAttrs(suiteRun)...).
+	t.Log.With(t.testRunnerLogAttrs()...).
+		With(suiteLogAttrs(suite)...).
+		With(suiteRunLogAttrs(suiteRun)...).
 		Info("suiteRun", "anyFailures", anyFailures)
 
 	// NOTE this block of code performs substitution on a user defined url. e.g.
@@ -99,66 +112,69 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite TestSuit
 	if anyFailures {
 		var dashboardMsg string
 		if t.DashboardURL != "" {
-			dashboard, err := t.getDashboardURL(runIdentifier)
+			dashboard, err := t.getDashboardURL(runId)
 			if err != nil {
 				return fmt.Errorf("getting URL dashboard: %w", err)
 			}
 			dashboardMsg = " See dashboard: " + dashboard
 		}
 
-		t.Log.With(t.suiteLogAttrs(suite, runIdentifier)...).
+		t.Log.With(suiteLogAttrs(suite)...).
 			Error("test suite failed. Too many test failures." + dashboardMsg)
 	}
 
 	return nil
 }
 
-// newRunIdentifier creates an identifier to link tests together when querying
-// test output using the format {type}-{time}-{test suite}-{sha}-graf-{version}
-// Examples:
-//
-//	smoke-13:37:35-api-tests-cb5adc0-graf-10.2.0-60657
-//	load-13:37:35-api-tests-cb5adc0-graf-10.2.0-60657
-func (t *TestRunner) newRunIdentifier(testType TestType, suite TestSuite) string {
-	return fmt.Sprintf("%s-%s-%s-%s-graf-%s",
-		testType.Name(),
-		time.Now().UTC().Format("15:04:05"),
-		suite.Name,
-		suite.Revision,
-		t.GrafanaVersion,
+// returns an unique id for the run
+// format: {test type}-{year}{day of year}-{hour}{min}{second}
+// Example load-2024123-140035
+func (t *TestRunner)getRunId(testType TestType) string {
+	return fmt.Sprintf("%s-%d%d-%d%d%d",
+	       testType.Name(),
+	       time.Now().UTC().Year(),
+	       time.Now().UTC().YearDay(),
+	       time.Now().UTC().Hour(),
+	       time.Now().UTC().Minute(),
+	       time.Now().UTC().Second(),
 	)
 }
 
-// TestIdentifier returns a test identifier of the form {filename}-{time}-{type}-{test suite}-{sha}-graf-{version}
-// Example: dashboardCreate.js-13:37:35-smoke-api-tests-cb5adc0-graf-10.2.0-60657
-func (t *TestRunner) newTestIdentifier(testType TestType, suite TestSuite, testRun TestRun) string {
-	return fmt.Sprintf("%s-%s-%s-%s-%s-graf-%s",
-		testRun.TestFile,
-		testRun.StartTime.UTC().Format("15:04:05"),
-		testType.Name(),
+// returns an unique id for the suite run (DEPRECATED)
+// format: {suite name}-{suite-revision}-graf-{grafana version}-{run-id}
+// Example api-tests-ee654f-graf-10.3-load-2024123-140035
+func (t *TestRunner) getSuiteRunId(runId string, suite TestSuite) string {
+	return fmt.Sprintf("%s-%s-graf-%s-%s",
 		suite.Name,
 		suite.Revision,
 		t.GrafanaVersion,
+		runId,
 	)
 }
 
-// suiteRunLogAttrs formats the test suite's attributes as log attributes
+// testRunnerLogAttrs formats the test runner attributes as log attributes
 // TODO: check for missing attributes (for example add test type?)
-func (t *TestRunner) suiteLogAttrs(suite TestSuite, runIdentifier string) []any {
+func (t *TestRunner) testRunnerLogAttrs() []any {
 	return []any{
-		"suiteRun", runIdentifier,
 		"testTrigger", t.Trigger,
 		"benchRevision", t.BenchRevision,
-		"testSuiteRevision", suite.Revision,
 		"grafanaUrl", t.GrafanaInstance.Address(),
 		"grafanaVersion", t.GrafanaVersion,
 		"testExecutor", t.Executor.Name(),
 	}
 }
 
-// suiteRunLogAttrs formats the test runner's attributes as log attributes
-// TODO: check for missing attributes (for example add test type?)
-func (t *TestRunner) suiteRunLogAttrs(suiteRun SuiteRunSummary) []any {
+// suiteLogAttrs formats suite's attributes as log attributes
+func suiteLogAttrs(suite TestSuite) []any {
+	return []any{
+		"suiteId", fmt.Sprintf("%s-%s", suite.Name, suite.Revision),
+		"suiteIdName", suite.Name,
+		"suiteRevision", suite.Revision,
+	}
+}
+
+// suiteRunLogAttrs formats suite run's attributes as log attributes
+func suiteRunLogAttrs(suiteRun SuiteRunSummary) []any {
 	return []any{
 		"startTime", suiteRun.StartTime.Format(time.RFC3339),
 		"totalScenarioDurations", suiteRun.ScenariosDuration,
@@ -171,7 +187,7 @@ func (t *TestRunner) suiteRunLogAttrs(suiteRun SuiteRunSummary) []any {
 }
 
 // testRunLogAttrs returns the k6RunSummary attributes formatted as log attributes
-func (t *TestRunner) testRunLogAttrs(testRun TestRun) []any {
+func testRunLogAttrs(testRun TestRun) []any {
 	attrs := []any{
 		"folder", testRun.TestFolder,
 		"testFile", testRun.TestFile,
