@@ -52,7 +52,7 @@ jobs:
             BENCH_REVISION=${{ github.sha }}
           load: true
           tags: localhost:5000/grafana-bench-test:latest
-      - name: check k6 browser
+      - name: check k6 browser dependencies
         run: |
           docker run --rm --entrypoint='k6' \
             --volume="./CI/:/CI/" --volume="./screenshots:/home/bench/screenshots/" \
