@@ -9,6 +9,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/grafana"
 )
 
@@ -20,7 +21,7 @@ type TestRunner struct {
 	MachineSpec     string
 	BenchRevision   string
 	DashboardURL    string
-	Executor        TestExecutor
+	Executor        executor.TestExecutor
 }
 
 func NewTestRunner(
@@ -30,7 +31,7 @@ func NewTestRunner(
 	machineSpec string,
 	benchRevision string,
 	dashboardURL string,
-	executor TestExecutor,
+	executor executor.TestExecutor,
 
 ) *TestRunner {
 	return &TestRunner{
@@ -44,7 +45,7 @@ func NewTestRunner(
 	}
 }
 
-func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite TestSuite) error {
+func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor.TestSuite) error {
 	// get an unique identification for the run
 	runId := t.getRunId(testType)
 	t.Log = t.Log.With("runId", runId)
@@ -98,7 +99,6 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite TestSuit
 			Info("testRun", "testRun", testRunId)
 	}
 
-	// Deprecated. Use test suite summary's status field instead. Kept for backward compatibility
 	var anyFailures = (suiteRun.TestsFailed + suiteRun.TestsError) > 0
 
 	t.Log.With(t.testRunnerLogAttrs()...).
@@ -130,22 +130,22 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite TestSuit
 // returns an unique id for the run
 // format: {test type}-{year}{day of year}-{hour}{min}{second}
 // Example load-2024123-140035
-func (t *TestRunner)getRunId(testType TestType) string {
+func (t *TestRunner) getRunId(testType TestType) string {
 	now := time.Now().UTC()
 	return fmt.Sprintf("%s-%d%d-%d%d%d",
-	       testType.Name(),
-	       now.Year(),
-	       now.YearDay(),
-	       now.Hour(),
-	       now.Minute(),
-	       now.Second(),
+		testType.Name(),
+		now.Year(),
+		now.YearDay(),
+		now.Hour(),
+		now.Minute(),
+		now.Second(),
 	)
 }
 
 // returns an unique id for the suite run (DEPRECATED)
 // format: {suite name}-{suite-revision}-graf-{grafana version}-{run-id}
 // Example api-tests-ee654f-graf-10.3-load-2024123-140035
-func (t *TestRunner) getSuiteRunId(runId string, suite TestSuite) string {
+func (t *TestRunner) getSuiteRunId(runId string, suite executor.TestSuite) string {
 	return fmt.Sprintf("%s-%s-graf-%s-%s",
 		suite.Name,
 		suite.Revision,
@@ -167,7 +167,7 @@ func (t *TestRunner) testRunnerLogAttrs() []any {
 }
 
 // suiteLogAttrs formats suite's attributes as log attributes
-func suiteLogAttrs(suite TestSuite) []any {
+func suiteLogAttrs(suite executor.TestSuite) []any {
 	return []any{
 		"suiteId", fmt.Sprintf("%s-%s", suite.Name, suite.Revision),
 		"suiteIdName", suite.Name,
@@ -176,12 +176,11 @@ func suiteLogAttrs(suite TestSuite) []any {
 }
 
 // suiteRunLogAttrs formats suite run's attributes as log attributes
-func suiteRunLogAttrs(suiteRun SuiteRunSummary) []any {
+func suiteRunLogAttrs(suiteRun executor.SuiteRunSummary) []any {
 	return []any{
 		"startTime", suiteRun.StartTime.Format(time.RFC3339),
 		"totalScenarioDurations", suiteRun.ScenariosDuration,
 		"duration", suiteRun.TotalDuration,
-		"status", suiteRun.Status,
 		"testsExecuted", suiteRun.TestsExecuted,
 		"testsPassed", suiteRun.TestsPassed,
 		"testsFailed", suiteRun.TestsFailed,
@@ -190,7 +189,7 @@ func suiteRunLogAttrs(suiteRun SuiteRunSummary) []any {
 }
 
 // testRunLogAttrs returns the k6RunSummary attributes formatted as log attributes
-func testRunLogAttrs(testRun TestRun) []any {
+func testRunLogAttrs(testRun executor.TestRun) []any {
 	attrs := []any{
 		"folder", testRun.TestFolder,
 		"testFile", testRun.TestFile,

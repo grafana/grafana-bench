@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/grafana"
 	"github.com/grafana/grafana-bench/pkg/revision"
 	"github.com/grafana/grafana-bench/pkg/utils/env"
@@ -129,7 +130,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				}
 			}
 
-			suite := TestSuite{
+			suite := executor.TestSuite{
 				Name:     testSuiteName,
 				BaseDir:  testSuiteBase,
 				Path:     testSuite,
