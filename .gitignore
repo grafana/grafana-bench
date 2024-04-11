@@ -5,6 +5,8 @@ creds/*
 grafana-bench.tar.gz
 .env*
 
+test-repo/*
+
 
 argo.sh
 

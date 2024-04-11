@@ -25,6 +25,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	var (
 		testTrigger       string
 		testType          string
+		runnerType        string
 		grafanaUrl        string
 		grafanaUsername   string
 		grafanaPassword   string
@@ -34,13 +35,17 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		revisionFile      string
 		testSuite         string
 		testSuiteBase     string
-		k6CloudToken      string
-		k6CloudProjectId  string
 		grafanaTimeout    time.Duration
 		benchRevision     string
 		dashboardURL      string
 		verbose           bool
-		k6CloudOutput     bool
+		// k6 cloud specific flags
+		k6CloudToken     string
+		k6CloudProjectId string
+		k6CloudOutput    bool
+		// playwright cloud specific flags
+		testSuiteRepo      string
+		testSuiteDirectory string
 	)
 
 	cmd := cobra.Command{
@@ -96,10 +101,32 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				}
 			}
 
+			suite := TestSuite{
+				Name:     testSuiteName,
+				BaseDir:  testSuiteBase,
+				Path:     testSuite,
+				Revision: testSuiteRevision,
+			}
+
+			fmt.Println(" 🏎️ runnerType 🏎️ ", runnerType)
+
+			var executor TestExecutor
+			if runnerType == "k6" {
+				executor = NewK6TestExecutor(
+					log,
+					verbose,
+					k6CloudOutput,
+					k6CloudToken,
+					k6CloudProjectId,
+				)
+			}
+
+			if runnerType == "playwright" {
+				executor = NewPlaywrightTestExecutor(log, verbose, testSuiteRepo, testSuiteDirectory)
+			}
+
 			runner := NewTestRunner(
 				log,
-				verbose,
-				k6CloudOutput,
 				testTrigger,
 				trt,
 				testSuiteBase,
@@ -130,6 +157,9 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	fs := cmd.Flags()
 	fs.StringVar(&testTrigger, "test-trigger", "local", "test trigger")
 	fs.StringVar(&testType, "test-type", "smoke", "test type. Allowed values: 'smoke', 'load'")
+	fs.StringVar(&runnerType, "runner", "k6", "test runner. Allowed values: 'k6', 'playwright'")
+	fs.StringVar(&testSuiteRepo, "test-suite-repo", "", "repository to grab test suite from")
+	fs.StringVar(&testSuiteDirectory, "test-dir", "./test-repo/", "repository to grab test suite from")
 	fs.StringVar(&grafanaUrl, "grafana-url", "http://localhost:3000", "url to grafana instance")
 	fs.DurationVar(&grafanaTimeout, "grafana-timeout", 30*time.Second, "timeout for waiting grafana to be live")
 	fs.StringVar(&grafanaUsername, "grafana-username", "admin", "grafana user name. Can be overridden by the GRAFANA_USER environment variable")
@@ -149,7 +179,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		"\nExample: http://localhost/dashboards?run={{.SuiteRun}}",
 	)
 	fs.StringVar(&testSuite, "test-suite", "", "path to the tests to be executed."+
-	        "\nThe path must be relative to the base dir (which defaults to the current directory)." +
+		"\nThe path must be relative to the base dir (which defaults to the current directory)."+
 		"\nA single .js file or a directory can be specified."+
 		"\nIf a directory is specified, all .js files in the directory and its sub-directories will be executed as tests.")
 	cmd.MarkFlagRequired("test-suite")
@@ -169,4 +199,3 @@ func getTestSuiteRevision(revisionFile string) (string, error) {
 	}
 	return strings.TrimSpace(string(bytes)), nil
 }
-

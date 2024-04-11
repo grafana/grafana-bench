@@ -323,7 +323,7 @@ func (t *TestRunner) execTest(ctx context.Context, env map[string]string, args .
 		// get the path to the test relative to the TestSuiteBase if any
 		// we don't need to check for errors because how the test path is constructed
 		rootDir, _ := filepath.Abs(t.TestSuiteBase)
-		testFolder, _  := filepath.Rel(rootDir, filepath.Dir(testFile))
+		testFolder, _ := filepath.Rel(rootDir, filepath.Dir(testFile))
 
 		// test complete log
 		testTags := []any{

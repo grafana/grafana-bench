@@ -45,15 +45,6 @@ func newTestIdentifier(filename string, startTime time.Time, projectId string, s
 	)
 }
 
-func parseTextSummaryOutput(log *slog.Logger, buf []byte) (RunSummary, error) {
-	var (
-		summary RunSummary
-		err     error
-	)
-
-	return summary, nil
-}
-
 // parseJsonOutput parses the json output from playwright --report json and returns a slice of RunSummary
 // this will work if only one test is run and the output but will also work for if this contains an entire suite
 func parseJsonOutput(log *slog.Logger, buf []byte) ([]RunSummary, error) {
