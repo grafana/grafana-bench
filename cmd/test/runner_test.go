@@ -9,11 +9,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/grafana"
 )
 
 type dummyExecutor struct {
-	summary SuiteRunSummary
+	summary executor.SuiteRunSummary
 }
 
 func (d dummyExecutor) Name() string {
@@ -22,9 +23,9 @@ func (d dummyExecutor) Name() string {
 
 func (d dummyExecutor) ExecTestSuite(
 	ctx context.Context,
-	suite TestSuite,
+	suite executor.TestSuite,
 	env map[string]string,
-) (SuiteRunSummary, error) {
+) (executor.SuiteRunSummary, error) {
 	return d.summary, nil
 }
 
@@ -115,7 +116,7 @@ func WithInvalidDashboard() testRunnerOption {
 func testRunnerForTesting(
 	log *slog.Logger,
 	grafanaInstance grafana.GrafanaInstance,
-	executor TestExecutor,
+	executor executor.TestExecutor,
 	opts ...testRunnerOption,
 ) (*TestRunner, error) {
 	tr := NewTestRunner(
@@ -149,28 +150,28 @@ const (
 	grafanaNotAliveError = "Instance not available"
 )
 
-func failedSuiteSummary() SuiteRunSummary {
-	return SuiteRunSummary{
+func failedSuiteSummary() executor.SuiteRunSummary {
+	return executor.SuiteRunSummary{
 		StartTime:     time.Now(),
 		TestsExecuted: 1,
 		TestsFailed:   1,
-		TestRuns: []TestRun{
+		TestRuns: []executor.TestRun{
 			{
-				Status: TestFailed,
+				Status: executor.TestFailed,
 				Order:  1,
 			},
 		},
 	}
 }
 
-func passingSuiteSummary() SuiteRunSummary {
-	return SuiteRunSummary{
+func passingSuiteSummary() executor.SuiteRunSummary {
+	return executor.SuiteRunSummary{
 		StartTime:     time.Now(),
 		TestsExecuted: 1,
 		TestsPassed:   1,
-		TestRuns: []TestRun{
+		TestRuns: []executor.TestRun{
 			{
-				Status: TestPassed,
+				Status: executor.TestPassed,
 				Order:  1,
 			},
 		},
@@ -184,7 +185,7 @@ func Test_Runner(t *testing.T) {
 		testCase   string
 		instance   *mockGrafanaInstance
 		options    []testRunnerOption
-		summary    SuiteRunSummary
+		summary    executor.SuiteRunSummary
 		expectErr  string
 		expectMsgs []string
 	}{
@@ -246,20 +247,20 @@ func Test_Runner(t *testing.T) {
 			logBuffer := bytes.Buffer{}
 			log := slog.New(slog.NewTextHandler(&logBuffer, nil))
 
-			executor := dummyExecutor{summary: tc.summary}
+			dummyExecutor := dummyExecutor{summary: tc.summary}
 
 			// create test runner with test-specific options
 			tr, err := testRunnerForTesting(
 				log,
 				tc.instance,
-				executor,
+				dummyExecutor,
 				tc.options...,
 			)
 			if err != nil {
 				t.Fatalf("failed to setup test runner %v", err)
 			}
 
-			suite := TestSuite{
+			suite := executor.TestSuite{
 				Path:     "testsuite",
 				Revision: "test",
 			}

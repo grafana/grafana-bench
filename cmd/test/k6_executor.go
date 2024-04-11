@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/utils"
 )
 
@@ -24,7 +25,7 @@ const (
 
 var (
 	missingK6CloudConfigError = errors.New("k6 Token and project ID are required for cloud output")
-	testFilesError = errors.New("getting test files")
+	testFilesError            = errors.New("getting test files")
 )
 
 // K6TestExecutor implements TestExecutor interface for running k6 test suites
@@ -45,7 +46,7 @@ func NewK6TestExecutor(
 	cloudProjectID string,
 ) *K6TestExecutor {
 	return &K6TestExecutor{
-		Log:            log,
+		Log:            log.With("executor", "k6"),
 		Verbose:        verbose,
 		CloudOutput:    cloudOutput,
 		CloudToken:     cloudToken,
@@ -55,28 +56,27 @@ func NewK6TestExecutor(
 
 // K6TestRun summarizes the execution of a k6 test
 type K6TestRun struct {
-	Status      TestStatus
+	Status      executor.TestStatus
 	ExitCode    int
 	ExitMessage string
 	Iterations  string
-	Durations   TestDurations
+	Durations   executor.TestDurations
 	CloudID     string
 	CloudURL    string
 }
 
-
-func (t *K6TestExecutor)Name() string {
+func (t *K6TestExecutor) Name() string {
 	return "k6"
 }
 
 // execute test suite
 func (t *K6TestExecutor) ExecTestSuite(
 	ctx context.Context,
-	suite TestSuite,
+	suite executor.TestSuite,
 	env map[string]string,
-) (SuiteRunSummary, error) {
+) (executor.SuiteRunSummary, error) {
 	if t.CloudOutput && (t.CloudToken == "" || t.CloudProjectID == "") {
-		return SuiteRunSummary{}, missingK6CloudConfigError
+		return executor.SuiteRunSummary{}, missingK6CloudConfigError
 	}
 
 	// set common test execution variables
@@ -89,23 +89,23 @@ func (t *K6TestExecutor) ExecTestSuite(
 
 	// run k6 tests
 	var (
-		suiteStartTime = time.Now()
+		suiteStartTime    = time.Now()
 		scenariosDuration float32
 	)
 
 	k6Version, err := t.getK6Version()
 	if err != nil {
-		return SuiteRunSummary{}, fmt.Errorf("getting k6 version %w", err)
+		return executor.SuiteRunSummary{}, fmt.Errorf("getting k6 version %w", err)
 	}
 
 	t.Log.Info("using k6", "k6Version", k6Version)
 
 	tests, err := t.getTestFiles(suite)
 	if err != nil {
-		return SuiteRunSummary{}, fmt.Errorf("%w: %w", testFilesError, err)
+		return executor.SuiteRunSummary{}, fmt.Errorf("%w: %w", testFilesError, err)
 	}
 
-	suiteSummary := SuiteRunSummary{}
+	suiteSummary := executor.SuiteRunSummary{}
 
 	// run the tests
 	for order, testFile := range tests {
@@ -134,16 +134,16 @@ func (t *K6TestExecutor) ExecTestSuite(
 		rootDir, _ := filepath.Abs(suite.BaseDir)
 		testFolder, _ := filepath.Rel(rootDir, filepath.Dir(testFile))
 
-		summary := TestRun{
-			TestFolder:   testFolder,
-			TestFile:     path.Base(testFile),
-			StartTime:    testStartTime,
-			Order:        order + 1,
-			Status:       k6Summary.Status,
-			ExitCode:     k6Summary.ExitCode,
-			Durations:    k6Summary.Durations,
-			Iterations:   k6Summary.Iterations,
-			ExitMessage:  k6Summary.ExitMessage,
+		summary := executor.TestRun{
+			TestFolder:  testFolder,
+			TestFile:    path.Base(testFile),
+			StartTime:   testStartTime,
+			Order:       order + 1,
+			Status:      k6Summary.Status,
+			ExitCode:    k6Summary.ExitCode,
+			Durations:   k6Summary.Durations,
+			Iterations:  k6Summary.Iterations,
+			ExitMessage: k6Summary.ExitMessage,
 			Attributes: map[string]string{
 				"cloudId":  k6Summary.CloudID,
 				"cloudURL": k6Summary.CloudURL,
@@ -152,11 +152,11 @@ func (t *K6TestExecutor) ExecTestSuite(
 
 		suiteSummary.TestsExecuted += 1
 		switch summary.Status {
-		case TestPassed:
+		case executor.TestPassed:
 			suiteSummary.TestsPassed += 1
-		case TestFailed:
+		case executor.TestFailed:
 			suiteSummary.TestsFailed += 1
-		case TestError:
+		case executor.TestError:
 			suiteSummary.TestsError += 1
 		}
 		suiteSummary.TestRuns = append(suiteSummary.TestRuns, summary)
@@ -188,7 +188,7 @@ func (t *K6TestExecutor) execTest(
 	var (
 		cmdErr   string
 		exitCode int
-		status   TestStatus = TestPassed
+		status   executor.TestStatus = executor.TestPassed
 	)
 	if err := cmd.Run(); err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
@@ -196,9 +196,9 @@ func (t *K6TestExecutor) execTest(
 
 			switch exitCode {
 			case ThresholdFailed:
-				status = TestFailed
+				status = executor.TestFailed
 			default:
-				status = TestError
+				status = executor.TestError
 			}
 		}
 		cmdErr = "error running k6 command: " + err.Error()
@@ -279,7 +279,7 @@ func getScenarioName(filename string) string {
 // If it points to a directory all of the .js files in it are recursively searched.
 // tests=dashboard_read.js will run dashboard_read.js.
 // tests=dashboards will run all files in dashboards/**.*.js.
-func (t *K6TestExecutor) getTestFiles(suite TestSuite) ([]string, error) {
+func (t *K6TestExecutor) getTestFiles(suite executor.TestSuite) ([]string, error) {
 	if filepath.IsAbs(suite.Path) {
 		return nil, fmt.Errorf("test suite must be a relative to base dir. Got %q", suite.Path)
 	}

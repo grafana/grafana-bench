@@ -1,4 +1,4 @@
-package test
+package executor
 
 import (
 	"context"
@@ -8,29 +8,44 @@ import (
 type TestStatus string
 
 const (
-       Unknown     TestStatus = ""
-       TestPassed  TestStatus = "passed"
-       TestFailed  TestStatus = "failed"
-       TestError   TestStatus = "error"
+	Unknown    TestStatus = ""
+	TestPassed TestStatus = "passed"
+	TestFailed TestStatus = "failed"
+	TestError  TestStatus = "error"
+)
+
+type TestDurations struct {
+	SetupDuration    float32
+	ScenarioDuration float32
+	TeardownDuration float32
+	TotalDuration    float32
+}
+
+type SuiteStatus string
+
+const (
+	SuitePassed SuiteStatus = "passed"
+	SuiteFailed SuiteStatus = "failed"
 )
 
 // TestRun summarizes the execution of a test
 type TestRun struct {
-	TestFolder   string
-	TestFile     string
-	StartTime    time.Time
-	Order        int
-	Status       TestStatus
-	ExitCode     int
-	ExitMessage  string
-	Iterations   string
-	Durations    TestDurations
-	Attributes   map[string]string
+	TestFolder  string
+	TestFile    string
+	StartTime   time.Time
+	Order       int
+	Status      TestStatus
+	ExitCode    int
+	ExitMessage string
+	Iterations  string
+	Durations   TestDurations
+	Attributes  map[string]string
 }
 
 // TestSuiteSummary summarizes the execution of  a test suite
 type SuiteRunSummary struct {
 	StartTime         time.Time
+	Status            SuiteStatus
 	TestsExecuted     int32
 	TestsFailed       int32
 	TestsPassed       int32
@@ -52,9 +67,9 @@ type TestSuite struct {
 // TestExecutor defines the methods for running a test suite
 type TestExecutor interface {
 	// Name returns the name of the executor
-        Name() string
+	Name() string
 
-        // ExecTestSuite executes a test suite an reports the results
+	// ExecTestSuite executes a test suite an reports the results
 	ExecTestSuite(
 		ctx context.Context,
 		suite TestSuite,
