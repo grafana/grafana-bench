@@ -1,7 +1,8 @@
 pre-commit:
   commands:
     update-docs:
-      run: go run gendoc/main.go -o docs && git add docs/ && git commit -m 'generate docs'
+      glob: "docs/*"
+      run: go run gendoc/main.go -o docs && git add {staged_files}
 
 
 # EXAMPLE USAGE:
