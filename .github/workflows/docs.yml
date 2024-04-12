@@ -1,6 +1,6 @@
 name: Publish TechDocs
 on:
-  pull_request:
+  push:
     branches:
       - main
 
