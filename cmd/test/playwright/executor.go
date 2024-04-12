@@ -8,7 +8,7 @@ import (
 	"os"
 	"os/exec"
 
-	e "github.com/grafana/grafana-bench/pkg/executor"
+	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/utils"
 )
 
@@ -50,21 +50,21 @@ func (t *PlaywrightTestExecutor) Name() string {
 // execute test suite
 func (t *PlaywrightTestExecutor) ExecTestSuite(
 	ctx context.Context,
-	suite e.TestSuite,
+	suite executor.TestSuite,
 	env map[string]string,
-) (e.SuiteRunSummary, error) {
+) (executor.SuiteRunSummary, error) {
 
 	if t.TestSuiteRepo == "" {
-		return e.SuiteRunSummary{}, errMissingRepo
+		return executor.SuiteRunSummary{}, errMissingRepo
 	}
 
 	if t.TargetDir == "" {
-		return e.SuiteRunSummary{}, errMissingTargetDirError
+		return executor.SuiteRunSummary{}, errMissingTargetDirError
 	}
 
 	err := ImportSetupRepo(t.TargetDir, t.TestSuiteRepo, t.Log)
 	if err != nil {
-		return e.SuiteRunSummary{}, fmt.Errorf("failed to import repo: %s", err.Error())
+		return executor.SuiteRunSummary{}, fmt.Errorf("failed to import repo: %s", err.Error())
 	}
 
 	err = utils.ExecuteInDir(t.TargetDir, func() error {
@@ -84,12 +84,12 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 
 	file, err := os.ReadFile(fmt.Sprintf("%s/playwright-report/report.json", t.TargetDir))
 	if err != nil {
-		return e.SuiteRunSummary{}, fmt.Errorf("failed to read report.json: %s", err.Error())
+		return executor.SuiteRunSummary{}, fmt.Errorf("failed to read report.json: %s", err.Error())
 	}
 
 	runSummary, err := parseJsonOutput(file)
 	if err != nil {
-		return e.SuiteRunSummary{}, fmt.Errorf("failed parsing playwright report.json into summary: %s", err.Error())
+		return executor.SuiteRunSummary{}, fmt.Errorf("failed parsing playwright report.json into summary: %s", err.Error())
 	}
 
 	return runSummary, nil

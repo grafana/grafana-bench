@@ -6,20 +6,20 @@ import (
 	"math"
 	"path"
 
-	e "github.com/grafana/grafana-bench/pkg/executor"
+	"github.com/grafana/grafana-bench/pkg/executor"
 )
 
 // parseJsonOutput parses the json output from playwright --report json and returns a slice of RunSummary
 // this will work if only one test is run and the output but will also work for if this contains an entire suite
-func parseJsonOutput(buf []byte) (e.SuiteRunSummary, error) {
+func parseJsonOutput(buf []byte) (executor.SuiteRunSummary, error) {
 	output := PlaywrightJsonOutput{}
 
 	err := json.Unmarshal(buf, &output)
 	if err != nil {
-		return e.SuiteRunSummary{}, fmt.Errorf("parsing Playwright json summary output: %w", err)
+		return executor.SuiteRunSummary{}, fmt.Errorf("parsing Playwright json summary output: %w", err)
 	}
 
-	testRuns := make([]e.TestRun, 0, output.Stats.Expected+output.Stats.Unexpected)
+	testRuns := make([]executor.TestRun, 0, output.Stats.Expected+output.Stats.Unexpected)
 
 	for _, suite := range output.Suites {
 		for _, spec := range suite.Specs {
@@ -44,7 +44,7 @@ func parseJsonOutput(buf []byte) (e.SuiteRunSummary, error) {
 
 	totalTestAmount := int32(output.Stats.Unexpected) + int32(output.Stats.Expected)
 
-	suiteRunSummary := e.SuiteRunSummary{
+	suiteRunSummary := executor.SuiteRunSummary{
 		StartTime:         output.Stats.StartTime,
 		ScenariosDuration: float32(output.Stats.Duration),
 		TestsExecuted:     totalTestAmount,
@@ -59,7 +59,7 @@ func parseJsonOutput(buf []byte) (e.SuiteRunSummary, error) {
 
 }
 
-func formatTestRuns(spec Specs, folder string, globalSetupDuration, globalTeardownDuration float32) e.TestRun {
+func formatTestRuns(spec Specs, folder string, globalSetupDuration, globalTeardownDuration float32) executor.TestRun {
 	exitMessage := "success"
 	if !spec.Ok {
 		exitMessage = fmt.Sprintf("%s:%d:%d => %s", spec.File, spec.Line, spec.Column, spec.Tests[0].Results[0].Error.Message)
@@ -76,13 +76,13 @@ func formatTestRuns(spec Specs, folder string, globalSetupDuration, globalTeardo
 
 	averageScenarioDuration := float32(math.Round(float64(scenarioTotal / amount)))
 
-	testStatus := e.TestPassed
+	testStatus := executor.TestPassed
 	status := spec.Tests[0].Results[0].Status
 	if status == "failed" {
-		testStatus = e.TestFailed
+		testStatus = executor.TestFailed
 	}
 
-	summary := e.TestRun{
+	summary := executor.TestRun{
 		TestFolder: folder,
 		TestFile:   path.Base(spec.File),
 
@@ -94,7 +94,7 @@ func formatTestRuns(spec Specs, folder string, globalSetupDuration, globalTeardo
 		ExitCode:    0, // what are the other values here and what do they mean?
 		Iterations:  fmt.Sprintf("%d", len(spec.Tests[0].Results)),
 
-		Durations: e.TestDurations{
+		Durations: executor.TestDurations{
 			SetupDuration:    globalSetupDuration,
 			TeardownDuration: globalTeardownDuration,
 			ScenarioDuration: averageScenarioDuration,
