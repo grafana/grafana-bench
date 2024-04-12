@@ -1,0 +1,5 @@
+pre-commit:
+  commands:
+    update-docs:
+      glob: "docs/*"
+      run: go run gendoc/main.go -o docs && git add {staged_files}
