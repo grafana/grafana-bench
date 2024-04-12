@@ -9,7 +9,7 @@ import (
 	"sort"
 	"testing"
 
-	e "github.com/grafana/grafana-bench/pkg/executor"
+	"github.com/grafana/grafana-bench/pkg/executor"
 )
 
 type k6TestExecutorOption func(*K6TestExecutor) error
@@ -52,7 +52,7 @@ func k6TestRunnerForTesting(
 	return te, nil
 }
 
-func sortTestRunByFilename(tr []e.TestRun) {
+func sortTestRunByFilename(tr []executor.TestRun) {
 	sort.Slice(tr, func(i, j int) bool {
 		return tr[i].TestFile < tr[j].TestFile
 	})
@@ -62,7 +62,7 @@ func newAssertionError(message string, expected, actual any) error {
 	return fmt.Errorf("%s: expected: %v got: %v", message, expected, actual)
 }
 
-func assertTestRun(expected *e.TestRun, actual e.TestRun) error {
+func assertTestRun(expected *executor.TestRun, actual executor.TestRun) error {
 	if expected == nil {
 		return nil
 	}
@@ -78,7 +78,7 @@ func assertTestRun(expected *e.TestRun, actual e.TestRun) error {
 	return nil
 }
 
-func assertSuiteSummary(expected *e.SuiteRunSummary, actual e.SuiteRunSummary) error {
+func assertSuiteSummary(expected *executor.SuiteRunSummary, actual executor.SuiteRunSummary) error {
 	if expected == nil {
 		return nil
 	}
@@ -122,39 +122,39 @@ func TestK6Executor(t *testing.T) {
 		testCase      string
 		k6options     []k6TestExecutorOption
 		testSuite     string
-		expectSummary *e.SuiteRunSummary
+		expectSummary *executor.SuiteRunSummary
 		expectErr     error
 	}{
 		{
 			testCase:  "passing test",
 			testSuite: "k6tests/pass.js",
-			expectSummary: &e.SuiteRunSummary{
+			expectSummary: &executor.SuiteRunSummary{
 				TestsExecuted: 1,
 				TestsPassed:   1,
-				TestRuns: []e.TestRun{
-					{TestFile: "pass.js", Status: e.TestPassed},
+				TestRuns: []executor.TestRun{
+					{TestFile: "pass.js", Status: executor.TestPassed},
 				},
 			},
 		},
 		{
 			testCase:  "failing test",
 			testSuite: "k6tests/fail.js",
-			expectSummary: &e.SuiteRunSummary{
+			expectSummary: &executor.SuiteRunSummary{
 				TestsExecuted: 1,
 				TestsFailed:   1,
-				TestRuns: []e.TestRun{
-					{TestFile: "fail.js", Status: e.TestFailed},
+				TestRuns: []executor.TestRun{
+					{TestFile: "fail.js", Status: executor.TestFailed},
 				},
 			},
 		},
 		{
 			testCase:  "error test",
 			testSuite: "k6tests/abort.js",
-			expectSummary: &e.SuiteRunSummary{
+			expectSummary: &executor.SuiteRunSummary{
 				TestsExecuted: 1,
 				TestsError:    1,
-				TestRuns: []e.TestRun{
-					{TestFile: "abort.js", Status: e.TestError},
+				TestRuns: []executor.TestRun{
+					{TestFile: "abort.js", Status: executor.TestError},
 				},
 			},
 		},
@@ -166,15 +166,15 @@ func TestK6Executor(t *testing.T) {
 		{
 			testCase:  "test suite directory",
 			testSuite: "k6tests/",
-			expectSummary: &e.SuiteRunSummary{
+			expectSummary: &executor.SuiteRunSummary{
 				TestsExecuted: 3,
 				TestsError:    1,
 				TestsFailed:   1,
 				TestsPassed:   1,
-				TestRuns: []e.TestRun{
-					{TestFile: "abort.js", Status: e.TestError},
-					{TestFile: "fail.js", Status: e.TestFailed},
-					{TestFile: "pass.js", Status: e.TestPassed},
+				TestRuns: []executor.TestRun{
+					{TestFile: "abort.js", Status: executor.TestError},
+					{TestFile: "fail.js", Status: executor.TestFailed},
+					{TestFile: "pass.js", Status: executor.TestPassed},
 				},
 			},
 		},
@@ -205,17 +205,17 @@ func TestK6Executor(t *testing.T) {
 			logBuffer := bytes.Buffer{}
 			log := slog.New(slog.NewTextHandler(&logBuffer, nil))
 
-			suite := e.TestSuite{
+			suite := executor.TestSuite{
 				Path:     tc.testSuite,
 				Revision: "test",
 			}
 
-			executor, err := k6TestRunnerForTesting(log, tc.k6options...)
+			k6Executor, err := k6TestRunnerForTesting(log, tc.k6options...)
 			if err != nil {
 				t.Fatalf("failed to setup the k6 executor %v", err)
 			}
 
-			summary, err := executor.ExecTestSuite(context.TODO(), suite, map[string]string{})
+			summary, err := k6Executor.ExecTestSuite(context.TODO(), suite, map[string]string{})
 
 			if tc.expectErr == nil && err != nil {
 				t.Fatalf("unexpected error: %v", err)
