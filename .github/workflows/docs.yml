@@ -10,16 +10,6 @@ jobs:
     permissions:
       contents: "read"
       id-token: "write"
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v4
-        with:
-          go-version: "1.22"
-      - name: generate cobra docs
-        run: |
-          mkdir -p docs
-          go run gendoc/main.go -o docs/
-          ls docs
   generate-docs:
     needs: "publish-docs"
     uses: grafana/shared-workflows/.github/workflows/publish-techdocs.yaml@main
