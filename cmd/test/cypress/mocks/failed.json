@@ -1,0 +1,47 @@
+{
+    "results": {
+      "tool": {
+        "name": "cypress"
+      },
+      "summary": {
+        "suites": 1,
+        "tests": 2,
+        "failed": 2,
+        "passed": 0,
+        "skipped": 0,
+        "pending": 0,
+        "other": 0,
+        "start": 1712927068857,
+        "stop": 1712927122333
+      },
+      "tests": [
+        {
+          "name": "dlopes7-appdynamics-datasource appdynamics test",
+          "status": "failed",
+          "duration": 32669,
+          "message": "Timed out retrying after 30000ms: Expected to find content: '/Type: AppDynamics|Build a dashboard/g' but never did.",
+          "trace": "    at addDataSource (webpack:///./cypress/e2e/flows/addDatasource.ts:28:5)\n    at Context.eval (webpack:///./cypress/e2e/dlopes7-appdynamics-datasource.cy.ts:21:18)",
+          "rawStatus": "failed",
+          "type": "e2e",
+          "filePath": "cypress/e2e/dlopes7-appdynamics-datasource.cy.ts",
+          "retry": 0,
+          "flake": false,
+          "browser": "electron 106.0.5249.51"
+        },
+        {
+          "name": "dlopes7-appdynamics-datasource gets suggestions",
+          "status": "failed",
+          "duration": 11069,
+          "message": "Timed out retrying after 4000ms: Expected to find element: `label:contains(\"Analytics\")`, but never found it.",
+          "trace": "    at pre (webpack:///./cypress/e2e/dlopes7-appdynamics-datasource.cy.ts:70:44)\n    at fillQuery (webpack:///./cypress/e2e/flows/editor.ts:17:4)\n    at queriesForm (webpack:///./cypress/e2e/flows/editor.ts:68:23)\n    at Context.eval (webpack:///./node_modules/e2e-min/dist/index.js:383:0)",
+          "rawStatus": "failed",
+          "type": "e2e",
+          "filePath": "cypress/e2e/dlopes7-appdynamics-datasource.cy.ts",
+          "retry": 0,
+          "flake": false,
+          "browser": "electron 106.0.5249.51"
+        }
+      ]
+    }
+  }
+  
