@@ -9,5 +9,5 @@ metadata:
     backstage.io/techdocs-ref: dir:./docs/
 spec:
   type: website
-  owner: group:grafana-backend-services
+  owner: group:grafana-backend-grafana-backend-services
   lifecycle: production
