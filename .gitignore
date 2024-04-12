@@ -2,11 +2,11 @@
 !work/grafanaTemplate/
 work
 creds/*
+scratch
 grafana-bench.tar.gz
 .env*
+.DS_Store
 
-
-argo.sh
 
 # Binaries for programs and plugins
 *.exe
@@ -26,8 +26,10 @@ argo.sh
 
 # don't keep GCP keys
 creds/**
+infra/simulation_service_account_key.json
 GCP-*
 custom.ini
+
 # don't keep anything in the test results output
 summary/*
 *.tfstate
@@ -39,3 +41,9 @@ terraform/
 local/generated
 vendor/
 plugin/node_modules/
+
+# don't add stuff related to enghub testing
+node_modules/
+package-lock.json
+package.json
+site/
