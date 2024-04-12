@@ -19,6 +19,7 @@ jobs:
         run: |
           mkdir -p docs
           go run gendoc/main.go -o docs/
+          ls docs
   generate-docs:
     needs: "publish-docs"
     uses: grafana/shared-workflows/.github/workflows/publish-techdocs.yaml@main
