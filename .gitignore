@@ -41,3 +41,9 @@ terraform/
 local/generated
 vendor/
 plugin/node_modules/
+
+# don't add stuff related to enghub testing
+node_modules/
+package-lock.json
+package.json
+site/
