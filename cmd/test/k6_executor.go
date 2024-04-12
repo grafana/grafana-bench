@@ -17,6 +17,8 @@ import (
 
 	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/utils"
+
+	"github.com/szkiba/k6pack"
 )
 
 const (
@@ -32,6 +34,7 @@ var (
 type K6TestExecutor struct {
 	Log            *slog.Logger
 	Verbose        bool
+	UseTypescript  bool
 	CloudOutput    bool
 	CloudToken     string
 	CloudProjectID string
@@ -41,6 +44,7 @@ type K6TestExecutor struct {
 func NewK6TestExecutor(
 	log *slog.Logger,
 	verbose bool,
+	typescript bool,
 	cloudOutput bool,
 	cloudToken string,
 	cloudProjectID string,
@@ -48,6 +52,7 @@ func NewK6TestExecutor(
 	return &K6TestExecutor{
 		Log:            log.With("executor", "k6"),
 		Verbose:        verbose,
+		UseTypescript:  typescript,
 		CloudOutput:    cloudOutput,
 		CloudToken:     cloudToken,
 		CloudProjectID: cloudProjectID,
@@ -183,6 +188,14 @@ func (t *K6TestExecutor) execTest(
 	scenarioName string,
 	env map[string]string,
 ) (K6TestRun, error) {
+	if t.UseTypescript {
+		transpiledTest, err := transpileTest(testFile)
+		if err != nil {
+			return K6TestRun{}, err
+		}
+		testFile = transpiledTest
+	}
+
 	jsonFile := getJsonOutputFilename(testFile)
 
 	// build the command with buffer
@@ -245,6 +258,33 @@ func (t K6TestExecutor) getK6Version() (string, error) {
 	return string(k6Version), nil
 }
 
+func transpileTest(testFile string) (string, error) {
+	source, err := os.ReadFile(testFile)
+	if err != nil {
+		return "", fmt.Errorf("reading test file %q: %w", testFile, err)
+	}
+
+	transpiled, err := os.CreateTemp("", filepath.Base(testFile)+".js")
+	if err != nil {
+		return "", fmt.Errorf("creating temp test file %q: %w", testFile, err)
+	}
+
+	buf, err := k6pack.Pack(string(source), &k6pack.Options{
+		Filename:   testFile,
+		TypeScript: true,
+	})
+	if err != nil {
+		return "", fmt.Errorf("transpiling test file %q: %w", testFile, err)
+	}
+
+	_, err = io.Copy(transpiled, bytes.NewBuffer(buf))
+	if err != nil {
+		return "", fmt.Errorf("copying temp test file %q: %w", testFile, err)
+	}
+
+	return transpiled.Name(), nil
+}
+
 // we expect scenarios to be named like the file
 // tests/dashboards/dashboard_create.js -> dashboardCreate
 func getScenarioName(filename string) string {
@@ -267,6 +307,10 @@ func getScenarioName(filename string) string {
 // tests=dashboard_read.js will run dashboard_read.js.
 // tests=dashboards will run all files in dashboards/**.*.js.
 func (t *K6TestExecutor) getTestFiles(suite executor.TestSuite) ([]string, error) {
+	var testExt = ".js"
+	if t.UseTypescript {
+		testExt = ".ts"
+	}
 	if filepath.IsAbs(suite.Path) {
 		return nil, fmt.Errorf("test suite must be a relative to base dir. Got %q", suite.Path)
 	}
@@ -288,7 +332,7 @@ func (t *K6TestExecutor) getTestFiles(suite executor.TestSuite) ([]string, error
 
 	// test suite points to a directory
 	if fileInfo.IsDir() {
-		files, err := utils.GlobByExtension(testSuitePath, ".js")
+		files, err := utils.GlobByExtension(testSuitePath, testExt)
 		if err != nil {
 			return nil, err
 		}
@@ -300,10 +344,9 @@ func (t *K6TestExecutor) getTestFiles(suite executor.TestSuite) ([]string, error
 		return files, nil
 	}
 
-	// is a file, we expect a single .js file
-	testSuiteFile := path.Base(testSuitePath)
-	if !strings.HasSuffix(testSuiteFile, ".js") {
-		return nil, fmt.Errorf("expected a .js file got %s", testSuiteFile)
+	// is a file, we expect a single .js or .ts file
+	if filepath.Ext(testSuitePath) != testExt {
+		return nil, fmt.Errorf("expected a %q file got %s", testExt, testSuitePath)
 	}
 
 	return []string{testSuitePath}, nil

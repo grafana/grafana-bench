@@ -31,13 +31,22 @@ func WithK6Credentials() k6TestExecutorOption {
 	}
 }
 
+// configure TestRunner to run typescript tests
+func UseTypescript() k6TestExecutorOption {
+	return func(t *K6TestExecutor) error {
+		t.UseTypescript = true
+		return nil
+	}
+}
+
 func k6TestRunnerForTesting(
 	log *slog.Logger,
 	opts ...k6TestExecutorOption,
 ) (*K6TestExecutor, error) {
 	te := NewK6TestExecutor(
 		log,
-		false, // verbose
+		true,  // verbose
+		false, // typescript
 		false, // cloud output
 		"",    // cloud token
 		"",    // cloud project
@@ -193,6 +202,20 @@ func TestK6Executor(t *testing.T) {
 			},
 			testSuite: "k6tests/pass.js",
 			expectErr: missingK6CloudConfigError,
+		},
+		{
+			testCase:  "typescript test",
+			testSuite: "k6tests/typescript.ts",
+			k6options: []k6TestExecutorOption{
+				UseTypescript(),
+			},
+			expectSummary: &executor.SuiteRunSummary{
+				TestsExecuted: 1,
+				TestsPassed:   1,
+				TestRuns: []executor.TestRun{
+					{TestFile: "typescript.ts", Status: executor.TestPassed},
+				},
+			},
 		},
 	}
 
