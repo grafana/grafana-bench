@@ -3,15 +3,16 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - 'catalog-info.yaml'
+      - '.github/workflows/publish-docs.yml'
+      - 'actions/build-techdocs/**'
+      - 'actions/publish-techdocs/**'
 
 jobs:
   publish-docs:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: "read"
-      id-token: "write"
-  generate-docs:
-    needs: "publish-docs"
     uses: grafana/shared-workflows/.github/workflows/publish-techdocs.yaml@main
     secrets: inherit
     with:
