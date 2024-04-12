@@ -103,3 +103,37 @@ jobs:
             BENCH_REVISION=${{ github.sha }}
           tags: |-
             ${{ github.ref_name }}
+
+  publish-ghcr:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [test-bench, test-container]
+    runs-on: ubuntu-latest
+    steps:
+      - name: get version
+        id: version
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+              IMAGE_VERSION=$GITHUB_REF_NAME
+          else
+              IMAGE_VERSION="latest"
+          fi
+          echo "image=${IMAGE_VERSION}" > $GITHUB_OUTPUT
+      - name: checkout code
+        uses: actions/checkout@v4
+      - name: Set up Docker buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log into ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push image
+        uses: docker/build-push-action@v5
+        with:
+          platforms: |-
+            "linux/amd64"
+            "linux/arm64"
+          tags: |-
+             ${{ steps.version.outputs.image }}
+ 
