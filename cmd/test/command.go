@@ -95,7 +95,8 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				benchRevision = env.EnvOrDefault("BENCH_REVISION", revision.BenchRevision())
 			}
 
-			// override grafana user and password from environment variables if they are set
+			// override grafana parameters from environment variables if they are set
+			grafanaUrl = env.EnvOrDefault("GRAFANA_URL", grafanaUrl)
 			grafanaUsername = env.EnvOrDefault("GRAFANA_USER", grafanaUsername)
 			grafanaPassword = env.EnvOrDefault("GRAFANA_PASSWORD", grafanaPassword)
 
@@ -170,7 +171,12 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	fs := cmd.Flags()
 	fs.StringVar(&testTrigger, "test-trigger", "local", "test trigger")
 	fs.StringVar(&testType, "test-type", "smoke", "test type. Allowed values: 'smoke', 'load'")
-	fs.StringVar(&grafanaUrl, "grafana-url", "http://localhost:3000", "url to grafana instance")
+	fs.StringVar(
+		&grafanaUrl,
+		"grafana-url",
+		"http://localhost:3000",
+		"url to grafana instance. Overridden by the GRAFANA_URL environment variable",
+	)
 	fs.DurationVar(
 		&grafanaTimeout,
 		"grafana-timeout",
