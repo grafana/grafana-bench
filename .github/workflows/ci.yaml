@@ -1,4 +1,4 @@
-name: test-bench-image
+name: publish-bench-image
 
 # These permissions are needed to assume roles from Github's OIDC.
 permissions:
@@ -8,6 +8,7 @@ permissions:
 on:
   push:
     branches: ["main"]
+    tags: ["v*"]
   pull_request:
     branches: ["main"]
 
@@ -41,13 +42,8 @@ jobs:
     env:
       DOCKER_CLI_EXPERIMENTAL: enabled
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: network=host
+      - name: checkout code
+        uses: actions/checkout@v4
       - name: build container
         uses: docker/build-push-action@v5
         with:
@@ -56,47 +52,41 @@ jobs:
             BENCH_REVISION=${{ github.sha }}
           load: true
           tags: localhost:5000/grafana-bench-test:latest
-      - name: check k6 browser
+      - name: check k6 browser dependencies
         run: |
-          docker run --rm --entrypoint='' --volume="./CI/:/CI/" --volume="./screenshots:/home/bench/screenshots/" localhost:5000/grafana-bench-test:latest k6 run /CI/browser_test.js
+          docker run --rm --entrypoint='k6' \
+            --volume="./CI/:/CI/" --volume="./screenshots:/home/bench/screenshots/" \
+            localhost:5000/grafana-bench-test:latest run /CI/browser_test.js
       - name: archive screenshots
         uses: actions/upload-artifact@v3
         with:
           name: screenshots
           path: screenshots
 
-  # publish container on build and test in main
-  publish-main:
+  publish-gar-dev:
+    # publish to dev latest from main
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [test-bench, test-container]
     runs-on: ubuntu-latest
-    env:
-      DOCKER_CLI_EXPERIMENTAL: enabled
     steps:
-      - name: Docker Login (GCR)
-        uses: docker/login-action@v3
-        with:
-          registry: us.gcr.io
-          username: _json_key
-          password: ${{ secrets.GCP_CONTAINERS_SA_JSON }}
       - uses: actions/checkout@v4
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: build container
-        uses: docker/build-push-action@v5
+      - uses: grafana/shared-workflows/actions/push-to-gar-docker@main
+        id: push-to-gar
         with:
-          context: .
-          platforms: linux/amd64 #,linux/arm64
+          environment: "dev"
+          image_name: grafana-bench
+          platforms: |-
+            "linux/amd64"
+            "linux/arm64"
           build-args: |-
             BENCH_REVISION=${{ github.sha }}
-          push: true
-          tags: |
-            us.gcr.io/kubernetes-dev/grafana-bench:latest
+          tags: |-
+            ${{ github.sha }}
+            "latest"
 
-  publish-gar:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  publish-gar-prod:
+    # publish to prod only tagged versions
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
     needs: [test-bench, test-container]
     runs-on: ubuntu-latest
     steps:
@@ -106,7 +96,45 @@ jobs:
         with:
           environment: "prod"
           image_name: grafana-bench
+          platforms: |-
+            "linux/amd64"
+            "linux/arm64"
           build-args: |-
             BENCH_REVISION=${{ github.sha }}
           tags: |-
-            "latest"
+            ${{ github.ref_name }}
+
+  publish-ghcr:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [test-bench, test-container]
+    runs-on: ubuntu-latest
+    steps:
+      - name: get version
+        id: version
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+              IMAGE_VERSION=$GITHUB_REF_NAME
+          else
+              IMAGE_VERSION="latest"
+          fi
+          echo "image=${IMAGE_VERSION}" > $GITHUB_OUTPUT
+      - name: checkout code
+        uses: actions/checkout@v4
+      - name: Set up Docker buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log into ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push image
+        uses: docker/build-push-action@v5
+        with:
+          push: true
+          platforms: |-
+            "linux/amd64"
+            "linux/arm64"
+          tags: |-
+             ${{ steps.version.outputs.image }}
+ 

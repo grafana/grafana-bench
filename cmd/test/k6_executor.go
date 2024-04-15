@@ -131,7 +131,7 @@ func (t *K6TestExecutor) ExecTestSuite(
 			k6env,
 		)
 		if err != nil {
-			t.Log.Error("executing k6 test %w", err)
+			t.Log.Error("executing k6 test", "error", err.Error())
 			// TODO: maybe we should break the iteration here, as test result may not be relevant
 		}
 
