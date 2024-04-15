@@ -62,27 +62,20 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 		return executor.SuiteRunSummary{}, errMissingTargetDirError
 	}
 
-	err := ImportSetupRepo(t.TargetDir, t.TestSuiteRepo, t.Log)
+	testingDir := utils.GetTestingDirectory(t.TargetDir, t.TestSuiteRepo)
+
+	err := t.prepareCodebase(testingDir)
 	if err != nil {
-		return executor.SuiteRunSummary{}, fmt.Errorf("failed to import repo: %s", err.Error())
+		return executor.SuiteRunSummary{}, fmt.Errorf("failed to prepare codebase: %s", err.Error())
 	}
 
-	err = utils.ExecuteInDir(t.TargetDir, func() error {
-		// idea: add a config in the repo with setup instructions
-		installCmd := exec.Command("yarn", "test")
-		if err := utils.ExecStdout(installCmd); err != nil {
-			return err
-		}
-
-		return nil
-	})
-
-	// process might return exit code 1 but we still want to try to parse the report
+	err = t.executeTests(testingDir)
 	if err != nil {
+		// process might return exit code 1 if test fails but we still want to try to parse the report
 		t.Log.Info("Playwright processes exited with code 1", "error", err.Error())
 	}
 
-	file, err := os.ReadFile(fmt.Sprintf("%s/playwright-report/report.json", t.TargetDir))
+	file, err := os.ReadFile(fmt.Sprintf("%s/playwright-report/report.json", testingDir))
 	if err != nil {
 		return executor.SuiteRunSummary{}, fmt.Errorf("failed to read report.json: %s", err.Error())
 	}
@@ -93,4 +86,51 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 	}
 
 	return runSummary, nil
+}
+
+func (t *PlaywrightTestExecutor) prepareCodebase(testingDir string) error {
+
+	err := utils.ImportSetupRepo(testingDir, t.TestSuiteRepo, t.Log)
+	if err != nil {
+		return fmt.Errorf("failed to import repo: %s", err.Error())
+	}
+
+	// update repo + checkout branch
+	err = utils.ExecuteInDir(testingDir, func() error {
+		// add a config in the repo with setup instructions
+		installCmd := exec.Command("yarn", "install")
+		if err := utils.ExecStdout(installCmd); err != nil {
+			return fmt.Errorf("installing packages: %w", err)
+		}
+
+		installPlaywrightCmd := exec.Command("yarn", "playwright:install")
+		if err := utils.ExecStdout(installPlaywrightCmd); err != nil {
+			return fmt.Errorf("installing playwright browsers: %w", err)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to installing dependencies: %s", err.Error())
+
+	}
+
+	return nil
+}
+
+func (t *PlaywrightTestExecutor) executeTests(testingDir string) error {
+	// update repo + checkout branch
+	err := utils.ExecuteInDir(testingDir, func() error {
+		// add a config in the repo with setup instructions
+		testRunCmd := exec.Command("yarn", "test")
+		if err := utils.ExecStdout(testRunCmd); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return err
+
 }
