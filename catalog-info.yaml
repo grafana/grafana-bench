@@ -1,0 +1,13 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: grafana-bench
+  title: Grafana Bench
+  description: 'Documentation for the Grafana Bench Platform and Grafana Testing Strategy'
+  annotations:
+    github.com/project-slug: grafana/grafana-bench
+    backstage.io/techdocs-ref: dir:./docs/
+spec:
+  type: website
+  owner: group:grafana-backend-grafana-backend-services
+  lifecycle: production
