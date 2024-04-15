@@ -54,6 +54,14 @@ func NewK6TestExecutor(
 	}
 }
 
+
+type k6Output struct {
+	iterations string
+	durations  executor.TestDurations
+	cloudId    string
+	cloudURL   string
+}
+
 // K6TestRun summarizes the execution of a k6 test
 type K6TestRun struct {
 	Status      executor.TestStatus
@@ -123,7 +131,7 @@ func (t *K6TestExecutor) ExecTestSuite(
 			k6env,
 		)
 		if err != nil {
-			t.Log.Error("executing k6 test %w", err)
+			t.Log.Error("executing k6 test", "error", err.Error())
 			// TODO: maybe we should break the iteration here, as test result may not be relevant
 		}
 
@@ -204,37 +212,16 @@ func (t *K6TestExecutor) execTest(
 		cmdErr = "error running k6 command: " + err.Error()
 	}
 
-	// scenario + testDuration will be in milliseconds
-	duration, err := parseDurationFromJsonFile(scenarioName, jsonFile)
-	if err != nil {
-		return K6TestRun{}, fmt.Errorf("error processing json file %w", err)
-	}
-
-	var (
-		cloudId  string
-		cloudURL string
-	)
-	if t.CloudOutput {
-		cloudId, cloudURL, err = parseK6CloudIdentifiersFromCLIOutput(buf.Bytes())
-		if err != nil {
-			return K6TestRun{}, fmt.Errorf("error parsing cloud run from K6 summary %w", err)
-		}
-	}
-
-	iterations, err := parseIterationCountFromCLIOutput(buf.Bytes())
-	if err != nil {
-		return K6TestRun{}, fmt.Errorf("error parsing iterations from k6 summary %w", err)
-	}
-
+	output, err := t.getOutput(buf, jsonFile, scenarioName)
 	return K6TestRun{
 		Status:      status,
 		ExitCode:    exitCode,
-		Durations:   duration,
-		Iterations:  iterations,
+		Durations:   output.durations,
+		Iterations:  output.iterations,
 		ExitMessage: cmdErr,
-		CloudID:     cloudId,
-		CloudURL:    cloudURL,
-	}, nil
+		CloudID:     output.cloudId,
+		CloudURL:    output.cloudURL,
+	}, err
 }
 
 // pattern to match k6 version output
@@ -361,6 +348,38 @@ func (t *K6TestExecutor) prepareK6Command(testFile, jsonFile string, env map[str
 	}
 
 	return cmd, buf
+}
+
+// parses the execution outputs and returns a summary
+func (t *K6TestExecutor) getOutput(buf *bytes.Buffer, jsonFile string, scenarioName string) (k6Output, error) {
+	// scenario + testDuration will be in milliseconds
+	duration, err := parseDurationFromJsonFile(scenarioName, jsonFile)
+	if err != nil {
+		return k6Output{}, fmt.Errorf("error processing json file %w", err)
+	}
+
+	var (
+		cloudId  string
+		cloudURL string
+	)
+	if t.CloudOutput {
+		cloudId, cloudURL, err = parseK6CloudIdentifiersFromCLIOutput(buf.Bytes())
+		if err != nil {
+			return k6Output{}, fmt.Errorf("error parsing cloud run from K6 summary %w", err)
+		}
+	}
+
+	iterations, err := parseIterationCountFromCLIOutput(buf.Bytes())
+	if err != nil {
+		return k6Output{}, fmt.Errorf("error parsing iterations from k6 summary %w", err)
+	}
+
+	return k6Output{
+		durations:  duration,
+		iterations: iterations,
+		cloudId:    cloudId,
+		cloudURL:   cloudURL,
+	}, err
 }
 
 // dashboard_create.js -> /tmp/dashboard_create.json
