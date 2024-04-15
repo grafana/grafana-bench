@@ -17,23 +17,26 @@ import (
 // TestCompiler
 type TestCompiler struct {
 	Log               *slog.Logger
-	TargetDir         string
+	TestSuiteDir      string
 	TestSuiteRepo     string
 	TestSuiteRevision string
+	ForceCheckout     bool
 }
 
 
 func NewTestCompiler(
 	log *slog.Logger,
-	targetDir string,
+	testSuiteDir string,
 	testSuiteRepo string,
 	testSuiteRevision string,
+	forceCheckout bool,
 )  *TestCompiler {
 	return &TestCompiler{
 		Log:               log,
-		TargetDir:         targetDir,
+		TestSuiteDir:      testSuiteDir,
 		TestSuiteRepo:     testSuiteRepo,
 		TestSuiteRevision: testSuiteRevision,
+		ForceCheckout:     forceCheckout,
 	}
 }
 
@@ -44,10 +47,10 @@ func (tc *TestCompiler)CompileTestSuite(ctx context.Context) error {
 		err  error
 	)
 
-	// clone repo if doesn't exist
-	exists, _ := utils.PathExists(tc.TargetDir)
-	if exists {
-		repo, err = git.PlainOpen(tc.TargetDir)
+	// clone repo if doesn't exist or checkout is forced
+	exists, _ := utils.PathExists(tc.TestSuiteDir)
+	if exists && !tc.ForceCheckout {
+		repo, err = git.PlainOpen(tc.TestSuiteDir)
 		if err != nil {
 			return fmt.Errorf("opening repo %s: %w", tc.TestSuiteRepo, err)
 		}
@@ -55,7 +58,7 @@ func (tc *TestCompiler)CompileTestSuite(ctx context.Context) error {
 	} else {
 		tc.Log.Info("cloning test suite")
 		repo, err = git.PlainClone(
-			tc.TargetDir,
+			tc.TestSuiteDir,
 			false,
 			&git.CloneOptions{
 				URL:      tc.TestSuiteRepo,
@@ -125,7 +128,7 @@ func (tc *TestCompiler)CompileTestSuite(ctx context.Context) error {
 	}
 	
 	// build the tests
-	err = utils.DoInDir(workDir, tc.TargetDir, func() error {
+	err = utils.DoInDir(workDir, tc.TestSuiteDir, func() error {
 		cmdMake := exec.Command("make", "build")
 		if err := utils.ExecStdout(cmdMake); err != nil {
 			return fmt.Errorf("building test suite: %w", err)

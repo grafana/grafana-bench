@@ -105,71 +105,81 @@ func Test_Compiler(t *testing.T) {
 	testCases := []struct{
 		name      string
 		repo      string
-		target    string
+		dir       string
 		revision  string
+		force     bool
 		expectErr bool
 	}{
 		{
-			name:      "reuse cloned repo",
-			repo:      "",
-			target:    clonedRepo,
+			name:      "reuse existing repo",
+			repo:      repoDir,
+			dir:       clonedRepo,
 			revision:  "master",
+			force:     false,
 			expectErr: false,
 		},
 		{
 			name:      "invalid local repo (not a git repo)",
 			repo:      "",
-			target:    t.TempDir(),
+			dir:       t.TempDir(),
 			revision:  "master",
+			force:     false,
 			expectErr: true,
 		},
 		{
 			name:      "build master",
 			repo:      repoDir,
-			target:    path.Join(t.TempDir(), "repo"),
+			dir:       path.Join(t.TempDir(), "repo"),
 			revision:  "master",
+			force:     false,
 			expectErr: false,
 		},
 		{
 			name:      "build default (master)",
 			repo:      repoDir,
-			target:    path.Join(t.TempDir(), "repo"),
+			dir:       path.Join(t.TempDir(), "repo"),
 			revision:  "",
+			force:     false,
 			expectErr: false,
 		},
 		{
 			name:      "build test branch",
 			repo:      repoDir,
-			target:    path.Join(t.TempDir(), "repo"),
+			dir:       path.Join(t.TempDir(), "repo"),
 			revision:  branchName,
+			force:     false,
 			expectErr: false,
 		},
 		{
 			name:      "build tag",
 			repo:      repoDir,
-			target:    path.Join(t.TempDir(), "repo"),
+			dir:       path.Join(t.TempDir(), "repo"),
 			revision:  tagName,
+			force:     false,
 			expectErr: false,
 		},
 		{
 			name:      "build hash",
 			repo:      repoDir,
-			target:    path.Join(t.TempDir(), "repo"),
+			dir:       path.Join(t.TempDir(), "repo"),
 			revision:  commitHash.String(),
+			force:     false,
 			expectErr: false,
 		},
 		{
 			name:      "build non-existing hash",
 			repo:      repoDir,
-			target:    path.Join(t.TempDir(), "repo"),
+			dir:       path.Join(t.TempDir(), "repo"),
 			revision:  "abcdef",
+			force:     false,
 			expectErr: true,
 		},
 		{
 			name:      "build non-existing branch",
 			repo:      repoDir,
-			target:    path.Join(t.TempDir()),
+			dir:       path.Join(t.TempDir()),
 			revision:  "fake-branch",
+			force:     false,
 			expectErr: true,
 		},
 	}
@@ -187,9 +197,10 @@ func Test_Compiler(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			compiler := NewTestCompiler(
 				log,
-				tc.target,
+				tc.dir,
 				tc.repo,
 				tc.revision,
+				tc.force,
 			)
 
 			err = compiler.CompileTestSuite(context.TODO())

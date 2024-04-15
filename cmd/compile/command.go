@@ -16,9 +16,10 @@ bench compile --target-dir work/tests  \
 func NewCmd(log *slog.Logger) *cobra.Command {
 	log = log.With("svc", "test-compiler")
 	var (
-		targetDir         string
+		testSuiteDir      string
 		testSuiteRepo     string
 		testSuiteRevision string
+		forceCheckout     bool
 	)
 
 	cmd := cobra.Command{
@@ -29,9 +30,10 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			compiler := NewTestCompiler(
 				log,
-				targetDir,
+				testSuiteDir,
 				testSuiteRepo,
 				testSuiteRevision,
+				forceCheckout,
 			)
 
 			return compiler.CompileTestSuite(cmd.Context())
@@ -40,13 +42,35 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 
 	fs := cmd.Flags()
 	// FIXME: find a better name
-	fs.StringVar(&targetDir, "target-dir", "", "directory for checking the test into."+
-		"\nIf exists, it is assumed the test suite repository is already checked out in it.")
-	fs.StringVar(&testSuiteRepo, "test-suite-repo", "", "repository to grab test suite from")
-	fs.StringVar(&testSuiteRevision, "test-suite-revision", "", "test suite revision to compile."+
+	fs.StringVar(
+		&testSuiteDir,
+		"test-suite-dir", 
+		"",
+		"directory where the test suite repo is checkout."+
+		"\nIf the director exists and the test-suite-repo is specified, the repo will be checkout" +
+		"\nonly if the force-checkout option is set to true",
+	)
+	fs.StringVar(
+		&testSuiteRepo,
+		"test-suite-repo", 
+		"",
+		"repository to check out test suite from.",
+	)
+	fs.StringVar(
+		&testSuiteRevision,
+		"test-suite-revision",
+		"",
+		"test suite revision to compile."+
 		"\nCan make reference to a branch (local or remote), a tag or a specific commit hash"+
 		"\nIf not provided and the repo is already checked out in the base dir, the current branch is compiled."+
-		"\nOtherwise the main branch from the remote repository is compiled")
+		"\nOtherwise the main branch from the remote repository is compiled.",
+	)
+	fs.BoolVar(
+		&forceCheckout,
+		"force-checkout",
+		false,
+		"if the the test-suite-repo is specified and the test-suite-dir exists, indicates if the repo must be checkout",
+	)
 
 	return &cmd
 }
