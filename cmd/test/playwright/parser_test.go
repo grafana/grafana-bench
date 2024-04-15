@@ -49,7 +49,7 @@ func TestJsonTestsSummary(t *testing.T) {
 				t.Errorf("Error reading file: %v, %s", err, pwd)
 			}
 
-			actual, err := parseJsonOutput(log, jsonFile)
+			actual, err := parseJsonOutput(jsonFile)
 
 			println(actual)
 

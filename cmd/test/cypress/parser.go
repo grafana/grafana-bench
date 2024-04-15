@@ -3,102 +3,80 @@ package cypress
 import (
 	"encoding/json"
 	"fmt"
+	"path"
+	"time"
 
-	e "github.com/grafana/grafana-bench/pkg/executor"
+	"github.com/grafana/grafana-bench/pkg/executor"
 )
 
 // parseJsonOutput parses the json output from playwright --report json and returns a slice of RunSummary
 // this will work if only one test is run and the output but will also work for if this contains an entire suite
-func parseJsonOutput(buf []byte) (e.SuiteRunSummary, error) {
+func parseJsonOutput(buf []byte) (executor.SuiteRunSummary, error) {
 	output := CypressJsonOutput{}
 
 	err := json.Unmarshal(buf, &output)
 	if err != nil {
-		return e.SuiteRunSummary{}, fmt.Errorf("parsing Playwright json summary output: %w", err)
+		return executor.SuiteRunSummary{}, fmt.Errorf("parsing Playwright json summary output: %w", err)
 	}
 
-	testRuns := make([]e.TestRun, 0, output.Stats.Expected+output.Stats.Unexpected)
+	// Convert Unix timestamps to time.Time
+	start := time.Unix(output.Results.Summary.Start, 0)
+	end := time.Unix(output.Results.Summary.Stop, 0)
+	duration := end.Sub(start)
 
-	for _, suite := range output.Suites {
-		for _, spec := range suite.Specs {
+	testRuns := make([]executor.TestRun, 0, output.Results.Summary.Tests)
+	testStartTime := start
+	for order, test := range output.Results.Tests {
+		run := formatTestRuns(test, testStartTime, order)
+		testRuns = append(testRuns, run)
 
-			folder := "unknown"
-			if len(spec.Tests) > 0 {
-				for _, project := range output.Config.Projects {
-					if spec.Tests[0].ProjectID == project.ID {
-						folder = project.TestDir
-						break
-					}
-				}
-			}
-
-			setupDuration := float32(output.Config.GlobalSetup)
-			tearDownDuration := float32(output.Config.GlobalTeardown)
-
-			run := formatTestRuns(spec, folder, setupDuration, tearDownDuration)
-			testRuns = append(testRuns, run)
-		}
+		testStartTime = testStartTime.Add(time.Duration(test.Duration) * time.Millisecond)
 	}
 
-	totalTestAmount := int32(output.Stats.Unexpected) + int32(output.Stats.Expected)
-
-	suiteRunSummary := e.SuiteRunSummary{
-		StartTime:         output.Stats.StartTime,
-		ScenariosDuration: float32(output.Stats.Duration),
-		TestsExecuted:     totalTestAmount,
-		TestsFailed:       int32(output.Stats.Unexpected),
-		TestsPassed:       int32(output.Stats.Expected),
-		TestsError:        int32(output.Stats.Unexpected),
-		TotalDuration:     float32(output.Stats.Duration),
+	suiteRunSummary := executor.SuiteRunSummary{
+		StartTime:         start,
+		ScenariosDuration: float32(duration.Milliseconds()),
+		TestsExecuted:     int32(output.Results.Summary.Tests),
+		TestsFailed:       int32(output.Results.Summary.Failed),
+		TestsPassed:       int32(output.Results.Summary.Passed),
+		TestsError:        int32(output.Results.Summary.Failed),
+		TotalDuration:     float32(duration.Milliseconds()),
 		TestRuns:          testRuns,
 	}
 
 	return suiteRunSummary, nil
-
 }
 
-func formatTestRuns(spec Specs, folder string, globalSetupDuration, globalTeardownDuration float32) e.TestRun {
-	// exitMessage := "success"
-	// if !spec.Ok {
-	// 	exitMessage = fmt.Sprintf("%s:%d:%d => %s", spec.File, spec.Line, spec.Column, spec.Tests[0].Results[0].Error.Message)
-	// }
+func formatTestRuns(test Tests, startTime time.Time, order int) executor.TestRun {
 
-	// scenarioTotal := 0
-	// amount := 0
-	// for _, test := range spec.Tests {
-	// 	for _, result := range test.Results {
-	// 		scenarioTotal += result.Duration
-	// 	}
-	// 	amount += len(test.Results)
-	// }
+	testStatus := executor.TestPassed
+	exitCode := 0
+	if test.Status == "failed" {
+		testStatus = executor.TestFailed
+		exitCode = 1
+	}
 
-	// averageScenarioDuration := float32(math.Round(float64(scenarioTotal / amount)))
+	summary := executor.TestRun{
+		TestFolder: test.Name,
+		TestFile:   path.Base(test.FilePath),
 
-	// testStatus := e.TestPassed
-	// status := spec.Tests[0].Results[0].Status
-	// if status == "failed" {
-	// 	testStatus = e.TestFailed
-	// }
+		StartTime: startTime,
 
-	// summary := e.TestRun{
-	// 	TestFolder: folder,
-	// 	TestFile:   path.Base(spec.File),
+		Status:      testStatus,
+		ExitMessage: test.Message,
 
-	// 	StartTime: spec.Tests[0].Results[0].StartTime,
-	// 	Order:     0,
+		Order:    order,
+		ExitCode: exitCode,
 
-	// 	Status:      testStatus,
-	// 	ExitMessage: exitMessage,
-	// 	ExitCode:    0, // what are the other values here and what do they mean?
-	// 	Iterations:  fmt.Sprintf("%d", len(spec.Tests[0].Results)),
+		Iterations: string(test.Retry),
 
-	// 	Durations: e.TestDurations{
-	// 		SetupDuration:    globalSetupDuration,
-	// 		TeardownDuration: globalTeardownDuration,
-	// 		ScenarioDuration: averageScenarioDuration,
-	// 		TotalDuration:    float32(scenarioTotal),
-	// 	},
-	// }
+		Durations: executor.TestDurations{
+			SetupDuration:    0,
+			TeardownDuration: 0,
+			ScenarioDuration: float32(test.Duration),
+			TotalDuration:    float32(test.Duration),
+		},
+	}
 
 	return summary
 }

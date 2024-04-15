@@ -46,7 +46,7 @@ func (t *CypressTestExecutor) Name() string {
 	return "Cypress"
 }
 
-// go run . test test --test-suite /path/to/test/folder --test-type smoke --runner Cypress --test-dir "./test-repo" --test-suite-repo git@github.com:grafana/grafana-plugin-tests
+// go run . test test --test-suite /path/to/test/folder --test-type smoke --runner cypress --test-dir "./test-repo" --test-suite-repo git@github.com:grafana/plugins-private
 // execute test suite
 func (t *CypressTestExecutor) ExecTestSuite(
 	ctx context.Context,
@@ -62,15 +62,23 @@ func (t *CypressTestExecutor) ExecTestSuite(
 		return executor.SuiteRunSummary{}, errMissingTargetDirError
 	}
 
-	err := utils.ImportSetupRepo(t.TargetDir, t.TestSuiteRepo, t.Log)
+	testingDir := utils.GetTestingDirectory(t.TargetDir, t.TestSuiteRepo)
+	workingDir := "e2e"
+
+	err := utils.ImportSetupRepo(testingDir, t.TestSuiteRepo, t.Log)
 	if err != nil {
 		return executor.SuiteRunSummary{}, fmt.Errorf("failed to import repo: %s", err.Error())
 	}
 
-	err = utils.ExecuteInDir(t.TargetDir, func() error {
+	err = utils.ExecuteInDir(testingDir+"/"+workingDir, func() error {
 		// idea: add a config in the repo with setup instructions
-		installCmd := exec.Command("yarn", "test")
+		installCmd := exec.Command("yarn", "install")
 		if err := utils.ExecStdout(installCmd); err != nil {
+			return err
+		}
+
+		executeCmd := exec.Command("yarn", "e2e")
+		if err := utils.ExecStdout(executeCmd); err != nil {
 			return err
 		}
 
@@ -78,9 +86,9 @@ func (t *CypressTestExecutor) ExecTestSuite(
 	})
 
 	// process might return exit code 1 but we still want to try to parse the report
-	if err != nil {
-		t.Log.Info("Cypress processes exited with code 1", "error", err.Error())
-	}
+	// if err != nil {
+	// 	t.Log.Info("Cypress processes exited with code 1", "error", err.Error())
+	// }
 
 	file, err := os.ReadFile(fmt.Sprintf("%s/Cypress-report/report.json", t.TargetDir))
 	if err != nil {

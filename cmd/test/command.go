@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/grafana/grafana-bench/cmd/test/cypress"
 	"github.com/grafana/grafana-bench/cmd/test/playwright"
 	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/grafana"
@@ -158,6 +159,10 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				executor = playwright.NewPlaywrightTestExecutor(log, verbose, testSuiteRepo, testSuiteDirectory)
 			}
 
+			if runnerType == "cypress" {
+				executor = cypress.NewCypressTestExecutor(log, verbose, testSuiteRepo, testSuiteDirectory)
+			}
+
 			runner := NewTestRunner(
 				log,
 				testTrigger,
@@ -183,7 +188,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	fs := cmd.Flags()
 	fs.StringVar(&testTrigger, "test-trigger", "local", "test trigger")
 	fs.StringVar(&testType, "test-type", "smoke", "test type. Allowed values: 'smoke', 'load'")
-	fs.StringVar(&runnerType, "runner", "k6", "test runner. Allowed values: 'k6', 'playwright'")
+	fs.StringVar(&runnerType, "runner", "k6", "test runner. Allowed values: 'k6', 'playwright', 'cypress'")
 	fs.StringVar(&testSuiteRepo, "test-suite-repo", "", "repository to grab test suite from")
 	fs.StringVar(&testSuiteDirectory, "test-dir", "./test-repo/", "repository to grab test suite from")
 	fs.StringVar(&grafanaUrl, "grafana-url", "http://localhost:3000", "url to grafana instance")

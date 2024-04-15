@@ -62,7 +62,7 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 		return e.SuiteRunSummary{}, errMissingTargetDirError
 	}
 
-	err := ImportSetupRepo(t.TargetDir, t.TestSuiteRepo, t.Log)
+	err := utils.ImportSetupRepo(t.TargetDir, t.TestSuiteRepo, t.Log)
 	if err != nil {
 		return e.SuiteRunSummary{}, fmt.Errorf("failed to import repo: %s", err.Error())
 	}
