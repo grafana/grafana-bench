@@ -12,11 +12,6 @@ import (
 	"github.com/grafana/grafana-bench/pkg/utils"
 )
 
-var (
-	errMissingRepo           = errors.New("missing test suite repository")
-	errMissingTargetDirError = errors.New("missing target directory to clone repository")
-)
-
 // PlaywrightTestExecutor implements TestExecutor interface for running k6 test suites
 type PlaywrightTestExecutor struct {
 	Log     *slog.Logger
@@ -30,13 +25,15 @@ type PlaywrightTestExecutor struct {
 // NewPlaywrightTestExecutor creates a new instance of PlaywrightTestExecutor
 func NewPlaywrightTestExecutor(
 	log *slog.Logger,
-	verbose bool,
 	testSuiteRepo string,
 	targetDir string,
 ) *PlaywrightTestExecutor {
+	if targetDir == "" {
+		targetDir = "./test-repo"
+	}
+
 	return &PlaywrightTestExecutor{
 		Log:           log,
-		Verbose:       verbose,
 		TestSuiteRepo: testSuiteRepo,
 		TargetDir:     targetDir,
 	}
@@ -53,13 +50,8 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 	suite executor.TestSuite,
 	env map[string]string,
 ) (executor.SuiteRunSummary, error) {
-
 	if t.TestSuiteRepo == "" {
-		return executor.SuiteRunSummary{}, errMissingRepo
-	}
-
-	if t.TargetDir == "" {
-		return executor.SuiteRunSummary{}, errMissingTargetDirError
+		return executor.SuiteRunSummary{}, errors.New("missing test suite repository")
 	}
 
 	testingDir := utils.GetTestingDirectory(t.TargetDir, t.TestSuiteRepo)
@@ -89,15 +81,12 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 }
 
 func (t *PlaywrightTestExecutor) prepareCodebase(testingDir string) error {
-
 	err := utils.ImportSetupRepo(testingDir, t.TestSuiteRepo, t.Log)
 	if err != nil {
 		return fmt.Errorf("failed to import repo: %s", err.Error())
 	}
 
-	// update repo + checkout branch
 	err = utils.ExecuteInDir(testingDir, func() error {
-		// add a config in the repo with setup instructions
 		installCmd := exec.Command("yarn", "install")
 		if err := utils.ExecStdout(installCmd); err != nil {
 			return fmt.Errorf("installing packages: %w", err)
@@ -113,16 +102,13 @@ func (t *PlaywrightTestExecutor) prepareCodebase(testingDir string) error {
 
 	if err != nil {
 		return fmt.Errorf("failed to installing dependencies: %s", err.Error())
-
 	}
 
 	return nil
 }
 
 func (t *PlaywrightTestExecutor) executeTests(testingDir string) error {
-	// update repo + checkout branch
 	err := utils.ExecuteInDir(testingDir, func() error {
-		// add a config in the repo with setup instructions
 		testRunCmd := exec.Command("yarn", "test")
 		if err := utils.ExecStdout(testRunCmd); err != nil {
 			return err
@@ -132,5 +118,4 @@ func (t *PlaywrightTestExecutor) executeTests(testingDir string) error {
 	})
 
 	return err
-
 }
