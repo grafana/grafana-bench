@@ -1,0 +1,102 @@
+{
+    "config": {
+      "configFile": "/Users/timmulqueen/projects/grafana-plugin-tests/playwright.config.js",
+      "rootDir": "/Users/timmulqueen/projects/grafana-plugin-tests/tests",
+      "forbidOnly": false,
+      "fullyParallel": true,
+      "globalSetup": null,
+      "globalTeardown": null,
+      "globalTimeout": 0,
+      "grep": {},
+      "grepInvert": null,
+      "maxFailures": 0,
+      "metadata": {
+        "actualWorkers": 1
+      },
+      "preserveOutput": "always",
+      "reporter": [
+        [
+          "json",
+          {
+            "outputFile": "./playwright-report/report.json"
+          }
+        ]
+      ],
+      "reportSlowTests": {
+        "max": 5,
+        "threshold": 15000
+      },
+      "quiet": false,
+      "projects": [
+        {
+          "outputDir": "/Users/timmulqueen/projects/grafana-plugin-tests/test-results",
+          "repeatEach": 1,
+          "retries": 2,
+          "id": "run-tests",
+          "name": "run-tests",
+          "testDir": "/Users/timmulqueen/projects/grafana-plugin-tests/tests",
+          "testIgnore": [],
+          "testMatch": [
+            "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+          ],
+          "timeout": 5000
+        }
+      ],
+      "shard": null,
+      "updateSnapshots": "missing",
+      "version": "1.42.1",
+      "workers": 5,
+      "webServer": null
+    },
+    "suites": [
+      {
+        "title": "smoke.test.ts",
+        "file": "smoke.test.ts",
+        "column": 0,
+        "line": 0,
+        "specs": [
+          {
+            "title": "should redirect to start page when permissions to navigate to page is missing",
+            "ok": true,
+            "tags": [],
+            "tests": [
+              {
+                "timeout": 5000,
+                "annotations": [],
+                "expectedStatus": "passed",
+                "projectId": "run-tests",
+                "projectName": "run-tests",
+                "results": [
+                  {
+                    "workerIndex": 0,
+                    "status": "passed",
+                    "duration": 2148,
+                    "errors": [],
+                    "stdout": [],
+                    "stderr": [],
+                    "retry": 0,
+                    "startTime": "2024-04-16T09:45:27.312Z",
+                    "attachments": []
+                  }
+                ],
+                "status": "expected"
+              }
+            ],
+            "id": "4a239ced0e52b6754d8b-30bac972d50ce0d504bd",
+            "file": "smoke.test.ts",
+            "line": 13,
+            "column": 5
+          }
+        ]
+      }
+    ],
+    "errors": [],
+    "stats": {
+      "startTime": "2024-04-16T09:45:27.104Z",
+      "duration": 2745.645,
+      "expected": 1,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    }
+  }

@@ -8,8 +8,8 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/grafana/grafana-bench/pkg/utils"
 )
@@ -22,13 +22,12 @@ type TestCompiler struct {
 	TestSuiteRevision string
 }
 
-
 func NewTestCompiler(
 	log *slog.Logger,
 	targetDir string,
 	testSuiteRepo string,
 	testSuiteRevision string,
-)  *TestCompiler {
+) *TestCompiler {
 	return &TestCompiler{
 		Log:               log,
 		TargetDir:         targetDir,
@@ -38,7 +37,7 @@ func NewTestCompiler(
 }
 
 // CompileTestSuite collects and builds tests from a source repository
-func (tc *TestCompiler)CompileTestSuite(ctx context.Context) error {
+func (tc *TestCompiler) CompileTestSuite(ctx context.Context) error {
 	var (
 		repo *git.Repository
 		err  error
@@ -62,7 +61,7 @@ func (tc *TestCompiler)CompileTestSuite(ctx context.Context) error {
 				Progress: os.Stdout,
 			},
 		)
-		
+
 		if err != nil {
 			return fmt.Errorf("checking out test suite repo %s: %w", tc.TestSuiteRepo, err)
 		}
@@ -77,7 +76,7 @@ func (tc *TestCompiler)CompileTestSuite(ctx context.Context) error {
 		// but someone hasn't checked out in a while and wants to update. That would
 		// require a manual update. perhaps check the git sha. review later.
 		var branch *plumbing.Reference
-		
+
 		branch, err = repo.Head()
 		if err != nil {
 			return fmt.Errorf("error getting current branch %w", err)
@@ -90,7 +89,7 @@ func (tc *TestCompiler)CompileTestSuite(ctx context.Context) error {
 			err = repo.Fetch(&git.FetchOptions{
 				RefSpecs: []config.RefSpec{"refs/*:refs/*"},
 			})
-			if err != nil  && !errors.Is(err, git.NoErrAlreadyUpToDate) {
+			if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
 				return fmt.Errorf("fetching references %w", err)
 			}
 
@@ -108,7 +107,7 @@ func (tc *TestCompiler)CompileTestSuite(ctx context.Context) error {
 				return fmt.Errorf("resolving reference to revision %q :%w", tc.TestSuiteRevision, err)
 			}
 
-			// FIXME: this only works for remote branches. Local branches are not found due to the reference 
+			// FIXME: this only works for remote branches. Local branches are not found due to the reference
 			err = tree.Checkout(&git.CheckoutOptions{
 				Hash: *revisionHash,
 			})
@@ -123,7 +122,7 @@ func (tc *TestCompiler)CompileTestSuite(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("getting current work directory %w", err)
 	}
-	
+
 	// build the tests
 	err = utils.DoInDir(workDir, tc.TargetDir, func() error {
 		cmdMake := exec.Command("make", "build")
@@ -136,4 +135,3 @@ func (tc *TestCompiler)CompileTestSuite(ctx context.Context) error {
 
 	return err
 }
-

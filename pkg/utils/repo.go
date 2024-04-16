@@ -16,9 +16,7 @@ func GetTestingDirectory(targetDir, testSuiteRepo string) string {
 	return testingDir
 }
 
-func ImportSetupRepo(testingDir, testSuiteRepo string, log *slog.Logger) error {
-	log.Info("importing test suite", "testSuiteRepo", testSuiteRepo, "targetDir", testingDir)
-
+func CloneRepo(testingDir, testSuiteRepo string, log *slog.Logger) error {
 	// clone repo if doesn't exist
 	exists, _ := PathExists(testingDir)
 	if exists {
@@ -47,21 +45,5 @@ func ImportSetupRepo(testingDir, testSuiteRepo string, log *slog.Logger) error {
 		log.Info("cloning test suite complete")
 	}
 
-	// update repo + checkout branch
-	err := ExecuteInDir(testingDir, func() error {
-		// add a config in the repo with setup instructions
-		// installCmd := exec.Command("yarn", "install")
-		// if err := ExecStdout(installCmd); err != nil {
-		// 	return fmt.Errorf("installing packages: %w", err)
-		// }
-
-		// installPlaywrightCmd := exec.Command("yarn", "playwright:install")
-		// if err := ExecStdout(installPlaywrightCmd); err != nil {
-		// 	return fmt.Errorf("installing playwright browsers: %w", err)
-		// }
-
-		return nil
-	})
-
-	return err
+	return nil
 }

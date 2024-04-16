@@ -6,24 +6,27 @@ import (
 	"math"
 	"path"
 
-	e "github.com/grafana/grafana-bench/pkg/executor"
+	"github.com/acarl005/stripansi"
+
+	"github.com/grafana/grafana-bench/pkg/executor"
 )
 
 // parseJsonOutput parses the json output from playwright --report json and returns a slice of RunSummary
 // this will work if only one test is run and the output but will also work for if this contains an entire suite
-func parseJsonOutput(buf []byte) (e.SuiteRunSummary, error) {
+func parseJsonOutput(buf []byte) (executor.SuiteRunSummary, error) {
 	output := PlaywrightJsonOutput{}
 
 	err := json.Unmarshal(buf, &output)
 	if err != nil {
-		return e.SuiteRunSummary{}, fmt.Errorf("parsing Playwright json summary output: %w", err)
+		return executor.SuiteRunSummary{}, fmt.Errorf("parsing Playwright json summary output: %w", err)
 	}
 
-	testRuns := make([]e.TestRun, 0, output.Stats.Expected+output.Stats.Unexpected)
+	testRuns := make([]executor.TestRun, 0, output.Stats.Expected+output.Stats.Unexpected)
 
+	count := 0
 	for _, suite := range output.Suites {
 		for _, spec := range suite.Specs {
-
+			count++
 			folder := "unknown"
 			if len(spec.Tests) > 0 {
 				for _, project := range output.Config.Projects {
@@ -37,20 +40,20 @@ func parseJsonOutput(buf []byte) (e.SuiteRunSummary, error) {
 			setupDuration := float32(output.Config.GlobalSetup)
 			tearDownDuration := float32(output.Config.GlobalTeardown)
 
-			run := formatTestRuns(spec, folder, setupDuration, tearDownDuration)
+			run := formatTestRuns(spec, folder, setupDuration, tearDownDuration, count)
 			testRuns = append(testRuns, run)
 		}
 	}
 
 	totalTestAmount := int32(output.Stats.Unexpected) + int32(output.Stats.Expected)
 
-	suiteRunSummary := e.SuiteRunSummary{
+	suiteRunSummary := executor.SuiteRunSummary{
 		StartTime:         output.Stats.StartTime,
 		ScenariosDuration: float32(output.Stats.Duration),
 		TestsExecuted:     totalTestAmount,
 		TestsFailed:       int32(output.Stats.Unexpected),
 		TestsPassed:       int32(output.Stats.Expected),
-		TestsError:        int32(output.Stats.Unexpected),
+		TestsError:        0,
 		TotalDuration:     float32(output.Stats.Duration),
 		TestRuns:          testRuns,
 	}
@@ -59,10 +62,15 @@ func parseJsonOutput(buf []byte) (e.SuiteRunSummary, error) {
 
 }
 
-func formatTestRuns(spec Specs, folder string, globalSetupDuration, globalTeardownDuration float32) e.TestRun {
+func formatTestRuns(spec Specs, folder string, globalSetupDuration, globalTeardownDuration float32, count int) executor.TestRun {
 	exitMessage := "success"
+	testStatus := executor.TestPassed
+	exitCode := 0
 	if !spec.Ok {
-		exitMessage = fmt.Sprintf("%s:%d:%d => %s", spec.File, spec.Line, spec.Column, spec.Tests[0].Results[0].Error.Message)
+		msg := stripansi.Strip(spec.Tests[0].Results[0].Error.Message)
+		exitMessage = fmt.Sprintf("%s:%d:%d => %s", spec.File, spec.Line, spec.Column, msg)
+		testStatus = executor.TestFailed
+		exitCode = 1
 	}
 
 	scenarioTotal := 0
@@ -76,29 +84,29 @@ func formatTestRuns(spec Specs, folder string, globalSetupDuration, globalTeardo
 
 	averageScenarioDuration := float32(math.Round(float64(scenarioTotal / amount)))
 
-	testStatus := e.TestPassed
-	status := spec.Tests[0].Results[0].Status
-	if status == "failed" {
-		testStatus = e.TestFailed
-	}
-
-	summary := e.TestRun{
+	summary := executor.TestRun{
 		TestFolder: folder,
 		TestFile:   path.Base(spec.File),
 
 		StartTime: spec.Tests[0].Results[0].StartTime,
-		Order:     0,
+		Order:     count,
 
 		Status:      testStatus,
 		ExitMessage: exitMessage,
-		ExitCode:    0, // what are the other values here and what do they mean?
+		ExitCode:    exitCode,
 		Iterations:  fmt.Sprintf("%d", len(spec.Tests[0].Results)),
 
-		Durations: e.TestDurations{
+		Durations: executor.TestDurations{
 			SetupDuration:    globalSetupDuration,
 			TeardownDuration: globalTeardownDuration,
 			ScenarioDuration: averageScenarioDuration,
 			TotalDuration:    float32(scenarioTotal),
+		},
+
+		Attributes: map[string]string{
+			"title":  spec.Title,
+			"line":   fmt.Sprint(spec.Line),
+			"column": fmt.Sprint(spec.Column),
 		},
 	}
 

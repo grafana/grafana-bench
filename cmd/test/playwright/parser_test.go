@@ -1,65 +1,83 @@
 package playwright
 
 import (
-	"log/slog"
 	"os"
 	"testing"
+
+	"github.com/grafana/grafana-bench/pkg/executor"
 )
 
-func TestJsonTestsSummary(t *testing.T) {
-	log := slog.New(slog.NewTextHandler(os.Stderr, nil))
+func assert(t *testing.T, expected, actual interface{}) {
+	t.Helper()
+	if expected != actual {
+		t.Fatalf("expected '%v', got '%v'", expected, actual)
+	}
+}
 
+func TestParsePlaywrightJSONReport(t *testing.T) {
 	testCases := []struct {
-		title    string
-		input    string
-		expected string
-		wantErr  bool
+		title             string
+		file              string
+		expectedTotal     int32
+		expectedPassed    int32
+		expectedFailed    int32
+		expectedError     int32
+		expectedDuration  float32
+		expectedFile      string
+		expectedStatus    string
+		expectedErrorMsg  string
+		expectedTestTitle string
 	}{
 		{
-			title: "parse 1 from small output sample",
-			input: "../mocks/report.json",
-			// expected: ",
-			wantErr: false,
+			title:             "parse successful test correctly",
+			file:              "./mocks/success.json",
+			expectedTotal:     1,
+			expectedPassed:    1,
+			expectedFailed:    0,
+			expectedError:     0,
+			expectedDuration:  float32(2745.645),
+			expectedFile:      "smoke.test.ts",
+			expectedStatus:    "passed",
+			expectedErrorMsg:  "success",
+			expectedTestTitle: "should redirect to start page when permissions to navigate to page is missing",
 		},
-		// {
-		// 	title:    "parse 100 from small output sample",
-		// 	input:    []byte(iterationOutput100),
-		// 	expected: "100",
-		// 	wantErr:  false,
-		// },
-		// {
-		// 	title:    "parse 100 from large output",
-		// 	input:    []byte(iterationOutputFull),
-		// 	expected: "100",
-		// 	wantErr:  false,
-		// },
-		// {
-		// 	title:    "parse 1 from small sample",
-		// 	input:    []byte(iterationOuputMissing),
-		// 	expected: "",
-		// 	wantErr:  true,
-		// },
+		{
+			title:             "parse failure test correctly",
+			file:              "./mocks/failures.json",
+			expectedTotal:     1,
+			expectedPassed:    0,
+			expectedFailed:    1,
+			expectedError:     0,
+			expectedDuration:  float32(5942.315),
+			expectedFile:      "failures.test.ts",
+			expectedStatus:    "failed",
+			expectedErrorMsg:  "failures.test.ts:22:6 => Test timeout of 5000ms exceeded.",
+			expectedTestTitle: "should fail due to missing element",
+		},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.title, func(t *testing.T) {
-			pwd, _ := os.Getwd()
-			jsonFile, err := os.ReadFile(pwd + "/mocks/report-retries.json")
+			file, err := os.ReadFile(testCase.file)
 			if err != nil {
-				t.Errorf("Error reading file: %v, %s", err, pwd)
+				t.Fatalf("failed reading file: %s", err)
 			}
 
-			actual, err := parseJsonOutput(jsonFile)
-
-			println(actual)
-
-			if (err != nil) != testCase.wantErr {
-				t.Errorf("Expected error: %v, but got error: %v", testCase.wantErr, err)
+			output, err := parseJsonOutput(file)
+			if err != nil {
+				t.Fatalf("failed parsing json file: %s", err)
 			}
 
-			// if actual != testCase.expected {
-			// 	t.Errorf("Expected: %s, but got: %s", testCase.expected, actual)
-			// }
+			assert(t, testCase.expectedTotal, output.TestsExecuted)
+			assert(t, testCase.expectedPassed, output.TestsPassed)
+			assert(t, testCase.expectedError, output.TestsError)
+			assert(t, testCase.expectedFailed, output.TestsFailed)
+			assert(t, testCase.expectedDuration, output.TotalDuration)
+
+			assert(t, testCase.expectedFile, output.TestRuns[0].TestFile)
+			assert(t, executor.TestStatus(testCase.expectedStatus), output.TestRuns[0].Status)
+			assert(t, testCase.expectedErrorMsg, output.TestRuns[0].ExitMessage)
+			assert(t, testCase.expectedTestTitle, output.TestRuns[0].Attributes["title"])
 		})
 	}
 }

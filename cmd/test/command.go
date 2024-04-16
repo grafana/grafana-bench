@@ -68,9 +68,11 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		k6CloudToken     string
 		k6CloudProjectId string
 		k6CloudOutput    bool
-		// playwright cloud specific flags
+		// playwright / cypress cloud specific flags
 		testSuiteRepo      string
 		testSuiteDirectory string
+		testReportJsonPath string
+		testWorkingDir     string
 	)
 
 	cmd := cobra.Command{
@@ -102,7 +104,8 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				benchRevision = env.EnvOrDefault("BENCH_REVISION", revision.BenchRevision())
 			}
 
-			// override grafana user and password from environment variables if they are set
+			// override grafana parameters from environment variables if they are set
+			grafanaUrl = env.EnvOrDefault("GRAFANA_URL", grafanaUrl)
 			grafanaUsername = env.EnvOrDefault("GRAFANA_USER", grafanaUsername)
 			grafanaPassword = env.EnvOrDefault("GRAFANA_PASSWORD", grafanaPassword)
 
@@ -156,11 +159,11 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			}
 
 			if runnerType == "playwright" {
-				executor = playwright.NewPlaywrightTestExecutor(log, verbose, testSuiteRepo, testSuiteDirectory)
+				executor = playwright.NewPlaywrightTestExecutor(log, testSuiteRepo, testSuiteDirectory, testReportJsonPath)
 			}
 
 			if runnerType == "cypress" {
-				executor = cypress.NewCypressTestExecutor(log, verbose, testSuiteRepo, testSuiteDirectory)
+				executor = cypress.NewCypressTestExecutor(log, testSuiteRepo, testSuiteDirectory, testReportJsonPath, testWorkingDir)
 			}
 
 			runner := NewTestRunner(
@@ -190,8 +193,15 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	fs.StringVar(&testType, "test-type", "smoke", "test type. Allowed values: 'smoke', 'load'")
 	fs.StringVar(&runnerType, "runner", "k6", "test runner. Allowed values: 'k6', 'playwright', 'cypress'")
 	fs.StringVar(&testSuiteRepo, "test-suite-repo", "", "repository to grab test suite from")
-	fs.StringVar(&testSuiteDirectory, "test-dir", "./test-repo/", "repository to grab test suite from")
-	fs.StringVar(&grafanaUrl, "grafana-url", "http://localhost:3000", "url to grafana instance")
+	fs.StringVar(&testSuiteDirectory, "test-dir", "./test-repo", "repository to grab test suite from")
+	fs.StringVar(&testReportJsonPath, "report-path", "/playwright-report/report.json", "path to testing json output file")
+	fs.StringVar(&testWorkingDir, "working-dir", "", "sub directory in repo to execute tests in")
+	fs.StringVar(
+		&grafanaUrl,
+		"grafana-url",
+		"http://localhost:3000",
+		"url to grafana instance. Overridden by the GRAFANA_URL environment variable",
+	)
 	fs.DurationVar(
 		&grafanaTimeout,
 		"grafana-timeout",

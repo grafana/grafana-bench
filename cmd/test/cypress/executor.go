@@ -13,32 +13,33 @@ import (
 )
 
 var (
-	errMissingRepo           = errors.New("missing test suite repository")
-	errMissingTargetDirError = errors.New("missing target directory to clone repository")
+	errMissingRepo = errors.New("missing test suite repository")
 )
 
 // CypressTestExecutor implements TestExecutor interface for running k6 test suites
 type CypressTestExecutor struct {
-	Log     *slog.Logger
-	Verbose bool
+	Log *slog.Logger
 
-	TargetDir         string
-	TestSuiteRepo     string
-	TestSuiteRevision string
+	TargetDir          string
+	TestSuiteRepo      string
+	TestReportJsonPath string
+	WorkingDir         string
 }
 
 // NewCypressTestExecutor creates a new instance of CypressTestExecutor
 func NewCypressTestExecutor(
 	log *slog.Logger,
-	verbose bool,
 	testSuiteRepo string,
 	targetDir string,
+	jsonReportPath string,
+	workingDir string,
 ) *CypressTestExecutor {
 	return &CypressTestExecutor{
-		Log:           log,
-		Verbose:       verbose,
-		TestSuiteRepo: testSuiteRepo,
-		TargetDir:     targetDir,
+		Log:                log,
+		TestSuiteRepo:      testSuiteRepo,
+		TestReportJsonPath: jsonReportPath,
+		TargetDir:          targetDir,
+		WorkingDir:         workingDir,
 	}
 }
 
@@ -46,51 +47,37 @@ func (t *CypressTestExecutor) Name() string {
 	return "Cypress"
 }
 
-// go run . test test --test-suite /path/to/test/folder --test-type smoke --runner cypress --test-dir "./test-repo" --test-suite-repo git@github.com:grafana/plugins-private
+// go run . test test --test-type smoke --runner cypress --working-dir e2e --test-suite-repo git@github.com:grafana/plugins-private
 // execute test suite
 func (t *CypressTestExecutor) ExecTestSuite(
 	ctx context.Context,
 	suite executor.TestSuite,
 	env map[string]string,
 ) (executor.SuiteRunSummary, error) {
-
 	if t.TestSuiteRepo == "" {
 		return executor.SuiteRunSummary{}, errMissingRepo
 	}
 
-	if t.TargetDir == "" {
-		return executor.SuiteRunSummary{}, errMissingTargetDirError
-	}
-
 	testingDir := utils.GetTestingDirectory(t.TargetDir, t.TestSuiteRepo)
-	workingDir := "e2e"
+	workingDir := testingDir + t.WorkingDir
 
-	err := utils.ImportSetupRepo(testingDir, t.TestSuiteRepo, t.Log)
+	err := utils.CloneRepo(testingDir, t.TestSuiteRepo, t.Log)
 	if err != nil {
 		return executor.SuiteRunSummary{}, fmt.Errorf("failed to import repo: %s", err.Error())
 	}
 
-	err = utils.ExecuteInDir(testingDir+"/"+workingDir, func() error {
-		// idea: add a config in the repo with setup instructions
-		installCmd := exec.Command("yarn", "install")
-		if err := utils.ExecStdout(installCmd); err != nil {
-			return err
-		}
+	err = t.prepareCodebase(workingDir)
+	if err != nil {
+		return executor.SuiteRunSummary{}, fmt.Errorf("failed to prepare codebase: %s", err.Error())
+	}
 
-		executeCmd := exec.Command("yarn", "e2e")
-		if err := utils.ExecStdout(executeCmd); err != nil {
-			return err
-		}
+	err = t.executeTests(workingDir)
+	if err != nil {
+		// attempt to parse json report if there is a error
+		t.Log.Info("Cypress processes exited with code 1", "error", err.Error())
+	}
 
-		return nil
-	})
-
-	// process might return exit code 1 but we still want to try to parse the report
-	// if err != nil {
-	// 	t.Log.Info("Cypress processes exited with code 1", "error", err.Error())
-	// }
-
-	file, err := os.ReadFile(fmt.Sprintf("%s/Cypress-report/report.json", t.TargetDir))
+	file, err := os.ReadFile(fmt.Sprintf("%s%s", workingDir, t.TestReportJsonPath))
 	if err != nil {
 		return executor.SuiteRunSummary{}, fmt.Errorf("failed to read report.json: %s", err.Error())
 	}
@@ -101,4 +88,39 @@ func (t *CypressTestExecutor) ExecTestSuite(
 	}
 
 	return runSummary, nil
+}
+
+func (t *CypressTestExecutor) prepareCodebase(testingDir string) error {
+	err := utils.CloneRepo(testingDir, t.TestSuiteRepo, t.Log)
+	if err != nil {
+		return fmt.Errorf("failed to import repo: %s", err.Error())
+	}
+
+	err = utils.ExecuteInDir(testingDir, func() error {
+		installCmd := exec.Command("yarn", "install")
+		if err := utils.ExecStdout(installCmd); err != nil {
+			return fmt.Errorf("installing packages: %w", err)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to installing dependencies: %s", err.Error())
+	}
+
+	return nil
+}
+
+func (t *CypressTestExecutor) executeTests(testingDir string) error {
+	err := utils.ExecuteInDir(testingDir, func() error {
+		testRunCmd := exec.Command("yarn", "cypress", "run")
+		if err := utils.ExecStdout(testRunCmd); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return err
 }
