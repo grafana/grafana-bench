@@ -134,9 +134,13 @@ jobs:
           # this is a multi-line string, so just use the first
           GAR_IMAGE=$(echo "${{ steps.push-to-gar.outputs.tags }}" | head -n1)
           echo "GAR_IMAGE=$GAR_IMAGE"
+
           GHCR_IMAGE=ghcr.io/grafana/grafana-bench:${{ steps.push-to-gar.outputs.version }}
           echo "GHCR_IMAGE=$GHCR_IMAGE"
 
+          GHCR_IMAGE_LATEST=ghcr.io/grafana/grafana-bench:latest
+          echo "GHCR_IMAGE_LATEST=$GHCR_IMAGE_LATEST"
+
           docker buildx imagetools create \
-            --tag $GHCR_IMAGE \
+            --tag $GHCR_IMAGE --tag $GHCR_IMAGE_LATEST \
             $GAR_IMAGE

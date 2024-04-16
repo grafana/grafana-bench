@@ -5,6 +5,8 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -52,8 +54,18 @@ type mockGrafanaInstance struct {
 	version  string
 }
 
-func (m *mockGrafanaInstance) Address() string {
+func (m *mockGrafanaInstance) Url() string {
 	return m.address
+}
+
+func (m *mockGrafanaInstance) Hostname() string {
+	url, _ := url.Parse(m.address)
+	return url.Hostname()
+}
+
+func (m *mockGrafanaInstance) Slug() string {
+	slug, _, _ := strings.Cut(m.Hostname(), ".")
+	return slug
 }
 
 func (m *mockGrafanaInstance) Password() string {
@@ -78,6 +90,7 @@ func (m *mockGrafanaInstance) GetGrafanaSession() (string, error) {
 
 func newMockGrafanaInstance(opts ...mockGrafanaInstanceOption) *mockGrafanaInstance {
 	mock := &mockGrafanaInstance{
+		address: "http://my-instance.grafana.net:433",
 		user:     "admin",
 		password: "admin",
 		err:      nil,
@@ -127,6 +140,7 @@ func testRunnerForTesting(
 		"devel", // bench revision
 		"",      // dashboard URL
 		executor,
+		"log",
 	)
 
 	// apply options
@@ -139,15 +153,15 @@ func testRunnerForTesting(
 }
 
 const (
+	invalidDashboardMessage = "invalid template substitution"
+
 	loginError = "Invalid credentials"
 
-	dashboardMessage = "See dashboard"
-
-	invalidDashboardError = "invalid template substitution"
-
-	testSuiteFailedMessage = "test suite failed. Too many test failures"
-
 	grafanaNotAliveError = "Instance not available"
+
+	testSuiteFailedError = "test suite failed: Too many test failures"
+
+	testSuiteFailedDashboardError = `test suite failed: Too many test failures.*See dashboard`
 )
 
 func failedSuiteSummary() executor.SuiteRunSummary {
@@ -196,10 +210,11 @@ func Test_Runner(t *testing.T) {
 			expectMsgs: []string{},
 		},
 		{
-			testCase:   "failing suite",
+			testCase:   "failing suite without dashboard",
 			instance:   newMockGrafanaInstance(),
 			summary:    failedSuiteSummary(),
-			expectMsgs: []string{testSuiteFailedMessage},
+			expectErr:  testSuiteFailedError,
+			expectMsgs: []string{},
 		},
 		{
 			testCase: "failing suite with dashboard",
@@ -208,10 +223,7 @@ func Test_Runner(t *testing.T) {
 			options: []testRunnerOption{
 				WithDashboard(),
 			},
-			expectMsgs: []string{
-				testSuiteFailedMessage,
-				dashboardMessage,
-			},
+			expectErr: testSuiteFailedDashboardError,
 		},
 		{
 			testCase: "failing suite with invalid dashboard",
@@ -220,7 +232,10 @@ func Test_Runner(t *testing.T) {
 			options: []testRunnerOption{
 				WithInvalidDashboard(),
 			},
-			expectErr: invalidDashboardError,
+			expectErr: testSuiteFailedError,
+			expectMsgs: []string{
+				invalidDashboardMessage,
+			},
 		},
 		{
 			testCase: "invalid credentials",
@@ -272,9 +287,8 @@ func Test_Runner(t *testing.T) {
 				t.Fatalf("should had failed with %q", tc.expectErr)
 			}
 
-			// FIXME: checking for specific error text is fragile.
-			// The TestRunner should return different error types to facilitate validations
-			if err != nil && (tc.expectErr == "" || !strings.Contains(err.Error(), tc.expectErr)) {
+			errExp := regexp.MustCompile(tc.expectErr)
+			if err != nil && !errExp.MatchString(err.Error()) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 

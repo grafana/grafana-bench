@@ -1,0 +1,118 @@
+{
+  "config": {
+    "configFile": "/Users/timmulqueen/projects/grafana-plugin-tests/playwright.config.js",
+    "rootDir": "/Users/timmulqueen/projects/grafana-plugin-tests/tests",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "json",
+        {
+          "outputFile": "./playwright-report/report.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 15000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/Users/timmulqueen/projects/grafana-plugin-tests/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "id": "run-tests",
+        "name": "run-tests",
+        "testDir": "/Users/timmulqueen/projects/grafana-plugin-tests/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 5000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "version": "1.42.1",
+    "workers": 5,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "failures.test.ts",
+      "file": "failures.test.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "should fail due to missing element",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 5000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "run-tests",
+              "projectName": "run-tests",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "status": "timedOut",
+                  "duration": 5001,
+                  "error": {
+                    "message": "\u001b[31mTest timeout of 5000ms exceeded.\u001b[39m",
+                    "stack": "\u001b[31mTest timeout of 5000ms exceeded.\u001b[39m"
+                  },
+                  "errors": [
+                    {
+                      "message": "\u001b[31mTest timeout of 5000ms exceeded.\u001b[39m"
+                    },
+                    {
+                      "location": {
+                        "file": "/Users/timmulqueen/projects/grafana-plugin-tests/tests/failures.test.ts",
+                        "column": 5,
+                        "line": 24
+                      },
+                      "message": "Error: locator.click: Test timeout of 5000ms exceeded.\nCall log:\n  \u001b[2m- waiting for locator('[data-testid=\"data-testid toggle-viz-picker\"]')\u001b[22m\n\n\n\u001b[0m \u001b[90m 22 |\u001b[39m test\u001b[33m.\u001b[39monly(\u001b[32m'should fail due to missing element'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page\u001b[33m,\u001b[39m panelEditPage }) \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[0m \u001b[90m 23 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m'/datasources'\u001b[39m\u001b[33m,\u001b[39m { waitUntil\u001b[33m:\u001b[39m \u001b[32m'networkidle'\u001b[39m })\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 24 |\u001b[39m     \u001b[36mawait\u001b[39m panelEditPage\u001b[33m.\u001b[39msetVisualization(\u001b[32m'Table'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m    |\u001b[39m     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 25 |\u001b[39m })\u001b[33m;\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 26 |\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 27 |\u001b[39m test(\u001b[32m'should fail due to type error in test'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\u001b[0m\n\n\u001b[2m    at PanelEditPage.setVisualization (/Users/timmulqueen/projects/grafana-plugin-tests/node_modules/@grafana/plugin-e2e/dist/models/pages/PanelEditPage.js:106:102)\u001b[22m\n\u001b[2m    at /Users/timmulqueen/projects/grafana-plugin-tests/tests/failures.test.ts:24:5\u001b[22m"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2024-04-16T10:24:54.465Z",
+                  "attachments": []
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "59347eaae706a9d2b94f-d48668021d31c1f80436",
+          "file": "failures.test.ts",
+          "line": 22,
+          "column": 6
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2024-04-16T10:24:54.209Z",
+    "duration": 5942.3150000000005,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 1,
+    "flaky": 0
+  }
+}

@@ -38,6 +38,17 @@ func DoInDir(workdir string, operationDir string, fn func() error) error {
 	return fn()
 }
 
+// Do function in a directory
+func ExecuteInDir(targetDir string, fn func() error) error {
+	workDir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("getting current work directory %w", err)
+	}
+
+	// build the tests
+	return DoInDir(workDir, targetDir, fn)
+}
+
 // Checks for existence of directory
 func PathExists(path string) (bool, error) {
 	// Use the Stat function to check if the directory exists

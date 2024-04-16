@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/grafana/grafana-bench/cmd/test/playwright"
 	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/grafana"
 	"github.com/grafana/grafana-bench/pkg/revision"
@@ -48,6 +49,9 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	var (
 		testTrigger       string
 		testType          string
+		runnerType        string
+		reportFormat      string
+		runnerType        string
 		grafanaUrl        string
 		grafanaUsername   string
 		grafanaPassword   string
@@ -57,13 +61,18 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		testSuite         string
 		revisionFile      string
 		testSuiteBase     string
-		k6CloudToken      string
-		k6CloudProjectId  string
 		grafanaTimeout    time.Duration
 		benchRevision     string
 		dashboardURL      string
-		verbose           bool
-		k6CloudOutput     bool
+		// k6 cloud specific flags
+		k6CloudToken     string
+		k6CloudProjectId string
+		k6Verbose        bool
+		k6CloudOutput    bool
+		k6UseTypescript  bool
+		// playwright cloud specific flags
+		pwPrepareCmd string
+		pwExecuteCmd string
 	)
 
 	cmd := cobra.Command{
@@ -78,18 +87,14 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				return err
 			}
 
-			// take the environment variable first
-			if testSuiteRevision == "" {
-				testSuiteRevision = env.EnvOrDefault("TEST_SUITE_REVISION", "")
-			}
-
-			// If revision-file and test-suite-revision are specified, test-suite-revision has precedence
-			if testSuiteRevision == "" && revisionFile != "" {
+			if revisionFile != "" {
 				testSuiteRevision, err = getTestSuiteRevision(revisionFile)
 				if err != nil {
 					return fmt.Errorf("getting version from file %s: %w", revisionFile, err)
 				}
 			}
+
+			testSuiteRevision = env.EnvOrDefault("TEST_SUITE_REVISION", testSuiteRevision)
 
 			if benchRevision == "" {
 				benchRevision = env.EnvOrDefault("BENCH_REVISION", revision.BenchRevision())
@@ -120,7 +125,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 
 			// if the name of the test suite was not given, use the last element of the test suit path as name
 			if testSuiteName == "" {
-				defaultTestSuiteName := strings.TrimSuffix(path.Base(testSuite), ".js")
+				defaultTestSuiteName := strings.TrimSuffix(path.Base(testSuite), path.Ext(testSuite))
 				testSuiteName = env.EnvOrDefault("TEST_SUITE_NAME", defaultTestSuiteName)
 			}
 
@@ -138,13 +143,21 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				Revision: testSuiteRevision,
 			}
 
-			executor := NewK6TestExecutor(
-				log,
-				verbose,
-				k6CloudOutput,
-				k6CloudToken,
-				k6CloudProjectId,
-			)
+			var executor executor.TestExecutor
+			if runnerType == "k6" {
+				executor = NewK6TestExecutor(
+					log,
+					k6Verbose,
+					k6UseTypescript,
+					k6CloudOutput,
+					k6CloudToken,
+					k6CloudProjectId,
+				)
+			}
+
+			if runnerType == "playwright" {
+				executor = playwright.NewPlaywrightTestExecutor(log, pwPrepareCmd, pwExecuteCmd)
+			}
 
 			runner := NewTestRunner(
 				log,
@@ -154,13 +167,14 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				benchRevision,
 				dashboardURL,
 				executor,
+				reportFormat,
 			)
 
 			// TODO: review attributes reported in this log message
 			log.Info(
 				"test runner params",
 				"testType", testType,
-				"grafanaInstance", runner.GrafanaInstance.Address(),
+				"grafanaInstance", runner.GrafanaInstance.Url(),
 				"k6ProjectId", k6CloudProjectId,
 			)
 
@@ -171,6 +185,16 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	fs := cmd.Flags()
 	fs.StringVar(&testTrigger, "test-trigger", "local", "test trigger")
 	fs.StringVar(&testType, "test-type", "smoke", "test type. Allowed values: 'smoke', 'load'")
+	fs.StringVar(&runnerType, "runner", "k6", "test runner. Allowed values: 'k6', 'playwright'")
+	fs.StringVar(&pwPrepareCmd, "pw-prepare-cmd", "", "command used to install dependencies for the test suite eg: npm install")
+	fs.StringVar(&pwExecuteCmd, "pw-execute-cmd", "", "command used to execute the test suite eg: npm run test")
+	fs.StringVar(
+		&reportFormat,
+		"test-report-format",
+		"text",
+		"format of the test execution report. Allowed values 'log' or 'text'."+
+			"\n 'log' produced a structure log. 'text' produced an human readable output",
+	)
 	fs.StringVar(
 		&grafanaUrl,
 		"grafana-url",
@@ -200,13 +224,13 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		&revisionFile,
 		"test-suite-revision-file",
 		"",
-		"path to a file with the test suite revision",
+		"path to a file with the test suite revision. Has precedence over test-suite-revision",
 	)
 	// TODO: add default value as the revision is used to generate the run id
 	fs.StringVar(
 		&testSuiteRevision,
 		"test-suite-revision",
-		"",
+		"devel",
 		"test suite revision. If not set TEST_SUITE_REVISION environment variable is used",
 	)
 	fs.StringVar(
@@ -227,7 +251,13 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		"",
 		"K6 cloud project ID. If not set K6_CLOUD_PROJECT_ID environment variable is used",
 	)
-	fs.BoolVar(&verbose, "verbose", true, "show test outputs")
+	fs.BoolVar(
+		&k6UseTypescript,
+		"k6-use-typescript",
+		false,
+		"run k6 typescript tests. Typescript tests are compiled before execution.",
+	)
+	fs.BoolVar(&k6Verbose, "k6-verbose", false, "show k6 test outputs")
 	fs.BoolVar(
 		&k6CloudOutput,
 		"k6-cloud-output",
