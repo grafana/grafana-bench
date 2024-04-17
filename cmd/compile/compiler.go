@@ -36,8 +36,7 @@ func NewTestCompiler(
 	}
 }
 
-// CompileTestSuite collects and builds tests from a source repository
-func (tc *TestCompiler) CompileTestSuite(ctx context.Context) error {
+func (tc *TestCompiler) CloneRepo(ctx context.Context) error {
 	var (
 		repo *git.Repository
 		err  error
@@ -116,6 +115,13 @@ func (tc *TestCompiler) CompileTestSuite(ctx context.Context) error {
 			}
 		}
 	}
+
+	return nil
+}
+
+// CompileTestSuite collects and builds tests from a source repository
+func (tc *TestCompiler) CompileTestSuite(ctx context.Context) error {
+	tc.CloneRepo(ctx)
 
 	// update repo + checkout branch
 	workDir, err := os.Getwd()

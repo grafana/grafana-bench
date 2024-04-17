@@ -46,7 +46,7 @@ func ExecuteInDir(targetDir string, fn func() error) error {
 	}
 
 	// build the tests
-	err = DoInDir(workDir, targetDir, fn)
+	return DoInDir(workDir, targetDir, fn)
 	return err
 }
 
