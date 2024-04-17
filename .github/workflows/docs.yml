@@ -24,6 +24,7 @@ jobs:
           mkdir -p docs
           go run gendoc/main.go -o docs/
           ls -lha docs/*
+          cd docs && pwd
   publish-docs:
     uses: grafana/shared-workflows/.github/workflows/publish-techdocs.yaml@main
     secrets: inherit
