@@ -66,7 +66,7 @@ jobs:
 
   publish-dev:
     # publish latest from main to dev
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    #if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [test-bench, test-container]
     runs-on: ubuntu-latest
     steps:
