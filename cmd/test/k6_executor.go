@@ -272,6 +272,7 @@ func transpileTest(testFile string) (string, error) {
 	buf, err := k6pack.Pack(string(source), &k6pack.Options{
 		Filename:   testFile,
 		TypeScript: true,
+		SourceMap:  true,
 	})
 	if err != nil {
 		return "", fmt.Errorf("transpiling test file %q: %w", testFile, err)
