@@ -3,13 +3,13 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'docs/**'
-      - 'mkdocs.yml'
-      - 'catalog-info.yaml'
-      - '.github/workflows/publish-docs.yml'
-      - 'actions/build-techdocs/**'
-      - 'actions/publish-techdocs/**'
+    #paths:
+    #  - 'docs/**'
+    #  - 'mkdocs.yml'
+    #  - 'catalog-info.yaml'
+    #  - '.github/workflows/publish-docs.yml'
+    #  - 'actions/build-techdocs/**'
+    #  - 'actions/publish-techdocs/**'
 
 jobs:
   generate-docs:
@@ -23,6 +23,7 @@ jobs:
         run: |
           mkdir -p docs
           go run gendoc/main.go -o docs/
+          ls -lha docs/*
   publish-docs:
     uses: grafana/shared-workflows/.github/workflows/publish-techdocs.yaml@main
     secrets: inherit
