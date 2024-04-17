@@ -28,11 +28,11 @@ jobs:
           go run gendoc/main.go -o docs/
           ls -lha docs/*
           cd docs && pwd
-  publish-docs:
-    uses: grafana/shared-workflows/.github/workflows/publish-techdocs.yaml@main
-    secrets: inherit
-    with:
-      namespace: default
-      kind: component
-      name: grafana-bench
-      checkout-repo: false
+      - name: publish docs
+        uses: grafana/shared-workflows/.github/workflows/publish-techdocs.yaml@main
+          secrets: inherit
+          with:
+            namespace: default
+            kind: component
+            name: grafana-bench
+            checkout-repo: false
