@@ -12,6 +12,17 @@ on:
       - 'actions/publish-techdocs/**'
 
 jobs:
+  generate-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version: "1.22"
+      - name: generate cobra docs
+        run: |
+          mkdir -p docs
+          go run gendoc/main.go -o docs/
   publish-docs:
     uses: grafana/shared-workflows/.github/workflows/publish-techdocs.yaml@main
     secrets: inherit
@@ -19,3 +30,4 @@ jobs:
       namespace: default
       kind: component
       name: grafana-bench
+      checkout-repo: false

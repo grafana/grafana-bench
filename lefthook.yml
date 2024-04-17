@@ -1,4 +1,4 @@
 pre-commit:
   commands:
     update-docs:
-      run: go run gendoc/main.go -o docs && git add docs/
+      #run: go run gendoc/main.go -o docs && git add docs/
