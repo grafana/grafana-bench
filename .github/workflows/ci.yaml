@@ -65,7 +65,7 @@ jobs:
 
   publish-dev:
     # publish latest from main to dev
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    #if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [test-bench, test-container]
     runs-on: ubuntu-latest
     steps:
@@ -78,6 +78,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
+      - name: github actor
+        run: |
+          echo ${{ github.actor }}
       - uses: grafana/shared-workflows/actions/push-to-gar-docker@main
         id: push-to-gar
         with:
@@ -92,7 +95,6 @@ jobs:
       - name: copy image to ghcr.io
         run: |
           # this is a multi-line string, so just use the first
-          echo ${{ github.actor}}
           GAR_IMAGE=$(echo "${{ steps.push-to-gar.outputs.tags }}" | head -n1)
           echo "GAR_IMAGE=$GAR_IMAGE"
           GHCR_IMAGE=ghcr.io/grafana/bench:${{ steps.push-to-gar.outputs.version }}
