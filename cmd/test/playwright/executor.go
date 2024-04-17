@@ -14,14 +14,12 @@ import (
 	"github.com/grafana/grafana-bench/pkg/utils"
 )
 
-var targetDir = "./test-repo"
 var jsonOutputName = "playwright-report.json"
 
 // PlaywrightTestExecutor implements TestExecutor interface for running k6 test suites
 type PlaywrightTestExecutor struct {
 	Log *slog.Logger
 
-	TestSuite     string
 	TestSuiteRepo string
 	PrepareCmd    string
 	ExecuteCmd    string
@@ -67,7 +65,7 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 		return executor.SuiteRunSummary{}, errors.New("missing test suite repository")
 	}
 
-	testingDir := utils.GetTestingDirectory(targetDir, t.TestSuiteRepo)
+	testingDir := utils.GetTestingDirectory(compile.TargetCloneDir, t.TestSuiteRepo)
 
 	tc := compile.NewTestCompiler(t.Log, testingDir, t.TestSuiteRepo, "")
 	err := tc.CloneRepo(context.TODO())

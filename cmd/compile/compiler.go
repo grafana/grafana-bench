@@ -14,6 +14,8 @@ import (
 	"github.com/grafana/grafana-bench/pkg/utils"
 )
 
+var TargetCloneDir = "./test-repo"
+
 // TestCompiler
 type TestCompiler struct {
 	Log               *slog.Logger

@@ -8,38 +8,37 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/grafana/grafana-bench/cmd/compile"
 	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/utils"
 )
 
-var (
-	errMissingRepo = errors.New("missing test suite repository")
-)
+var jsonOutputName = "test-results/cypress-report.json"
 
 // CypressTestExecutor implements TestExecutor interface for running k6 test suites
 type CypressTestExecutor struct {
 	Log *slog.Logger
 
-	TargetDir          string
-	TestSuiteRepo      string
-	TestReportJsonPath string
-	WorkingDir         string
+	TestSuiteRepo string
+	PrepareCmd    string
+	ExecuteCmd    string
+	WorkingDir    string
 }
 
 // NewCypressTestExecutor creates a new instance of CypressTestExecutor
 func NewCypressTestExecutor(
 	log *slog.Logger,
 	testSuiteRepo string,
-	targetDir string,
-	jsonReportPath string,
+	prepareCmd string,
+	executeCmd string,
 	workingDir string,
 ) *CypressTestExecutor {
 	return &CypressTestExecutor{
-		Log:                log,
-		TestSuiteRepo:      testSuiteRepo,
-		TestReportJsonPath: jsonReportPath,
-		TargetDir:          targetDir,
-		WorkingDir:         workingDir,
+		Log:           log,
+		TestSuiteRepo: testSuiteRepo,
+		PrepareCmd:    prepareCmd,
+		ExecuteCmd:    executeCmd,
+		WorkingDir:    workingDir,
 	}
 }
 
@@ -55,29 +54,30 @@ func (t *CypressTestExecutor) ExecTestSuite(
 	env map[string]string,
 ) (executor.SuiteRunSummary, error) {
 	if t.TestSuiteRepo == "" {
-		return executor.SuiteRunSummary{}, errMissingRepo
+		return executor.SuiteRunSummary{}, errors.New("missing test suite repository")
 	}
 
-	testingDir := utils.GetTestingDirectory(t.TargetDir, t.TestSuiteRepo)
+	testingDir := utils.GetTestingDirectory(compile.TargetCloneDir, t.TestSuiteRepo)
 	workingDir := testingDir + t.WorkingDir
 
-	err := utils.CloneRepo(testingDir, t.TestSuiteRepo, t.Log)
+	tc := compile.NewTestCompiler(t.Log, testingDir, t.TestSuiteRepo, "")
+	err := tc.CloneRepo(context.TODO())
 	if err != nil {
-		return executor.SuiteRunSummary{}, fmt.Errorf("failed to import repo: %s", err.Error())
+		return executor.SuiteRunSummary{}, fmt.Errorf("failed to cloning codebase: %s", err.Error())
 	}
 
-	err = t.prepareCodebase(workingDir)
+	err = t.prepareCodebase(workingDir, t.PrepareCmd)
 	if err != nil {
 		return executor.SuiteRunSummary{}, fmt.Errorf("failed to prepare codebase: %s", err.Error())
 	}
 
-	err = t.executeTests(workingDir)
+	err = t.executeTests(workingDir, t.ExecuteCmd, suite.Path)
 	if err != nil {
-		// attempt to parse json report if there is a error
-		t.Log.Info("Cypress processes exited with code 1", "error", err.Error())
+		// process might return exit code 1 if test fails but we still want to try to parse the report
+		t.Log.Info("Playwright processes exited with code 1", "error", err.Error())
 	}
 
-	file, err := os.ReadFile(fmt.Sprintf("%s%s", workingDir, t.TestReportJsonPath))
+	file, err := os.ReadFile(fmt.Sprintf("%s/%s", workingDir, jsonOutputName))
 	if err != nil {
 		return executor.SuiteRunSummary{}, fmt.Errorf("failed to read report.json: %s", err.Error())
 	}
@@ -90,37 +90,25 @@ func (t *CypressTestExecutor) ExecTestSuite(
 	return runSummary, nil
 }
 
-func (t *CypressTestExecutor) prepareCodebase(testingDir string) error {
-	err := utils.CloneRepo(testingDir, t.TestSuiteRepo, t.Log)
-	if err != nil {
-		return fmt.Errorf("failed to import repo: %s", err.Error())
-	}
-
-	err = utils.ExecuteInDir(testingDir, func() error {
-		installCmd := exec.Command("yarn", "install")
-		if err := utils.ExecStdout(installCmd); err != nil {
+func (t *CypressTestExecutor) prepareCodebase(testingDir string, prepareCmd string) error {
+	return utils.ExecuteInDir(testingDir, func() error {
+		prepareCmd := exec.Command("bash", "-c", prepareCmd)
+		if err := utils.ExecStdout(prepareCmd); err != nil {
 			return fmt.Errorf("installing packages: %w", err)
 		}
 
 		return nil
 	})
-
-	if err != nil {
-		return fmt.Errorf("failed to installing dependencies: %s", err.Error())
-	}
-
-	return nil
 }
 
-func (t *CypressTestExecutor) executeTests(testingDir string) error {
-	err := utils.ExecuteInDir(testingDir, func() error {
-		testRunCmd := exec.Command("yarn", "cypress", "run")
+func (t *CypressTestExecutor) executeTests(testingDir string, executeCmd string, testSuite string) error {
+	return utils.ExecuteInDir(testingDir, func() error {
+		testRunCmd := exec.Command("bash", "-c", executeCmd)
+		// testRunCmd := exec.Command("yarn", "cypress", "run")
 		if err := utils.ExecStdout(testRunCmd); err != nil {
 			return err
 		}
 
 		return nil
 	})
-
-	return err
 }
