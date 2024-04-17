@@ -70,19 +70,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
       - uses: grafana/shared-workflows/actions/push-to-gar-docker@main
         id: push-to-gar
         with:
           environment: "dev"
           image_name: grafana-bench
-          platforms: |-
-            "linux/amd64"
-            "linux/arm64"
+          platforms: linux/amd64,linux/arm64
           build-args: |-
             BENCH_REVISION=${{ github.sha }}
           tags: |-
             ${{ github.sha }}
-            "latest"
+            latest
 
   publish-gar-prod:
     # publish to prod only tagged versions
@@ -91,18 +91,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
       - uses: grafana/shared-workflows/actions/push-to-gar-docker@main
         id: push-to-gar
         with:
           environment: "prod"
           image_name: grafana-bench
-          platforms: |-
-            "linux/amd64"
-            "linux/arm64"
+          platforms: linux/amd64,linux/arm64
           build-args: |-
             BENCH_REVISION=${{ github.sha }}
           tags: |-
             ${{ github.ref_name }}
+            ${{ github.sha }}
+            latest
 
   publish-ghcr:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -120,6 +122,8 @@ jobs:
           echo "image=${IMAGE_VERSION}" > $GITHUB_OUTPUT
       - name: checkout code
         uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
       - name: Set up Docker buildx
         uses: docker/setup-buildx-action@v3
       - name: Log into ghcr.io
@@ -132,9 +136,6 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           push: true
-          platforms: |-
-            "linux/amd64"
-            "linux/arm64"
+          platforms: linux/amd64,linux/arm64
           tags: |-
-             ${{ steps.version.outputs.image }}
- 
+            ${{ steps.version.outputs.image }}
