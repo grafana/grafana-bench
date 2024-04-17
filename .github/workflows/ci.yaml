@@ -92,6 +92,7 @@ jobs:
       - name: copy image to ghcr.io
         run: |
           # this is a multi-line string, so just use the first
+          echo ${{ github.actor}}
           GAR_IMAGE=$(echo "${{ steps.push-to-gar.outputs.tags }}" | head -n1)
           echo "GAR_IMAGE=$GAR_IMAGE"
           GHCR_IMAGE=ghcr.io/grafana/bench:${{ steps.push-to-gar.outputs.version }}
