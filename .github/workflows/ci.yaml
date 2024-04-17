@@ -63,12 +63,18 @@ jobs:
           name: screenshots
           path: screenshots
 
-  publish-gar-dev:
-    # publish to dev latest from main
+  publish-dev:
+    # publish latest from main to dev
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [test-bench, test-container]
     runs-on: ubuntu-latest
     steps:
+      - name: Log into ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/checkout@v4
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -83,13 +89,30 @@ jobs:
           tags: |-
             ${{ github.sha }}
             latest
+      - name: copy image to ghcr.io
+        run: |
+          # this is a multi-line string, so just use the first
+          GAR_IMAGE=$(echo "${{ steps.push-to-gar.outputs.tags }}" | head -n1)
+          echo "GAR_IMAGE=$GAR_IMAGE"
+          GHCR_IMAGE=ghcr.io/grafana/bench:${{ steps.push-to-gar.outputs.version }}
+          echo "GHCR_IMAGE=$GHCR_IMAGE"
 
-  publish-gar-prod:
-    # publish to prod only tagged versions
+          docker buildx imagetools create \
+            --tag $GHCR_IMAGE \
+            $GAR_IMAGE
+
+  publish-prod:
+    # publish tagged versions to prod
     if: ${{ startsWith(github.ref, 'refs/tags/v') }}
     needs: [test-bench, test-container]
     runs-on: ubuntu-latest
     steps:
+      - name: Log into ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/checkout@v4
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -105,37 +128,14 @@ jobs:
             ${{ github.ref_name }}
             ${{ github.sha }}
             latest
-
-  publish-ghcr:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [test-bench, test-container]
-    runs-on: ubuntu-latest
-    steps:
-      - name: get version
-        id: version
+      - name: copy image to ghcr.io
         run: |
-          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
-              IMAGE_VERSION=$GITHUB_REF_NAME
-          else
-              IMAGE_VERSION="latest"
-          fi
-          echo "image=${IMAGE_VERSION}" > $GITHUB_OUTPUT
-      - name: checkout code
-        uses: actions/checkout@v4
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-      - name: Set up Docker buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Log into ghcr.io
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and push image
-        uses: docker/build-push-action@v5
-        with:
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: |-
-            ${{ steps.version.outputs.image }}
+          # this is a multi-line string, so just use the first
+          GAR_IMAGE=$(echo "${{ steps.push-to-gar.outputs.tags }}" | head -n1)
+          echo "GAR_IMAGE=$GAR_IMAGE"
+          GHCR_IMAGE=ghcr.io/grafana/bench:${{ steps.push-to-gar.outputs.version }}
+          echo "GHCR_IMAGE=$GHCR_IMAGE"
+
+          docker buildx imagetools create \
+            --tag $GHCR_IMAGE \
+            $GAR_IMAGE
