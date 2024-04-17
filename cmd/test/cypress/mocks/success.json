@@ -1,0 +1,54 @@
+{
+    "results": {
+      "tool": {
+        "name": "cypress"
+      },
+      "summary": {
+        "suites": 1,
+        "tests": 3,
+        "failed": 0,
+        "passed": 3,
+        "skipped": 0,
+        "pending": 0,
+        "other": 0,
+        "start": 1713357713821,
+        "stop": 1713357743501
+      },
+      "tests": [
+        {
+          "name": "grafana-jira-datasource plugin: load the plugin correctly",
+          "status": "passed",
+          "duration": 9490,
+          "rawStatus": "passed",
+          "type": "e2e",
+          "filePath": "cypress/e2e/grafana-jira-datasource.cy.ts",
+          "retry": 0,
+          "flake": false,
+          "browser": "electron 106.0.5249.51"
+        },
+        {
+          "name": "grafana-jira-datasource config: successful health check",
+          "status": "passed",
+          "duration": 3260,
+          "rawStatus": "passed",
+          "type": "e2e",
+          "filePath": "cypress/e2e/grafana-jira-datasource.cy.ts",
+          "retry": 0,
+          "flake": false,
+          "browser": "electron 106.0.5249.51"
+        },
+        {
+          "name": "grafana-jira-datasource query: should return data",
+          "status": "passed",
+          "duration": 14055,
+          "rawStatus": "passed",
+          "type": "e2e",
+          "filePath": "cypress/e2e/grafana-jira-datasource.cy.ts",
+          "retry": 0,
+          "flake": false,
+          "browser": "electron 106.0.5249.51"
+        }
+      ]
+    }
+  }
+  

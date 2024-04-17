@@ -20,9 +20,11 @@ func parseJsonOutput(buf []byte) (executor.SuiteRunSummary, error) {
 	}
 
 	// Convert Unix timestamps to time.Time
-	start := time.Unix(output.Results.Summary.Start, 0)
-	end := time.Unix(output.Results.Summary.Stop, 0)
-	duration := end.Sub(start)
+	start := time.UnixMilli(output.Results.Summary.Start)
+	end := time.UnixMilli(output.Results.Summary.Stop)
+
+	fmt.Println("Start time: ", start.UTC())
+	duration := end.Sub(start).Milliseconds()
 
 	testRuns := make([]executor.TestRun, 0, output.Results.Summary.Tests)
 	testStartTime := start
@@ -35,12 +37,12 @@ func parseJsonOutput(buf []byte) (executor.SuiteRunSummary, error) {
 
 	suiteRunSummary := executor.SuiteRunSummary{
 		StartTime:         start,
-		ScenariosDuration: float32(duration.Milliseconds()),
+		ScenariosDuration: float32(duration),
 		TestsExecuted:     int32(output.Results.Summary.Tests),
 		TestsFailed:       int32(output.Results.Summary.Failed),
 		TestsPassed:       int32(output.Results.Summary.Passed),
-		TestsError:        int32(output.Results.Summary.Failed),
-		TotalDuration:     float32(duration.Milliseconds()),
+		TestsError:        0,
+		TotalDuration:     float32(duration),
 		TestRuns:          testRuns,
 	}
 
@@ -68,13 +70,17 @@ func formatTestRuns(test Tests, startTime time.Time, order int) executor.TestRun
 		Order:    order,
 		ExitCode: exitCode,
 
-		Iterations: string(test.Retry),
+		Iterations: fmt.Sprint(test.Retry),
 
 		Durations: executor.TestDurations{
 			SetupDuration:    0,
 			TeardownDuration: 0,
 			ScenarioDuration: float32(test.Duration),
 			TotalDuration:    float32(test.Duration),
+		},
+
+		Attributes: map[string]string{
+			"title": test.Name,
 		},
 	}
 

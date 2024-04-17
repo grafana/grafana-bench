@@ -46,7 +46,7 @@ func (t *CypressTestExecutor) Name() string {
 	return "Cypress"
 }
 
-// go run . test test --test-type smoke --runner cypress --working-dir e2e --test-suite-repo git@github.com:grafana/plugins-private
+// go run . test test --test-type smoke --test-suite /hi/ --runner cypress --br-working-dir /e2e --br-prepare-cmd "yarn install "--br-execute-cmd "yarn e2e:mock" --br-repo git@github.com:grafana/plugins-private --grafana-username e2e --grafana-password e2e
 // execute test suite
 func (t *CypressTestExecutor) ExecTestSuite(
 	ctx context.Context,
