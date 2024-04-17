@@ -30,9 +30,9 @@ jobs:
           cd docs && pwd
       - name: publish docs
         uses: grafana/shared-workflows/.github/workflows/publish-techdocs.yaml@main
-          secrets: inherit
-          with:
-            namespace: default
-            kind: component
-            name: grafana-bench
-            checkout-repo: false
+        # secrets: inherit
+        with:
+          namespace: default
+          kind: component
+          name: grafana-bench
+          checkout-repo: false
