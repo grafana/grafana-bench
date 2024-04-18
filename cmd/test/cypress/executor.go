@@ -2,13 +2,11 @@ package cypress
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 	"os/exec"
 
-	"github.com/grafana/grafana-bench/cmd/compile"
 	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/utils"
 )
@@ -19,26 +17,23 @@ var jsonOutputName = "test-results/cypress-report.json"
 type CypressTestExecutor struct {
 	Log *slog.Logger
 
-	TestSuiteRepo string
-	PrepareCmd    string
-	ExecuteCmd    string
-	WorkingDir    string
+	TargetDir  string
+	PrepareCmd string
+	ExecuteCmd string
 }
 
 // NewCypressTestExecutor creates a new instance of CypressTestExecutor
 func NewCypressTestExecutor(
 	log *slog.Logger,
-	testSuiteRepo string,
+	targetDir string,
 	prepareCmd string,
 	executeCmd string,
-	workingDir string,
 ) *CypressTestExecutor {
 	return &CypressTestExecutor{
-		Log:           log,
-		TestSuiteRepo: testSuiteRepo,
-		PrepareCmd:    prepareCmd,
-		ExecuteCmd:    executeCmd,
-		WorkingDir:    workingDir,
+		Log:        log,
+		PrepareCmd: prepareCmd,
+		ExecuteCmd: executeCmd,
+		TargetDir:  targetDir,
 	}
 }
 
@@ -46,32 +41,35 @@ func (t *CypressTestExecutor) Name() string {
 	return "Cypress"
 }
 
-// go run . test test --test-type smoke --test-suite /hi/ --runner cypress --br-working-dir /e2e --br-prepare-cmd "yarn install "--br-execute-cmd "yarn e2e:mock" --br-repo git@github.com:grafana/plugins-private --grafana-username e2e --grafana-password e2e
-// execute test suite
+// ExecTestSuite runs a test suite using cypress
+// Can be used with the following commands
+//
+// go run . test --test-type smoke --test-suite e2e --runner cypress --pw-prepare-cmd "yarn install" --pw-execute-cmd "yarn e2e:jira" --grafana-username e2e --grafana-password e2e --pw-target-dir ./test-repo/cypress-e2e
 func (t *CypressTestExecutor) ExecTestSuite(
 	ctx context.Context,
 	suite executor.TestSuite,
 	env map[string]string,
 ) (executor.SuiteRunSummary, error) {
-	if t.TestSuiteRepo == "" {
-		return executor.SuiteRunSummary{}, errors.New("missing test suite repository")
+	if t.TargetDir == "" {
+		return executor.SuiteRunSummary{}, fmt.Errorf("missing target directory. Please pass the relative path to the test suite directory using --pw-target-dir flag")
 	}
 
-	testingDir := utils.GetTestingDirectory(compile.TargetCloneDir, t.TestSuiteRepo)
-	workingDir := testingDir + t.WorkingDir
-
-	tc := compile.NewTestCompiler(t.Log, testingDir, t.TestSuiteRepo, "")
-	err := tc.CloneRepo(context.TODO())
-	if err != nil {
-		return executor.SuiteRunSummary{}, fmt.Errorf("failed to cloning codebase: %s", err.Error())
+	if t.PrepareCmd == "" {
+		return executor.SuiteRunSummary{}, fmt.Errorf("missing prepare command. Please pass the command using the flag --pw-prepare-cmd 'yarn install'")
 	}
 
-	err = t.prepareCodebase(workingDir, t.PrepareCmd)
+	if t.ExecuteCmd == "" {
+		return executor.SuiteRunSummary{}, fmt.Errorf("missing execute command. Please pass the command using the flag --pw-execute-cmd 'yarn test'")
+	}
+
+	workingDir := t.TargetDir + "/" + suite.Path
+
+	err := t.prepareCodebase(workingDir, t.PrepareCmd)
 	if err != nil {
 		return executor.SuiteRunSummary{}, fmt.Errorf("failed to prepare codebase: %s", err.Error())
 	}
 
-	err = t.executeTests(workingDir, t.ExecuteCmd, suite.Path)
+	err = t.executeTests(workingDir, t.ExecuteCmd)
 	if err != nil {
 		// process might return exit code 1 if test fails but we still want to try to parse the report
 		t.Log.Info("Playwright processes exited with code 1", "error", err.Error())
@@ -101,10 +99,9 @@ func (t *CypressTestExecutor) prepareCodebase(testingDir string, prepareCmd stri
 	})
 }
 
-func (t *CypressTestExecutor) executeTests(testingDir string, executeCmd string, testSuite string) error {
+func (t *CypressTestExecutor) executeTests(testingDir string, executeCmd string) error {
 	return utils.ExecuteInDir(testingDir, func() error {
 		testRunCmd := exec.Command("bash", "-c", executeCmd)
-		// testRunCmd := exec.Command("yarn", "cypress", "run")
 		if err := utils.ExecStdout(testRunCmd); err != nil {
 			return err
 		}

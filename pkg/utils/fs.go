@@ -47,7 +47,6 @@ func ExecuteInDir(targetDir string, fn func() error) error {
 
 	// build the tests
 	return DoInDir(workDir, targetDir, fn)
-	return err
 }
 
 // Checks for existence of directory

@@ -2,14 +2,12 @@ package playwright
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 	"os/exec"
 	"strings"
 
-	"github.com/grafana/grafana-bench/cmd/compile"
 	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/utils"
 )
@@ -20,23 +18,23 @@ var jsonOutputName = "playwright-report.json"
 type PlaywrightTestExecutor struct {
 	Log *slog.Logger
 
-	TestSuiteRepo string
-	PrepareCmd    string
-	ExecuteCmd    string
+	TargetDir  string
+	PrepareCmd string
+	ExecuteCmd string
 }
 
 // NewPlaywrightTestExecutor creates a new instance of PlaywrightTestExecutor
 func NewPlaywrightTestExecutor(
 	log *slog.Logger,
-	testSuiteRepo string,
+	targetDir string,
 	prepareCmd string,
 	executeCmd string,
 ) *PlaywrightTestExecutor {
 	return &PlaywrightTestExecutor{
-		Log:           log,
-		TestSuiteRepo: testSuiteRepo,
-		PrepareCmd:    prepareCmd,
-		ExecuteCmd:    executeCmd,
+		Log:        log,
+		TargetDir:  targetDir,
+		PrepareCmd: prepareCmd,
+		ExecuteCmd: executeCmd,
 	}
 }
 
@@ -45,15 +43,9 @@ func (t *PlaywrightTestExecutor) Name() string {
 }
 
 // ExecTestSuite runs a test suite using playwright
-// Can be used with the following command:
+// Can be used with the following commands
 //
-//		go run . test \
-//		 --test-suite /path/to/test/folder \
-//	  --test-type smoke \
-//	  --runner playwright \
-//	  --pw-prepareCmd "yarn install && yarn playwright install" \
-//	  --pw-executeCmd "yarn playwright test" \
-//	  --pw-test-suite-repo git@github.com:grafana/grafana-plugin-tests
+//	go run . test --test-suite smoke --test-type smoke --runner playwright --pw-prepare-cmd "yarn install && yarn playwright install" --pw-execute-cmd "yarn playwright test" --pw-target-dir ./test-repos/plugin-tests
 //
 // execute test suite
 func (t *PlaywrightTestExecutor) ExecTestSuite(
@@ -61,30 +53,30 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 	suite executor.TestSuite,
 	env map[string]string,
 ) (executor.SuiteRunSummary, error) {
-	if t.TestSuiteRepo == "" {
-		return executor.SuiteRunSummary{}, errors.New("missing test suite repository")
+	if t.TargetDir == "" {
+		return executor.SuiteRunSummary{}, fmt.Errorf("missing target directory. Please pass the relative path to the test suite directory using --pw-target-dir flag")
 	}
 
-	testingDir := utils.GetTestingDirectory(compile.TargetCloneDir, t.TestSuiteRepo)
-
-	tc := compile.NewTestCompiler(t.Log, testingDir, t.TestSuiteRepo, "")
-	err := tc.CloneRepo(context.TODO())
-	if err != nil {
-		return executor.SuiteRunSummary{}, fmt.Errorf("failed to cloning codebase: %s", err.Error())
+	if t.PrepareCmd == "" {
+		return executor.SuiteRunSummary{}, fmt.Errorf("missing prepare command. Please pass the command using the flag --pw-prepare-cmd 'yarn install'")
 	}
 
-	err = t.prepareCodebase(testingDir, t.PrepareCmd)
+	if t.ExecuteCmd == "" {
+		return executor.SuiteRunSummary{}, fmt.Errorf("missing execute command. Please pass the command using the flag --pw-execute-cmd 'yarn test'")
+	}
+
+	err := t.prepareCodebase(t.TargetDir, t.PrepareCmd)
 	if err != nil {
 		return executor.SuiteRunSummary{}, fmt.Errorf("failed to prepare codebase: %s", err.Error())
 	}
 
-	err = t.executeTests(testingDir, t.ExecuteCmd, suite.Path)
+	err = t.executeTests(t.TargetDir, t.ExecuteCmd, suite.Path)
 	if err != nil {
 		// process might return exit code 1 if test fails but we still want to try to parse the report
 		t.Log.Info("Playwright processes exited with code 1", "error", err.Error())
 	}
 
-	file, err := os.ReadFile(fmt.Sprintf("%s/%s", testingDir, jsonOutputName))
+	file, err := os.ReadFile(fmt.Sprintf("%s/%s", t.TargetDir, jsonOutputName))
 	if err != nil {
 		return executor.SuiteRunSummary{}, fmt.Errorf("failed to read report.json: %s", err.Error())
 	}
@@ -98,7 +90,7 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 }
 
 func (t *PlaywrightTestExecutor) prepareCodebase(testingDir string, prepareCmd string) error {
-	err := utils.ExecuteInDir(testingDir, func() error {
+	return utils.ExecuteInDir(testingDir, func() error {
 		prepareCmd := exec.Command("bash", "-c", prepareCmd)
 		if err := utils.ExecStdout(prepareCmd); err != nil {
 			return fmt.Errorf("installing packages: %w", err)
@@ -106,16 +98,10 @@ func (t *PlaywrightTestExecutor) prepareCodebase(testingDir string, prepareCmd s
 
 		return nil
 	})
-
-	if err != nil {
-		return fmt.Errorf("failed to installing dependencies: %s", err.Error())
-	}
-
-	return nil
 }
 
 func (t *PlaywrightTestExecutor) executeTests(testingDir, executeCmd string, testSuite string) error {
-	err := utils.ExecuteInDir(testingDir, func() error {
+	return utils.ExecuteInDir(testingDir, func() error {
 		os.Setenv("PLAYWRIGHT_JSON_OUTPUT_NAME", jsonOutputName)
 		cmd := strings.Fields(executeCmd)
 		cmd = append(cmd, "--reporter", "json")
@@ -125,12 +111,7 @@ func (t *PlaywrightTestExecutor) executeTests(testingDir, executeCmd string, tes
 		}
 
 		testRunCmd := exec.Command(cmd[0], cmd[1:]...)
-		if err := utils.ExecStdout(testRunCmd); err != nil {
-			return err
-		}
 
-		return nil
+		return utils.ExecStdout(testRunCmd)
 	})
-
-	return err
 }

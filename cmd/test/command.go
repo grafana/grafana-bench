@@ -68,11 +68,10 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		k6CloudToken     string
 		k6CloudProjectId string
 		k6CloudOutput    bool
-		// playwright & cypress (browser e2e) specific flags
-		brTestSuiteRepo  string
-		brPrepareCmd     string
-		brExecuteCmd     string
-		brTestWorkingDir string
+		// playwright cloud specific flags
+		pwTargetDir  string
+		pwPrepareCmd string
+		pwExecuteCmd string
 	)
 
 	cmd := cobra.Command{
@@ -159,11 +158,11 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			}
 
 			if runnerType == "playwright" {
-				executor = playwright.NewPlaywrightTestExecutor(log, brTestSuiteRepo, brPrepareCmd, brExecuteCmd)
+				executor = playwright.NewPlaywrightTestExecutor(log, pwTargetDir, pwPrepareCmd, pwExecuteCmd)
 			}
 
 			if runnerType == "cypress" {
-				executor = cypress.NewCypressTestExecutor(log, brTestSuiteRepo, brPrepareCmd, brExecuteCmd, brTestWorkingDir)
+				executor = cypress.NewCypressTestExecutor(log, pwTargetDir, pwPrepareCmd, pwExecuteCmd)
 			}
 
 			runner := NewTestRunner(
@@ -192,10 +191,9 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	fs.StringVar(&testTrigger, "test-trigger", "local", "test trigger")
 	fs.StringVar(&testType, "test-type", "smoke", "test type. Allowed values: 'smoke', 'load'")
 	fs.StringVar(&runnerType, "runner", "k6", "test runner. Allowed values: 'k6', 'playwright'")
-	fs.StringVar(&brTestSuiteRepo, "br-repo", "", "repository to grab test suite from eg: git@github.com:grafana/grafana-bench")
-	fs.StringVar(&brPrepareCmd, "br-prepare-cmd", "", "command used to install dependencies for the test suite eg: npm install")
-	fs.StringVar(&brExecuteCmd, "br-execute-cmd", "", "command used to execute the test suite eg: npm run test")
-	fs.StringVar(&brTestWorkingDir, "br-working-dir", "", "sub directory in repo to execute tests in")
+	fs.StringVar(&pwTargetDir, "pw-target-dir", "", "the relative path to the test suite directory is located. eg: ./tests/playwright-tests")
+	fs.StringVar(&pwPrepareCmd, "pw-prepare-cmd", "", "command used to install dependencies for the test suite eg: npm install")
+	fs.StringVar(&pwExecuteCmd, "pw-execute-cmd", "", "command used to execute the test suite eg: npm run test")
 	fs.StringVar(
 		&grafanaUrl,
 		"grafana-url",

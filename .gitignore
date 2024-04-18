@@ -7,8 +7,6 @@ grafana-bench.tar.gz
 .env*
 .DS_Store
 
-test-repo/**
-
 
 # Binaries for programs and plugins
 *.exe
