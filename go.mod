@@ -39,7 +39,7 @@ require (
 	github.com/google/go-cmp v0.6.0
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/spf13/cobra v1.8.0
-	github.com/szkiba/k6pack v0.1.1
+	github.com/szkiba/k6pack v0.1.3
 	golang.org/x/net v0.23.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 )

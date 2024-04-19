@@ -273,6 +273,7 @@ func transpileTest(testFile string) (string, error) {
 		Filename:   testFile,
 		TypeScript: true,
 		SourceMap:  true,
+		SourceRoot: filepath.Dir(testFile),
 	})
 	if err != nil {
 		return "", fmt.Errorf("transpiling test file %q: %w", testFile, err)
