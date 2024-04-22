@@ -106,22 +106,23 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 		With(suiteRunLogAttrs(suiteRun)...).
 		Info("suiteRun", "anyFailures", anyFailures)
 
-	// NOTE this block of code performs substitution on a user defined url. e.g.
-	// http://mygrafana.com/b/?suiteRun={suiteRun}
-	// This functionality is ALPHA and may be removed in favor of outputting
-	// the suiteRun ID and leaving it up to the user.
 	if anyFailures {
-		var dashboardMsg string
+		dashboardMsg := ""
 		if t.DashboardURL != "" {
+			// NOTE this block of code performs substitution on a user defined url. e.g.
+			// http://mygrafana.com/b/?suiteRun={suiteRun}
+			// This functionality is ALPHA and may be removed in favor of outputting
+			// the suiteRun ID and leaving it up to the user.
 			dashboard, err := t.getDashboardURL(runId)
 			if err != nil {
-				return fmt.Errorf("getting URL dashboard: %w", err)
+				t.Log.With(t.testRunnerLogAttrs()...).
+					Error("getting URL dashboard: %w", err)
+			} else {
+				dashboardMsg = fmt.Sprintf(". See dashboard: %s", dashboard)
 			}
-			dashboardMsg = " See dashboard: " + dashboard
 		}
 
-		t.Log.With(suiteLogAttrs(suite)...).
-			Error("test suite failed. Too many test failures." + dashboardMsg)
+		return fmt.Errorf("test suite failed: Too many test failures%s", dashboardMsg)
 	}
 
 	return nil
