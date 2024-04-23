@@ -4,15 +4,21 @@ Bench is a tool for executing e2e tests against an instance of Grafana.
 
 ## Quickstart tutorial
 
+1. Prepare github credentials and sign into ghcr repository
+
+Generate a personal access token. Then run the command
+
+echo {YOUR_ACCESS_TOKEN} | docker login ghcr.io -u {YOUR_USERNAME} --password-stdin
+
 1. Pull the container down
 
 `docker pull ghcr.io/grafana/grafana-bench:v0.1.0-rc2`
 
-2. Download the grafana-api-tests repository
+1. Download the grafana-api-tests repository
 
 `git clone git@github.com:grafana/grafana-api-tests.git`
 
-3. Build the tests
+1. Build the tests
 
 This is a temporary step that will hopefully removed in the near future as we natively support typescript.
 
@@ -22,11 +28,11 @@ This is a temporary step that will hopefully removed in the near future as we na
   yarn build
 ```
 
-4. Boot up an instance of grafana
+1. Boot up an instance of grafana
 
 `docker run -d --name=grafana -p 3000:3000 grafana/grafana`
 
-5. Run the tests
+1. Run the tests
 
 ``` shell
     docker run --rm \
@@ -39,7 +45,7 @@ This is a temporary step that will hopefully removed in the near future as we na
      --test-suite dashboards
 ```
 
-6. Report to k6 cloud
+1. Report to k6 cloud
     1. Go to <https://ops.grafana-ops.net/a/k6-app/projects>
     1. Click the "Create a new project" button and create a new project
     1. Copy your project ID
@@ -61,10 +67,10 @@ This is a temporary step that will hopefully removed in the near future as we na
      --test-suite dashboards
 ```
 
-7. See check out the available bench commands
+1. See check out the available bench commands
 
 ``` shell
     docker run --rm ghcr.io/grafana/grafana-bench:v0.1.0-rc2 help 
 ```
 
-8. Next up, check out [Writing K6 API tests](writing_k6_api_tests.md)
+1. Next up, check out [Writing K6 API tests](writing_k6_api_tests.md)
