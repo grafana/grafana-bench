@@ -5,12 +5,15 @@ Bench is a tool for executing e2e tests against an instance of Grafana.
 ## Quickstart tutorial
 
 1. Pull the container down
+
 `docker pull ghcr.io/grafana/grafana-bench:v0.1.0-rc2`
 
 2. Download some tests
+
 `git clone git@github.com:grafana/grafana-api-tests.git`
 
 3. Build the tests
+
 This is a temporary step that will hopefully removed in the near future as we natively support typescript.
 
 ``` shell
@@ -20,6 +23,7 @@ This is a temporary step that will hopefully removed in the near future as we na
 ```
 
 4. Boot up an instance of grafana
+
 `docker run -d --name=grafana -p 3000:3000 grafana/grafana`
 
 5. Run the tests
@@ -36,13 +40,12 @@ This is a temporary step that will hopefully removed in the near future as we na
 ```
 
 6. Report to k6 cloud
-Go to <https://ops.grafana-ops.net/a/k6-app/projects>
-Click the "Create a new project" button and create a new project
-Copy your project ID
 
-Go to <https://ops.grafana-ops.net/a/k6-app/settings/api-token> and copy your api token
-
-Add `K6_CLOUD_PROJECT_ID` and `K6_CLOUD_TOKEN` environment variables to the container and
+a. Go to <https://ops.grafana-ops.net/a/k6-app/projects>
+b. Click the "Create a new project" button and create a new project
+c. Copy your project ID
+d. Go to <https://ops.grafana-ops.net/a/k6-app/settings/api-token> and copy your api token
+e. Add `K6_CLOUD_PROJECT_ID` and `K6_CLOUD_TOKEN` environment variables to the container and
 `--k6-cloud-output=true` to the bench command run in the container.
 
 ``` shell
