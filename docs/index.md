@@ -6,42 +6,42 @@ Bench is a tool for executing e2e tests against an instance of Grafana.
 
 1. Prepare github credentials and sign into ghcr repository
 
-Generate a personal access token. Then run the command
+    Generate a personal access token. Then run the command
 
-`echo {YOUR_ACCESS_TOKEN} | docker login ghcr.io -u {YOUR_USERNAME} --password-stdin`
+    `echo {YOUR_ACCESS_TOKEN} | docker login ghcr.io -u {YOUR_USERNAME} --password-stdin`
 
 1. Pull the container down
 
-`docker pull ghcr.io/grafana/grafana-bench:latest`
+    `docker pull ghcr.io/grafana/grafana-bench:latest`
 
 1. Download the grafana-api-tests repository
 
-`git clone git@github.com:grafana/grafana-api-tests.git`
+    `git clone git@github.com:grafana/grafana-api-tests.git`
 
 1. Build the tests
 
-``` shell
-  cd grafana-api-tests
-  yarn install
-  yarn build
-```
+    ``` shell
+      cd grafana-api-tests
+      yarn install
+      yarn build
+    ```
 
 1. Boot up an instance of grafana
 
-`docker run -d --name=grafana -p 3000:3000 grafana/grafana`
+    `docker run -d --name=grafana -p 3000:3000 grafana/grafana`
 
 1. Run the tests
 
-``` shell
-    docker run --rm \
-     --network host \
-     --platform=linux/amd64 \
-     --volume="./dist/tests:/home/bench/tests" \
-     ghcr.io/grafana/grafana-bench:latest test \
-     --test-type="smoke" \
-     --test-suite-base="tests" \
-     --test-suite dashboards
-```
+    ``` shell
+        docker run --rm \
+         --network host \
+         --platform=linux/amd64 \
+         --volume="./dist/tests:/home/bench/tests" \
+         ghcr.io/grafana/grafana-bench:latest test \
+         --test-type="smoke" \
+         --test-suite-base="tests" \
+         --test-suite dashboards
+    ```
 
 ### Reporting to k6 cloud
 
