@@ -102,6 +102,46 @@ jobs:
             --tag $GHCR_IMAGE \
             $GAR_IMAGE
 
+  publish-prod-dry-run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log into ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - uses: grafana/shared-workflows/actions/push-to-gar-docker@main
+        id: push-to-gar
+        with:
+          environment: "prod"
+          image_name: grafana-bench
+          platforms: linux/amd64,linux/arm64
+          build-args: |-
+            BENCH_REVISION=${{ github.sha }}
+          tags: |-
+            ${{ github.ref_name }}
+            ${{ github.sha }}
+            latest
+      - name: copy image to ghcr.io
+        run: |
+          # this is a multi-line string, so just use the first
+          GAR_IMAGE=$(echo "${{ steps.push-to-gar.outputs.tags }}" | head -n1)
+          echo "GAR_IMAGE=$GAR_IMAGE"
+
+          GHCR_IMAGE=ghcr.io/grafana/grafana-bench:${{ steps.push-to-gar.outputs.version }}
+          echo "GHCR_IMAGE=$GHCR_IMAGE"
+
+          GHCR_IMAGE_LATEST=ghcr.io/grafana/grafana-bench:latest
+          echo "GHCR_IMAGE_LATEST=$GHCR_IMAGE_LATEST"
+
+          docker buildx imagetools create --dry-run \
+            --tag $GAR_IMAGE \
+            $GHCR_IMAGE_LATEST $GHCR_IMAGE 
+
   publish-prod:
     # publish tagged versions to prod
     if: ${{ startsWith(github.ref, 'refs/tags/v') }}
@@ -143,5 +183,4 @@ jobs:
 
           docker buildx imagetools create \
             --tag $GAR_IMAGE \
-            $GHCR_IMAGE \
-            $GHCR_IMAGE_LATEST
+            $GHCR_IMAGE_LATEST $GHCR_IMAGE 
