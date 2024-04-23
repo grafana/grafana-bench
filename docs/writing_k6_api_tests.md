@@ -10,7 +10,7 @@ of our own.
 For instance, we do not have access to writing or reading files, but we do have
 a super fast implementation for generating random data.
 
-## Layout
+## Structure
 
 An api tests suite is broken into 4 logical layers.
 
@@ -21,9 +21,17 @@ An api tests suite is broken into 4 logical layers.
 
 Directories:
 
-`/lib` -> utilies and api implementation
+``` shell
+  /lib              # API implementation and utils
+  /lib/config.ts
+  /lib/dashboards.ts
+  /lib/playlists.ts
+  /lib/session.ts
 
-`/tests` -> test utilities and implementation
+  /tests            # test implementation and utils
+  /tests/dashboards/dashboard_crud.ts
+  /tests/playlists/playlist_crud.ts
+```
 
 This structure is still in development, however, we have a pretty good idea of
 where we need boundaries for each of these pieces. We are actively working on
