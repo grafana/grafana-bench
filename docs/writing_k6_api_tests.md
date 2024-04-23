@@ -19,7 +19,10 @@ An api tests suite is broken into 4 logical layers.
 3. utilities for tests
 4. Implementation of tests
 
+Directories:
+
 `/lib` -> utilies and api implementation
+
 `/tests` -> test utilities and implementation
 
 This structure is still in development, however, we have a pretty good idea of
