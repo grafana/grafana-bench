@@ -40,12 +40,11 @@ This is a temporary step that will hopefully removed in the near future as we na
 ```
 
 6. Report to k6 cloud
-
-a. Go to <https://ops.grafana-ops.net/a/k6-app/projects>
-b. Click the "Create a new project" button and create a new project
-c. Copy your project ID
-d. Go to <https://ops.grafana-ops.net/a/k6-app/settings/api-token> and copy your api token
-e. Add `K6_CLOUD_PROJECT_ID` and `K6_CLOUD_TOKEN` environment variables to the container and
+    1. Go to <https://ops.grafana-ops.net/a/k6-app/projects>
+    1. Click the "Create a new project" button and create a new project
+    1. Copy your project ID
+    1. Go to <https://ops.grafana-ops.net/a/k6-app/settings/api-token> and copy your api token
+    1. Add `K6_CLOUD_PROJECT_ID` and `K6_CLOUD_TOKEN` environment variables to the container and
 `--k6-cloud-output=true` to the bench command run in the container.
 
 ``` shell
