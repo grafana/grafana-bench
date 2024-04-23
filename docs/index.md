@@ -66,3 +66,5 @@ This is a temporary step that will hopefully removed in the near future as we na
 ``` shell
     docker run --rm ghcr.io/grafana/grafana-bench:v0.1.0-rc2 help 
 ```
+
+8. Next up, check out [Writing K6 API tests](writing_k6_tests.md)
