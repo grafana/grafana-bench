@@ -8,7 +8,7 @@ Bench is a tool for executing e2e tests against an instance of Grafana.
 
 `docker pull ghcr.io/grafana/grafana-bench:v0.1.0-rc2`
 
-2. Download some tests
+2. Download the grafana-api-tests repository
 
 `git clone git@github.com:grafana/grafana-api-tests.git`
 
@@ -60,4 +60,10 @@ e. Add `K6_CLOUD_PROJECT_ID` and `K6_CLOUD_TOKEN` environment variables to the c
      --test-type="smoke" \
      --test-suite-base="tests" \
      --test-suite dashboards
+```
+
+7. See check out the available bench commands
+
+``` shell
+    docker run --rm ghcr.io/grafana/grafana-bench:v0.1.0-rc2 help 
 ```
