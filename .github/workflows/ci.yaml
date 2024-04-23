@@ -140,7 +140,11 @@ jobs:
 
           docker buildx imagetools create --dry-run \
             --tag $GHCR_IMAGE \
-            $GHCR_IMAGE_LATEST $GAR_IMAGE
+            $GAR_IMAGE
+
+          docker buildx imagetools create --dry-run \
+            --tag $GHCR_IMAGE_LATEST \
+            $GAR_IMAGE
 
   publish-prod:
     # publish tagged versions to prod
