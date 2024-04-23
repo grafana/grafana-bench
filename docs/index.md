@@ -72,4 +72,4 @@ Bench is a tool for executing e2e tests against an instance of Grafana.
     docker run --rm ghcr.io/grafana/grafana-bench:v0.1.0-rc2 help 
 ```
 
-## [Write some K6 API tests](writing_k6_api_tests.md)
+## Next [Write some K6 API tests](writing_k6_api_tests.md)
