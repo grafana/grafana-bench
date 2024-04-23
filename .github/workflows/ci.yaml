@@ -142,4 +142,6 @@ jobs:
           echo "GHCR_IMAGE_LATEST=$GHCR_IMAGE_LATEST"
 
           docker buildx imagetools create \
-            --tag $GAR_IMAGE $GHCR_IMAGE $GAR_IMAGE_LATEST
+            --tag $GHCR_IMAGE \
+            $GAR_IMAGE \
+            $GAR_IMAGE_LATEST
