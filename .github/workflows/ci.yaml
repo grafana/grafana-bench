@@ -141,6 +141,6 @@ jobs:
           GHCR_IMAGE_LATEST=ghcr.io/grafana/grafana-bench:latest
           echo "GHCR_IMAGE_LATEST=$GHCR_IMAGE_LATEST"
 
-          docker buildx imagetools create --dry-run \
+          docker buildx imagetools create \
             --tag $GHCR_IMAGE --tag $GHCR_IMAGE_LATEST \
             $GAR_IMAGE
