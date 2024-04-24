@@ -8,7 +8,7 @@ Bench is a tool for executing e2e tests against an instance of Grafana.
 
     Generate a personal access token. Then run the command
 
-    `echo {YOUR_ACCESS_TOKEN} | docker login ghcr.io -u {YOUR_USERNAME} --password-stdin`
+    `gh auth token | docker login ghcr.io -u {YOUR_USERNAME} --password-stdin`
 
 1. Pull the container down
 
