@@ -5,12 +5,13 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strconv"
 	"text/template"
 	"time"
 
 	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/grafana"
+	"github.com/grafana/grafana-bench/pkg/reporter"
+
 )
 
 type TestRunner struct {
@@ -50,8 +51,6 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 	runId := t.getRunId(testType)
 	t.Log = t.Log.With("runId", runId)
 
-	t.Log.With(suiteLogAttrs(suite)...).Info("starting suite run")
-
 	t.Log.Info("Waiting for grafana server...", "address", t.GrafanaInstance.Url())
 
 	err := t.GrafanaInstance.WaitForLiveGrafana(ctx)
@@ -68,8 +67,6 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 	// get an unique identification for the suite run (used for backward compatibility)
 	suiteRunId := t.getSuiteRunId(runId, suite)
 	t.Log = t.Log.With("suiteRun", suiteRunId)
-
-	t.Log.With(suiteLogAttrs(suite)...).Info("starting suite run")
 
 	// set common test execution variables
 	env := map[string]string{
@@ -91,20 +88,10 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 		return fmt.Errorf("executing test suite %w", err)
 	}
 
-	for _, testRun := range suiteRun.TestRuns {
-		testRunId := fmt.Sprintf("%s-%d", runId, testRun.Order)
-		t.Log.With(t.testRunnerLogAttrs()...).
-			With(suiteLogAttrs(suite)...).
-			With(testRunLogAttrs(testRun)...).
-			Info("testRun", "testRun", testRunId)
-	}
+	suiteReporter := reporter.NewLogReporter(t.Log)
+	suiteReporter.Report(runId,suite,suiteRun)
 
 	var anyFailures = suiteRun.Status != executor.SuitePassed
-
-	t.Log.With(t.testRunnerLogAttrs()...).
-		With(suiteLogAttrs(suite)...).
-		With(suiteRunLogAttrs(suiteRun)...).
-		Info("suiteRun", "anyFailures", anyFailures)
 
 	if anyFailures {
 		dashboardMsg := ""
@@ -169,49 +156,6 @@ func (t *TestRunner) testRunnerLogAttrs() []any {
 	}
 }
 
-// suiteLogAttrs formats suite's attributes as log attributes
-func suiteLogAttrs(suite executor.TestSuite) []any {
-	return []any{
-		"suiteId", fmt.Sprintf("%s-%s", suite.Name, suite.Revision),
-		"suiteIdName", suite.Name,
-		"suiteRevision", suite.Revision,
-	}
-}
-
-// suiteRunLogAttrs formats suite run's attributes as log attributes
-func suiteRunLogAttrs(suiteRun executor.SuiteRunSummary) []any {
-	return []any{
-		"startTime", suiteRun.StartTime.Format(time.RFC3339),
-		"totalScenarioDurations", suiteRun.ScenariosDuration,
-		"duration", suiteRun.TotalDuration,
-		"testsExecuted", suiteRun.TestsExecuted,
-		"testsPassed", suiteRun.TestsPassed,
-		"testsFailed", suiteRun.TestsFailed,
-		"testsError", suiteRun.TestsError,
-	}
-}
-
-// testRunLogAttrs returns the k6RunSummary attributes formatted as log attributes
-func testRunLogAttrs(testRun executor.TestRun) []any {
-	attrs := []any{
-		"folder", testRun.TestFolder,
-		"testFile", testRun.TestFile,
-		"order", strconv.Itoa(testRun.Order),
-		"iterations", testRun.Iterations,
-		"setupDuration", prettyMS(testRun.Durations.SetupDuration),
-		"scenarioDuration", prettyMS(testRun.Durations.ScenarioDuration),
-		"teardownDuration", prettyMS(testRun.Durations.TeardownDuration),
-		"totalDuration", prettyMS(testRun.Durations.TotalDuration),
-		"status", testRun.Status,
-		"exitMessage", testRun.ExitMessage,
-		"exitCode", strconv.Itoa(testRun.ExitCode),
-	}
-
-	for k, v := range testRun.Attributes {
-		attrs = append(attrs, k, v)
-	}
-	return attrs
-}
 
 // getDashboardURL takes t.DashboardURL and substitutes {{.SuiteRun}} for t.RunIdentifier
 // this functionality may be deprecated in the future.
@@ -240,10 +184,4 @@ func (t *TestRunner) getDashboardURL(runIdentifier string) (string, error) {
 	}
 
 	return dashboardURL.String(), nil
-}
-
-// prettyMS adds ms suffix to ms float
-func prettyMS(ms float32) string {
-	duration := time.Duration(ms) * time.Millisecond
-	return fmt.Sprintf("%dms", duration.Milliseconds())
 }
