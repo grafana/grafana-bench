@@ -140,6 +140,7 @@ func testRunnerForTesting(
 		"devel", // bench revision
 		"",      // dashboard URL
 		executor,
+		"slog",
 	)
 
 	// apply options

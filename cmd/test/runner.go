@@ -5,13 +5,13 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 	"text/template"
 	"time"
 
 	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/grafana"
 	"github.com/grafana/grafana-bench/pkg/reporter"
-
 )
 
 type TestRunner struct {
@@ -23,6 +23,7 @@ type TestRunner struct {
 	BenchRevision   string
 	DashboardURL    string
 	Executor        executor.TestExecutor
+	ReportFormat    string
 }
 
 func NewTestRunner(
@@ -33,6 +34,7 @@ func NewTestRunner(
 	benchRevision string,
 	dashboardURL string,
 	executor executor.TestExecutor,
+	reportFormat string,
 
 ) *TestRunner {
 	return &TestRunner{
@@ -43,6 +45,7 @@ func NewTestRunner(
 		BenchRevision:   benchRevision,
 		DashboardURL:    dashboardURL,
 		Executor:        executor,
+		ReportFormat:    reportFormat,
 	}
 }
 
@@ -62,6 +65,11 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 	t.GrafanaVersion, err = t.GrafanaInstance.GetGrafanaBuildVersion()
 	if err != nil {
 		return fmt.Errorf("getting grafana version: %w", err)
+	}
+
+	suiteReporter, err := t.getReporter()
+	if err != nil {
+		return fmt.Errorf("getting reporter %w", err)
 	}
 
 	// get an unique identification for the suite run (used for backward compatibility)
@@ -88,7 +96,6 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 		return fmt.Errorf("executing test suite %w", err)
 	}
 
-	suiteReporter := reporter.NewLogReporter(t.Log)
 	suiteReporter.Report(runId,suite,suiteRun)
 
 	var anyFailures = suiteRun.Status != executor.SuitePassed
@@ -184,4 +191,12 @@ func (t *TestRunner) getDashboardURL(runIdentifier string) (string, error) {
 	}
 
 	return dashboardURL.String(), nil
+}
+
+func (t *TestRunner) getReporter() (reporter.SuiteRunReporter, error) {
+	switch t.ReportFormat {
+	case "slog": return reporter.NewLogReporter(t.Log), nil
+	case "text": return reporter.NewTextReporter(os.Stdout), nil
+	default: return nil, fmt.Errorf("invalid report format %q", t.ReportFormat)
+	}
 }

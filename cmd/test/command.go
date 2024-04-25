@@ -48,6 +48,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	var (
 		testTrigger       string
 		testType          string
+		reportFormat      string
 		grafanaUrl        string
 		grafanaUsername   string
 		grafanaPassword   string
@@ -156,6 +157,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				benchRevision,
 				dashboardURL,
 				executor,
+				reportFormat,
 			)
 
 			// TODO: review attributes reported in this log message
@@ -173,6 +175,13 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	fs := cmd.Flags()
 	fs.StringVar(&testTrigger, "test-trigger", "local", "test trigger")
 	fs.StringVar(&testType, "test-type", "smoke", "test type. Allowed values: 'smoke', 'load'")
+	fs.StringVar(
+		&reportFormat,
+		"test-report-format",
+		"text",
+		"format of the test execution report. Allowed values 'slog or 'text'." +
+		"\n 'slog' produced a structure log. 'text' produced an human readable output",
+	)
 	fs.StringVar(
 		&grafanaUrl,
 		"grafana-url",
