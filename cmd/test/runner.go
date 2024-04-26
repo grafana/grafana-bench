@@ -161,7 +161,7 @@ func (t *TestRunner) testRunnerLogAttrs() []any {
 	return []any{
 		"testTrigger", t.Trigger,
 		"benchRevision", t.BenchRevision,
-		"grafanaUrl", t.GrafanaInstance.Url(),
+		"grafanaUrl", t.GrafanaInstance.Hostname(),
 		"grafanaVersion", t.GrafanaVersion,
 		"testExecutor", t.Executor.Name(),
 	}

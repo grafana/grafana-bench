@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -18,6 +19,9 @@ import (
 type GrafanaInstance interface {
 	// Url returns the url to access the grafana instance
 	Url() string
+
+	// Hostname returns the grafana instance host name
+	Hostname() string
 
 	// UserName returns the user por accessing the instance
 	UserName() string
@@ -43,6 +47,8 @@ var (
 	InstanceNotAvailableError = errors.New("Instance not available")
 	LoginDisableError         = errors.New("Login disabled")
 
+
+	slugEx = regexp.MustCompile(`.grafana(-dev)?.net`)
 )
 
 type grafanaInstance struct {
@@ -107,9 +113,9 @@ func (g *grafanaInstance) Url() string {
 	return g.url.String()
 }
 
-// Host returns the grafana instance Host
-func (g *grafanaInstance) Host() string {
-	return g.url.Host
+// Host returns the grafana instance Hostname
+func (g *grafanaInstance) Hostname() string {
+	return g.url.Hostname()
 }
 
 // UserName returns the user por accessing the instance
