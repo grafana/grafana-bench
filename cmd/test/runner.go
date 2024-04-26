@@ -161,7 +161,9 @@ func (t *TestRunner) testRunnerLogAttrs() []any {
 	return []any{
 		"testTrigger", t.Trigger,
 		"benchRevision", t.BenchRevision,
+		//TODO: deprecate this attribute
 		"grafanaUrl", t.GrafanaInstance.Hostname(),
+		"grafanSlug", t.GrafanaInstance.Slug(),
 		"grafanaVersion", t.GrafanaVersion,
 		"testExecutor", t.Executor.Name(),
 	}

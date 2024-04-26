@@ -23,6 +23,9 @@ type GrafanaInstance interface {
 	// Hostname returns the grafana instance host name
 	Hostname() string
 
+	// Slug returns the grafana instance slug
+	Slug() string
+
 	// UserName returns the user por accessing the instance
 	UserName() string
 
@@ -116,6 +119,11 @@ func (g *grafanaInstance) Url() string {
 // Host returns the grafana instance Hostname
 func (g *grafanaInstance) Hostname() string {
 	return g.url.Hostname()
+}
+
+// Slug returns the grafana instance slug
+func (g *grafanaInstance) Slug() string {
+	return slugEx.ReplaceAllString(g.url.Hostname(), "")
 }
 
 // UserName returns the user por accessing the instance
