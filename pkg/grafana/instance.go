@@ -42,11 +42,11 @@ var (
 	InvalidCredentialsError   = errors.New("Invalid credentials")
 	InstanceNotAvailableError = errors.New("Instance not available")
 	LoginDisableError         = errors.New("Login disabled")
+
 )
 
 type grafanaInstance struct {
-	host     string
-	url      string
+	url      *url.URL
 	user     string
 	password string
 	session  *http.Cookie
@@ -79,15 +79,14 @@ func WithBackoff(backoff time.Duration) grafanaInstanceOption {
 // NewGrafanaInstance creates a reference to access a grafana instance
 // Takes a fully qualified address such as https://jefflevinslunch.grafana.net
 // and a user credentials
-func NewInstance(url, user, password string, opts ...grafanaInstanceOption) (GrafanaInstance, error) {
-	scheme, host, port, err := parseAddress(url)
+func NewInstance(address, user, password string, opts ...grafanaInstanceOption) (GrafanaInstance, error) {
+	url, err := parseAddress(address)
 	if err != nil {
 		return nil, err
 	}
 
 	instance := &grafanaInstance{
-		host:     fmt.Sprintf("%s:%s", host, port),
-		url:      fmt.Sprintf("%s://%s:%s", scheme, host, port),
+		url:      url,
 		user:     user,
 		password: password,
 		timeout:  DefaultGrafanaTimeout,
@@ -105,7 +104,12 @@ func NewInstance(url, user, password string, opts ...grafanaInstanceOption) (Gra
 
 // Url returns the url to access the grafana instance
 func (g *grafanaInstance) Url() string {
-	return g.url
+	return g.url.String()
+}
+
+// Host returns the grafana instance Host
+func (g *grafanaInstance) Host() string {
+	return g.url.Host
 }
 
 // UserName returns the user por accessing the instance
@@ -157,7 +161,7 @@ func (g *grafanaInstance) WaitForLiveGrafana(ctx context.Context) error {
 
 // checks if grafana is alive
 func (g *grafanaInstance) isLive() bool {
-	_, err := net.Dial("tcp", g.host)
+	_, err := net.Dial("tcp", g.url.Host)
 	return err == nil
 }
 
@@ -255,7 +259,7 @@ func (g *grafanaInstance) GetGrafanaBuildVersion() (string, error) {
 		return "", err
 	}
 
-	targetURL := g.url + "/api/frontend/settings"
+	targetURL := g.url.String() + "/api/frontend/settings"
 	req, err := http.NewRequest("GET", targetURL, nil)
 	if err != nil {
 		return "", fmt.Errorf("Failed to create request: %w", err)
@@ -287,14 +291,14 @@ func (g *grafanaInstance) GetGrafanaBuildVersion() (string, error) {
 // parseAddress takes an address and returns its scheme, host and port components
 // Examples:
 //
-//	https://instance:3000 returns (https, instance.net, 3000)
-//	http://instance.grafana.net returns (http, instance, 80) (port inferred from scheme)
+//	https://instance:3000 returns (https://instance:3000)
+//	http://instance returns (http://instance:80) (port inferred from scheme)
 //	instance:3000 returns an error (cannot infer the schema from port)
-//	instance:80 returns (http, instance, 80) (scheme inferred from port)
-func parseAddress(address string) (string, string, string, error) {
+//	instance:80 returns (http://instance:80) (scheme inferred from port)
+func parseAddress(address string) (*url.URL, error) {
 	u, err := url.Parse(address)
 	if err != nil {
-		return "", "", "", fmt.Errorf("error parsing grafana address: %w", err)
+		return nil, fmt.Errorf("error parsing grafana address: %w", err)
 	}
 
 	host, port, _ := strings.Cut(u.Host, ":")
@@ -308,7 +312,7 @@ func parseAddress(address string) (string, string, string, error) {
 		case "80":
 			scheme = "http"
 		default:
-			return "", "", "", fmt.Errorf("unknown scheme: address: %s", address)
+			return nil, fmt.Errorf("unknown scheme: address: %s", address)
 		}
 	}
 
@@ -320,9 +324,9 @@ func parseAddress(address string) (string, string, string, error) {
 		case "http":
 			port = "80"
 		default:
-			return "", "", "", fmt.Errorf("unknown scheme: address: %s", address)
+			return nil, fmt.Errorf("unknown scheme: address: %s", address)
 		}
 	}
 
-	return scheme, host, port, nil
+	return url.Parse(fmt.Sprintf("%s://%s:%s", scheme, host, port))
 }
