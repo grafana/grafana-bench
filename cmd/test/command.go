@@ -155,14 +155,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				reportFormat,
 			)
 
-			// TODO: review attributes reported in this log message
-			log.Info(
-				"test runner params",
-				"testType", testType,
-				"grafanaInstance", runner.GrafanaInstance.Url(),
-				"k6ProjectId", k6CloudProjectId,
-			)
-
 			return runner.Exec(cmd.Context(), trt, suite)
 		},
 	}

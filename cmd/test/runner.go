@@ -60,7 +60,7 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 	if err != nil {
 		return fmt.Errorf("checking Grafana is Live... %w", err)
 	}
-	t.Log.Info("Grafana server is ready!")
+	t.Log.Debug("Grafana server is ready!")
 
 	t.GrafanaVersion, err = t.GrafanaInstance.GetGrafanaBuildVersion()
 	if err != nil {
