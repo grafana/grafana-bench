@@ -53,7 +53,7 @@ type mockGrafanaInstance struct {
 	version  string
 }
 
-func (m *mockGrafanaInstance) Address() string {
+func (m *mockGrafanaInstance) Url() string {
 	return m.address
 }
 
@@ -149,7 +149,6 @@ const (
 	testSuiteFailedError = "test suite failed: Too many test failures"
 
 	testSuiteFailedDashboardError = `test suite failed: Too many test failures.*See dashboard`
-
 )
 
 func failedSuiteSummary() executor.SuiteRunSummary {

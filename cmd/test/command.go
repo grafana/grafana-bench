@@ -64,7 +64,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		dashboardURL      string
 		verbose           bool
 		k6CloudOutput     bool
-		k6UseTypescript     bool
+		k6UseTypescript   bool
 	)
 
 	cmd := cobra.Command{
@@ -162,7 +162,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			log.Info(
 				"test runner params",
 				"testType", testType,
-				"grafanaInstance", runner.GrafanaInstance.Address(),
+				"grafanaInstance", runner.GrafanaInstance.Url(),
 				"k6ProjectId", k6CloudProjectId,
 			)
 
