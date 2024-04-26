@@ -5,6 +5,7 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 	"testing"
@@ -57,6 +58,16 @@ func (m *mockGrafanaInstance) Url() string {
 	return m.address
 }
 
+func (m *mockGrafanaInstance) Hostname() string {
+	url, _ := url.Parse(m.address)
+	return url.Hostname()
+}
+
+func (m *mockGrafanaInstance) Slug() string {
+	slug, _, _ := strings.Cut(m.Hostname(), ".")
+	return slug
+}
+
 func (m *mockGrafanaInstance) Password() string {
 	return m.password
 }
@@ -79,6 +90,7 @@ func (m *mockGrafanaInstance) GetGrafanaSession() (string, error) {
 
 func newMockGrafanaInstance(opts ...mockGrafanaInstanceOption) *mockGrafanaInstance {
 	mock := &mockGrafanaInstance{
+		address: "http://my-instance.grafana.net:433",
 		user:     "admin",
 		password: "admin",
 		err:      nil,
