@@ -195,7 +195,7 @@ func (t *TestRunner) getDashboardURL(runIdentifier string) (string, error) {
 
 func (t *TestRunner) getReporter() (reporter.SuiteRunReporter, error) {
 	switch t.ReportFormat {
-	case "slog": return reporter.NewLogReporter(t.Log), nil
+	case "log": return reporter.NewLogReporter(t.Log), nil
 	case "text": return reporter.NewTextReporter(os.Stdout), nil
 	default: return nil, fmt.Errorf("invalid report format %q", t.ReportFormat)
 	}
