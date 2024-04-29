@@ -99,7 +99,7 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 			Info("testRun", "testRun", testRunId)
 	}
 
-	var anyFailures = (suiteRun.TestsFailed + suiteRun.TestsError) > 0
+	var anyFailures = suiteRun.Status != executor.SuitePassed
 
 	t.Log.With(t.testRunnerLogAttrs()...).
 		With(suiteLogAttrs(suite)...).
