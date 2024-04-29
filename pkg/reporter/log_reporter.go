@@ -3,19 +3,22 @@ package reporter
 import (
 	"fmt"
 	"log/slog"
+	"os"
 	"strconv"
 	"time"
 
 	"github.com/grafana/grafana-bench/pkg/executor"
 )
 
-
 // LogReporter reports a test suite run using structured logs
 type LogReporter struct {
 	Log *slog.Logger
 }
 
-func NewLogReporter(log *slog.Logger) *LogReporter {
+// creates a new log reporter with the given attributes
+func NewLogReporter(attr []any) *LogReporter {
+	log := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	log = log.With(attr...)
 	return &LogReporter{
 		Log: log,
 	}
@@ -23,19 +26,22 @@ func NewLogReporter(log *slog.Logger) *LogReporter {
  
 func (r *LogReporter) Report(
 	runId string,
+	suiteRunId string,
 	suite executor.TestSuite,
 	suiteRun executor.SuiteRunSummary,
 ) {
+	log := r.Log.With("runId", runId, "suiteRun", suiteRunId)
+
 	for _, testRun := range suiteRun.TestRuns {
 		testRunId := fmt.Sprintf("%s-%d", runId, testRun.Order)
-		r.Log.With(suiteLogAttrs(suite)...).
+		log.With(suiteLogAttrs(suite)...).
 			With(testRunLogAttrs(testRun)...).
 			Info("testRun", "testRun", testRunId)
 	}
 
 	var anyFailures = (suiteRun.TestsFailed + suiteRun.TestsError) > 0
 
-	r.Log.With(suiteLogAttrs(suite)...).
+	log.With(suiteLogAttrs(suite)...).
 		With(suiteRunLogAttrs(suiteRun)...).
 		Info("suiteRun", "anyFailures", anyFailures)
 }

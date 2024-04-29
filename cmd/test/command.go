@@ -44,7 +44,6 @@ environment variables or as arguments (--k6-cloud-project and --k6-cloud-token)
 
 // NewCmd creates a new test command
 func NewCmd(log *slog.Logger) *cobra.Command {
-	log = log.With("svc", "test-runner")
 	var (
 		testTrigger       string
 		testType          string

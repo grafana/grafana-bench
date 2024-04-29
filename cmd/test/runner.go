@@ -38,7 +38,7 @@ func NewTestRunner(
 
 ) *TestRunner {
 	return &TestRunner{
-		Log:             log,
+		Log:             log.With("svc", "test-runner"),
 		Trigger:         testTrigger,
 		GrafanaInstance: grafanaInstance,
 		MachineSpec:     machineSpec,
@@ -67,14 +67,14 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 		return fmt.Errorf("getting grafana version: %w", err)
 	}
 
+	// get an unique identification for the suite run (used for backward compatibility)
+	suiteRunId := t.getSuiteRunId(runId, suite)
+	t.Log = t.Log.With("suiteRun", suiteRunId)
+
 	suiteReporter, err := t.getReporter()
 	if err != nil {
 		return fmt.Errorf("getting reporter %w", err)
 	}
-
-	// get an unique identification for the suite run (used for backward compatibility)
-	suiteRunId := t.getSuiteRunId(runId, suite)
-	t.Log = t.Log.With("suiteRun", suiteRunId)
 
 	// set common test execution variables
 	env := map[string]string{
@@ -96,7 +96,7 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 		return fmt.Errorf("executing test suite %w", err)
 	}
 
-	suiteReporter.Report(runId,suite,suiteRun)
+	suiteReporter.Report(runId,suiteRunId, suite, suiteRun)
 
 	var anyFailures = suiteRun.Status != executor.SuitePassed
 
@@ -195,7 +195,7 @@ func (t *TestRunner) getDashboardURL(runIdentifier string) (string, error) {
 
 func (t *TestRunner) getReporter() (reporter.SuiteRunReporter, error) {
 	switch t.ReportFormat {
-	case "log": return reporter.NewLogReporter(t.Log), nil
+	case "log": return reporter.NewLogReporter(t.testRunnerLogAttrs()), nil
 	case "text": return reporter.NewTextReporter(os.Stdout), nil
 	default: return nil, fmt.Errorf("invalid report format %q", t.ReportFormat)
 	}
