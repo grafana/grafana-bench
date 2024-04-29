@@ -9,9 +9,11 @@ bench provides a CLI interface for executing diverse actions for running tests
 ### Options
 
 ```
-      --env string   path to a file with the environment variables.
-                     If none is specified and a .env files exists in the work directory, it will be used
-  -h, --help         help for bench
+      --env string         path to a file with the environment variables.
+                           If none is specified and a .env files exists in the work directory, it will be used
+  -h, --help               help for bench
+      --log-level string   set the log level ('ERROR', 'WARN', 'INFO', 'DEBUG').
+                            overridden by the BENCH_LOG_LEVEL environment variable (default "ERROR")
 ```
 
 ### SEE ALSO
