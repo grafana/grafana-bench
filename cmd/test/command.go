@@ -121,7 +121,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 
 			// if the name of the test suite was not given, use the last element of the test suit path as name
 			if testSuiteName == "" {
-				defaultTestSuiteName := strings.TrimSuffix(path.Base(testSuite), ".js")
+				defaultTestSuiteName := strings.TrimSuffix(path.Base(testSuite), path.Ext(testSuite))
 				testSuiteName = env.EnvOrDefault("TEST_SUITE_NAME", defaultTestSuiteName)
 			}
 
