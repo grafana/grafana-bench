@@ -52,7 +52,7 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 
 	t.Log.With(suiteLogAttrs(suite)...).Info("starting suite run")
 
-	t.Log.Info("Waiting for grafana server...", "address", t.GrafanaInstance.Address())
+	t.Log.Info("Waiting for grafana server...", "address", t.GrafanaInstance.Url())
 
 	err := t.GrafanaInstance.WaitForLiveGrafana(ctx)
 	if err != nil {
@@ -77,10 +77,10 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 		"TEST_TYPE":           testType.Name(),
 		"TEST_SUITE_REVISION": suite.Revision,
 		// TODO unify variable names
-		"GRAFANA_URL":      t.GrafanaInstance.Address(),
+		"GRAFANA_URL":      t.GrafanaInstance.Url(),
 		"GRAFANA_USERNAME": t.GrafanaInstance.UserName(),
 		"GRAFANA_PASSWORD": t.GrafanaInstance.Password(),
-		"GT_URL":           t.GrafanaInstance.Address(),
+		"GT_URL":           t.GrafanaInstance.Url(),
 		"GT_USERNAME":      t.GrafanaInstance.UserName(),
 		"GT_PASSWORD":      t.GrafanaInstance.Password(),
 		// ----
@@ -161,7 +161,9 @@ func (t *TestRunner) testRunnerLogAttrs() []any {
 	return []any{
 		"testTrigger", t.Trigger,
 		"benchRevision", t.BenchRevision,
-		"grafanaUrl", t.GrafanaInstance.Address(),
+		//TODO: deprecate this attribute
+		"grafanaUrl", t.GrafanaInstance.Hostname(),
+		"grafanSlug", t.GrafanaInstance.Slug(),
 		"grafanaVersion", t.GrafanaVersion,
 		"testExecutor", t.Executor.Name(),
 	}
