@@ -79,18 +79,14 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				return err
 			}
 
-			// take the environment variable first
-			if testSuiteRevision == "" {
-				testSuiteRevision = env.EnvOrDefault("TEST_SUITE_REVISION", "")
-			}
-
-			// If revision-file and test-suite-revision are specified, test-suite-revision has precedence
-			if testSuiteRevision == "" && revisionFile != "" {
+			if revisionFile != "" {
 				testSuiteRevision, err = getTestSuiteRevision(revisionFile)
 				if err != nil {
 					return fmt.Errorf("getting version from file %s: %w", revisionFile, err)
 				}
 			}
+
+			testSuiteRevision = env.EnvOrDefault("TEST_SUITE_REVISION", testSuiteRevision)
 
 			if benchRevision == "" {
 				benchRevision = env.EnvOrDefault("BENCH_REVISION", revision.BenchRevision())
@@ -202,13 +198,13 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		&revisionFile,
 		"test-suite-revision-file",
 		"",
-		"path to a file with the test suite revision",
+		"path to a file with the test suite revision. Has precedence over test-suite-revision",
 	)
 	// TODO: add default value as the revision is used to generate the run id
 	fs.StringVar(
 		&testSuiteRevision,
 		"test-suite-revision",
-		"",
+		"devel",
 		"test suite revision. If not set TEST_SUITE_REVISION environment variable is used",
 	)
 	fs.StringVar(
