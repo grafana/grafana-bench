@@ -63,7 +63,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		grafanaTimeout    time.Duration
 		benchRevision     string
 		dashboardURL      string
-		verbose           bool
+		k6Verbose         bool
 		k6CloudOutput     bool
 		k6UseTypescript   bool
 	)
@@ -142,7 +142,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 
 			executor := NewK6TestExecutor(
 				log,
-				verbose,
+				k6Verbose,
 				k6UseTypescript,
 				k6CloudOutput,
 				k6CloudToken,
@@ -244,7 +244,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		false,
 		"run k6 typescript tests. Typescript tests are compiled before execution.",
 	)
-	fs.BoolVar(&verbose, "verbose", true, "show test outputs")
+	fs.BoolVar(&k6Verbose, "k6-verbose", false, "show k6 test outputs")
 	fs.BoolVar(
 		&k6CloudOutput,
 		"k6-cloud-output",

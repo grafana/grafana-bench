@@ -55,6 +55,7 @@ bench test --test-suite /path/to/test/suite [flags]
       --k6-cloud-project string           K6 cloud project ID. If not set K6_CLOUD_PROJECT_ID environment variable is used
       --k6-cloud-token string             K6 cloud access token. If not set K6_CLOUD_TOKEN environment variable is used
       --k6-use-typescript                 run k6 typescript tests. Typescript tests are compiled before execution.
+      --k6-verbose                        show k6 test outputs
       --machine-spec string               grafana instance machine spec
       --test-report-format string         format of the test execution report. Allowed values 'log' or 'text'.
                                            'log' produced a structure log. 'text' produced an human readable output (default "text")
@@ -71,7 +72,6 @@ bench test --test-suite /path/to/test/suite [flags]
       --test-suite-revision-file string   path to a file with the test suite revision
       --test-trigger string               test trigger (default "local")
       --test-type string                  test type. Allowed values: 'smoke', 'load' (default "smoke")
-      --verbose                           show test outputs (default true)
 ```
 
 ### Options inherited from parent commands
