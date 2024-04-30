@@ -20,6 +20,7 @@ func NewTextReporter(report io.Writer) *TextReporter {
 
 func (r *TextReporter) Report(
 	runId string,
+	suiteRunId string,
 	suite executor.TestSuite,
 	suiteRun executor.SuiteRunSummary,
 ) {

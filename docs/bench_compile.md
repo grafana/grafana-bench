@@ -36,8 +36,10 @@ bench compile --target-dir work/tests  \
 ### Options inherited from parent commands
 
 ```
-      --env string   path to a file with the environment variables.
-                     If none is specified and a .env files exists in the work directory, it will be used
+      --env string         path to a file with the environment variables.
+                           If none is specified and a .env files exists in the work directory, it will be used
+      --log-level string   set the log level ('ERROR', 'WARN', 'INFO', 'DEBUG').
+                            overridden by the BENCH_LOG_LEVEL environment variable (default "ERROR")
 ```
 
 ### SEE ALSO

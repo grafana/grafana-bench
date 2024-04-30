@@ -44,7 +44,6 @@ environment variables or as arguments (--k6-cloud-project and --k6-cloud-token)
 
 // NewCmd creates a new test command
 func NewCmd(log *slog.Logger) *cobra.Command {
-	log = log.With("svc", "test-runner")
 	var (
 		testTrigger       string
 		testType          string
@@ -154,14 +153,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				dashboardURL,
 				executor,
 				reportFormat,
-			)
-
-			// TODO: review attributes reported in this log message
-			log.Info(
-				"test runner params",
-				"testType", testType,
-				"grafanaInstance", runner.GrafanaInstance.Url(),
-				"k6ProjectId", k6CloudProjectId,
 			)
 
 			return runner.Exec(cmd.Context(), trt, suite)

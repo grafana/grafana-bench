@@ -111,7 +111,7 @@ func (t *K6TestExecutor) ExecTestSuite(
 		return executor.SuiteRunSummary{}, fmt.Errorf("getting k6 version %w", err)
 	}
 
-	t.Log.Info("using k6", "k6Version", k6Version)
+	t.Log.Debug("using k6", "k6Version", k6Version)
 
 	tests, err := t.getTestFiles(suite)
 	if err != nil {
@@ -229,6 +229,8 @@ func (t *K6TestExecutor) execTest(
 			}
 		}
 		cmdErr = "error running k6 command: " + err.Error()
+		t.Log.Error(cmdErr)
+		fmt.Println(buf.String())
 	}
 
 	output, err := t.getOutput(buf, jsonFile, scenarioName)

@@ -53,7 +53,7 @@ func (tc *TestCompiler)CompileTestSuite(ctx context.Context) error {
 		}
 
 	} else {
-		tc.Log.Info("cloning test suite")
+		tc.Log.Debug("cloning test suite")
 		repo, err = git.PlainClone(
 			tc.TargetDir,
 			false,

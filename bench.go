@@ -3,13 +3,13 @@ package main
 import (
 	"context"
 	"os"
-	"log/slog"
 
 	"github.com/grafana/grafana-bench/cmd/root"
+	"github.com/grafana/grafana-bench/pkg/utils/logger"
 )
 
 func main() {
-	log := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	log := logger.NewLogger()
 
 	root := root.NewCmd(log)
 

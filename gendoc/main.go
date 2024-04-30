@@ -1,18 +1,17 @@
 package main
 
 import (
-	"log/slog"
-
 	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
 
 	"github.com/grafana/grafana-bench/cmd/root"
+	"github.com/grafana/grafana-bench/pkg/utils/logger"
 )
 
 func main() {
-	log := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	log := logger.NewLogger()
 
 	docCmd := newCmd(log)
 
@@ -27,7 +26,7 @@ const examples = `
   gendoc -o docs/  # generates markdown documentation in the docs directory
 `
 // creates a cobra command for doc generation
-func newCmd(log *slog.Logger) *cobra.Command {
+func newCmd(log *logger.Logger) *cobra.Command {
 	var dir string
 
 	cmd :=  &cobra.Command{
