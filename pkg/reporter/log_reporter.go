@@ -32,9 +32,11 @@ func (r *LogReporter) Report(
 ) {
 	log := r.Log.With("runId", runId, "suiteRun", suiteRunId)
 
-	for _, testRun := range suiteRun.TestRuns {
-		testRunId := fmt.Sprintf("%s-%d", runId, testRun.Order)
+	for order, testRun := range suiteRun.TestRuns {
+		testRunId := fmt.Sprintf("%s-%d", runId, order)
 		log.With(suiteLogAttrs(suite)...).
+			// TODO: deprecate order attribute
+			With("order", strconv.Itoa(order)).
 			With(testRunLogAttrs(testRun)...).
 			Info("testRun", "testRun", testRunId)
 	}
@@ -73,7 +75,6 @@ func testRunLogAttrs(testRun executor.TestRun) []any {
 	attrs := []any{
 		"folder", testRun.TestFolder,
 		"testFile", testRun.TestFile,
-		"order", strconv.Itoa(testRun.Order),
 		"iterations", testRun.Iterations,
 		"setupDuration", prettyMS(testRun.Durations.SetupDuration),
 		"scenarioDuration", prettyMS(testRun.Durations.ScenarioDuration),
@@ -81,7 +82,6 @@ func testRunLogAttrs(testRun executor.TestRun) []any {
 		"totalDuration", prettyMS(testRun.Durations.TotalDuration),
 		"status", testRun.Status,
 		"exitMessage", testRun.ExitMessage,
-		"exitCode", strconv.Itoa(testRun.ExitCode),
 	}
 
 	for k, v := range testRun.Attributes {
