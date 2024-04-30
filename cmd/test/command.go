@@ -40,6 +40,8 @@ environment variables or as arguments (--k6-cloud-project and --k6-cloud-token)
 
 [1] https://github.com/grafana/grafana-api-tests/blob/main/README.md#common-environment-variables
 [2] https://grafana.com/docs/grafana-cloud/k6/author-run/tokens-and-cli-authentication/
+
+fake change in command
 `
 
 // NewCmd creates a new test command
