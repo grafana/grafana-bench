@@ -51,7 +51,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		testType          string
 		runnerType        string
 		reportFormat      string
-		runnerType        string
 		grafanaUrl        string
 		grafanaUsername   string
 		grafanaPassword   string
