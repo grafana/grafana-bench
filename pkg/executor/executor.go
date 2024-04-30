@@ -33,9 +33,7 @@ type TestRun struct {
 	TestFolder  string
 	TestFile    string
 	StartTime   time.Time
-	Order       int
 	Status      TestStatus
-	ExitCode    int
 	ExitMessage string
 	Iterations  string
 	Durations   TestDurations

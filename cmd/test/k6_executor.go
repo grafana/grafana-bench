@@ -121,7 +121,7 @@ func (t *K6TestExecutor) ExecTestSuite(
 	suiteSummary := executor.SuiteRunSummary{}
 
 	// run the tests
-	for order, testFile := range tests {
+	for _, testFile := range tests {
 		testStartTime := time.Now()
 
 		scenarioName := getScenarioName(testFile)
@@ -151,9 +151,7 @@ func (t *K6TestExecutor) ExecTestSuite(
 			TestFolder:  testFolder,
 			TestFile:    path.Base(testFile),
 			StartTime:   testStartTime,
-			Order:       order + 1,
 			Status:      k6Summary.Status,
-			ExitCode:    k6Summary.ExitCode,
 			Durations:   k6Summary.Durations,
 			Iterations:  k6Summary.Iterations,
 			ExitMessage: k6Summary.ExitMessage,
