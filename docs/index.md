@@ -18,27 +18,20 @@ Bench is a tool for executing e2e tests against an instance of Grafana.
 
     `git clone git@github.com:grafana/grafana-api-tests.git`
 
-1. Build the tests
-
-    ``` shell
-      cd grafana-api-tests
-      yarn install
-      yarn build
-    ```
-
 1. Boot up an instance of grafana
 
     `docker run -d --name=grafana -p 3000:3000 grafana/grafana`
 
-1. Run the tests
+1. Run tests
 
     ``` shell
         docker run --rm \
          --network host \
          --platform=linux/amd64 \
-         --volume="./dist/tests:/home/bench/tests" \
+         --volume="./tests:/home/bench/tests" \
          ghcr.io/grafana/grafana-bench:latest test \
-         --test-type="smoke" \
+         --k6-use-typescript \
+         --test-type smoke \
          --test-suite-base="tests" \
          --test-suite dashboards
     ```
@@ -56,15 +49,17 @@ Bench is a tool for executing e2e tests against an instance of Grafana.
     docker run --rm \
      --network host \
      --platform=linux/amd64 \
-     --volume="./dist/tests:/home/bench/tests" \
+     --volume="./tests:/home/bench/tests" \
      -e K6_CLOUD_PROJECT_ID="{YOUR_PROJECT_ID}" \
      -e K6_CLOUD_TOKEN="{YOUR_CLOUD_TOKEN}" \
      ghcr.io/grafana/grafana-bench:latest test \
      --k6-cloud-output=true \
-     --test-type="smoke" \
+     --k6-use-typescript \
+     --test-type smoke \
      --test-suite-base="tests" \
      --test-suite dashboards
 ```
+
 
 ## Discover additional bench commands
 
