@@ -229,6 +229,8 @@ func (t *K6TestExecutor) execTest(
 			}
 		}
 		cmdErr = "error running k6 command: " + err.Error()
+		t.Log.Error(cmdErr)
+		fmt.Println(buf.String())
 	}
 
 	output, err := t.getOutput(buf, jsonFile, scenarioName)
