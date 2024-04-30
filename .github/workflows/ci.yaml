@@ -2,9 +2,10 @@ name: publish-bench-image
 
 # These permissions are needed to assume roles from Github's OIDC.
 permissions:
-  contents: read
+  contents: write
   id-token: write
   packages: write
+  pull-requests: read
 
 on:
   push:
@@ -63,6 +64,40 @@ jobs:
         with:
           name: screenshots
           path: screenshots
+
+  update-docs:
+    # run only when pushing to a PR
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4
+        with:
+          # prevent a headless reference when checking out the code
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '>=1.21.x'
+      - name: check changes
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            cmds:
+              - 'cmd/**'
+      - name: gen docs
+        if: steps.changes.outputs.cmds == 'true'
+        run: |
+          go run gendoc/main.go -o docs
+      - name: commit updates
+        uses: EndBug/add-and-commit@v9
+        with:
+          message: "auto-update docs"
+          default_author: github_actions
+          add: 'docs/**'
+      
 
   publish-dev:
     # publish latest from main to dev
