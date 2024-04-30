@@ -56,6 +56,34 @@ Bench is a tool for executing e2e tests against an instance of Grafana.
      --test-suite dashboards
 ```
 
+### using .env file
+
+Several test runner options can be defined by means of environment variables.
+
+These variables can be set in the `docker run` command as shown in the examples above.
+
+Also,they can be defined in a `.env` file:
+
+```yaml
+K6_CLOUD_PROJECT_ID="YOUR_PROJECT_ID" \
+K6_CLOUD_TOKEN="YOUR_CLOUD_TOKEN"
+GRAFANA_USER="GRAFANA_USER"
+GRAFANA_PASSWORD="GRAFANA_PASSWORD" 
+```
+
+This file can be passed to the 
+
+``` shell
+    docker run --rm \
+     --network host \
+     --volume="./tests:/home/bench/tests" \
+     --volume="./env:/home/bench/.env"  \
+     ghcr.io/grafana/grafana-bench:latest test \
+     --k6-cloud-output=true \
+     --k6-use-typescript \
+     --test-suite-base="tests" \
+     --test-suite dashboards
+```
 
 ## Discover additional bench commands
 
