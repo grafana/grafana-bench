@@ -48,6 +48,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	var (
 		testTrigger       string
 		testType          string
+		reportFormat      string
 		grafanaUrl        string
 		grafanaUsername   string
 		grafanaPassword   string
@@ -62,7 +63,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		grafanaTimeout    time.Duration
 		benchRevision     string
 		dashboardURL      string
-		verbose           bool
+		k6Verbose         bool
 		k6CloudOutput     bool
 		k6UseTypescript   bool
 	)
@@ -141,7 +142,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 
 			executor := NewK6TestExecutor(
 				log,
-				verbose,
+				k6Verbose,
 				k6UseTypescript,
 				k6CloudOutput,
 				k6CloudToken,
@@ -156,6 +157,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				benchRevision,
 				dashboardURL,
 				executor,
+				reportFormat,
 			)
 
 			// TODO: review attributes reported in this log message
@@ -173,6 +175,13 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	fs := cmd.Flags()
 	fs.StringVar(&testTrigger, "test-trigger", "local", "test trigger")
 	fs.StringVar(&testType, "test-type", "smoke", "test type. Allowed values: 'smoke', 'load'")
+	fs.StringVar(
+		&reportFormat,
+		"test-report-format",
+		"text",
+		"format of the test execution report. Allowed values 'log' or 'text'." +
+		"\n 'log' produced a structure log. 'text' produced an human readable output",
+	)
 	fs.StringVar(
 		&grafanaUrl,
 		"grafana-url",
@@ -235,7 +244,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		false,
 		"run k6 typescript tests. Typescript tests are compiled before execution.",
 	)
-	fs.BoolVar(&verbose, "verbose", true, "show test outputs")
+	fs.BoolVar(&k6Verbose, "k6-verbose", false, "show k6 test outputs")
 	fs.BoolVar(
 		&k6CloudOutput,
 		"k6-cloud-output",
