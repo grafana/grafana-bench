@@ -29,7 +29,6 @@ Bench is a tool for executing e2e tests against an instance of Grafana.
          --network host \
          --volume="./tests:/home/bench/tests" \
          ghcr.io/grafana/grafana-bench:latest test \
-         --k6-use-typescript \
          --test-suite-base="tests" \
          --test-suite dashboards
     ```
@@ -51,7 +50,6 @@ Bench is a tool for executing e2e tests against an instance of Grafana.
      -e K6_CLOUD_TOKEN="{YOUR_CLOUD_TOKEN}" \
      ghcr.io/grafana/grafana-bench:latest test \
      --k6-cloud-output=true \
-     --k6-use-typescript \
      --test-suite-base="tests" \
      --test-suite dashboards
 ```
