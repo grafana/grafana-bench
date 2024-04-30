@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 )
 
@@ -57,12 +58,12 @@ func PathExists(path string) (bool, error) {
 	return false, err
 }
 
-// Walks a directory getting a list of all files with matching extension
+// Walks a directory getting a list of all files with matching extensions
 // ext must include . like .js
-func GlobByExtension(dir string, ext string) ([]string, error) {
+func GlobByExtension(dir string, exts...string) ([]string, error) {
 	files := []string{}
 	err := filepath.Walk(dir, func(path string, f os.FileInfo, err error) error {
-		if filepath.Ext(path) == ext {
+		if slices.Contains(exts, filepath.Ext(path)) {
 			files = append(files, path)
 		}
 		return nil

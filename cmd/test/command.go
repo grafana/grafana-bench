@@ -64,7 +64,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		dashboardURL      string
 		k6Verbose         bool
 		k6CloudOutput     bool
-		k6UseTypescript   bool
 	)
 
 	cmd := cobra.Command{
@@ -138,7 +137,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			executor := NewK6TestExecutor(
 				log,
 				k6Verbose,
-				k6UseTypescript,
 				k6CloudOutput,
 				k6CloudToken,
 				k6CloudProjectId,
@@ -224,12 +222,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		"k6-cloud-project",
 		"",
 		"K6 cloud project ID. If not set K6_CLOUD_PROJECT_ID environment variable is used",
-	)
-	fs.BoolVar(
-		&k6UseTypescript,
-		"k6-use-typescript",
-		false,
-		"run k6 typescript tests. Typescript tests are compiled before execution.",
 	)
 	fs.BoolVar(&k6Verbose, "k6-verbose", false, "show k6 test outputs")
 	fs.BoolVar(

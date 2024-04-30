@@ -12,6 +12,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -28,6 +29,8 @@ const (
 var (
 	missingK6CloudConfigError = errors.New("k6 Token and project ID are required for cloud output")
 	testFilesError            = errors.New("getting test files")
+	testExts                  = []string{".js",".ts"}
+
 )
 
 // K6TestExecutor implements TestExecutor interface for running k6 test suites
@@ -44,7 +47,6 @@ type K6TestExecutor struct {
 func NewK6TestExecutor(
 	log *slog.Logger,
 	verbose bool,
-	typescript bool,
 	cloudOutput bool,
 	cloudToken string,
 	cloudProjectID string,
@@ -52,7 +54,6 @@ func NewK6TestExecutor(
 	return &K6TestExecutor{
 		Log:            log.With("executor", "k6"),
 		Verbose:        verbose,
-		UseTypescript:  typescript,
 		CloudOutput:    cloudOutput,
 		CloudToken:     cloudToken,
 		CloudProjectID: cloudProjectID,
@@ -192,12 +193,9 @@ func (t *K6TestExecutor) execTest(
 	scenarioName string,
 	env map[string]string,
 ) (K6TestRun, error) {
-	if t.UseTypescript {
-		transpiledTest, err := transpileTest(testFile)
-		if err != nil {
-			return K6TestRun{}, err
-		}
-		testFile = transpiledTest
+	testFile, err := transpileTest(testFile)
+	if err != nil {
+		return K6TestRun{}, err
 	}
 
 	jsonFile := getJsonOutputFilename(testFile)
@@ -315,10 +313,6 @@ func getScenarioName(filename string) string {
 // tests=dashboard_read.js will run dashboard_read.js.
 // tests=dashboards will run all files in dashboards/**.*.js.
 func (t *K6TestExecutor) getTestFiles(suite executor.TestSuite) ([]string, error) {
-	var testExt = ".js"
-	if t.UseTypescript {
-		testExt = ".ts"
-	}
 	if filepath.IsAbs(suite.Path) {
 		return nil, fmt.Errorf("test suite must be a relative to base dir. Got %q", suite.Path)
 	}
@@ -340,7 +334,7 @@ func (t *K6TestExecutor) getTestFiles(suite executor.TestSuite) ([]string, error
 
 	// test suite points to a directory
 	if fileInfo.IsDir() {
-		files, err := utils.GlobByExtension(testSuitePath, testExt)
+		files, err := utils.GlobByExtension(testSuitePath, testExts...)
 		if err != nil {
 			return nil, err
 		}
@@ -353,8 +347,8 @@ func (t *K6TestExecutor) getTestFiles(suite executor.TestSuite) ([]string, error
 	}
 
 	// is a file, we expect a single .js or .ts file
-	if filepath.Ext(testSuitePath) != testExt {
-		return nil, fmt.Errorf("expected a %q file got %s", testExt, testSuitePath)
+	if !slices.Contains(testExts, filepath.Ext(testSuitePath)) {
+		return nil, fmt.Errorf("expected a '.js' or '.ts'. file. Got %s", testSuitePath)
 	}
 
 	return []string{testSuitePath}, nil
