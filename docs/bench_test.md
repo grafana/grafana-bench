@@ -68,8 +68,8 @@ bench test --test-suite /path/to/test/suite [flags]
       --test-suite-name string            test suite name. If not specified, TEST_SUITE_NAME environment variable is used.
                                           Defaults to the last component of --test-suite.
                                           For example --test-suite /path/to/testsuite will give a test suite name of 'testsuite'.
-      --test-suite-revision string        test suite revision. If not set TEST_SUITE_REVISION environment variable is used
-      --test-suite-revision-file string   path to a file with the test suite revision
+      --test-suite-revision string        test suite revision. If not set TEST_SUITE_REVISION environment variable is used (default "devel")
+      --test-suite-revision-file string   path to a file with the test suite revision. Has precedence over test-suite-revision
       --test-trigger string               test trigger (default "local")
       --test-type string                  test type. Allowed values: 'smoke', 'load' (default "smoke")
 ```
