@@ -23,10 +23,8 @@ func parseJsonOutput(buf []byte) (executor.SuiteRunSummary, error) {
 
 	testRuns := make([]executor.TestRun, 0, output.Stats.Expected+output.Stats.Unexpected)
 
-	count := 0
 	for _, suite := range output.Suites {
 		for _, spec := range suite.Specs {
-			count++
 			folder := "unknown"
 			if len(spec.Tests) > 0 {
 				for _, project := range output.Config.Projects {
@@ -40,7 +38,7 @@ func parseJsonOutput(buf []byte) (executor.SuiteRunSummary, error) {
 			setupDuration := float32(output.Config.GlobalSetup)
 			tearDownDuration := float32(output.Config.GlobalTeardown)
 
-			run := formatTestRuns(spec, folder, setupDuration, tearDownDuration, count)
+			run := formatTestRuns(spec, folder, setupDuration, tearDownDuration)
 			testRuns = append(testRuns, run)
 		}
 	}
@@ -62,15 +60,13 @@ func parseJsonOutput(buf []byte) (executor.SuiteRunSummary, error) {
 
 }
 
-func formatTestRuns(spec Specs, folder string, globalSetupDuration, globalTeardownDuration float32, count int) executor.TestRun {
+func formatTestRuns(spec Specs, folder string, globalSetupDuration, globalTeardownDuration float32) executor.TestRun {
 	exitMessage := "success"
 	testStatus := executor.TestPassed
-	exitCode := 0
 	if !spec.Ok {
 		msg := stripansi.Strip(spec.Tests[0].Results[0].Error.Message)
 		exitMessage = fmt.Sprintf("%s:%d:%d => %s", spec.File, spec.Line, spec.Column, msg)
 		testStatus = executor.TestFailed
-		exitCode = 1
 	}
 
 	scenarioTotal := 0
@@ -89,11 +85,9 @@ func formatTestRuns(spec Specs, folder string, globalSetupDuration, globalTeardo
 		TestFile:   path.Base(spec.File),
 
 		StartTime: spec.Tests[0].Results[0].StartTime,
-		Order:     count,
 
 		Status:      testStatus,
 		ExitMessage: exitMessage,
-		ExitCode:    exitCode,
 		Iterations:  fmt.Sprintf("%d", len(spec.Tests[0].Results)),
 
 		Durations: executor.TestDurations{

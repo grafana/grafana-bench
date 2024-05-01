@@ -58,7 +58,12 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 		return executor.SuiteRunSummary{}, fmt.Errorf("missing execute command. Please pass the command using the flag --pw-execute-cmd 'yarn test'")
 	}
 
-	err := t.executeTests(suite.Path, t.ExecuteCmd, suite.Path)
+	err := t.prepareCodebase(suite.Path, t.PrepareCmd)
+	if err != nil {
+		return executor.SuiteRunSummary{}, fmt.Errorf("failed to prepare codebase: %s", err.Error())
+	}
+
+	err = t.executeTests(suite.Path, t.ExecuteCmd, suite.Path)
 	if err != nil {
 		// process might return exit code 1 if test fails but we still want to try to parse the report
 		t.Log.Info("Playwright test execution failed", "error", err.Error())
