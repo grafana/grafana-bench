@@ -202,20 +202,6 @@ func TestK6Executor(t *testing.T) {
 			testSuite: "k6tests/pass.js",
 			expectErr: missingK6CloudConfigError,
 		},
-		{
-			testCase:  "typescript test",
-			testSuite: "k6tests/typescript.ts",
-			k6options: []k6TestExecutorOption{
-				UseTypescript(),
-			},
-			expectSummary: &executor.SuiteRunSummary{
-				TestsExecuted: 1,
-				TestsPassed:   1,
-				TestRuns: []executor.TestRun{
-					{TestFile: "typescript.ts", Status: executor.TestPassed},
-				},
-			},
-		},
 	}
 
 	for _, tc := range testCases {

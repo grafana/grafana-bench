@@ -29,7 +29,8 @@ const (
 var (
 	missingK6CloudConfigError = errors.New("k6 Token and project ID are required for cloud output")
 	testFilesError            = errors.New("getting test files")
-	testExts                  = []string{".js", ".ts"}
+	testExts                  = []string{".js",".ts"}
+
 )
 
 // K6TestExecutor implements TestExecutor interface for running k6 test suites
@@ -46,7 +47,6 @@ type K6TestExecutor struct {
 func NewK6TestExecutor(
 	log *slog.Logger,
 	verbose bool,
-	typescript bool,
 	cloudOutput bool,
 	cloudToken string,
 	cloudProjectID string,
@@ -54,12 +54,12 @@ func NewK6TestExecutor(
 	return &K6TestExecutor{
 		Log:            log.With("executor", "k6"),
 		Verbose:        verbose,
-		UseTypescript:  typescript,
 		CloudOutput:    cloudOutput,
 		CloudToken:     cloudToken,
 		CloudProjectID: cloudProjectID,
 	}
 }
+
 
 type k6Output struct {
 	iterations string
@@ -174,8 +174,8 @@ func (t *K6TestExecutor) ExecTestSuite(
 		suiteSummary.TestRuns = append(suiteSummary.TestRuns, summary)
 	}
 
-	if suiteSummary.TestsFailed+suiteSummary.TestsError == 0 {
-		suiteSummary.Status = executor.SuitePassed
+       if suiteSummary.TestsFailed + suiteSummary.TestsError == 0 {
+	        suiteSummary.Status = executor.SuitePassed
 	} else {
 		suiteSummary.Status = executor.SuiteFailed
 	}
@@ -313,10 +313,6 @@ func getScenarioName(filename string) string {
 // tests=dashboard_read.js will run dashboard_read.js.
 // tests=dashboards will run all files in dashboards/**.*.js.
 func (t *K6TestExecutor) getTestFiles(suite executor.TestSuite) ([]string, error) {
-	var testExt = ".js"
-	if t.UseTypescript {
-		testExt = ".ts"
-	}
 	if filepath.IsAbs(suite.Path) {
 		return nil, fmt.Errorf("test suite must be a relative to base dir. Got %q", suite.Path)
 	}

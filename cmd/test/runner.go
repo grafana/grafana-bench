@@ -67,11 +67,6 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 		return fmt.Errorf("getting grafana version: %w", err)
 	}
 
-	suiteReporter, err := t.getReporter()
-	if err != nil {
-		return fmt.Errorf("getting reporter %w", err)
-	}
-
 	// get an unique identification for the suite run (used for backward compatibility)
 	suiteRunId := t.getSuiteRunId(runId, suite)
 	t.Log = t.Log.With("suiteRun", suiteRunId)
@@ -101,7 +96,7 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 		return fmt.Errorf("executing test suite %w", err)
 	}
 
-	suiteReporter.Report(runId, suiteRunId, suite, suiteRun)
+	suiteReporter.Report(runId,suiteRunId, suite, suiteRun)
 
 	var anyFailures = suiteRun.Status != executor.SuitePassed
 
@@ -168,6 +163,7 @@ func (t *TestRunner) testRunnerLogAttrs() []any {
 	}
 }
 
+
 // getDashboardURL takes t.DashboardURL and substitutes {{.SuiteRun}} for t.RunIdentifier
 // this functionality may be deprecated in the future.
 func (t *TestRunner) getDashboardURL(runIdentifier string) (string, error) {
@@ -199,11 +195,8 @@ func (t *TestRunner) getDashboardURL(runIdentifier string) (string, error) {
 
 func (t *TestRunner) getReporter() (reporter.SuiteRunReporter, error) {
 	switch t.ReportFormat {
-	case "log":
-		return reporter.NewLogReporter(t.testRunnerLogAttrs()), nil
-	case "text":
-		return reporter.NewTextReporter(os.Stdout), nil
-	default:
-		return nil, fmt.Errorf("invalid report format %q", t.ReportFormat)
+	case "log": return reporter.NewLogReporter(t.testRunnerLogAttrs()), nil
+	case "text": return reporter.NewTextReporter(os.Stdout), nil
+	default: return nil, fmt.Errorf("invalid report format %q", t.ReportFormat)
 	}
 }

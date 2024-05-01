@@ -23,7 +23,7 @@ func NewLogReporter(attr []any) *LogReporter {
 		Log: log,
 	}
 }
-
+ 
 func (r *LogReporter) Report(
 	runId string,
 	suiteRunId string,
