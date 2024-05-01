@@ -88,9 +88,9 @@ jobs:
         run: |
           go run gendoc/main.go -o docs
       - name: commit updates
-        uses: reviewdog/action-suggester@v1
+        uses: parkerbxyz/suggest-changes@v1
         with:
-          tool_name: "cobra gen docs"
+          comment: 'Please update documentation'
 
   publish-dev:
     # publish latest from main to dev
