@@ -184,13 +184,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			"\n 'log' produced a structure log. 'text' produced an human readable output",
 	)
 	fs.StringVar(
-		&reportFormat,
-		"test-report-format",
-		"text",
-		"format of the test execution report. Allowed values 'log' or 'text'."+
-			"\n 'log' produced a structure log. 'text' produced an human readable output",
-	)
-	fs.StringVar(
 		&grafanaUrl,
 		"grafana-url",
 		"http://localhost:3000",
