@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"path"
+	"strings"
 
 	"github.com/acarl005/stripansi"
 
@@ -63,8 +64,35 @@ func parseJsonOutput(buf []byte) (executor.SuiteRunSummary, error) {
 func formatTestRuns(spec Specs, folder string, globalSetupDuration, globalTeardownDuration float32) executor.TestRun {
 	exitMessage := "success"
 	testStatus := executor.TestPassed
+
+	if spec.Tests[0].Status == "skipped" {
+		return executor.TestRun{
+			TestFolder: folder,
+			TestFile:   path.Base(spec.File),
+
+			Status:      executor.TestError,
+			ExitMessage: "skipped",
+			Iterations:  "0",
+
+			Durations: executor.TestDurations{
+				SetupDuration:    globalSetupDuration,
+				TeardownDuration: globalTeardownDuration,
+				ScenarioDuration: float32(0),
+				TotalDuration:    float32(0),
+			},
+
+			Attributes: map[string]string{
+				"title":  spec.Title,
+				"line":   fmt.Sprint(spec.Line),
+				"column": fmt.Sprint(spec.Column),
+			},
+		}
+	}
+
 	if !spec.Ok {
 		msg := stripansi.Strip(spec.Tests[0].Results[0].Error.Message)
+		// only take the first line of the error message incase it is a call stack message
+		msg = strings.Split(msg, "\n")[0]
 		exitMessage = fmt.Sprintf("%s:%d:%d => %s", spec.File, spec.Line, spec.Column, msg)
 		testStatus = executor.TestFailed
 	}

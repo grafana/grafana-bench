@@ -54,6 +54,19 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 			expectedErrorMsg:  "failures.test.ts:22:6 => Test timeout of 5000ms exceeded.",
 			expectedTestTitle: "should fail due to missing element",
 		},
+		{
+			title:             "parse fully skipped tests correctly",
+			file:              "./mocks/broken.json",
+			expectedTotal:     1,
+			expectedPassed:    0,
+			expectedFailed:    1,
+			expectedError:     0,
+			expectedDuration:  float32(2327.512),
+			expectedFile:      "skipped.test.ts",
+			expectedStatus:    "error",
+			expectedErrorMsg:  "skipped",
+			expectedTestTitle: "data query should return values 1 and 3",
+		},
 	}
 
 	for _, testCase := range testCases {

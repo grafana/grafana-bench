@@ -1,0 +1,107 @@
+{
+    "config": {
+      "configFile": "/home/work/grafana-plugin-tests/playwright.config.js",
+      "rootDir": "/home/work/grafana-plugin-tests/tests",
+      "forbidOnly": false,
+      "fullyParallel": true,
+      "globalSetup": null,
+      "globalTeardown": null,
+      "globalTimeout": 0,
+      "grep": {},
+      "grepInvert": null,
+      "maxFailures": 0,
+      "metadata": {
+        "actualWorkers": 5
+      },
+      "preserveOutput": "always",
+      "reporter": [
+        [
+          "json"
+        ]
+      ],
+      "reportSlowTests": {
+        "max": 5,
+        "threshold": 15000
+      },
+      "quiet": false,
+      "projects": [
+        {
+          "outputDir": "/home/work/grafana-plugin-tests/test-results",
+          "repeatEach": 1,
+          "retries": 2,
+          "id": "run-tests",
+          "name": "run-tests",
+          "testDir": "/home/work/grafana-plugin-tests/tests",
+          "testIgnore": [],
+          "testMatch": [
+            "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+          ],
+          "timeout": 2000
+        }
+      ],
+      "shard": null,
+      "updateSnapshots": "missing",
+      "version": "1.42.1",
+      "workers": 5,
+      "webServer": null
+    },
+    "suites": [
+      {
+        "title": "skipped.test.ts",
+        "file": "skipped.test.ts",
+        "column": 0,
+        "line": 0,
+        "specs": [
+          {
+            "title": "data query should return values 1 and 3",
+            "ok": true,
+            "tags": [],
+            "tests": [
+              {
+                "timeout": 2000,
+                "annotations": [],
+                "expectedStatus": "passed",
+                "projectId": "run-tests",
+                "projectName": "run-tests",
+                "results": [],
+                "status": "skipped"
+              }
+            ],
+            "id": "4a239ced0e52b6754d8b-c8ba8aeed86fb34fc818",
+            "file": "skipped.test.ts",
+            "line": 5,
+            "column": 5
+          },
+          {
+            "title": "should redirect to start page when permissions to navigate to page is missing",
+            "ok": true,
+            "tags": [],
+            "tests": [
+              {
+                "timeout": 2000,
+                "annotations": [],
+                "expectedStatus": "passed",
+                "projectId": "run-tests",
+                "projectName": "run-tests",
+                "results": [],
+                "status": "skipped"
+              }
+            ],
+            "id": "4a239ced0e52b6754d8b-30bac972d50ce0d504bd",
+            "file": "skipped.test.ts",
+            "line": 15,
+            "column": 5
+          }
+        ]
+      }
+    ],
+    "errors": [],
+    "stats": {
+      "startTime": "2024-05-01T11:33:33.818Z",
+      "duration": 2327.512,
+      "expected": 0,
+      "skipped": 6,
+      "unexpected": 1,
+      "flaky": 0
+    }
+  }
