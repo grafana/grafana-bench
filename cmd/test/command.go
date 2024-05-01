@@ -45,7 +45,6 @@ environment variables or as arguments (--k6-cloud-project and --k6-cloud-token)
 
 // NewCmd creates a new test command
 func NewCmd(log *slog.Logger) *cobra.Command {
-	log = log.With("svc", "test-runner")
 	var (
 		testTrigger       string
 		testType          string
@@ -68,7 +67,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		k6CloudProjectId string
 		k6Verbose        bool
 		k6CloudOutput    bool
-		k6UseTypescript  bool
 		// playwright cloud specific flags
 		pwPrepareCmd string
 		pwExecuteCmd string
@@ -147,7 +145,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				executor = NewK6TestExecutor(
 					log,
 					k6Verbose,
-					k6UseTypescript,
 					k6CloudOutput,
 					k6CloudToken,
 					k6CloudProjectId,
@@ -169,14 +166,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				reportFormat,
 			)
 
-			// TODO: review attributes reported in this log message
-			log.Info(
-				"test runner params",
-				"testType", testType,
-				"grafanaInstance", runner.GrafanaInstance.Url(),
-				"k6ProjectId", k6CloudProjectId,
-			)
-
 			return runner.Exec(cmd.Context(), trt, suite)
 		},
 	}
@@ -187,6 +176,13 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	fs.StringVar(&runnerType, "runner", "k6", "test runner. Allowed values: 'k6', 'playwright'")
 	fs.StringVar(&pwPrepareCmd, "pw-prepare-cmd", "", "command used to install dependencies for the test suite eg: npm install")
 	fs.StringVar(&pwExecuteCmd, "pw-execute-cmd", "", "command used to execute the test suite eg: npm run test")
+	fs.StringVar(
+		&reportFormat,
+		"test-report-format",
+		"text",
+		"format of the test execution report. Allowed values 'log' or 'text'."+
+			"\n 'log' produced a structure log. 'text' produced an human readable output",
+	)
 	fs.StringVar(
 		&reportFormat,
 		"test-report-format",
@@ -249,12 +245,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		"k6-cloud-project",
 		"",
 		"K6 cloud project ID. If not set K6_CLOUD_PROJECT_ID environment variable is used",
-	)
-	fs.BoolVar(
-		&k6UseTypescript,
-		"k6-use-typescript",
-		false,
-		"run k6 typescript tests. Typescript tests are compiled before execution.",
 	)
 	fs.BoolVar(&k6Verbose, "k6-verbose", false, "show k6 test outputs")
 	fs.BoolVar(

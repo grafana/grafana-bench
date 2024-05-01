@@ -3,39 +3,47 @@ package reporter
 import (
 	"fmt"
 	"log/slog"
+	"os"
 	"strconv"
 	"time"
 
 	"github.com/grafana/grafana-bench/pkg/executor"
 )
 
-
 // LogReporter reports a test suite run using structured logs
 type LogReporter struct {
 	Log *slog.Logger
 }
 
-func NewLogReporter(log *slog.Logger) *LogReporter {
+// creates a new log reporter with the given attributes
+func NewLogReporter(attr []any) *LogReporter {
+	log := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	log = log.With(attr...)
 	return &LogReporter{
 		Log: log,
 	}
 }
- 
+
 func (r *LogReporter) Report(
 	runId string,
+	suiteRunId string,
 	suite executor.TestSuite,
 	suiteRun executor.SuiteRunSummary,
 ) {
-	for _, testRun := range suiteRun.TestRuns {
-		testRunId := fmt.Sprintf("%s-%d", runId, testRun.Order)
-		r.Log.With(suiteLogAttrs(suite)...).
+	log := r.Log.With("runId", runId, "suiteRun", suiteRunId)
+
+	for order, testRun := range suiteRun.TestRuns {
+		testRunId := fmt.Sprintf("%s-%d", runId, order)
+		log.With(suiteLogAttrs(suite)...).
+			// TODO: deprecate order attribute
+			With("order", strconv.Itoa(order)).
 			With(testRunLogAttrs(testRun)...).
 			Info("testRun", "testRun", testRunId)
 	}
 
 	var anyFailures = (suiteRun.TestsFailed + suiteRun.TestsError) > 0
 
-	r.Log.With(suiteLogAttrs(suite)...).
+	log.With(suiteLogAttrs(suite)...).
 		With(suiteRunLogAttrs(suiteRun)...).
 		Info("suiteRun", "anyFailures", anyFailures)
 }
@@ -67,7 +75,6 @@ func testRunLogAttrs(testRun executor.TestRun) []any {
 	attrs := []any{
 		"folder", testRun.TestFolder,
 		"testFile", testRun.TestFile,
-		"order", strconv.Itoa(testRun.Order),
 		"iterations", testRun.Iterations,
 		"setupDuration", prettyMS(testRun.Durations.SetupDuration),
 		"scenarioDuration", prettyMS(testRun.Durations.ScenarioDuration),
@@ -75,7 +82,6 @@ func testRunLogAttrs(testRun executor.TestRun) []any {
 		"totalDuration", prettyMS(testRun.Durations.TotalDuration),
 		"status", testRun.Status,
 		"exitMessage", testRun.ExitMessage,
-		"exitCode", strconv.Itoa(testRun.ExitCode),
 	}
 
 	for k, v := range testRun.Attributes {

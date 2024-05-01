@@ -172,7 +172,6 @@ func failedSuiteSummary() executor.SuiteRunSummary {
 		TestRuns: []executor.TestRun{
 			{
 				Status: executor.TestFailed,
-				Order:  1,
 			},
 		},
 	}
@@ -186,7 +185,6 @@ func passingSuiteSummary() executor.SuiteRunSummary {
 		TestRuns: []executor.TestRun{
 			{
 				Status: executor.TestPassed,
-				Order:  1,
 			},
 		},
 	}

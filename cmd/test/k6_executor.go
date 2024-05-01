@@ -12,6 +12,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -28,6 +29,7 @@ const (
 var (
 	missingK6CloudConfigError = errors.New("k6 Token and project ID are required for cloud output")
 	testFilesError            = errors.New("getting test files")
+	testExts                  = []string{".js", ".ts"}
 )
 
 // K6TestExecutor implements TestExecutor interface for running k6 test suites
@@ -58,7 +60,6 @@ func NewK6TestExecutor(
 		CloudProjectID: cloudProjectID,
 	}
 }
-
 
 type k6Output struct {
 	iterations string
@@ -111,7 +112,7 @@ func (t *K6TestExecutor) ExecTestSuite(
 		return executor.SuiteRunSummary{}, fmt.Errorf("getting k6 version %w", err)
 	}
 
-	t.Log.Info("using k6", "k6Version", k6Version)
+	t.Log.Debug("using k6", "k6Version", k6Version)
 
 	tests, err := t.getTestFiles(suite)
 	if err != nil {
@@ -121,7 +122,7 @@ func (t *K6TestExecutor) ExecTestSuite(
 	suiteSummary := executor.SuiteRunSummary{}
 
 	// run the tests
-	for order, testFile := range tests {
+	for _, testFile := range tests {
 		testStartTime := time.Now()
 
 		scenarioName := getScenarioName(testFile)
@@ -151,9 +152,7 @@ func (t *K6TestExecutor) ExecTestSuite(
 			TestFolder:  testFolder,
 			TestFile:    path.Base(testFile),
 			StartTime:   testStartTime,
-			Order:       order + 1,
 			Status:      k6Summary.Status,
-			ExitCode:    k6Summary.ExitCode,
 			Durations:   k6Summary.Durations,
 			Iterations:  k6Summary.Iterations,
 			ExitMessage: k6Summary.ExitMessage,
@@ -175,8 +174,8 @@ func (t *K6TestExecutor) ExecTestSuite(
 		suiteSummary.TestRuns = append(suiteSummary.TestRuns, summary)
 	}
 
-       if suiteSummary.TestsFailed + suiteSummary.TestsError == 0 {
-	        suiteSummary.Status = executor.SuitePassed
+	if suiteSummary.TestsFailed+suiteSummary.TestsError == 0 {
+		suiteSummary.Status = executor.SuitePassed
 	} else {
 		suiteSummary.Status = executor.SuiteFailed
 	}
@@ -194,12 +193,9 @@ func (t *K6TestExecutor) execTest(
 	scenarioName string,
 	env map[string]string,
 ) (K6TestRun, error) {
-	if t.UseTypescript {
-		transpiledTest, err := transpileTest(testFile)
-		if err != nil {
-			return K6TestRun{}, err
-		}
-		testFile = transpiledTest
+	testFile, err := transpileTest(testFile)
+	if err != nil {
+		return K6TestRun{}, err
 	}
 
 	jsonFile := getJsonOutputFilename(testFile)
@@ -229,6 +225,8 @@ func (t *K6TestExecutor) execTest(
 			}
 		}
 		cmdErr = "error running k6 command: " + err.Error()
+		t.Log.Error(cmdErr)
+		fmt.Println(buf.String())
 	}
 
 	output, err := t.getOutput(buf, jsonFile, scenarioName)
@@ -340,7 +338,7 @@ func (t *K6TestExecutor) getTestFiles(suite executor.TestSuite) ([]string, error
 
 	// test suite points to a directory
 	if fileInfo.IsDir() {
-		files, err := utils.GlobByExtension(testSuitePath, testExt)
+		files, err := utils.GlobByExtension(testSuitePath, testExts...)
 		if err != nil {
 			return nil, err
 		}
@@ -353,8 +351,8 @@ func (t *K6TestExecutor) getTestFiles(suite executor.TestSuite) ([]string, error
 	}
 
 	// is a file, we expect a single .js or .ts file
-	if filepath.Ext(testSuitePath) != testExt {
-		return nil, fmt.Errorf("expected a %q file got %s", testExt, testSuitePath)
+	if !slices.Contains(testExts, filepath.Ext(testSuitePath)) {
+		return nil, fmt.Errorf("expected a '.js' or '.ts'. file. Got %s", testSuitePath)
 	}
 
 	return []string{testSuitePath}, nil

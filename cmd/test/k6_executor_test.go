@@ -46,7 +46,6 @@ func k6TestRunnerForTesting(
 	te := NewK6TestExecutor(
 		log,
 		true,  // verbose
-		false, // typescript
 		false, // cloud output
 		"",    // cloud token
 		"",    // cloud project

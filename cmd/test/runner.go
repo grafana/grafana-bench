@@ -38,7 +38,7 @@ func NewTestRunner(
 
 ) *TestRunner {
 	return &TestRunner{
-		Log:             log,
+		Log:             log.With("svc", "test-runner"),
 		Trigger:         testTrigger,
 		GrafanaInstance: grafanaInstance,
 		MachineSpec:     machineSpec,
@@ -60,7 +60,7 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 	if err != nil {
 		return fmt.Errorf("checking Grafana is Live... %w", err)
 	}
-	t.Log.Info("Grafana server is ready!")
+	t.Log.Debug("Grafana server is ready!")
 
 	t.GrafanaVersion, err = t.GrafanaInstance.GetGrafanaBuildVersion()
 	if err != nil {
@@ -75,6 +75,11 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 	// get an unique identification for the suite run (used for backward compatibility)
 	suiteRunId := t.getSuiteRunId(runId, suite)
 	t.Log = t.Log.With("suiteRun", suiteRunId)
+
+	suiteReporter, err := t.getReporter()
+	if err != nil {
+		return fmt.Errorf("getting reporter %w", err)
+	}
 
 	// set common test execution variables
 	env := map[string]string{
@@ -96,7 +101,7 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 		return fmt.Errorf("executing test suite %w", err)
 	}
 
-	suiteReporter.Report(runId,suite,suiteRun)
+	suiteReporter.Report(runId, suiteRunId, suite, suiteRun)
 
 	var anyFailures = suiteRun.Status != executor.SuitePassed
 
@@ -163,7 +168,6 @@ func (t *TestRunner) testRunnerLogAttrs() []any {
 	}
 }
 
-
 // getDashboardURL takes t.DashboardURL and substitutes {{.SuiteRun}} for t.RunIdentifier
 // this functionality may be deprecated in the future.
 func (t *TestRunner) getDashboardURL(runIdentifier string) (string, error) {
@@ -195,8 +199,11 @@ func (t *TestRunner) getDashboardURL(runIdentifier string) (string, error) {
 
 func (t *TestRunner) getReporter() (reporter.SuiteRunReporter, error) {
 	switch t.ReportFormat {
-	case "log": return reporter.NewLogReporter(t.Log), nil
-	case "text": return reporter.NewTextReporter(os.Stdout), nil
-	default: return nil, fmt.Errorf("invalid report format %q", t.ReportFormat)
+	case "log":
+		return reporter.NewLogReporter(t.testRunnerLogAttrs()), nil
+	case "text":
+		return reporter.NewTextReporter(os.Stdout), nil
+	default:
+		return nil, fmt.Errorf("invalid report format %q", t.ReportFormat)
 	}
 }
