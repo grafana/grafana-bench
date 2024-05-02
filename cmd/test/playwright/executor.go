@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
-	"strings"
 
 	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/utils"
@@ -54,22 +53,23 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 		return executor.SuiteRunSummary{}, fmt.Errorf("missing target directory. Please pass the relative path to the test suite directory using --test-suite flag")
 	}
 
-	if t.ExecuteCmd == "" {
-		return executor.SuiteRunSummary{}, fmt.Errorf("missing execute command. Please pass the command using the flag --pw-execute-cmd 'yarn test'")
+	// When run in the docker image the build path is set to the env var BENCH_PLAYWRIGHT_BUILD_PATH
+	// otherwise will use the default path of repository
+	playwrightBuildPath := os.Getenv("BENCH_PLAYWRIGHT_BUILD_PATH")
+	if playwrightBuildPath == "" {
+		playwrightBuildPath = "cmd/test/playwright/build"
 	}
 
-	err := t.prepareCodebase(suite.Path, t.PrepareCmd)
-	if err != nil {
-		return executor.SuiteRunSummary{}, fmt.Errorf("failed to prepare codebase: %s", err.Error())
-	}
-
-	err = t.executeTests(suite.Path, t.ExecuteCmd, suite.Path)
+	fmt.Println("Running Playwright tests", "suite", suite.Path, "url", env["GRAFANA_URL"], playwrightplaywrightBuildPath)
+	err := t.executeTests(suite.Path, env["GRAFANA_URL"])
 	if err != nil {
 		// process might return exit code 1 if test fails but we still want to try to parse the report
 		t.Log.Info("Playwright test execution failed", "error", err.Error())
 	}
 
-	file, err := os.ReadFile(fmt.Sprintf("%s/%s", suite.Path, jsonOutputName))
+	fmt.Println("executeTest output", err)
+
+	file, err := os.ReadFile(playwrightBuildPath + "/" + jsonOutputName)
 	if err != nil {
 		return executor.SuiteRunSummary{}, fmt.Errorf("failed to read report.json: %s", err.Error())
 	}
@@ -82,28 +82,21 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 	return runSummary, nil
 }
 
-func (t *PlaywrightTestExecutor) prepareCodebase(testingDir string, prepareCmd string) error {
-	return utils.ExecuteInDir(testingDir, func() error {
-		prepareCmd := exec.Command("bash", "-c", prepareCmd)
-		if err := utils.ExecStdout(prepareCmd); err != nil {
-			return fmt.Errorf("installing packages: %w", err)
-		}
+func (t *PlaywrightTestExecutor) executeTests(testingDir, grafana_url, playwrightBuildPath string) error {
+	return utils.ExecuteInDir(playwrightBuildPath, func() error {
+		// this sets the node_modules path to the current directory so that it can find the playwright package
+		// when running the tests in other directory
+		os.Setenv("NODE_PATH", playwrightBuildPath+"/node_modules")
+		// this sets the url of the tests to point to what is passed in
+		// no cli command flag to change via playwright cli
+		// therefore updates values in playwright.config.js file
+		os.Setenv("PLAYWRIGHT_BASE_URL", grafana_url)
+		// this is the relative path to the test suite from our current project
+		// no cli command flag to change via playwright cli
+		// therefore updates values in playwright.config.js file
+		os.Setenv("PLAYWRIGHT_TEST_DIR", testingDir)
 
-		return nil
-	})
-}
-
-func (t *PlaywrightTestExecutor) executeTests(testingDir, executeCmd string, testSuite string) error {
-	return utils.ExecuteInDir(testingDir, func() error {
-		os.Setenv("PLAYWRIGHT_JSON_OUTPUT_NAME", jsonOutputName)
-		cmd := strings.Fields(executeCmd)
-		cmd = append(cmd, "--reporter", "json")
-
-		if testSuite != "" {
-			cmd = append(cmd, "--grep", testSuite)
-		}
-
-		testRunCmd := exec.Command(cmd[0], cmd[1:]...)
+		testRunCmd := exec.Command("yarn", "playwright", "test")
 
 		return utils.ExecStdout(testRunCmd)
 	})

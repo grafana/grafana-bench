@@ -1,0 +1,18 @@
+{
+    "name": "grafana-bench",
+    "version": "1.0.0",
+    "main": "index.js",
+    "repository": "git@github.com:grafana/grafana-bench.git",
+    "author": "Tim Mulqueen <timothy.mulqueen@grafana.com>",
+    "license": "MIT",
+    "scripts": {
+      "test": "playwright test",
+      "playwright:install": "playwright install",
+      "test:ui": "playwright test --ui"
+    },
+    "dependencies": {
+      "@grafana/plugin-e2e": "^0.19.0",
+      "@playwright/test": "^1.42.1",
+      "playwright": "^1.42.1"
+    }
+  }

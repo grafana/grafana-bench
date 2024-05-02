@@ -8,7 +8,7 @@ grafana-bench.tar.gz
 .DS_Store
 
 test-repo/**
-
+admin.json
 
 # Binaries for programs and plugins
 *.exe
@@ -48,4 +48,6 @@ plugin/node_modules/
 node_modules/
 package-lock.json
 package.json
+# excempt playwright build dir
+!cmd/test/playwright/build/package.json
 site/
