@@ -212,6 +212,7 @@ func (t *K6TestExecutor) execTest(
 		cmdErr   string
 		exitCode int
 		status   executor.TestStatus = executor.TestPassed
+		output   k6Output
 	)
 	if err := cmd.Run(); err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
@@ -229,7 +230,10 @@ func (t *K6TestExecutor) execTest(
 		fmt.Println(buf.String())
 	}
 
-	output, err := t.getOutput(buf, jsonFile, scenarioName)
+	if status != executor.TestError {
+		output, err = t.getOutput(buf, jsonFile, scenarioName)
+	}
+
 	return K6TestRun{
 		Status:      status,
 		ExitCode:    exitCode,
