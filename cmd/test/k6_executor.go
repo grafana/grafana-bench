@@ -227,7 +227,10 @@ func (t *K6TestExecutor) execTest(
 		}
 		cmdErr = "error running k6 command: " + err.Error()
 		t.Log.Error(cmdErr)
-		fmt.Println(buf.String())
+		// avoid duplicating outout in verbose mode
+		if !t.Verbose {
+			fmt.Println(buf.String())
+		}
 	}
 
 	if status != executor.TestError {
@@ -391,9 +394,10 @@ func (t *K6TestExecutor) prepareK6Command(testFile, jsonFile string, env map[str
 	buf := bytes.NewBuffer(nil)
 	if t.Verbose {
 		cmd.Stdout = io.MultiWriter(buf, os.Stderr)
-		cmd.Stderr = os.Stderr
+		cmd.Stderr = io.MultiWriter(buf, os.Stderr)
 	} else {
 		cmd.Stdout = buf
+		cmd.Stderr = buf
 	}
 
 	return cmd, buf
