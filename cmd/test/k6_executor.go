@@ -380,8 +380,6 @@ func (t *K6TestExecutor) prepareK6Command(testFile, jsonFile string, env map[str
 		env["K6_CLOUD_TRACES_ENABLED"] = "true"
 
 		args = append(args, "--out", "cloud")
-	} else {
-		t.Log.Warn("running load tests with cloud output disabled.")
 	}
 
 	cmd := exec.Command("k6", args...)
