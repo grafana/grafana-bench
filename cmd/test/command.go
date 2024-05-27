@@ -152,7 +152,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			}
 
 			if runnerType == "playwright" {
-				executor = playwright.NewPlaywrightTestExecutor(log, pwPrepareCmd, pwExecuteCmd)
+				executor = playwright.NewPlaywrightTestExecutor(log, pwPrepareCmd, pwExecuteCmd, grafanaUrl)
 			}
 
 			runner := NewTestRunner(
