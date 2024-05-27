@@ -43,6 +43,8 @@ You can execute playwright by passing the `--runner playwright` options to bench
 
 Playwright also requires prepare and execute cmd strings to be passed. On the Bench Docker image node, npm and yarn are available. Playwright browsers are not required to be installed as outlined in detail below.
 
+Bench will overwrite the reporters set in the `playwright.config.ts` via the command line and use the json report to report on the tests.
+
 ```
 
     bench test
@@ -90,7 +92,6 @@ export default defineConfig({
       --k6-cloud-project string           K6 cloud project ID. If not set K6_CLOUD_PROJECT_ID environment variable is used
       --k6-cloud-token string             K6 cloud access token. If not set K6_CLOUD_TOKEN environment variable is used
       --k6-verbose                        show k6 test outputs
-
 	  --pw-prepare-cmd                    command used to install dependencies for the test suite eg: npm install
 	  --pw-execute-cmd                    command used to execute the test suite eg: npm run test
       --machine-spec string               grafana instance machine spec
