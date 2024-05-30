@@ -68,7 +68,7 @@ func (tc *TestCompiler)CompileTestSuite(ctx context.Context) error {
 		},
 	)
 
-	if err != nil && !errors.Is(err, git.ErrRepositoryAlreadyExists) {
+	if err != nil {
 		return fmt.Errorf("checking out test suite repo %s: %w", tc.TestSuiteRepo, err)
 	}
 

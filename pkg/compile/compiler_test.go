@@ -111,11 +111,11 @@ func Test_Compiler(t *testing.T) {
 		expectErr  bool
 	}{
 		{
-			name:      "reuse cloned repo",
+			name:      "cloned in an existing repo",
 			repo:      "",
 			target:    clonedRepo,
 			revision:  "master",
-			expectErr: false,
+			expectErr: true,
 		},
 		{
 			name:      "invalid local repo (not a git repo)",
