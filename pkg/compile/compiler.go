@@ -8,9 +8,10 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
+
 	"github.com/grafana/grafana-bench/pkg/utils"
 )
 
@@ -47,28 +48,18 @@ func (tc *TestCompiler)CompileTestSuite(ctx context.Context) error {
 		err  error
 	)
 
-	// clone repo if doesn't exist
-	exists, _ := utils.PathExists(tc.TargetDir)
-	if exists {
-		repo, err = git.PlainOpen(tc.TargetDir)
-		if err != nil {
-			return fmt.Errorf("opening repo %s: %w", tc.TestSuiteRepo, err)
-		}
+	tc.Log.Debug("cloning test suite")
 
-	} else {
-		tc.Log.Debug("cloning test suite")
-		repo, err = git.PlainClone(
-			tc.TargetDir,
-			false,
-			&git.CloneOptions{
-				URL:      tc.TestSuiteRepo,
-				Progress: os.Stdout,
-			},
-		)
-		
-		if err != nil {
-			return fmt.Errorf("checking out test suite repo %s: %w", tc.TestSuiteRepo, err)
-		}
+	repo, err = git.PlainClone(
+		tc.TargetDir,
+		false,
+		&git.CloneOptions{
+			URL:      tc.TestSuiteRepo,
+		},
+	)
+
+	if err != nil && !errors.Is(err, git.ErrRepositoryAlreadyExists) {
+		return fmt.Errorf("checking out test suite repo %s: %w", tc.TestSuiteRepo, err)
 	}
 
 	// if we don't specify a revision, assume we want to run exactly what is
@@ -126,7 +117,7 @@ func (tc *TestCompiler)CompileTestSuite(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("getting current work directory %w", err)
 	}
-	
+
 	// build the tests
 	if len(tc.TestPrepareCmd) > 0 {
 		err = utils.DoInDir(workDir, tc.TargetDir, func() error {
