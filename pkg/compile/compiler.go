@@ -8,9 +8,11 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
+
 	"github.com/grafana/grafana-bench/pkg/utils"
 )
 
@@ -20,6 +22,8 @@ type TestCompiler struct {
 	TargetDir         string
 	TestSuiteRepo     string
 	TestSuiteRevision string
+	RepoToken         string
+	TestPrepareCmd    []string
 }
 
 
@@ -27,13 +31,17 @@ func NewTestCompiler(
 	log *slog.Logger,
 	targetDir string,
 	testSuiteRepo string,
+	repoToken string,
 	testSuiteRevision string,
+	testPrepareCmd []string,
 )  *TestCompiler {
 	return &TestCompiler{
 		Log:               log,
 		TargetDir:         targetDir,
 		TestSuiteRepo:     testSuiteRepo,
+		RepoToken:         repoToken,
 		TestSuiteRevision: testSuiteRevision,
+		TestPrepareCmd:    testPrepareCmd,
 	}
 }
 
@@ -42,30 +50,26 @@ func (tc *TestCompiler)CompileTestSuite(ctx context.Context) error {
 	var (
 		repo *git.Repository
 		err  error
+		auth http.AuthMethod
 	)
 
-	// clone repo if doesn't exist
-	exists, _ := utils.PathExists(tc.TargetDir)
-	if exists {
-		repo, err = git.PlainOpen(tc.TargetDir)
-		if err != nil {
-			return fmt.Errorf("opening repo %s: %w", tc.TestSuiteRepo, err)
-		}
+	tc.Log.Debug("cloning test suite")
 
-	} else {
-		tc.Log.Debug("cloning test suite")
-		repo, err = git.PlainClone(
-			tc.TargetDir,
-			false,
-			&git.CloneOptions{
-				URL:      tc.TestSuiteRepo,
-				Progress: os.Stdout,
-			},
-		)
-		
-		if err != nil {
-			return fmt.Errorf("checking out test suite repo %s: %w", tc.TestSuiteRepo, err)
-		}
+	if tc.RepoToken != "" {
+		// the user is required, but not used. Any non-empty value is accepted (!?)
+		auth = &http.BasicAuth{Username: "gituser",Password:  tc.RepoToken}
+	}
+	repo, err = git.PlainClone(
+		tc.TargetDir,
+		false,
+		&git.CloneOptions{
+			URL:      tc.TestSuiteRepo,
+			Auth:     auth,
+		},
+	)
+
+	if err != nil {
+		return fmt.Errorf("checking out test suite repo %s: %w", tc.TestSuiteRepo, err)
 	}
 
 	// if we don't specify a revision, assume we want to run exactly what is
@@ -123,17 +127,21 @@ func (tc *TestCompiler)CompileTestSuite(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("getting current work directory %w", err)
 	}
-	
+
 	// build the tests
-	err = utils.DoInDir(workDir, tc.TargetDir, func() error {
-		cmdMake := exec.Command("make", "build")
-		if err := utils.ExecStdout(cmdMake); err != nil {
-			return fmt.Errorf("building test suite: %w", err)
-		}
+	if len(tc.TestPrepareCmd) > 0 {
+		err = utils.DoInDir(workDir, tc.TargetDir, func() error {
+			cmdMake := exec.Command(tc.TestPrepareCmd[0], tc.TestPrepareCmd[1:]...)
+			if err := utils.ExecStdout(cmdMake); err != nil {
+				return fmt.Errorf("building test suite: %w", err)
+			}
 
-		return nil
-	})
+			return nil
+		})
 
-	return err
+		return err
+	}
+
+	return nil
 }
 

@@ -103,18 +103,19 @@ func Test_Compiler(t *testing.T) {
 
 	// TODO: add test cases where the make command fails
 	testCases := []struct{
-		name      string
-		repo      string
-		target    string
-		revision  string
-		expectErr bool
+		name       string
+		repo       string
+		target     string
+		revision   string
+		prepareCmd []string
+		expectErr  bool
 	}{
 		{
-			name:      "reuse cloned repo",
+			name:      "cloned in an existing repo",
 			repo:      "",
 			target:    clonedRepo,
 			revision:  "master",
-			expectErr: false,
+			expectErr: true,
 		},
 		{
 			name:      "invalid local repo (not a git repo)",
@@ -129,6 +130,22 @@ func Test_Compiler(t *testing.T) {
 			target:    path.Join(t.TempDir(), "repo"),
 			revision:  "master",
 			expectErr: false,
+		},
+		{
+			name:      "execute prepare command",
+			repo:      repoDir,
+			target:    path.Join(t.TempDir(), "repo"),
+			revision:  "master",
+			expectErr: false,
+			prepareCmd: []string{"make", "build"},
+		},
+		{
+			name:      "execute wrong prepare command",
+			repo:      repoDir,
+			target:    path.Join(t.TempDir(), "repo"),
+			revision:  "master",
+			expectErr: true,
+			prepareCmd: []string{"make", "fail"},
 		},
 		{
 			name:      "build default (master)",
@@ -189,7 +206,9 @@ func Test_Compiler(t *testing.T) {
 				log,
 				tc.target,
 				tc.repo,
+				"",
 				tc.revision,
+				tc.prepareCmd,
 			)
 
 			err = compiler.CompileTestSuite(context.TODO())
