@@ -4,6 +4,7 @@ import (
 	"log/slog"
 
 	"github.com/spf13/cobra"
+	"github.com/grafana/grafana-bench/pkg/compile"
 )
 
 const examples = `
@@ -27,7 +28,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		Long:    "bench compile subcommand retrieves and builds a test suite from a given source location",
 		Example: examples,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			compiler := NewTestCompiler(
+			compiler := compile.NewTestCompiler(
 				log,
 				targetDir,
 				testSuiteRepo,
