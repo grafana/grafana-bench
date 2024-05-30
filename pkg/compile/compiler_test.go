@@ -206,6 +206,7 @@ func Test_Compiler(t *testing.T) {
 				log,
 				tc.target,
 				tc.repo,
+				"",
 				tc.revision,
 				tc.prepareCmd,
 			)

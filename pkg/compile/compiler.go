@@ -11,6 +11,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 
 	"github.com/grafana/grafana-bench/pkg/utils"
 )
@@ -21,6 +22,7 @@ type TestCompiler struct {
 	TargetDir         string
 	TestSuiteRepo     string
 	TestSuiteRevision string
+	RepoToken         string
 	TestPrepareCmd    []string
 }
 
@@ -29,6 +31,7 @@ func NewTestCompiler(
 	log *slog.Logger,
 	targetDir string,
 	testSuiteRepo string,
+	repoToken string,
 	testSuiteRevision string,
 	testPrepareCmd []string,
 )  *TestCompiler {
@@ -36,6 +39,7 @@ func NewTestCompiler(
 		Log:               log,
 		TargetDir:         targetDir,
 		TestSuiteRepo:     testSuiteRepo,
+		RepoToken:         repoToken,
 		TestSuiteRevision: testSuiteRevision,
 		TestPrepareCmd:    testPrepareCmd,
 	}
@@ -46,15 +50,21 @@ func (tc *TestCompiler)CompileTestSuite(ctx context.Context) error {
 	var (
 		repo *git.Repository
 		err  error
+		auth http.AuthMethod
 	)
 
 	tc.Log.Debug("cloning test suite")
 
+	if tc.RepoToken != "" {
+		// the user is required, but not used. Any non-empty value is accepted (!?)
+		auth = &http.BasicAuth{Username: "gituser",Password:  tc.RepoToken}
+	}
 	repo, err = git.PlainClone(
 		tc.TargetDir,
 		false,
 		&git.CloneOptions{
 			URL:      tc.TestSuiteRepo,
+			Auth:     auth,
 		},
 	)
 

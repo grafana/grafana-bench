@@ -20,6 +20,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	var (
 		targetDir         string
 		testSuiteRepo     string
+		repoToken         string
 		testSuiteRevision string
 		prepareCmd        string
 	)
@@ -39,6 +40,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				log,
 				targetDir,
 				testSuiteRepo,
+				repoToken,
 				testSuiteRevision,
 				cmdArgs,
 			)
@@ -52,6 +54,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	fs.StringVar(&targetDir, "target-dir", "", "directory for checking the test into."+
 		"\nIf exists, it is assumed the test suite repository is already checked out in it.")
 	fs.StringVar(&testSuiteRepo, "test-suite-repo", "", "repository to grab test suite from")
+	fs.StringVar(&repoToken, "test-suite-repo-token", "", "access token for the repository")
 	fs.StringVar(&testSuiteRevision, "test-suite-revision", "", "test suite revision to compile."+
 		"\nCan make reference to a branch (local or remote), a tag or a specific commit hash"+
 		"\nIf not provided and the repo is already checked out in the base dir, the current branch is compiled."+
