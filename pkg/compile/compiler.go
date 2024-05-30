@@ -20,6 +20,7 @@ type TestCompiler struct {
 	TargetDir         string
 	TestSuiteRepo     string
 	TestSuiteRevision string
+	TestPrepareCmd    []string
 }
 
 
@@ -28,12 +29,14 @@ func NewTestCompiler(
 	targetDir string,
 	testSuiteRepo string,
 	testSuiteRevision string,
+	testPrepareCmd []string,
 )  *TestCompiler {
 	return &TestCompiler{
 		Log:               log,
 		TargetDir:         targetDir,
 		TestSuiteRepo:     testSuiteRepo,
 		TestSuiteRevision: testSuiteRevision,
+		TestPrepareCmd:    testPrepareCmd,
 	}
 }
 
@@ -125,15 +128,19 @@ func (tc *TestCompiler)CompileTestSuite(ctx context.Context) error {
 	}
 	
 	// build the tests
-	err = utils.DoInDir(workDir, tc.TargetDir, func() error {
-		cmdMake := exec.Command("make", "build")
-		if err := utils.ExecStdout(cmdMake); err != nil {
-			return fmt.Errorf("building test suite: %w", err)
-		}
+	if len(tc.TestPrepareCmd) > 0 {
+		err = utils.DoInDir(workDir, tc.TargetDir, func() error {
+			cmdMake := exec.Command(tc.TestPrepareCmd[0], tc.TestPrepareCmd[1:]...)
+			if err := utils.ExecStdout(cmdMake); err != nil {
+				return fmt.Errorf("building test suite: %w", err)
+			}
 
-		return nil
-	})
+			return nil
+		})
 
-	return err
+		return err
+	}
+
+	return nil
 }
 

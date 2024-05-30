@@ -2,9 +2,10 @@ package compile
 
 import (
 	"log/slog"
+	"strings"
 
-	"github.com/spf13/cobra"
 	"github.com/grafana/grafana-bench/pkg/compile"
+	"github.com/spf13/cobra"
 )
 
 const examples = `
@@ -20,6 +21,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		targetDir         string
 		testSuiteRepo     string
 		testSuiteRevision string
+		prepareCmd        string
 	)
 
 	cmd := cobra.Command{
@@ -28,11 +30,17 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		Long:    "bench compile subcommand retrieves and builds a test suite from a given source location",
 		Example: examples,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cmdArgs := []string{}
+			if prepareCmd != "" {
+				cmdArgs = strings.Split(prepareCmd, " ")
+			}
+
 			compiler := compile.NewTestCompiler(
 				log,
 				targetDir,
 				testSuiteRepo,
 				testSuiteRevision,
+				cmdArgs,
 			)
 
 			return compiler.CompileTestSuite(cmd.Context())
@@ -48,6 +56,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		"\nCan make reference to a branch (local or remote), a tag or a specific commit hash"+
 		"\nIf not provided and the repo is already checked out in the base dir, the current branch is compiled."+
 		"\nOtherwise the main branch from the remote repository is compiled")
+	fs.StringVar(&prepareCmd, "prepare-command", "", "command to execute to prepare the test e.g 'npm install")
 
 	return &cmd
 }
