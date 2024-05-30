@@ -122,6 +122,7 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 	return nil
 }
 
+
 // returns an unique id for the run
 // format: {test type}-{year}{day of year}-{hour}{min}{second}
 // Example load-2024123-140035

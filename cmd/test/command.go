@@ -1,6 +1,7 @@
 package test
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
@@ -8,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/grafana/grafana-bench/pkg/compile"
 	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/grafana"
 	"github.com/grafana/grafana-bench/pkg/revision"
@@ -17,8 +19,17 @@ import (
 )
 
 const examples = `
+    # run a smoke test from the test suite directory
     bench test --test-suite /path/to/test/folder
+
+    # run a load test using a single test
     bench test --test-type load --test-suite /path/to/test.js"
+
+    # checkout a test from a repo and run tests from my-branch branch
+    bench test --test-suite-repo https://url/to/test-repo.git \
+      --test-suite-base path/to/local/repo/directory
+      --test-suite-revision my-branch \
+      --test-suite tests
 `
 
 const longDescription = `
@@ -45,30 +56,32 @@ environment variables or as arguments (--k6-cloud-project and --k6-cloud-token)
 // NewCmd creates a new test command
 func NewCmd(log *slog.Logger) *cobra.Command {
 	var (
-		testTrigger       string
-		testType          string
-		reportFormat      string
-		grafanaUrl        string
-		grafanaUsername   string
-		grafanaPassword   string
-		machineSpec       string
-		testSuiteName     string
-		testSuiteRevision string
-		testSuite         string
-		revisionFile      string
-		testSuiteBase     string
-		k6CloudToken      string
-		k6CloudProjectId  string
-		grafanaTimeout    time.Duration
-		benchRevision     string
-		dashboardURL      string
-		k6Verbose         bool
-		k6CloudOutput     bool
+		testTrigger        string
+		testType           string
+		reportFormat       string
+		grafanaUrl         string
+		grafanaUsername    string
+		grafanaPassword    string
+		machineSpec        string
+		testSuiteRepo      string
+		testSuiteRepoToken string
+		testSuiteName      string
+		testSuiteRevision  string
+		testSuite          string
+		revisionFile       string
+		testSuiteBase      string
+		k6CloudToken       string
+		k6CloudProjectId   string
+		grafanaTimeout     time.Duration
+		benchRevision      string
+		dashboardURL       string
+		k6Verbose          bool
+		k6CloudOutput      bool
 	)
 
 	cmd := cobra.Command{
 		// test-suite is a mandatory option. highlight in the help
-		Use:     "test --test-suite /path/to/test/suite",
+		Use:     "test",
 		Short:   "bench test runner",
 		Long:    longDescription,
 		Example: examples,
@@ -124,6 +137,25 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				testSuiteBase, err = os.Getwd()
 				if err != nil {
 					return fmt.Errorf("getting work directory %w", err)
+				}
+			}
+
+			if testSuiteRepo != "" {
+				testSuiteRepoToken = env.EnvOrDefault("TEST_SUITE_REPO_TOKEN",testSuiteRepoToken )
+
+				log.Info("checking out test suite", "repository", testSuiteRepo)
+
+				compiler := compile.NewTestCompiler(
+					log,
+					testSuiteBase,
+					testSuiteRepo,
+					testSuiteRepoToken,
+					testSuiteRevision,
+					[]string{},
+				)
+
+				if err := compiler.CompileTestSuite(context.TODO()); err != nil {
+					return fmt.Errorf("checking out test suite: %w", err)
 				}
 			}
 
@@ -200,9 +232,23 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	)
 	// TODO: add default value as the revision is used to generate the run id
 	fs.StringVar(
+		&testSuiteRepo,
+		"test-suite-repo",
+		"",
+		"repository to get the test suite from. If not set TEST_SUITE_REPO environment variable is used." + 
+			"\nIf specified, the repo will be checkout into the test-suite-base directory." +
+			"\nIf test-suite-revision is specified, that revision will be checkout. Otherwise the default branch will be checkout",
+		)
+	fs.StringVar(
+		&testSuiteRepoToken,
+		"test-suite-repo-token",
+		"",
+		"authentication token for the test suite repository. If not set TEST_SUITE_REPO_TOKEN environment variable is used.",
+		)
+	fs.StringVar(
 		&testSuiteRevision,
 		"test-suite-revision",
-		"devel",
+		"",
 		"test suite revision. If not set TEST_SUITE_REVISION environment variable is used",
 	)
 	fs.StringVar(
