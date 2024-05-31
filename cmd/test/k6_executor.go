@@ -212,6 +212,7 @@ func (t *K6TestExecutor) execTest(
 		cmdErr   string
 		exitCode int
 		status   executor.TestStatus = executor.TestPassed
+		output   k6Output
 	)
 	if err := cmd.Run(); err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
@@ -226,10 +227,16 @@ func (t *K6TestExecutor) execTest(
 		}
 		cmdErr = "error running k6 command: " + err.Error()
 		t.Log.Error(cmdErr)
-		fmt.Println(buf.String())
+		// avoid duplicating outout in verbose mode
+		if !t.Verbose {
+			fmt.Println(buf.String())
+		}
 	}
 
-	output, err := t.getOutput(buf, jsonFile, scenarioName)
+	if status != executor.TestError {
+		output, err = t.getOutput(buf, jsonFile, scenarioName)
+	}
+
 	return K6TestRun{
 		Status:      status,
 		ExitCode:    exitCode,
@@ -373,8 +380,6 @@ func (t *K6TestExecutor) prepareK6Command(testFile, jsonFile string, env map[str
 		env["K6_CLOUD_TRACES_ENABLED"] = "true"
 
 		args = append(args, "--out", "cloud")
-	} else {
-		t.Log.Warn("running load tests with cloud output disabled.")
 	}
 
 	cmd := exec.Command("k6", args...)
@@ -387,9 +392,10 @@ func (t *K6TestExecutor) prepareK6Command(testFile, jsonFile string, env map[str
 	buf := bytes.NewBuffer(nil)
 	if t.Verbose {
 		cmd.Stdout = io.MultiWriter(buf, os.Stderr)
-		cmd.Stderr = os.Stderr
+		cmd.Stderr = io.MultiWriter(buf, os.Stderr)
 	} else {
 		cmd.Stdout = buf
+		cmd.Stderr = buf
 	}
 
 	return cmd, buf
