@@ -93,6 +93,7 @@ func (tc *TestCompiler)CompileTestSuite(ctx context.Context) error {
 			// assumes this is a cloned repository with an 'origin' remote
 			err = repo.Fetch(&git.FetchOptions{
 				RefSpecs: []config.RefSpec{"refs/*:refs/*"},
+				Auth: auth,
 			})
 			if err != nil  && !errors.Is(err, git.NoErrAlreadyUpToDate) {
 				return fmt.Errorf("fetching references %w", err)
@@ -104,8 +105,6 @@ func (tc *TestCompiler)CompileTestSuite(ctx context.Context) error {
 			if err != nil {
 				return fmt.Errorf("getting work tree %w", err)
 			}
-
-			repo.References()
 
 			revisionHash, err := repo.ResolveRevision(plumbing.Revision(tc.TestSuiteRevision))
 			if err != nil {
