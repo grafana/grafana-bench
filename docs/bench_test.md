@@ -4,7 +4,7 @@ bench test runner
 
 ### Synopsis
 
-the "test" subcommand is a wrapper for running a suite of [k6](bench_test.md#k6) or [playwrights](bench_test.md#playwright) tests against a grafana
+the "test" subcommand is a wrapper for running a suite of [k6](#k6) or [playwrights](#playwright) tests against a grafana
 instance.
 
 The tests to be executed are defined by the --test-suite option.
@@ -45,7 +45,7 @@ bench test [flags]
 
 You can execute k6 tests in bench by either passing the `--runner k6` option or omitting it as it will run k6 by default.
 
-For load tests, if the --k6-cloud-output flag is true, the test results will be
+For load tests, if the `--k6-cloud-output` flag is true, the test results will be
 sent to Grafana Cloud k6. The GCK6 credentials[2] must be provided as
 environment variables or as arguments (--k6-cloud-project and --k6-cloud-token)
 
