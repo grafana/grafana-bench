@@ -1,4 +1,4 @@
-package test
+package k6
 
 import (
 	"testing"
