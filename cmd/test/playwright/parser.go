@@ -70,7 +70,7 @@ func formatTestRuns(spec Specs, folder string, globalSetupDuration, globalTeardo
 			TestFolder: folder,
 			TestFile:   path.Base(spec.File),
 
-			Status:      executor.TestError,
+			Status:      executor.TestSkipped,
 			ExitMessage: "skipped",
 			Iterations:  "0",
 

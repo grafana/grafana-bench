@@ -8,10 +8,11 @@ import (
 type TestStatus string
 
 const (
-	Unknown    TestStatus = ""
-	TestPassed TestStatus = "passed"
-	TestFailed TestStatus = "failed"
-	TestError  TestStatus = "error"
+	Unknown     TestStatus = ""
+	TestPassed  TestStatus = "passed"
+	TestFailed  TestStatus = "failed"
+	TestError   TestStatus = "error"
+	TestSkipped TestStatus = "skipped"
 )
 
 type TestDurations struct {

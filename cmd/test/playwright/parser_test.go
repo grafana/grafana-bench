@@ -63,7 +63,7 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 			expectedError:     0,
 			expectedDuration:  float32(2327.512),
 			expectedFile:      "skipped.test.ts",
-			expectedStatus:    "error",
+			expectedStatus:    "skipped",
 			expectedErrorMsg:  "skipped",
 			expectedTestTitle: "data query should return values 1 and 3",
 		},
