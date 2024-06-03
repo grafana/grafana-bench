@@ -4,20 +4,49 @@ bench test runner
 
 ### Synopsis
 
-the "test" subcommand is a wrapper for running a suite of [k6](#k6) or [playwrights](#playwright) tests against a grafana
-instance.
+
+test subcommand is a wrapper for running a suite of k6 or playwright tests
+against a grafana instance.
 
 The tests to be executed are defined by the --test-suite option.
 
-Tests are parameterized via environment variables following grafana-api-tests
-conventions[1].
+The --test-runner option defines the type of test to execute. The default is k6.
 
 Supports two kinds of test executions defined by the --test-type option:
+* smoke: execute tests and reports failures (default)
+* load: execute tests and report execution stats
 
-- smoke: execute tests and reports failures (default)
-- load: execute tests and report execution stats to GCK6
+k6
+--
+Executes a test suite using k6.
 
-[1] https://github.com/grafana/grafana-api-tests/blob/main/README.md#common-environment-variables
+For load tests, if the --k6-cloud-output flag is true, the test results will be
+sent to Grafana Cloud k6. The GCK6 credentials[1] must be provided as
+environment variables or as arguments (--k6-cloud-project and --k6-cloud-token)
+
+Tests are parameterized via environment variables following grafana-api-tests
+conventions[2].
+
+[1] https://grafana.com/docs/grafana-cloud/k6/author-run/tokens-and-cli-authentication/
+[2] https://github.com/grafana/grafana-api-tests/blob/main/README.md#common-environment-variables
+
+
+Playwright
+----------
+
+Executes a test suite using playwright.
+
+The --pw-prepare and --pw-execute arguments define the commands to be execute for 
+preparing and executing the tests
+
+The url to the grafana instance defined in the --grafana-url cli arguments will 
+be passed to the test in the PLAYWRIGHT_BASE_URL environment variable.
+See [1] for details on how to develop playwright tests compatible with the bench
+test runner.
+
+
+[1] https://github.com/grafana/grafana-bench/blob/main/docs/writing_pw_tests.md
+
 
 ```
 bench test [flags]
@@ -27,66 +56,34 @@ bench test [flags]
 
 ```
 
-    # run a smoke test from the test suite directory
+    # run a k6 smoke test from the test suite directory
     bench test --test-suite /path/to/test/folder
 
-    # run a load test using a single test
+    # run a k6 load test using a single test
     bench test --test-type load --test-suite /path/to/test.js"
 
     # checkout a test from a repo and run tests from my-branch branch
-    bench test --test-suite-repo https://url/to/test-repo.git \
+    bench test \
+      --test-suite-repo https://url/to/test-repo.git \
       --test-suite-base path/to/local/repo/directory
       --test-suite-revision my-branch \
       --test-suite tests
 
-```
+   # run k6 test with cloud output
+      bench test
+          --grafana-url "http://host.docker.internal:3000"
+	  --test-suite /home/bench/work/grafana-plugin-tests/
+	  --test-runner k6
+	  --k6-cloud-output=true
 
-### K6
+   # run playwright test
+      bench test
+	  --test-suite grafana-plugin-tests/
+	  --test-runner playwright
+	  --pw-prepare-cmd "yarn install"
+	  --pw-execute-cmd "yarn test"
+	  --grafana-url "http://host.docker.internal:3000"
 
-You can execute k6 tests in bench by either passing the `--runner k6` option or omitting it as it will run k6 by default.
-
-For load tests, if the `--k6-cloud-output` flag is true, the test results will be
-sent to Grafana Cloud k6. The GCK6 credentials[2] must be provided as
-environment variables or as arguments (--k6-cloud-project and --k6-cloud-token)
-
-[2] https://grafana.com/docs/grafana-cloud/k6/author-run/tokens-and-cli-authentication/
-
-### Playwright
-
-You can execute playwright by passing the `--runner playwright` options to bench, as per below.
-
-Playwright also requires prepare and execute cmd strings to be passed. On the Bench Docker image node, npm and yarn are available. Playwright browsers are not required to be installed as outlined in detail below.
-
-Bench will overwrite the reporters set in the `playwright.config.ts` via the command line and use the json report to report on the tests.
-
-```
-
-    bench test
-        --test-suite /home/bench/work/grafana-plugin-tests/
-        --runner playwright
-        --pw-prepare-cmd "yarn install"
-        --pw-execute-cmd "yarn test"
-        --grafana-url "http://host.docker.internal:3000"
-
-```
-
-Currently, there is no way to set the baseURL or executablePath of playwright via the [command line](https://playwright.dev/docs/test-cli). Instead, Bench will pass these values via Environment variable that will need to be referenced in the `playwright.config.ts` file of the project being tested.
-
-`process.env.PLAYWRIGHT_BASE_URL` will be the same value passed as `--grafana-url` in the cli arguments.
-
-`process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` is set in the docker image of bench. It refers to the chromium executable on the image itself, currently `/usr/bin/chromium`. This is used because the `playwright install` command provided by playwright does not support alpine / musl.
-
-```ts
-// Include this into your playwright config
-export default defineConfig({
-  testDir: "./tests",
-  use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL,
-    launchOptions: {
-      executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
-    },
-  },
-});
 ```
 
 ### Options
@@ -106,12 +103,12 @@ export default defineConfig({
       --k6-cloud-project string           K6 cloud project ID. If not set K6_CLOUD_PROJECT_ID environment variable is used
       --k6-cloud-token string             K6 cloud access token. If not set K6_CLOUD_TOKEN environment variable is used
       --k6-verbose                        show k6 test outputs
-      --pw-prepare-cmd                    command used to install dependencies for the test suite eg: npm install
-      --pw-execute-cmd                    command used to execute the test suite eg: npm run test
       --machine-spec string               grafana instance machine spec
-      --runner                            test run used to execute the tests defaults to k6, also accepts'playwright'
+      --pw-execute-cmd string             command used to execute the test suite eg: "npm run test"
+      --pw-prepare-cmd string             command used to install dependencies for the test suite eg: "npm install"
       --test-report-format string         format of the test execution report. Allowed values 'log' or 'text'.
                                            'log' produced a structure log. 'text' produced an human readable output (default "text")
+      --test-runner string                test runner. Allowed values: 'k6', 'playwright' (default "k6")
       --test-suite string                 path to the tests to be executed.
                                           The path must be relative to the base dir (which defaults to the current directory).
                                           A single .js file or a directory can be specified.
@@ -142,6 +139,6 @@ export default defineConfig({
 
 ### SEE ALSO
 
-- [bench](bench.md) - grafana bench
+* [bench](bench.md)	 - grafana bench
 
-###### Auto generated by spf13/cobra on 31-May-2024
+###### Auto generated by spf13/cobra on 3-Jun-2024
