@@ -92,7 +92,7 @@ func (t *PlaywrightTestExecutor) prepareCodebase(testingDir string, prepareCmd s
 	return utils.ExecuteInDir(testingDir, func() error {
 		prepareCmd := exec.Command("sh", "-c", prepareCmd)
 		if err := utils.ExecStdout(prepareCmd); err != nil {
-			return fmt.Errorf("installing packages: %w", err)
+			return fmt.Errorf("preparing test execution: %w", err)
 		}
 
 		return nil
