@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/grafana/grafana-bench/cmd/test/playwright"
 	"github.com/grafana/grafana-bench/pkg/compile"
 	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/grafana"
@@ -58,25 +59,30 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	var (
 		testTrigger        string
 		testType           string
+		runnerType         string
 		reportFormat       string
 		grafanaUrl         string
 		grafanaUsername    string
 		grafanaPassword    string
 		machineSpec        string
-		testSuiteRepo      string
-		testSuiteRepoToken string
 		testSuiteName      string
+    testSuiteRepo      string
+		testSuiteRepoToken string
 		testSuiteRevision  string
 		testSuite          string
 		revisionFile       string
 		testSuiteBase      string
-		k6CloudToken       string
-		k6CloudProjectId   string
 		grafanaTimeout     time.Duration
 		benchRevision      string
 		dashboardURL       string
+		// k6 cloud specific flags
+		k6CloudToken       string
+		k6CloudProjectId   string
 		k6Verbose          bool
 		k6CloudOutput      bool
+		// playwright cloud specific flags
+		pwPrepareCmd       string
+		pwExecuteCmd       string
 	)
 
 	cmd := cobra.Command{
@@ -166,13 +172,20 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				Revision: testSuiteRevision,
 			}
 
-			executor := NewK6TestExecutor(
-				log,
-				k6Verbose,
-				k6CloudOutput,
-				k6CloudToken,
-				k6CloudProjectId,
-			)
+			var executor executor.TestExecutor
+			if runnerType == "k6" {
+				executor = NewK6TestExecutor(
+					log,
+					k6Verbose,
+					k6CloudOutput,
+					k6CloudToken,
+					k6CloudProjectId,
+				)
+			}
+
+			if runnerType == "playwright" {
+				executor = playwright.NewPlaywrightTestExecutor(log, pwPrepareCmd, pwExecuteCmd, grafanaUrl)
+			}
 
 			runner := NewTestRunner(
 				log,
@@ -192,12 +205,15 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	fs := cmd.Flags()
 	fs.StringVar(&testTrigger, "test-trigger", "local", "test trigger")
 	fs.StringVar(&testType, "test-type", "smoke", "test type. Allowed values: 'smoke', 'load'")
+	fs.StringVar(&runnerType, "runner", "k6", "test runner. Allowed values: 'k6', 'playwright'")
+	fs.StringVar(&pwPrepareCmd, "pw-prepare-cmd", "", "command used to install dependencies for the test suite eg: \"npm install\"")
+	fs.StringVar(&pwExecuteCmd, "pw-execute-cmd", "", "command used to execute the test suite eg: \"npm run test\"")
 	fs.StringVar(
 		&reportFormat,
 		"test-report-format",
 		"text",
-		"format of the test execution report. Allowed values 'log' or 'text'." +
-		"\n 'log' produced a structure log. 'text' produced an human readable output",
+		"format of the test execution report. Allowed values 'log' or 'text'."+
+			"\n 'log' produced a structure log. 'text' produced an human readable output",
 	)
 	fs.StringVar(
 		&grafanaUrl,
