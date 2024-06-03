@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/grafana/grafana-bench/cmd/test/k6"
 	"github.com/grafana/grafana-bench/cmd/test/playwright"
 	"github.com/grafana/grafana-bench/pkg/compile"
 	"github.com/grafana/grafana-bench/pkg/executor"
@@ -174,7 +175,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 
 			var executor executor.TestExecutor
 			if runnerType == "k6" {
-				executor = NewK6TestExecutor(
+				executor = k6.NewK6TestExecutor(
 					log,
 					k6Verbose,
 					k6CloudOutput,
