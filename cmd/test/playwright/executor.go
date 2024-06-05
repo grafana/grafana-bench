@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	cromiumPath    = "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH"
+	chromiumPath    = "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH"
 )
 
 // PlaywrightTestExecutor implements TestExecutor interface for running k6 test suites
@@ -55,8 +55,8 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 		return executor.SuiteRunSummary{}, fmt.Errorf("missing execute command.")
 	}
 
-	if os.Getenv(cromiumPath) ==  "" {
-		t.Log.Warn("playwright configuration", "environment variable not set", cromiumPath)
+	if os.Getenv(chromiumPath) ==  "" {
+		t.Log.Warn("playwright configuration", "environment variable not set", chromiumPath)
 	}
 
 	// prepare test execution
