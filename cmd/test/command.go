@@ -102,6 +102,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		testType           string
 		testRunner         string
 		reportFormat       string
+		verbose            bool
 		grafanaUrl         string
 		grafanaUsername    string
 		grafanaPassword    string
@@ -119,7 +120,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		// k6 cloud specific flags
 		k6CloudToken       string
 		k6CloudProjectId   string
-		k6Verbose          bool
 		k6CloudOutput      bool
 		// playwright cloud specific flags
 		pwPrepareCmd       string
@@ -217,7 +217,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			if testRunner == "k6" {
 				executor = k6.NewK6TestExecutor(
 					log,
-					k6Verbose,
+					verbose,
 					k6CloudOutput,
 					k6CloudToken,
 					k6CloudProjectId,
@@ -225,7 +225,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			}
 
 			if testRunner == "playwright" {
-				executor = playwright.NewPlaywrightTestExecutor(log, pwPrepareCmd, pwExecuteCmd, grafanaUrl)
+				executor = playwright.NewPlaywrightTestExecutor(log, verbose, pwPrepareCmd, pwExecuteCmd)
 			}
 
 			runner := NewTestRunner(
@@ -256,6 +256,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		"format of the test execution report. Allowed values 'log' or 'text'."+
 			"\n 'log' produced a structure log. 'text' produced an human readable output",
 	)
+	fs.BoolVar(&verbose, "verbose", false, "show test outputs")
 	fs.StringVar(
 		&grafanaUrl,
 		"grafana-url",
@@ -326,7 +327,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		"",
 		"K6 cloud project ID. If not set K6_CLOUD_PROJECT_ID environment variable is used",
 	)
-	fs.BoolVar(&k6Verbose, "k6-verbose", false, "show k6 test outputs")
 	fs.BoolVar(
 		&k6CloudOutput,
 		"k6-cloud-output",
