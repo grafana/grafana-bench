@@ -21,33 +21,39 @@ import (
 )
 
 const examples = `
-    # run a k6 smoke test from the test suite directory
-    bench test --test-suite /path/to/test/folder
+# run a k6 smoke test from the test suite directory
+bench test --test-suite /path/to/test/folder
 
-    # run a k6 load test using a single test
-    bench test --test-type load --test-suite /path/to/test.js"
+# run a k6 load test using a single test
+bench test --test-type load --test-suite /path/to/test.js"
 
-    # checkout a test from a repo and run tests from my-branch branch
-    bench test \
-      --test-suite-repo https://url/to/test-repo.git \
-      --test-suite-base path/to/local/repo/directory
-      --test-suite-revision my-branch \
-      --test-suite tests
+# checkout a test from a repo and run tests from my-branch branch
+bench test \
+  --test-suite-repo https://url/to/test-repo.git \
+  --test-suite-base path/to/local/repo/directory \
+  --test-suite-revision my-branch \
+  --test-suite tests
 
-   # run k6 test with cloud output
-      bench test
-          --grafana-url "http://host.docker.internal:3000"
-	  --test-suite /home/bench/work/grafana-plugin-tests/
-	  --test-runner k6
-	  --k6-cloud-output=true
+# run k6 test with cloud output
+bench test \
+  --grafana-url "http://host.docker.internal:3000" \
+  --test-suite /home/bench/work/grafana-plugin-tests \
+  --test-runner k6
+  --k6-cloud-output=true
 
-   # run playwright test
-      bench test
-	  --test-suite grafana-plugin-tests/
-	  --test-runner playwright
-	  --pw-prepare-cmd "yarn install"
-	  --pw-execute-cmd "yarn test"
-	  --grafana-url "http://host.docker.internal:3000"
+# run k6 test with custom environment variables
+bench test \
+  --test-suite /home/bench/work/grafana-plugin-tests \
+  --test-env-vars VAR=value,ANOTHER_VAR=value        \
+  --test-runner k6
+
+# run playwright test
+bench test  \
+  --grafana-url "http://host.docker.internal:3000" \
+  --test-suite grafana-plugin-tests \
+  --test-runner playwright \
+  --pw-prepare-cmd "yarn install" \
+  --pw-execute-cmd "yarn test" \
 `
 
 const longDescription = `
@@ -98,6 +104,7 @@ test runner.
 // NewCmd creates a new test command
 func NewCmd(log *slog.Logger) *cobra.Command {
 	var (
+		testEnvVars        map[string]string
 		testTrigger        string
 		testType           string
 		testRunner         string
@@ -239,11 +246,12 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				reportFormat,
 			)
 
-			return runner.Exec(cmd.Context(), trt, suite)
+			return runner.Exec(cmd.Context(), trt, suite, testEnvVars)
 		},
 	}
 
 	fs := cmd.Flags()
+	fs.StringToStringVar(&testEnvVars, "test-env-vars", nil, "custom test environment variables")
 	fs.StringVar(&testTrigger, "test-trigger", "local", "test trigger")
 	fs.StringVar(&testType, "test-type", "smoke", "test type. Allowed values: 'smoke', 'load'")
 	fs.StringVar(&testRunner, "test-runner", "k6", "test runner. Allowed values: 'k6', 'playwright'")

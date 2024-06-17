@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"maps"
 	"os"
 	"text/template"
 	"time"
@@ -26,7 +27,7 @@ type TestRunner struct {
 	ReportFormat    string
 }
 
-func NewTestRunner(
+func 	NewTestRunner(
 	log *slog.Logger,
 	testTrigger string,
 	grafanaInstance grafana.GrafanaInstance,
@@ -49,7 +50,7 @@ func NewTestRunner(
 	}
 }
 
-func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor.TestSuite) error {
+func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor.TestSuite, testVars map[string]string) error {
 	// get an unique identification for the run
 	runId := t.getRunId(testType)
 	t.Log = t.Log.With("runId", runId)
@@ -90,6 +91,8 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 		"GT_PASSWORD":      t.GrafanaInstance.Password(),
 		// ----
 	}
+
+	maps.Copy(env, testVars)
 
 	suiteRun, err := t.Executor.ExecTestSuite(ctx, suite, env)
 	if err != nil {

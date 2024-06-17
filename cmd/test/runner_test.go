@@ -279,7 +279,7 @@ func Test_Runner(t *testing.T) {
 			}
 
 			// execute test
-			err = tr.Exec(context.TODO(), SmokeTest, suite)
+			err = tr.Exec(context.TODO(), SmokeTest, suite, nil)
 
 			if err == nil && tc.expectErr != "" {
 				t.Fatalf("should had failed with %q", tc.expectErr)
