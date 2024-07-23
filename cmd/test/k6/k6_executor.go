@@ -103,7 +103,6 @@ func (t *K6TestExecutor) ExecTestSuite(
 
 	// run k6 tests
 	var (
-		suiteStartTime    = time.Now()
 		scenariosDuration float32
 	)
 
@@ -120,6 +119,7 @@ func (t *K6TestExecutor) ExecTestSuite(
 	}
 
 	suiteSummary := executor.SuiteRunSummary{}
+	suiteSummary.StartTime = time.Now()
 
 	// run the tests
 	for _, testFile := range tests {
@@ -181,7 +181,7 @@ func (t *K6TestExecutor) ExecTestSuite(
 	}
 
 	suiteSummary.ScenariosDuration = scenariosDuration
-	suiteSummary.TotalDuration = float32(time.Since(suiteStartTime).Milliseconds())
+	suiteSummary.TotalDuration = float32(time.Since(suiteSummary.StartTime).Milliseconds())
 
 	return suiteSummary, nil
 }
