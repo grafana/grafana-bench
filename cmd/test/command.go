@@ -246,6 +246,11 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				reportFormat,
 			)
 
+			// ensure environment variable values are expanded
+			for k,v := range testEnvVars {
+				testEnvVars[k] = os.ExpandEnv(v)
+			}
+
 			return runner.Exec(cmd.Context(), trt, suite, testEnvVars)
 		},
 	}
