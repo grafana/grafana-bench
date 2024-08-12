@@ -116,6 +116,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		machineSpec        string
 		testSuiteName      string
                 testSuiteRepo      string
+		testSuiteRepoDirs  []string
 		testSuiteRepoToken string
 		testSuiteRevision  string
 		testSuite          string
@@ -203,6 +204,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 					log,
 					testSuiteBase,
 					testSuiteRepo,
+					testSuiteRepoDirs,
 					testSuiteRepoToken,
 					testSuiteRevision,
 					[]string{},
@@ -319,6 +321,12 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		"test-suite-repo-token",
 		"",
 		"authentication token for the test suite repository. If not set TEST_SUITE_REPO_TOKEN environment variable is used.",
+		)
+	fs.StringSliceVar(
+		&testSuiteRepoDirs,
+		"test-suite-repo-dirs",
+		nil,
+		"Directories to checkout from test suite repo. If omitted, all folders will be checkout",
 		)
 	fs.StringVar(
 		&testSuiteRevision,

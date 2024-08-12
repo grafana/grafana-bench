@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
@@ -21,6 +22,7 @@ type TestCompiler struct {
 	Log               *slog.Logger
 	TargetDir         string
 	TestSuiteRepo     string
+	CheckoutDirs      []string
 	TestSuiteRevision string
 	RepoToken         string
 	TestPrepareCmd    []string
@@ -31,6 +33,7 @@ func NewTestCompiler(
 	log *slog.Logger,
 	targetDir string,
 	testSuiteRepo string,
+	checkOutDirs []string,
 	repoToken string,
 	testSuiteRevision string,
 	testPrepareCmd []string,
@@ -39,6 +42,7 @@ func NewTestCompiler(
 		Log:               log,
 		TargetDir:         targetDir,
 		TestSuiteRepo:     testSuiteRepo,
+		CheckoutDirs:      checkOutDirs,
 		RepoToken:         repoToken,
 		TestSuiteRevision: testSuiteRevision,
 		TestPrepareCmd:    testPrepareCmd,
@@ -66,19 +70,11 @@ func (tc *TestCompiler)CompileTestSuite(ctx context.Context) (string, error) {
 		&git.CloneOptions{
 			URL:      tc.TestSuiteRepo,
 			Auth:     auth,
-			NoCheckout: true,
 		},
 	)
 
 	if err != nil {
 		return "", fmt.Errorf("checking out test suite repo %s: %w", tc.TestSuiteRepo, err)
-	}
-
-	var tree *git.Worktree
-
-	tree, err = repo.Worktree()
-	if err != nil {
-		return "", fmt.Errorf("getting work tree %w", err)
 	}
 
 	head, err := repo.Head()
@@ -110,29 +106,37 @@ func (tc *TestCompiler)CompileTestSuite(ctx context.Context) (string, error) {
 		}
 	}
 
+	tree, err := repo.Worktree()
+	if err != nil {
+		return "", fmt.Errorf("getting work tree %w", err)
+	}
+
 	err = tree.Checkout(&git.CheckoutOptions{
 		Hash: checkoutHash,
+		SparseCheckoutDirectories: tc.CheckoutDirs,
 	})
 	if err != nil {
 		return "", fmt.Errorf("checking out test suite revision %q: %w", tc.TestSuiteRevision, err)
 	}
 
-	currentBranch, err := repo.Head()
-	if err != nil {
-		return "", fmt.Errorf("error getting current branch %w", err)
+	// if CheckoutDirs was specified, check they are present, git won't report missing dirs
+	for _, dir := range tc.CheckoutDirs {
+		_, err := os.Stat(filepath.Join(tc.TargetDir, dir))
+		if err != nil {
+			return "", fmt.Errorf("directory not checked out: %q", dir)
+		}
 	}
 
 	// set short revision
-	revisionHash := currentBranch.Hash().String()[1:7]
-
-	// update repo + checkout branch
-	workDir, err := os.Getwd()
-	if err != nil {
-		return "", fmt.Errorf("getting current work directory %w", err)
-	}
+	revisionHash := checkoutHash.String()[:7]
 
 	// build the tests
 	if len(tc.TestPrepareCmd) > 0 {
+		workDir, err := os.Getwd()
+		if err != nil {
+			return "", fmt.Errorf("getting current work directory %w", err)
+		}
+
 		err = utils.DoInDir(workDir, tc.TargetDir, func() error {
 			cmdMake := exec.Command(tc.TestPrepareCmd[0], tc.TestPrepareCmd[1:]...)
 			if err := utils.ExecStdout(cmdMake); err != nil {

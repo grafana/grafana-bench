@@ -6,24 +6,23 @@ import (
 	"log/slog"
 	"os"
 	"path"
+	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/grafana/grafana-bench/pkg/utils"
 )
 
-const makefileContent = `
-build:
-	echo "building"
-`
 
 func Test_Compiler(t *testing.T) {
-	
 	logBuffer := bytes.Buffer{}
 	log := slog.New(slog.NewTextHandler(&logBuffer, nil))
 
-	// test setup 
+	// test setup
+
 	// 1. create a test git repository (will have a master branch by default)
 	repoDir := t.TempDir()
 	repo, err := git.PlainInit(repoDir, false)
@@ -36,34 +35,31 @@ func Test_Compiler(t *testing.T) {
 		t.Fatalf("getting work tree: %v", err)
 	}
 
-	// 2. create the Makefile in "master" branch
 	wt.Checkout(&git.CheckoutOptions{
 		Create: false,
 		Force:  false,
 		Branch: plumbing.NewBranchReferenceName("master"),
 	})
 
-	makeFile, err := os.OpenFile(path.Join(repoDir, "Makefile"), os.O_CREATE | os.O_WRONLY, 0644)
+	
+	// 2 copy files in repository
+	err = utils.Cp("testrepo", repoDir)
 	if err != nil {
-		t.Fatalf("creating makefile: %v", err)
-	}
-	_, err = makeFile.Write([]byte(makefileContent))
-	if err != nil {
-		t.Fatalf("writing to makefile: %v", err)
-	}
-	makeFile.Close()
-
-	// 3. commit the Makefile
-	_, err = wt.Add("Makefile")
-	if err != nil {
-		t.Fatalf("adding makefile: %v", err)
+		t.Fatalf("copying files to repository: %v", err)
 	}
 
-	commitHash, err := wt.Commit("add makefile", &git.CommitOptions{
+	// 3. commit files (path must be relative to repo's root)
+	_, err = wt.Add(".")
+	if err != nil {
+		t.Fatalf("adding files to commit: %v", err)
+	}
+
+
+	commitHash, err := wt.Commit("add test files", &git.CommitOptions{
 		Author: &object.Signature{Name: "grafana bench", Email: "bench-testing@grafana.com"},
 	})
 	if err != nil {
-		t.Fatalf("committing makefile: %v", err)
+		t.Fatalf("committing files: %v", err)
 	}
 
 	// 4. create a branch 'test-branch'
@@ -88,106 +84,58 @@ func Test_Compiler(t *testing.T) {
 		t.Fatalf("creating tag: %v", err)
 	}
 
-	// 6. clone locally (used to test reuse of already cloned repos)
-	clonedRepo := t.TempDir()
-	_, err = git.PlainClone(
-		clonedRepo,
-		false,
-		&git.CloneOptions{
-			URL:      repoDir,
-		},
-	)
-	if err != nil {
-		t.Fatalf("cloning repo %v", err)
-	}
-
-	// TODO: add test cases where the make command fails
 	testCases := []struct{
 		name       string
-		repo       string
-		target     string
 		revision   string
 		prepareCmd []string
 		expectErr  bool
 	}{
 		{
-			name:      "cloned in an existing repo",
-			repo:      "",
-			target:    clonedRepo,
-			revision:  "master",
-			expectErr: true,
-		},
-		{
-			name:      "invalid local repo (not a git repo)",
-			repo:      "",
-			target:    t.TempDir(),
-			revision:  "master",
-			expectErr: true,
-		},
-		{
-			name:      "build master",
-			repo:      repoDir,
-			target:    path.Join(t.TempDir(), "repo"),
-			revision:  "master",
-			expectErr: false,
-		},
-		{
-			name:      "execute prepare command",
-			repo:      repoDir,
-			target:    path.Join(t.TempDir(), "repo"),
-			revision:  "master",
-			expectErr: false,
-			prepareCmd: []string{"make", "build"},
-		},
-		{
-			name:      "execute wrong prepare command",
-			repo:      repoDir,
-			target:    path.Join(t.TempDir(), "repo"),
-			revision:  "master",
-			expectErr: true,
-			prepareCmd: []string{"make", "fail"},
-		},
-		{
-			name:      "build default (master)",
-			repo:      repoDir,
-			target:    path.Join(t.TempDir(), "repo"),
+			name:      "build default",
 			revision:  "",
 			expectErr: false,
 		},
 		{
+			name:      "build master",
+			revision:  "master",
+			expectErr: false,
+		},
+		{
 			name:      "build test branch",
-			repo:      repoDir,
-			target:    path.Join(t.TempDir(), "repo"),
 			revision:  branchName,
 			expectErr: false,
 		},
 		{
 			name:      "build tag",
-			repo:      repoDir,
-			target:    path.Join(t.TempDir(), "repo"),
 			revision:  tagName,
 			expectErr: false,
 		},
 		{
 			name:      "build hash",
-			repo:      repoDir,
-			target:    path.Join(t.TempDir(), "repo"),
 			revision:  commitHash.String(),
 			expectErr: false,
 		},
 		{
 			name:      "build non-existing hash",
-			repo:      repoDir,
-			target:    path.Join(t.TempDir(), "repo"),
 			revision:  "abcdef",
 			expectErr: true,
 		},
 		{
 			name:      "build non-existing branch",
-			repo:      repoDir,
-			target:    path.Join(t.TempDir()),
 			revision:  "fake-branch",
 			expectErr: true,
+		},
+		{
+			name:      "execute prepare command",
+			revision:  "master",
+			expectErr: false,
+			prepareCmd: []string{"make", "build"},
+		},
+		{
+			name:      "execute non-existing prepare command",
+			revision:  "master",
+			expectErr: true,
+			prepareCmd: []string{"make", "fail"},
 		},
 	}
 
@@ -204,8 +152,9 @@ func Test_Compiler(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			compiler := NewTestCompiler(
 				log,
-				tc.target,
-				tc.repo,
+				path.Join(t.TempDir(), "repo"),
+				repoDir,
+				[]string{},
 				"",
 				tc.revision,
 				tc.prepareCmd,
@@ -216,7 +165,99 @@ func Test_Compiler(t *testing.T) {
 				t.Fatalf("compiling test: %v", err)
 			}
 		})
-	} 
+	}
 
-}
+	t.Run("compile into an existing repository", func(t *testing.T) {
+		clonedRepo := filepath.Join(t.TempDir(), "repo")
+		_, err = git.PlainClone(
+			clonedRepo,
+			false,
+			&git.CloneOptions{
+				URL:      repoDir,
+			},
+		)
+		if err != nil {
+			t.Fatalf("cloning repo %v", err)
+		}
+
+		// compile again into cloned repository
+		compiler := NewTestCompiler(
+			log,
+			clonedRepo,
+			repoDir,
+			[]string{},
+			"",
+			"",
+			[]string{},
+		)
+
+		_, err = compiler.CompileTestSuite(context.TODO())
+		if err == nil {
+			t.Fatalf("should have failed")
+		}
+	})
+
+	t.Run("test compile directories", func(t *testing.T) {
+
+		testCases := []struct{
+			title     string
+			dirs      []string
+			expectErr bool
+
+		}{
+			{
+				title:     "checkout dir",
+				dirs:      []string{"directory"},
+				expectErr: false,
+			},
+			{
+				title:     "checkout non-existing dir",
+				dirs:      []string{"not-existing-dir"},
+				expectErr: true,
+			},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.title, func(t *testing.T) {
+				// must be in lexicographical order for slices.Equal to work
+				dirs := tc.dirs
+				slices.Sort(dirs)
+
+				targetRepo := path.Join(t.TempDir(), "repo")
+				compiler := NewTestCompiler(
+					log,
+					targetRepo,
+					repoDir,
+					dirs,
+					"",
+					"",
+					[]string{},
+				)
+
+				_, err = compiler.CompileTestSuite(context.TODO())
+				if err != nil && !tc.expectErr {
+					t.Fatalf("compiling test: %v", err)
+				}
+
+				if tc.expectErr {
+					return
+				}
+
+				// collect directories in cloned repo. Exclude .git 
+				checkedOutDirs := []string{}
+				entries, _ := os.ReadDir(targetRepo)
+				for _, e := range entries {
+					if e.IsDir() && e.Name() != ".git" {
+						checkedOutDirs = append(checkedOutDirs, e.Name())
+					}
+				}
+
+				// check only selected directories were compiled
+				if !slices.Equal(dirs, checkedOutDirs) {
+					t.Fatalf("expected %v got %v", dirs, checkedOutDirs)
+				}
+			})
+		}
+	})
+} 
 
