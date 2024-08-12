@@ -66,6 +66,7 @@ func (tc *TestCompiler)CompileTestSuite(ctx context.Context) (string, error) {
 		&git.CloneOptions{
 			URL:      tc.TestSuiteRepo,
 			Auth:     auth,
+			NoCheckout: true,
 		},
 	)
 
@@ -73,23 +74,23 @@ func (tc *TestCompiler)CompileTestSuite(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("checking out test suite repo %s: %w", tc.TestSuiteRepo, err)
 	}
 
-	// if we don't specify a revision, assume we want to run exactly what is
-	// there. e.g. local development. Otherwise, proceed to checkout the revision
-	if tc.TestSuiteRevision != "" {
-		// check current branch. Don't do anything if it's the same as what is
-		// currently there.
-		// TODO: this logic may not make sense in scenarios where it's set to main
-		// but someone hasn't checked out in a while and wants to update. That would
-		// require a manual update. perhaps check the git sha. review later.
-		var branch *plumbing.Reference
-		
-		branch, err = repo.Head()
-		if err != nil {
-			return "", fmt.Errorf("error getting current branch %w", err)
-		}
+	var tree *git.Worktree
 
+	tree, err = repo.Worktree()
+	if err != nil {
+		return "", fmt.Errorf("getting work tree %w", err)
+	}
+
+	head, err := repo.Head()
+	if err != nil {
+		return "", fmt.Errorf("error getting current branch %w", err)
+	}
+
+	checkoutHash := head.Hash()
+
+	if tc.TestSuiteRevision != "" {
 		// if we are not in the requested branch
-		if branch.Name().Short() != tc.TestSuiteRevision {
+		if head.Name().Short() != tc.TestSuiteRevision {
 			// fetch remote refs and make them appear as local refs
 			// assumes this is a cloned repository with an 'origin' remote
 			err = repo.Fetch(&git.FetchOptions{
@@ -100,26 +101,20 @@ func (tc *TestCompiler)CompileTestSuite(ctx context.Context) (string, error) {
 				return "", fmt.Errorf("fetching references %w", err)
 			}
 
-			var tree *git.Worktree
-
-			tree, err = repo.Worktree()
-			if err != nil {
-				return "", fmt.Errorf("getting work tree %w", err)
-			}
-
 			revisionHash, err := repo.ResolveRevision(plumbing.Revision(tc.TestSuiteRevision))
 			if err != nil {
 				return "", fmt.Errorf("resolving reference to revision %q :%w", tc.TestSuiteRevision, err)
 			}
-
-			// FIXME: this only works for remote branches. Local branches are not found due to the reference 
-			err = tree.Checkout(&git.CheckoutOptions{
-				Hash: *revisionHash,
-			})
-			if err != nil {
-				return "", fmt.Errorf("checking out test suite revision %q: %w", tc.TestSuiteRevision, err)
-			}
+			// ResolveRevision returns &plumbing.Hash
+			checkoutHash = *revisionHash
 		}
+	}
+
+	err = tree.Checkout(&git.CheckoutOptions{
+		Hash: checkoutHash,
+	})
+	if err != nil {
+		return "", fmt.Errorf("checking out test suite revision %q: %w", tc.TestSuiteRevision, err)
 	}
 
 	currentBranch, err := repo.Head()
