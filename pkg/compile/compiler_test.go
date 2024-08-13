@@ -211,7 +211,7 @@ func Test_Compiler(t *testing.T) {
 				tc.prepareCmd,
 			)
 
-			err = compiler.CompileTestSuite(context.TODO())
+			_, err = compiler.CompileTestSuite(context.TODO())
 			if err != nil && !tc.expectErr {
 				t.Fatalf("compiling test: %v", err)
 			}

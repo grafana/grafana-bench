@@ -208,8 +208,12 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 					[]string{},
 				)
 
-				if err := compiler.CompileTestSuite(context.TODO()); err != nil {
+				revision, err := compiler.CompileTestSuite(context.TODO())
+				if err != nil {
 					return fmt.Errorf("checking out test suite: %w", err)
+				}
+				if testSuiteRevision == "" {
+					testSuiteRevision = revision
 				}
 			}
 

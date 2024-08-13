@@ -45,7 +45,13 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				cmdArgs,
 			)
 
-			return compiler.CompileTestSuite(cmd.Context())
+			revision, err := compiler.CompileTestSuite(cmd.Context())
+			if err != nil {
+				return err
+			}
+
+			log.Info("checkout", "revision", revision)
+			return nil
 		},
 	}
 

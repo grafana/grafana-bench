@@ -45,8 +45,9 @@ func NewTestCompiler(
 	}
 }
 
-// CompileTestSuite collects and builds tests from a source repository
-func (tc *TestCompiler)CompileTestSuite(ctx context.Context) error {
+// CompileTestSuite collect the test suite from a source repository
+// returns the test suite revision
+func (tc *TestCompiler)CompileTestSuite(ctx context.Context) (string, error) {
 	var (
 		repo *git.Repository
 		err  error
@@ -69,7 +70,7 @@ func (tc *TestCompiler)CompileTestSuite(ctx context.Context) error {
 	)
 
 	if err != nil {
-		return fmt.Errorf("checking out test suite repo %s: %w", tc.TestSuiteRepo, err)
+		return "", fmt.Errorf("checking out test suite repo %s: %w", tc.TestSuiteRepo, err)
 	}
 
 	// if we don't specify a revision, assume we want to run exactly what is
@@ -84,7 +85,7 @@ func (tc *TestCompiler)CompileTestSuite(ctx context.Context) error {
 		
 		branch, err = repo.Head()
 		if err != nil {
-			return fmt.Errorf("error getting current branch %w", err)
+			return "", fmt.Errorf("error getting current branch %w", err)
 		}
 
 		// if we are not in the requested branch
@@ -96,19 +97,19 @@ func (tc *TestCompiler)CompileTestSuite(ctx context.Context) error {
 				Auth: auth,
 			})
 			if err != nil  && !errors.Is(err, git.NoErrAlreadyUpToDate) {
-				return fmt.Errorf("fetching references %w", err)
+				return "", fmt.Errorf("fetching references %w", err)
 			}
 
 			var tree *git.Worktree
 
 			tree, err = repo.Worktree()
 			if err != nil {
-				return fmt.Errorf("getting work tree %w", err)
+				return "", fmt.Errorf("getting work tree %w", err)
 			}
 
 			revisionHash, err := repo.ResolveRevision(plumbing.Revision(tc.TestSuiteRevision))
 			if err != nil {
-				return fmt.Errorf("resolving reference to revision %q :%w", tc.TestSuiteRevision, err)
+				return "", fmt.Errorf("resolving reference to revision %q :%w", tc.TestSuiteRevision, err)
 			}
 
 			// FIXME: this only works for remote branches. Local branches are not found due to the reference 
@@ -116,15 +117,23 @@ func (tc *TestCompiler)CompileTestSuite(ctx context.Context) error {
 				Hash: *revisionHash,
 			})
 			if err != nil {
-				return fmt.Errorf("checking out test suite revision %q: %w", tc.TestSuiteRevision, err)
+				return "", fmt.Errorf("checking out test suite revision %q: %w", tc.TestSuiteRevision, err)
 			}
 		}
 	}
 
+	currentBranch, err := repo.Head()
+	if err != nil {
+		return "", fmt.Errorf("error getting current branch %w", err)
+	}
+
+	// set short revision
+	revisionHash := currentBranch.Hash().String()[1:7]
+
 	// update repo + checkout branch
 	workDir, err := os.Getwd()
 	if err != nil {
-		return fmt.Errorf("getting current work directory %w", err)
+		return "", fmt.Errorf("getting current work directory %w", err)
 	}
 
 	// build the tests
@@ -138,9 +147,8 @@ func (tc *TestCompiler)CompileTestSuite(ctx context.Context) error {
 			return nil
 		})
 
-		return err
+		return "", err
 	}
 
-	return nil
+	return revisionHash, nil
 }
-
