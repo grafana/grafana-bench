@@ -15,6 +15,7 @@ import (
 	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/grafana"
 	"github.com/grafana/grafana-bench/pkg/revision"
+	"github.com/grafana/grafana-bench/pkg/utils/cli"
 	"github.com/grafana/grafana-bench/pkg/utils/env"
 
 	"github.com/spf13/cobra"
@@ -100,7 +101,6 @@ test runner.
 [1] https://github.com/grafana/grafana-bench/blob/main/docs/writing_pw_tests.md
 `
 
-
 // NewCmd creates a new test command
 func NewCmd(log *slog.Logger) *cobra.Command {
 	var (
@@ -134,7 +134,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		pwExecuteCmd       string
 	)
 
-	cmd := cobra.Command{
+	cmd := &cobra.Command{
 		// test-suite is a mandatory option. highlight in the help
 		Use:     "test",
 		Short:   "bench test runner",
@@ -261,54 +261,74 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		},
 	}
 
-	fs := cmd.Flags()
-	fs.StringToStringVar(&testEnvVars, "test-env-vars", nil, "custom test environment variables")
-	fs.StringVar(&testTrigger, "test-trigger", "local", "test trigger")
-	fs.StringVar(&testType, "test-type", "smoke", "test type. Allowed values: 'smoke', 'load'")
-	fs.StringVar(&testRunner, "test-runner", "k6", "test runner. Allowed values: 'k6', 'playwright'")
-	fs.StringVar(&pwPrepareCmd, "pw-prepare-cmd", "", "command used to install dependencies for the test suite eg: \"npm install\"")
-	fs.StringVar(&pwExecuteCmd, "pw-execute-cmd", "", "command used to execute the test suite eg: \"npm run test\"")
-	fs.StringVar(
+	flags := cli.NewCmdFlags()
+
+	tfs := flags.AddGroup("Test Run")
+	tfs.StringToStringVar(&testEnvVars, "test-env-vars", nil, "custom test environment variables")
+	tfs.StringVar(&testTrigger, "test-trigger", "local", "test trigger")
+	tfs.StringVar(&testType, "test-type", "smoke", "test type. Allowed values: 'smoke', 'load'")
+	tfs.StringVar(&testRunner, "test-runner", "k6", "test runner. Allowed values: 'k6', 'playwright'")
+	tfs.StringVar(&machineSpec, "machine-spec", "", "grafana instance machine spec")
+	tfs.StringVar(
+		&benchRevision,
+		"bench-revision",
+		"",
+		"grafana bench revision. If not set BENCH_REVISION environment variable is used.",
+	)
+	//TODO: check group
+	tfs.StringVar(
+		&dashboardURL,
+		"dashboard",
+		"",
+		"Template for the smoke test suite execution dashboard URL."+
+			"\nSupports the substitution of the following variables:"+
+			"\n    SuiteRun: identifier of the suite run",
+			//TODO: {{.SuiteRun}} breaks the template sustitution in the custom usage function
+			//"\nExample: http://localhost/dashboards?run={{.SuiteRun}}",
+	)
+
+	pfs := flags.AddGroup("Playwright")
+	pfs.StringVar(&pwPrepareCmd, "pw-prepare-cmd", "", "command used to install dependencies for the test suite eg: \"npm install\"")
+	pfs.StringVar(&pwExecuteCmd, "pw-execute-cmd", "", "command used to execute the test suite eg: \"npm run test\"")
+
+	ofs := flags.AddGroup("Output")
+	ofs.StringVar(
 		&reportFormat,
 		"test-report-format",
 		"text",
 		"format of the test execution report. Allowed values 'log' or 'text'."+
 			"\n 'log' produced a structure log. 'text' produced an human readable output",
 	)
-	fs.BoolVar(&verbose, "verbose", false, "show test outputs")
-	fs.StringVar(
+	ofs.BoolVar(&verbose, "verbose", false, "show test outputs")
+	ofs.StringVar(
 		&grafanaUrl,
 		"grafana-url",
 		"http://localhost:3000",
 		"url to grafana instance. Overridden by the GRAFANA_URL environment variable",
 	)
-	fs.DurationVar(
+
+	gfs := flags.AddGroup("Grafana")
+	gfs.DurationVar(
 		&grafanaTimeout,
 		"grafana-timeout",
 		grafana.DefaultGrafanaTimeout,
 		"timeout for waiting grafana to be live",
 	)
-	fs.StringVar(
+	gfs.StringVar(
 		&grafanaUsername,
 		"grafana-username",
 		"admin",
 		"grafana user name. Overridden by the GRAFANA_USER environment variable",
 	)
-	fs.StringVar(
+	gfs.StringVar(
 		&grafanaPassword,
 		"grafana-password",
 		"admin",
 		"grafana password. Overridden by the GRAFANA_PASSWORD environment variable",
 	)
-	fs.StringVar(&machineSpec, "machine-spec", "", "grafana instance machine spec")
-	fs.StringVar(
-		&revisionFile,
-		"test-suite-revision-file",
-		"",
-		"path to a file with the test suite revision. Has precedence over test-suite-revision",
-	)
-	// TODO: add default value as the revision is used to generate the run id
-	fs.StringVar(
+
+	rfs := flags.AddGroup("Checkout")
+	rfs.StringVar(
 		&testSuiteRepo,
 		"test-suite-repo",
 		"",
@@ -316,70 +336,59 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			"\nIf specified, the repo will be checkout into the test-suite-base directory." +
 			"\nIf test-suite-revision is specified, that revision will be checkout. Otherwise the default branch will be checkout",
 		)
-	fs.StringVar(
+	rfs.StringVar(
 		&testSuiteRepoToken,
 		"test-suite-repo-token",
 		"",
 		"authentication token for the test suite repository. If not set TEST_SUITE_REPO_TOKEN environment variable is used.",
 		)
-	fs.StringSliceVar(
+	rfs.StringSliceVar(
 		&testSuiteRepoDirs,
 		"test-suite-repo-dirs",
 		nil,
 		"Directories to checkout from test suite repo. If omitted, all folders will be checkout",
 		)
-	fs.StringVar(
+	rfs.StringVar(
 		&testSuiteRevision,
 		"test-suite-revision",
 		"",
 		"test suite revision. If not set TEST_SUITE_REVISION environment variable is used",
 	)
-	fs.StringVar(
-		&benchRevision,
-		"bench-revision",
-		"",
-		"grafana bench revision. If not set BENCH_REVISION environment variable is used.",
-	)
-	fs.StringVar(
+
+	k6fs := flags.AddGroup("k6")
+	k6fs.StringVar(
 		&k6CloudToken,
 		"k6-cloud-token",
 		"",
 		"K6 cloud access token. If not set K6_CLOUD_TOKEN environment variable is used",
 	)
-	fs.StringVar(
+	k6fs.StringVar(
 		&k6CloudProjectId,
 		"k6-cloud-project",
 		"",
 		"K6 cloud project ID. If not set K6_CLOUD_PROJECT_ID environment variable is used",
 	)
-	fs.BoolVar(
+	k6fs.BoolVar(
 		&k6CloudOutput,
 		"k6-cloud-output",
 		false,
 		"send output to GCK6. Requires setting the GCK6 project ID and access token.",
 	)
-	fs.StringVar(
-		&dashboardURL,
-		"dashboard",
-		"",
-		"Template for the smoke test suite execution dashboard URL."+
-			"\nSupports the substitution of the following variables:"+
-			"\n    SuiteRun: identifier of the suite run"+
-			"\nExample: http://localhost/dashboards?run={{.SuiteRun}}",
-	)
-	fs.StringVar(&testSuite, "test-suite", "", "path to the tests to be executed."+
+
+	tsfs := flags.AddGroup("Test Suite")
+	tsfs.StringVar(&testSuite, "test-suite", "", "path to the tests to be executed."+
 		"\nThe path must be relative to the base dir (which defaults to the current directory)."+
 		"\nA single .js file or a directory can be specified."+
 		"\nIf a directory is specified, all .js files in the directory and its sub-directories will be executed.")
 	cmd.MarkFlagRequired("test-suite")
-	fs.StringVar(
+	tsfs.StringVar(
 		&testSuiteBase,
 		"test-suite-base",
 		"",
 		"base directory for searching test suites. Defaults to current directory"+
 			"\nIf specified, it is prefixed to the --test-suite.",
 	)
-	fs.StringVar(
+	tsfs.StringVar(
 		&testSuiteName,
 		"test-suite-name",
 		"",
@@ -387,8 +396,17 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			"\nDefaults to the last component of --test-suite."+
 			"\nFor example --test-suite /path/to/testsuite will give a test suite name of 'testsuite'.",
 	)
+	//TODO: check group
+	tsfs.StringVar(
+		&revisionFile,
+		"test-suite-revision-file",
+		"",
+		"path to a file with the test suite revision. Has precedence over test-suite-revision",
+	)
 
-	return &cmd
+	flags.SetCmd(cmd)
+
+	return cmd
 }
 
 // read test suite revision from file
