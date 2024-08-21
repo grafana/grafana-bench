@@ -41,11 +41,9 @@ func (r *LogReporter) Report(
 			Info("testRun", "testRun", testRunId)
 	}
 
-	var anyFailures = (suiteRun.TestsFailed + suiteRun.TestsError) > 0
-
 	log.With(suiteLogAttrs(suite)...).
 		With(suiteRunLogAttrs(suiteRun)...).
-		Info("suiteRun", "anyFailures", anyFailures)
+		Info("suiteRun")
 }
 
 // suiteLogAttrs formats suite's attributes as log attributes
