@@ -52,7 +52,7 @@ func (r *LogReporter) Report(
 func suiteLogAttrs(suite executor.TestSuite) []any {
 	return []any{
 		"suiteId", fmt.Sprintf("%s-%s", suite.Name, suite.Revision),
-		"suiteIdName", suite.Name,
+		"suiteName", suite.Name,
 		"suiteRevision", suite.Revision,
 	}
 }
@@ -63,6 +63,7 @@ func suiteRunLogAttrs(suiteRun executor.SuiteRunSummary) []any {
 		"startTime", suiteRun.StartTime.Format(time.RFC3339),
 		"totalScenarioDurations", suiteRun.ScenariosDuration,
 		"duration", suiteRun.TotalDuration,
+		"status", suiteRun.Status,
 		"testsExecuted", suiteRun.TestsExecuted,
 		"testsPassed", suiteRun.TestsPassed,
 		"testsFailed", suiteRun.TestsFailed,
