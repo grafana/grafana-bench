@@ -61,7 +61,7 @@ func suiteRunLogAttrs(suiteRun executor.SuiteRunSummary) []any {
 		"startTime", suiteRun.StartTime.Format(time.RFC3339),
 		"totalScenarioDurations", suiteRun.ScenariosDuration,
 		"duration", suiteRun.TotalDuration,
-		"status", suiteRun.Status,
+		"suiteStatus", suiteRun.Status,
 		"testsExecuted", suiteRun.TestsExecuted,
 		"testsPassed", suiteRun.TestsPassed,
 		"testsFailed", suiteRun.TestsFailed,
