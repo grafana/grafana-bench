@@ -9,6 +9,7 @@ grafana-bench.tar.gz
 
 test-repo/**
 
+infra_back
 
 # Binaries for programs and plugins
 *.exe
