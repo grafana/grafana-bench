@@ -164,11 +164,12 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			grafanaUsername = env.EnvOrDefault("GRAFANA_USER", grafanaUsername)
 			grafanaPassword = env.EnvOrDefault("GRAFANA_PASSWORD", grafanaPassword)
 
-			grafanaInstance, err := grafana.NewInstance(
+			grafanaInstance, err := getGrafanaInstance(
+				log,
 				grafanaUrl,
 				grafanaUsername,
 				grafanaPassword,
-				grafana.WithTimeout(grafanaTimeout),
+				grafanaTimeout,
 			)
 			if err != nil {
 				return err
@@ -398,4 +399,33 @@ func getTestSuiteRevision(revisionFile string) (string, error) {
 		return "", fmt.Errorf("getting test suite revision  from %w", err)
 	}
 	return strings.TrimSpace(string(bytes)), nil
+}
+
+func getGrafanaInstance(
+	log *slog.Logger,
+	url string,
+	username string,
+	password string,
+	timeout time.Duration,
+) (grafana.GrafanaInstance, error) {
+	grafanaInstance, err := grafana.NewInstance(
+		url,
+		username,
+		password,
+		grafana.WithTimeout(timeout),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Info("Waiting for grafana server...", "address", grafanaInstance.Url())
+
+	err = grafanaInstance.WaitForLiveGrafana(context.TODO())
+	if err != nil {
+		return nil, fmt.Errorf("checking Grafana is Live... %w", err)
+	}
+	log.Debug("Grafana server is ready!")
+
+	return grafanaInstance, nil
+
 }

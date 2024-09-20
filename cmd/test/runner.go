@@ -51,17 +51,11 @@ func 	NewTestRunner(
 }
 
 func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor.TestSuite, testVars map[string]string) error {
+	var err error
+
 	// get an unique identification for the run
 	runId := t.getRunId(testType)
 	t.Log = t.Log.With("runId", runId)
-
-	t.Log.Info("Waiting for grafana server...", "address", t.GrafanaInstance.Url())
-
-	err := t.GrafanaInstance.WaitForLiveGrafana(ctx)
-	if err != nil {
-		return fmt.Errorf("checking Grafana is Live... %w", err)
-	}
-	t.Log.Debug("Grafana server is ready!")
 
 	t.GrafanaVersion, err = t.GrafanaInstance.GetGrafanaBuildVersion()
 	if err != nil {
