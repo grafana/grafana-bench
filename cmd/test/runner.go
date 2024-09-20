@@ -82,7 +82,8 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 		return fmt.Errorf("executing test suite %w", err)
 	}
 
-	t.Reporter.Report(runId,suiteRunId, suite, suiteRun)
+	// TODO: handle error from reporter
+	_ =t.Reporter.Report(ctx, runId,suiteRunId, suite, suiteRun)
 
 	var anyFailures = suiteRun.Status != executor.SuitePassed
 
