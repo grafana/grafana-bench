@@ -3,7 +3,6 @@ package reporter
 import (
 	"fmt"
 	"log/slog"
-	"os"
 	"strconv"
 	"time"
 
@@ -16,9 +15,7 @@ type LogReporter struct {
 }
 
 // creates a new log reporter with the given attributes
-func NewLogReporter(attr []any) *LogReporter {
-	log := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	log = log.With(attr...)
+func NewLogReporter(log *slog.Logger) *LogReporter {
 	return &LogReporter{
 		Log: log,
 	}

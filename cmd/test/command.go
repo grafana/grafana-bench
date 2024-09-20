@@ -14,6 +14,7 @@ import (
 	"github.com/grafana/grafana-bench/pkg/compile"
 	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/grafana"
+	"github.com/grafana/grafana-bench/pkg/reporter"
 	"github.com/grafana/grafana-bench/pkg/revision"
 	"github.com/grafana/grafana-bench/pkg/utils/env"
 
@@ -175,6 +176,11 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				return err
 			}
 
+			grafanaVersion, err := grafanaInstance.GetGrafanaBuildVersion()
+			if err != nil {
+				return fmt.Errorf("getting grafana version: %w", err)
+			}
+
 			if k6CloudToken == "" {
 				k6CloudToken = env.EnvOrDefault("K6_CLOUD_TOKEN", "")
 			}
@@ -242,15 +248,33 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				executor = playwright.NewPlaywrightTestExecutor(log, verbose, pwPrepareCmd, pwExecuteCmd)
 			}
 
+			runnerLog := log.With(
+				"testTrigger", testTrigger,
+				"benchRevision", benchRevision,
+				//TODO: deprecate this attribute
+				"grafanaUrl", grafanaInstance.Hostname(),
+				"grafanSlug", grafanaInstance.Slug(),
+				"grafanaVersion", grafanaVersion,
+				"testExecutor", testRunner,
+			)
+
+			// create test reporter
+			var suiteReporter reporter.SuiteRunReporter
+			switch reportFormat {
+			case "log": suiteReporter = reporter.NewLogReporter(runnerLog)
+			case "text": suiteReporter = reporter.NewTextReporter(os.Stdout)
+			default: return fmt.Errorf("invalid report format %q", revisionFile)
+			}
+
 			runner := NewTestRunner(
-				log,
+				runnerLog,
 				testTrigger,
 				grafanaInstance,
 				machineSpec,
 				benchRevision,
 				dashboardURL,
 				executor,
-				reportFormat,
+				suiteReporter,
 			)
 
 			// ensure environment variable values are expanded

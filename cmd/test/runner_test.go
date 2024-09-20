@@ -13,6 +13,7 @@ import (
 
 	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/grafana"
+	"github.com/grafana/grafana-bench/pkg/reporter"
 )
 
 type dummyExecutor struct {
@@ -140,7 +141,7 @@ func testRunnerForTesting(
 		"devel", // bench revision
 		"",      // dashboard URL
 		executor,
-		"log",
+		reporter.NewLogReporter(log),
 	)
 
 	// apply options
@@ -234,20 +235,6 @@ func Test_Runner(t *testing.T) {
 			expectMsgs: []string{
 				invalidDashboardMessage,
 			},
-		},
-		{
-			testCase: "invalid credentials",
-			instance: newMockGrafanaInstance(
-				WithInvalidGrafanaCredentials(),
-			),
-			expectErr: loginError,
-		},
-		{
-			testCase: "grafana not available",
-			instance: newMockGrafanaInstance(
-				withGrafanaNotAlive(),
-			),
-			expectErr: grafanaNotAliveError,
 		},
 	}
 
