@@ -258,6 +258,9 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				"testExecutor", testRunner,
 			)
 
+			// chain of test reporters
+			reporters := []reporter.SuiteRunReporter{}
+
 			// create test reporter
 			var suiteReporter reporter.SuiteRunReporter
 			switch reportFormat {
@@ -265,6 +268,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			case "text": suiteReporter = reporter.NewTextReporter(os.Stdout)
 			default: return fmt.Errorf("invalid report format %q", revisionFile)
 			}
+			reporters = append(reporters, suiteReporter)
 
 			runner := NewTestRunner(
 				runnerLog,
@@ -274,7 +278,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				benchRevision,
 				dashboardURL,
 				executor,
-				suiteReporter,
+				reporter.NewChainReporter(reporters...),
 			)
 
 			// ensure environment variable values are expanded
