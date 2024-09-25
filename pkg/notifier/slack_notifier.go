@@ -62,6 +62,8 @@ type slackNotifier struct {
 type SlackNotifierOptions struct {
 	// Slack token. If not specified, the environment variable SLACK_TOKEN must be set.
 	Token string
+	// MappingFile is the path to the codeowners mapping file. Can be path or an URL
+	MappingFile string
 	// Mapping maps the codeowners to slack channel
 	Mapping CodeownersMapping
 	// Client is used for testing purposes
@@ -82,9 +84,17 @@ func NewSlackNotifier(options SlackNotifierOptions) (Notifier, error) {
 		client = slack.New(token)
 	}
 
+	mapping := options.Mapping
+	if mapping == nil {
+		var err error
+		mapping, err = NewCodeownersMapping(options.MappingFile)
+		if err != nil {
+			return nil, err
+		}
+	}
 	return &slackNotifier{
 		client:   client,
-		mapping:  options.Mapping,
+		mapping:  mapping,
 		channels: make(map[string]string),
 	}, nil
 }

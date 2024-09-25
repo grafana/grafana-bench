@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 
 	"gopkg.in/yaml.v3"
@@ -28,11 +29,18 @@ func (d CodeownersMapping) GetChannel(recipient string) (string, error) {
 	return addr, nil
 }
 
-// NewCodeownersMapping returns a new CodeownersMapping from the given mapping.
-// The mapping's keys should be the names of the teams in the repository and
-// the values should be the Slack channels that should receive notifications.
-func NewCodeownersMapping(mapping map[string]string) CodeownersMapping {
-	return CodeownersMapping(mapping)
+// NewCodeownersMapping returns a new CodeownersMapping from the given mapping source
+// The source can be an url or a file path
+func NewCodeownersMapping(source string) (CodeownersMapping, error) {
+	url, err := url.Parse(source)
+	if err != nil {
+		return nil, fmt.Errorf("%w from %q: %w", ErrGettingMapping, source, err)
+	}
+	if url.Scheme == "" {
+		return MappingFromFile(source)
+	}
+
+	return MappingFromULR(source)
 }
 
 // MappingEntry defines the mapping between a code owner and a slack channel
@@ -105,5 +113,5 @@ func MappingFromReader(r io.Reader) (CodeownersMapping, error) {
 		mapping[entry.GithubTeam] = entry.SlackChannel
 	}
 
-	return NewCodeownersMapping(mapping), nil
+	return CodeownersMapping(mapping), nil
 }
