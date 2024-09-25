@@ -14,6 +14,7 @@ import (
 	"github.com/grafana/grafana-bench/pkg/compile"
 	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/grafana"
+	"github.com/grafana/grafana-bench/pkg/notifier"
 	"github.com/grafana/grafana-bench/pkg/reporter"
 	"github.com/grafana/grafana-bench/pkg/revision"
 	"github.com/grafana/grafana-bench/pkg/utils/env"
@@ -99,8 +100,13 @@ test runner.
 
 
 [1] https://github.com/grafana/grafana-bench/blob/main/docs/writing_pw_tests.md
-`
 
+Slack Notifications
+-------------------
+If the --slack-token argument is specified, test suite failures will be notified using slack.
+Notification will be send to the codeowners of the test. The --codeowners-channel-map argument is used
+to find the mapping between codeowners and slack channels.
+`
 
 // NewCmd creates a new test command
 func NewCmd(log *slog.Logger) *cobra.Command {
@@ -133,6 +139,10 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		// playwright cloud specific flags
 		pwPrepareCmd       string
 		pwExecuteCmd       string
+		// slack notifications flags
+		slackNotifications bool
+		slackToken         string
+		codeownersMap      string
 	)
 
 	cmd := cobra.Command{
@@ -269,6 +279,24 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			default: return fmt.Errorf("invalid report format %q", revisionFile)
 			}
 			reporters = append(reporters, suiteReporter)
+
+			if slackNotifications {
+				slackToken = env.EnvOrDefault("SLACK_TOKEN", slackToken)
+				if slackToken == "" {
+					return fmt.Errorf("no slack token provided")
+				}
+
+				notifier, err := notifier.NewSlackNotifier(notifier.SlackNotifierOptions{
+					Token: slackToken,
+					MappingFile: codeownersMap,
+				})
+
+				if err != nil {
+					return fmt.Errorf("creating slack notifier: %w", err)
+				}
+
+				reporters = append(reporters, reporter.NewNotificationReporter(notifier, reporter.NotifyAll))
+			}
 
 			runner := NewTestRunner(
 				runnerLog,
@@ -416,6 +444,26 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			"\nDefaults to the last component of --test-suite."+
 			"\nFor example --test-suite /path/to/testsuite will give a test suite name of 'testsuite'.",
 	)
+	fs.BoolVar(
+		&slackNotifications,
+		"slack-notifications",
+		false,
+		"send notifications to slack. Requires setting the --slack-token option or the SLACK_TOKEN environment variable.",
+	)
+	fs.StringVar(
+		&slackToken,
+		"slack-token",
+		"",
+		"slack token used for sending notifications. If not defined SLACK_TOKEN environment variable is used." +
+		"\nThe token requires chat:write and channels:read scopes",
+	)
+	fs.StringVar(
+		&codeownersMap,
+		"codeowners-channel-map",
+		"slack_teams_mapping.yaml",
+		"path or url to the codeowner to slack channel mapping",
+	)
+
 
 	return &cmd
 }
