@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -21,7 +22,10 @@ var (
 // CodeownersMapping defines the mapping between a code owner and a slack channel
 type CodeownersMapping map[string]string
 
+// GetChannel returns the slack channel for the given code owner
+// Any preceding @ will be removed from the code owners
 func (d CodeownersMapping) GetChannel(recipient string) (string, error) {
+	recipient,_ = strings.CutPrefix(recipient, "@")
 	addr, ok := d[recipient]
 	if !ok {
 		return "", ErrNoMappingForCodeowner
