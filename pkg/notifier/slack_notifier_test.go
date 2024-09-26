@@ -15,61 +15,6 @@ import (
 	"github.com/slack-go/slack"
 )
 
-func TestSlackMarkdownFormatter(t *testing.T) {
-	t.Parallel()
-
-	testCases := []struct {
-		title       string
-		dashboard   string
-		suite       executor.TestSuite
-		testRuns    []executor.TestRun
-		expected    string
-		expectedErr error
-	}{
-		{
-			title: "simple test suite",
-			suite: executor.TestSuite{},
-			testRuns: []executor.TestRun{
-				{TestFile: "test.js", Status: executor.TestFailed},
-				{TestFile: "another_test.js", Status: executor.TestFailed},
-			},
-			expected: "*Suite Run:* 123\n" +
-				"- test.js failed\n" +
-				"- another_test.js failed\n",
-		},
-		{
-			title: "test suite dashboard tes",
-			dashboard: "http://url.to/dashboard",
-			suite: executor.TestSuite{},
-			testRuns: []executor.TestRun{
-				{TestFile: "test.js", Status: executor.TestFailed},
-				{TestFile: "another_test.js", Status: executor.TestFailed},
-			},
-			expected: "*Suite Run:* <http://url.to/dashboard?var-SuiteRun=123|123>\n" +
-				"- test.js failed\n" +
-				"- another_test.js failed\n",
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.title, func(t *testing.T) {
-			message, err := SlackMarkdownFormatter(tc.dashboard, "123", tc.suite, tc.testRuns)
-
-			if !errors.Is(err, tc.expectedErr) {
-				t.Fatalf("expected error %v got %v", tc.expectedErr, err)
-			}
-
-			if tc.expectedErr != nil {
-				return
-			}
-
-			if message != tc.expected {
-				t.Fatalf("expected\n%s\ngot\n%s", tc.expected, message)
-			}
-		})
-	}
-}
-
 // mockServer is a mock slack server that can be used for testing
 // chat.post endpoint registers the messages sent to each channel
 // conversations.list returns the list of channels in the server

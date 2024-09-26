@@ -5,8 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strings"
-	"text/template"
+	"path/filepath"
 
 	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/slack-go/slack"
@@ -19,19 +18,6 @@ var (
 	ErrPostingMessage      = errors.New("posting message")
 )
 
-const markdownTemplate = `
-{{- define  "testSuiteHeader" -}}
-{{- if .DashboardURL -}}
-*Suite Run:* <{{ .DashboardURL }}?var-SuiteRun={{ .TestSuiteRunId }}|{{ .TestSuiteRunId }}>
-{{- else -}}
-*Suite Run:* {{ .TestSuiteRunId }}
-{{- end -}}
-{{- end -}}
-{{ template "testSuiteHeader" . }}
-{{- range .TestRuns }}
-- {{ .TestFile }} {{ .Status }}
-{{- end }}
-`
 
 type data struct {
 	TestSuiteRunId string
@@ -40,31 +26,53 @@ type data struct {
 	DashboardURL   string
 }
 
-func SlackMarkdownFormatter(
+func FormatTestResults(
 	dashboard string,
 	suiteRunId string,
 	suite executor.TestSuite,
 	testRuns []executor.TestRun,
-) (string, error) {
-	formattingTemplate, err := template.New("notification").Parse(markdownTemplate)
-	if err != nil {
-		return "", fmt.Errorf("%w %w", ErrFormattingMessage, err)
-	}
+) []slack.Block {
+	blocks := []slack.Block{}
 
-	buffer := new(strings.Builder)
-	err = formattingTemplate.Execute(
-		buffer, data{
-			TestSuiteRunId: suiteRunId,
-			TestRuns:       testRuns,
-			TestSuite:      suite,
-			DashboardURL:   dashboard,
-		},
+	// Header Section
+	testRunHeaderLink := suiteRunId
+	if dashboard != "" {
+		testRunHeaderLink = fmt.Sprintf("<%s?var-SuiteRun=%s|%s>", dashboard, suiteRunId, suiteRunId)
+	}
+	headerText := slack.NewTextBlockObject(
+		"mrkdwn", 
+		fmt.Sprintf("*Suite Run:* %s", testRunHeaderLink),
+		false,
+		false,
 	)
-	if err != nil {
-		return "", fmt.Errorf("%w %w", ErrFormattingMessage, err)
+	blocks =  append(blocks, slack.NewSectionBlock(headerText, nil, nil))
+
+	// creates a section for each test run with two fields to emulate a table
+	for _, testRun := range testRuns {
+		testRunFields := []*slack.TextBlockObject{
+			slack.NewTextBlockObject(
+				"mrkdwn",
+				fmt.Sprintf("%s", filepath.Join(testRun.TestFolder, testRun.TestFile)),
+				false,
+				false,
+			),
+			slack.NewTextBlockObject(
+				"mrkdwn",
+				fmt.Sprintf("*%s*", testRun.Status),
+				false,
+				false,
+			),
+		}
+		testRunSection := slack.NewSectionBlock(
+			nil,
+			testRunFields,
+			nil,
+		)
+
+		blocks = append(blocks, testRunSection)
 	}
 
-	return buffer.String(), nil
+	return blocks
 }
 
 type slackNotifier struct {
@@ -138,12 +146,9 @@ func (s *slackNotifier) Notify(
 		return fmt.Errorf("%w %q", ErrChannelDoesNotExist, channel)
 	}
 
-	message, err := SlackMarkdownFormatter(s.dashboardURL, suiteRunId, executor.TestSuite{}, testRuns)
-	if err != nil {
-		return err
-	}
+	blocks := FormatTestResults(s.dashboardURL, suiteRunId, executor.TestSuite{}, testRuns)
 
-	_, _, err = s.client.PostMessage(channelID, slack.MsgOptionText(message, false))
+	_, _, err = s.client.PostMessage(channelID, slack.MsgOptionBlocks(blocks...))
 
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrPostingMessage, err)
