@@ -291,6 +291,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				notifier, err := notifier.NewSlackNotifier(notifier.SlackNotifierOptions{
 					Token: slackToken,
 					MappingFile: codeownersMap,
+					DashboardURL: dashboardURL,
 				})
 
 				if err != nil {

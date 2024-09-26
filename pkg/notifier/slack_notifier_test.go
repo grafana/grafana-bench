@@ -20,25 +20,40 @@ func TestSlackMarkdownFormatter(t *testing.T) {
 
 	testCases := []struct {
 		title       string
+		dashboard   string
 		suite       executor.TestSuite
 		testRuns    []executor.TestRun
 		expected    string
 		expectedErr error
 	}{
 		{
-			title: "single test",
+			title: "simple test suite",
 			suite: executor.TestSuite{},
 			testRuns: []executor.TestRun{
-				{TestFile: "test.js", Status: executor.TestPassed},
+				{TestFile: "test.js", Status: executor.TestFailed},
+				{TestFile: "another_test.js", Status: executor.TestFailed},
 			},
 			expected: "*Suite Run:* 123\n" +
-				"- test.js passed\n",
+				"- test.js failed\n" +
+				"- another_test.js failed\n",
+		},
+		{
+			title: "test suite dashboard tes",
+			dashboard: "http://url.to/dashboard",
+			suite: executor.TestSuite{},
+			testRuns: []executor.TestRun{
+				{TestFile: "test.js", Status: executor.TestFailed},
+				{TestFile: "another_test.js", Status: executor.TestFailed},
+			},
+			expected: "*Suite Run:* <http://url.to/dashboard?var-SuiteRun=123|123>\n" +
+				"- test.js failed\n" +
+				"- another_test.js failed\n",
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.title, func(t *testing.T) {
-			message, err := SlackMarkdownFormatter("123", tc.suite, tc.testRuns)
+			message, err := SlackMarkdownFormatter(tc.dashboard, "123", tc.suite, tc.testRuns)
 
 			if !errors.Is(err, tc.expectedErr) {
 				t.Fatalf("expected error %v got %v", tc.expectedErr, err)

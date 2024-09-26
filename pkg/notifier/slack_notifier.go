@@ -19,7 +19,15 @@ var (
 	ErrPostingMessage      = errors.New("posting message")
 )
 
-const markdownTemplate = `*Suite Run:* {{ .TestSuiteRunId }}
+const markdownTemplate = `
+{{- define  "testSuiteHeader" -}}
+{{- if .DashboardURL -}}
+*Suite Run:* <{{ .DashboardURL }}?var-SuiteRun={{ .TestSuiteRunId }}|{{ .TestSuiteRunId }}>
+{{- else -}}
+*Suite Run:* {{ .TestSuiteRunId }}
+{{- end -}}
+{{- end -}}
+{{ template "testSuiteHeader" . }}
 {{- range .TestRuns }}
 - {{ .TestFile }} {{ .Status }}
 {{- end }}
@@ -29,9 +37,15 @@ type data struct {
 	TestSuiteRunId string
 	TestRuns       []executor.TestRun
 	TestSuite      executor.TestSuite
+	DashboardURL   string
 }
 
-func SlackMarkdownFormatter(suiteRunId string, suite executor.TestSuite, testRuns []executor.TestRun) (string, error) {
+func SlackMarkdownFormatter(
+	dashboard string,
+	suiteRunId string,
+	suite executor.TestSuite,
+	testRuns []executor.TestRun,
+) (string, error) {
 	formattingTemplate, err := template.New("notification").Parse(markdownTemplate)
 	if err != nil {
 		return "", fmt.Errorf("%w %w", ErrFormattingMessage, err)
@@ -43,6 +57,7 @@ func SlackMarkdownFormatter(suiteRunId string, suite executor.TestSuite, testRun
 			TestSuiteRunId: suiteRunId,
 			TestRuns:       testRuns,
 			TestSuite:      suite,
+			DashboardURL:   dashboard,
 		},
 	)
 	if err != nil {
@@ -53,9 +68,10 @@ func SlackMarkdownFormatter(suiteRunId string, suite executor.TestSuite, testRun
 }
 
 type slackNotifier struct {
-	client   *slack.Client
-	mapping  CodeownersMapping
-	channels map[string]string
+	client       *slack.Client
+	mapping      CodeownersMapping
+	channels     map[string]string
+	dashboardURL string
 }
 
 // Options for creating a new SlackNotifier
@@ -68,6 +84,8 @@ type SlackNotifierOptions struct {
 	Mapping CodeownersMapping
 	// Client is used for testing purposes
 	Client *slack.Client
+	// URL to dashboard
+	DashboardURL string
 }
 
 // NewSlackNotifier returns a Notifier that sends notifications to a Slack channel.
@@ -93,9 +111,10 @@ func NewSlackNotifier(options SlackNotifierOptions) (Notifier, error) {
 		}
 	}
 	return &slackNotifier{
-		client:   client,
-		mapping:  mapping,
-		channels: make(map[string]string),
+		client:       client,
+		mapping:      mapping,
+		channels:     make(map[string]string),
+		dashboardURL: options.DashboardURL,
 	}, nil
 }
 
@@ -119,12 +138,12 @@ func (s *slackNotifier) Notify(
 		return fmt.Errorf("%w %q", ErrChannelDoesNotExist, channel)
 	}
 
-	message, err := SlackMarkdownFormatter(suiteRunId, executor.TestSuite{}, testRuns)
+	message, err := SlackMarkdownFormatter(s.dashboardURL, suiteRunId, executor.TestSuite{}, testRuns)
 	if err != nil {
 		return err
 	}
 
-	_, _, err = s.client.PostMessage(channelID, slack.MsgOptionText(message, true))
+	_, _, err = s.client.PostMessage(channelID, slack.MsgOptionText(message, false))
 
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrPostingMessage, err)
