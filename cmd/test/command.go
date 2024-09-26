@@ -124,7 +124,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		testSuiteName      string
                 testSuiteRepo      string
 		testSuiteRepoDirs  []string
-		testSuiteRepoToken string
+		gitRepoToken       string
 		testSuiteRevision  string
 		testSuite          string
 		revisionFile       string
@@ -213,7 +213,9 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			}
 
 			if testSuiteRepo != "" {
-				testSuiteRepoToken = env.EnvOrDefault("TEST_SUITE_REPO_TOKEN",testSuiteRepoToken )
+				// TODO: remove TEST_SUITE_REPO_TOKEN env variable
+				gitRepoToken = env.EnvOrDefault("TEST_SUITE_REPO_TOKEN", gitRepoToken)
+				gitRepoToken = env.EnvOrDefault("GIT_TOKEN", gitRepoToken)
 
 				log.Info("checking out test suite", "repository", testSuiteRepo)
 
@@ -222,7 +224,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 					testSuiteBase,
 					testSuiteRepo,
 					testSuiteRepoDirs,
-					testSuiteRepoToken,
+					gitRepoToken,
 					testSuiteRevision,
 					[]string{},
 				)
@@ -374,10 +376,17 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			"\nIf test-suite-revision is specified, that revision will be checkout. Otherwise the default branch will be checkout",
 		)
 	fs.StringVar(
-		&testSuiteRepoToken,
+		&gitRepoToken,
+		"git-repo-token",
+		"",
+		"authentication token for accessing git repos. If not set GIT_TOKEN environment variable is used.",
+		)
+	fs.StringVar(
+		&gitRepoToken,
 		"test-suite-repo-token",
 		"",
-		"authentication token for the test suite repository. If not set TEST_SUITE_REPO_TOKEN environment variable is used.",
+		"authentication token for the test suite repository. If not set TEST_SUITE_REPO_TOKEN environment variable is used." +
+		"\n This flag is deprecated in favor of git-repo-token.",
 		)
 	fs.StringSliceVar(
 		&testSuiteRepoDirs,
