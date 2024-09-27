@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/grafana/grafana-bench/pkg/dashboard"
 	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/slack-go/slack"
 )
@@ -27,21 +28,26 @@ type data struct {
 }
 
 func FormatTestResults(
-	dashboard string,
+	dashboardURL string,
 	suiteRunId string,
 	suite executor.TestSuite,
 	testRuns []executor.TestRun,
-) []slack.Block {
+) ([]slack.Block, error) {
 	blocks := []slack.Block{}
 
 	// Header Section
-	testRunHeaderLink := suiteRunId
-	if dashboard != "" {
-		testRunHeaderLink = fmt.Sprintf("<%s?var-SuiteRun=%s|%s>", dashboard, suiteRunId, suiteRunId)
+	testRunHeader := suiteRunId
+
+	if dashboardURL != "" {
+		dashboardLink, err := dashboard.RenderDashboardURL(dashboardURL, suiteRunId)
+		if err != nil {
+			return nil, fmt.Errorf("%w: %s", ErrFormattingMessage, err)
+		}
+		testRunHeader = fmt.Sprintf("<%s|%s>", dashboardLink, suiteRunId)
 	}
 	headerText := slack.NewTextBlockObject(
 		"mrkdwn", 
-		fmt.Sprintf("*Suite Run:* %s", testRunHeaderLink),
+		fmt.Sprintf("*Suite Run:* %s", testRunHeader),
 		false,
 		false,
 	)
@@ -72,7 +78,7 @@ func FormatTestResults(
 		blocks = append(blocks, testRunSection)
 	}
 
-	return blocks
+	return blocks, nil
 }
 
 type slackNotifier struct {
@@ -146,7 +152,10 @@ func (s *slackNotifier) Notify(
 		return fmt.Errorf("%w %q", ErrChannelDoesNotExist, channel)
 	}
 
-	blocks := FormatTestResults(s.dashboardURL, suiteRunId, executor.TestSuite{}, testRuns)
+	blocks, err := FormatTestResults(s.dashboardURL, suiteRunId, executor.TestSuite{}, testRuns)
+	if err != nil {
+		return err
+	}
 
 	_, _, err = s.client.PostMessage(channelID, slack.MsgOptionBlocks(blocks...))
 

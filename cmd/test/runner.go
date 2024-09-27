@@ -1,14 +1,13 @@
 package test
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"log/slog"
 	"maps"
-	"text/template"
 	"time"
 
+	"github.com/grafana/grafana-bench/pkg/dashboard"
 	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/grafana"
 	"github.com/grafana/grafana-bench/pkg/reporter"
@@ -93,11 +92,9 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 	if anyFailures {
 		dashboardMsg := ""
 		if t.DashboardURL != "" {
-			// NOTE this block of code performs substitution on a user defined url. e.g.
-			// http://mygrafana.com/b/?suiteRun={suiteRun}
 			// This functionality is ALPHA and may be removed in favor of outputting
 			// the suiteRun ID and leaving it up to the user.
-			dashboard, err := t.getDashboardURL(runId)
+			dashboard, err := dashboard.RenderDashboardURL(t.DashboardURL, runId)
 			if err != nil {
 				t.Log.Error("getting URL dashboard: %w", err)
 			} else {
@@ -139,31 +136,3 @@ func (t *TestRunner) getSuiteRunId(runId string, suite executor.TestSuite) strin
 	)
 }
 
-// getDashboardURL takes t.DashboardURL and substitutes {{.SuiteRun}} for t.RunIdentifier
-// this functionality may be deprecated in the future.
-func (t *TestRunner) getDashboardURL(runIdentifier string) (string, error) {
-	if t.DashboardURL == "" {
-		return "", fmt.Errorf("URL template is empty")
-	}
-
-	template, err := template.New("dashboard").Parse(t.DashboardURL)
-	if err != nil {
-		return "", fmt.Errorf("error parsing template %w", err)
-	}
-
-	// substitution variables
-	// TODO: define more substitution variables
-	vars := struct {
-		SuiteRun string
-	}{
-		SuiteRun: runIdentifier,
-	}
-
-	dashboardURL := bytes.Buffer{}
-	err = template.Execute(&dashboardURL, vars)
-	if err != nil {
-		return "", fmt.Errorf("invalid template substitution: %w", err)
-	}
-
-	return dashboardURL.String(), nil
-}
