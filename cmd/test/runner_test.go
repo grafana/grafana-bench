@@ -32,20 +32,6 @@ func (d dummyExecutor) ExecTestSuite(
 	return d.summary, nil
 }
 
-type mockGrafanaInstanceOption func(*mockGrafanaInstance)
-
-func withGrafanaNotAlive() mockGrafanaInstanceOption {
-	return func(m *mockGrafanaInstance) {
-		m.err = grafana.InstanceNotAvailableError
-	}
-}
-
-func WithInvalidGrafanaCredentials() mockGrafanaInstanceOption {
-	return func(m *mockGrafanaInstance) {
-		m.err = grafana.InvalidCredentialsError
-	}
-}
-
 type mockGrafanaInstance struct {
 	session  *http.Cookie
 	address  string
@@ -89,7 +75,7 @@ func (m *mockGrafanaInstance) GetGrafanaSession() (string, error) {
 	return m.session.Value, m.err
 }
 
-func newMockGrafanaInstance(opts ...mockGrafanaInstanceOption) *mockGrafanaInstance {
+func newMockGrafanaInstance() *mockGrafanaInstance {
 	mock := &mockGrafanaInstance{
 		address: "http://my-instance.grafana.net:433",
 		user:     "admin",
@@ -100,10 +86,6 @@ func newMockGrafanaInstance(opts ...mockGrafanaInstanceOption) *mockGrafanaInsta
 			Name:  "grafana_session",
 			Value: "fake_grafana_session",
 		},
-	}
-
-	for _, opFunc := range opts {
-		opFunc(mock)
 	}
 
 	return mock
@@ -156,10 +138,6 @@ func testRunnerForTesting(
 
 const (
 	invalidDashboardMessage = "invalid template substitution"
-
-	loginError = "Invalid credentials"
-
-	grafanaNotAliveError = "Instance not available"
 
 	testSuiteFailedError = "test suite failed: Too many test failures"
 
