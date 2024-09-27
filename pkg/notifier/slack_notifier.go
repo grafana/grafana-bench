@@ -106,6 +106,7 @@ type SlackNotifierOptions struct {
 // If the Client is not provided, a new client will be created using the Slack token.
 // The Slack token can be provided as an option, or it can be set as the
 // environment variable SLACK_TOKEN.
+// The slack token requires chat.write, channel.read, groups.read scopes
 func NewSlackNotifier(options SlackNotifierOptions) (Notifier, error) {
 	client := options.Client
 	if client == nil {
