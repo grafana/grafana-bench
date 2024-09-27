@@ -103,9 +103,12 @@ test runner.
 
 Slack Notifications
 -------------------
-If the --slack-token argument is specified, test suite failures will be notified using slack.
+If the --slack-notifications flag is set, test suite failures will be notified using slack.
 Notification will be send to the codeowners of the test. The --codeowners-channel-map argument is used
 to find the mapping between codeowners and slack channels.
+
+The --slack-token argument provides the slack token. If not provided, the SLACK_TOKEN 
+environment variable wil be used. This token requires channel.read, groups.read and chat.write scopes.
 `
 
 // NewCmd creates a new test command
