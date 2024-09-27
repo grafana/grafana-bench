@@ -1,6 +1,7 @@
 package reporter
 
 import (
+	"context"
 	"fmt"
 	"io"
 
@@ -19,11 +20,12 @@ func NewTextReporter(report io.Writer) *TextReporter {
 }
 
 func (r *TextReporter) Report(
+	_ context.Context,
 	runId string,
 	suiteRunId string,
 	suite executor.TestSuite,
 	suiteRun executor.SuiteRunSummary,
-) {
+) error {
 	for _, testRun := range suiteRun.TestRuns {
 		fmt.Fprintf(
 			r.report,
@@ -38,4 +40,6 @@ func (r *TextReporter) Report(
 	fmt.Fprintf(r.report, "Tests failed %d\n", suiteRun.TestsFailed)
 	fmt.Fprintf(r.report, "Tests error %d\n", suiteRun.TestsError)
 	fmt.Fprintf(r.report, "\nTests suite %s\n", suiteRun.Status)
+
+	return nil
 }

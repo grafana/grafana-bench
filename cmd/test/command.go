@@ -14,6 +14,8 @@ import (
 	"github.com/grafana/grafana-bench/pkg/compile"
 	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/grafana"
+	"github.com/grafana/grafana-bench/pkg/notifier"
+	"github.com/grafana/grafana-bench/pkg/reporter"
 	"github.com/grafana/grafana-bench/pkg/revision"
 	"github.com/grafana/grafana-bench/pkg/utils/env"
 
@@ -98,8 +100,16 @@ test runner.
 
 
 [1] https://github.com/grafana/grafana-bench/blob/main/docs/writing_pw_tests.md
-`
 
+Slack Notifications
+-------------------
+If the --slack-notifications flag is set, test suite failures will be notified using slack.
+Notification will be send to the codeowners of the test. The --codeowners-channel-map argument is used
+to find the mapping between codeowners and slack channels.
+
+The --slack-token argument provides the slack token. If not provided, the SLACK_TOKEN 
+environment variable wil be used. This token requires channel.read, groups.read and chat.write scopes.
+`
 
 // NewCmd creates a new test command
 func NewCmd(log *slog.Logger) *cobra.Command {
@@ -117,7 +127,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		testSuiteName      string
                 testSuiteRepo      string
 		testSuiteRepoDirs  []string
-		testSuiteRepoToken string
+		gitRepoToken       string
 		testSuiteRevision  string
 		testSuite          string
 		revisionFile       string
@@ -132,6 +142,10 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		// playwright cloud specific flags
 		pwPrepareCmd       string
 		pwExecuteCmd       string
+		// slack notifications flags
+		slackNotifications bool
+		slackToken         string
+		codeownersMap      string
 	)
 
 	cmd := cobra.Command{
@@ -164,11 +178,12 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			grafanaUsername = env.EnvOrDefault("GRAFANA_USER", grafanaUsername)
 			grafanaPassword = env.EnvOrDefault("GRAFANA_PASSWORD", grafanaPassword)
 
-			grafanaInstance, err := grafana.NewInstance(
+			grafanaInstance, grafanaVersion, err := getGrafanaInstance(
+				log,
 				grafanaUrl,
 				grafanaUsername,
 				grafanaPassword,
-				grafana.WithTimeout(grafanaTimeout),
+				grafanaTimeout,
 			)
 			if err != nil {
 				return err
@@ -196,7 +211,9 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			}
 
 			if testSuiteRepo != "" {
-				testSuiteRepoToken = env.EnvOrDefault("TEST_SUITE_REPO_TOKEN",testSuiteRepoToken )
+				// TODO: remove TEST_SUITE_REPO_TOKEN env variable
+				gitRepoToken = env.EnvOrDefault("TEST_SUITE_REPO_TOKEN", gitRepoToken)
+				gitRepoToken = env.EnvOrDefault("GIT_TOKEN", gitRepoToken)
 
 				log.Info("checking out test suite", "repository", testSuiteRepo)
 
@@ -205,7 +222,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 					testSuiteBase,
 					testSuiteRepo,
 					testSuiteRepoDirs,
-					testSuiteRepoToken,
+					gitRepoToken,
 					testSuiteRevision,
 					[]string{},
 				)
@@ -241,15 +258,57 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				executor = playwright.NewPlaywrightTestExecutor(log, verbose, pwPrepareCmd, pwExecuteCmd)
 			}
 
+			runnerLog := log.With(
+				"testTrigger", testTrigger,
+				"benchRevision", benchRevision,
+				//TODO: deprecate this attribute
+				"grafanaUrl", grafanaInstance.Hostname(),
+				"grafanSlug", grafanaInstance.Slug(),
+				"grafanaVersion", grafanaVersion,
+				"testExecutor", testRunner,
+			)
+
+			// chain of test reporters
+			reporters := []reporter.SuiteRunReporter{}
+
+			// create test reporter
+			var suiteReporter reporter.SuiteRunReporter
+			switch reportFormat {
+			case "log": suiteReporter = reporter.NewLogReporter(runnerLog)
+			case "text": suiteReporter = reporter.NewTextReporter(os.Stdout)
+			default: return fmt.Errorf("invalid report format %q", revisionFile)
+			}
+			reporters = append(reporters, suiteReporter)
+
+			if slackNotifications {
+				slackToken = env.EnvOrDefault("SLACK_TOKEN", slackToken)
+				if slackToken == "" {
+					return fmt.Errorf("no slack token provided")
+				}
+
+				notifier, err := notifier.NewSlackNotifier(notifier.SlackNotifierOptions{
+					Token: slackToken,
+					MappingFile: codeownersMap,
+					DashboardURL: dashboardURL,
+				})
+
+				if err != nil {
+					return fmt.Errorf("creating slack notifier: %w", err)
+				}
+
+				reporters = append(reporters, reporter.NewNotificationReporter(notifier, reporter.NotifyAll))
+			}
+
 			runner := NewTestRunner(
-				log,
+				runnerLog,
 				testTrigger,
 				grafanaInstance,
+				grafanaVersion,
 				machineSpec,
 				benchRevision,
 				dashboardURL,
 				executor,
-				reportFormat,
+				reporter.NewChainReporter(reporters...),
 			)
 
 			// ensure environment variable values are expanded
@@ -317,10 +376,17 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			"\nIf test-suite-revision is specified, that revision will be checkout. Otherwise the default branch will be checkout",
 		)
 	fs.StringVar(
-		&testSuiteRepoToken,
+		&gitRepoToken,
+		"git-repo-token",
+		"",
+		"authentication token for accessing git repos. If not set GIT_TOKEN environment variable is used.",
+		)
+	fs.StringVar(
+		&gitRepoToken,
 		"test-suite-repo-token",
 		"",
-		"authentication token for the test suite repository. If not set TEST_SUITE_REPO_TOKEN environment variable is used.",
+		"authentication token for the test suite repository. If not set TEST_SUITE_REPO_TOKEN environment variable is used." +
+		"\n This flag is deprecated in favor of git-repo-token.",
 		)
 	fs.StringSliceVar(
 		&testSuiteRepoDirs,
@@ -387,6 +453,26 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			"\nDefaults to the last component of --test-suite."+
 			"\nFor example --test-suite /path/to/testsuite will give a test suite name of 'testsuite'.",
 	)
+	fs.BoolVar(
+		&slackNotifications,
+		"slack-notifications",
+		false,
+		"send notifications to slack. Requires setting the --slack-token option or the SLACK_TOKEN environment variable.",
+	)
+	fs.StringVar(
+		&slackToken,
+		"slack-token",
+		"",
+		"slack token used for sending notifications. If not defined SLACK_TOKEN environment variable is used." +
+		"\nThe token requires chat:write and channels:read scopes",
+	)
+	fs.StringVar(
+		&codeownersMap,
+		"codeowners-channel-map",
+		"slack_teams_mapping.yaml",
+		"path or url to the codeowner to slack channel mapping",
+	)
+
 
 	return &cmd
 }
@@ -398,4 +484,38 @@ func getTestSuiteRevision(revisionFile string) (string, error) {
 		return "", fmt.Errorf("getting test suite revision  from %w", err)
 	}
 	return strings.TrimSpace(string(bytes)), nil
+}
+
+func getGrafanaInstance(
+	log *slog.Logger,
+	url string,
+	username string,
+	password string,
+	timeout time.Duration,
+) (grafana.GrafanaInstance, string, error) {
+	grafanaInstance, err := grafana.NewInstance(
+		url,
+		username,
+		password,
+		grafana.WithTimeout(timeout),
+	)
+	if err != nil {
+		return nil, "", err
+	}
+
+	log.Info("Waiting for grafana server...", "address", grafanaInstance.Url())
+
+	err = grafanaInstance.WaitForLiveGrafana(context.TODO())
+	if err != nil {
+		return nil, "", fmt.Errorf("checking Grafana is Live... %w", err)
+	}
+	log.Debug("Grafana server is ready!")
+
+	grafanaVersion, err := grafanaInstance.GetGrafanaBuildVersion()
+	if err != nil {
+		return nil, "", fmt.Errorf("getting grafana version %w", err)
+	}
+
+	return grafanaInstance, grafanaVersion, nil
+
 }
