@@ -178,7 +178,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			grafanaUsername = env.EnvOrDefault("GRAFANA_USER", grafanaUsername)
 			grafanaPassword = env.EnvOrDefault("GRAFANA_PASSWORD", grafanaPassword)
 
-			grafanaInstance, err := getGrafanaInstance(
+			grafanaInstance, grafanaVersion, err := getGrafanaInstance(
 				log,
 				grafanaUrl,
 				grafanaUsername,
@@ -187,11 +187,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			)
 			if err != nil {
 				return err
-			}
-
-			grafanaVersion, err := grafanaInstance.GetGrafanaBuildVersion()
-			if err != nil {
-				return fmt.Errorf("getting grafana version: %w", err)
 			}
 
 			if k6CloudToken == "" {
@@ -308,6 +303,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				runnerLog,
 				testTrigger,
 				grafanaInstance,
+				grafanaVersion,
 				machineSpec,
 				benchRevision,
 				dashboardURL,
@@ -496,7 +492,7 @@ func getGrafanaInstance(
 	username string,
 	password string,
 	timeout time.Duration,
-) (grafana.GrafanaInstance, error) {
+) (grafana.GrafanaInstance, string, error) {
 	grafanaInstance, err := grafana.NewInstance(
 		url,
 		username,
@@ -504,17 +500,22 @@ func getGrafanaInstance(
 		grafana.WithTimeout(timeout),
 	)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	log.Info("Waiting for grafana server...", "address", grafanaInstance.Url())
 
 	err = grafanaInstance.WaitForLiveGrafana(context.TODO())
 	if err != nil {
-		return nil, fmt.Errorf("checking Grafana is Live... %w", err)
+		return nil, "", fmt.Errorf("checking Grafana is Live... %w", err)
 	}
 	log.Debug("Grafana server is ready!")
 
-	return grafanaInstance, nil
+	grafanaVersion, err := grafanaInstance.GetGrafanaBuildVersion()
+	if err != nil {
+		return nil, "", fmt.Errorf("getting grafana version %w", err)
+	}
+
+	return grafanaInstance, grafanaVersion, nil
 
 }
