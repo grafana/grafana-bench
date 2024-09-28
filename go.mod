@@ -42,12 +42,10 @@ require (
 require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/go-cmp v0.6.0
-	github.com/hairyhenderson/go-codeowners v0.5.0
+	github.com/hairyhenderson/go-codeowners v0.6.0
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/spf13/cobra v1.8.0
 	github.com/szkiba/k6pack v0.1.3
 	golang.org/x/net v0.23.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 )
-
-replace github.com/hairyhenderson/go-codeowners v0.5.0 => github.com/pablochacin/go-codeowners v0.0.0-20240923091225-3a5b46380784
