@@ -18,7 +18,6 @@ bench provides a CLI interface for executing diverse actions for running tests
 
 ### SEE ALSO
 
-* [bench compile](bench_compile.md)	 - bench test compiler
 * [bench test](bench_test.md)	 - bench test runner
 * [bench version](bench_version.md)	 - bench version
 
