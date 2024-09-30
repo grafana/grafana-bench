@@ -180,12 +180,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		"admin",
 		"grafana password. Overridden by the GRAFANA_PASSWORD environment variable",
 	)
-	fs.StringVar(
-		&suiteConfig.RevisionFile,
-		"test-suite-revision-file",
-		"",
-		"path to a file with the test suite revision. Has precedence over test-suite-revision",
-	)
 	// TODO: add default value as the revision is used to generate the run id
 	fs.StringVar(
 		&suiteConfig.Repo,

@@ -64,7 +64,6 @@ type TestSuiteConfig struct {
 	Path         string
 	BaseDir      string
 	Revision     string
-	RevisionFile string
 	TestExecutor string
 }
 
@@ -218,13 +217,6 @@ func (config *TestSuiteConfig) BuildTestSuite(log *slog.Logger) (*executor.TestS
 		testSuiteRevision, err = compiler.CompileTestSuite(context.TODO())
 		if err != nil {
 			return nil, fmt.Errorf("checking out test suite: %w", err)
-		}
-	}
-
-	if config.RevisionFile != "" {
-		testSuiteRevision, err = getTestSuiteRevision(config.RevisionFile)
-		if err != nil {
-			return nil, fmt.Errorf("getting version from file %s: %w", config.RevisionFile, err)
 		}
 	}
 
