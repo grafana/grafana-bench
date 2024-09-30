@@ -23,7 +23,6 @@ import (
 
 type BenchConfig struct {
 	BenchRevision      string
-	MachineSpec        string
 	Type               string
 	Trigger            string
 	EnvVars            map[string]string
@@ -172,7 +171,6 @@ func (config BenchConfig) BuildTestRunner(log *slog.Logger, testExecutor string)
 		config.Trigger,
 		grafanaInstance,
 		grafanaVersion,
-		config.MachineSpec,
 		config.BenchRevision,
 		config.DashboardURL,
 		executor,

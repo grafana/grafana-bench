@@ -180,7 +180,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		"admin",
 		"grafana password. Overridden by the GRAFANA_PASSWORD environment variable",
 	)
-	fs.StringVar(&config.MachineSpec, "machine-spec", "", "grafana instance machine spec")
 	fs.StringVar(
 		&suiteConfig.RevisionFile,
 		"test-suite-revision-file",

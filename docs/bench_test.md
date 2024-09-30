@@ -118,7 +118,6 @@ bench test  \
       --k6-cloud-output                   send output to GCK6. Requires setting the GCK6 project ID and access token.
       --k6-cloud-project string           K6 cloud project ID. If not set K6_CLOUD_PROJECT_ID environment variable is used
       --k6-cloud-token string             K6 cloud access token. If not set K6_CLOUD_TOKEN environment variable is used
-      --machine-spec string               grafana instance machine spec
       --pw-execute-cmd string             command used to execute the test suite eg: "npm run test"
       --pw-prepare-cmd string             command used to install dependencies for the test suite eg: "npm install"
       --slack-notifications               send notifications to slack. Requires setting the --slack-token option or the SLACK_TOKEN environment variable.
