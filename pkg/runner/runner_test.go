@@ -1,4 +1,4 @@
-package test
+package runner
 
 import (
 	"bytes"

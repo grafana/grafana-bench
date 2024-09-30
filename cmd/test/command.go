@@ -15,6 +15,7 @@ import (
 	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/grafana"
 	"github.com/grafana/grafana-bench/pkg/notifier"
+	"github.com/grafana/grafana-bench/pkg/runner"
 	"github.com/grafana/grafana-bench/pkg/reporter"
 	"github.com/grafana/grafana-bench/pkg/revision"
 	"github.com/grafana/grafana-bench/pkg/utils/env"
@@ -155,7 +156,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		Long:    longDescription,
 		Example: examples,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			trt, err := ParseTestType(testType)
+			trt, err := runner.ParseTestType(testType)
 			if err != nil {
 				return err
 			}
@@ -299,7 +300,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				reporters = append(reporters, reporter.NewNotificationReporter(notifier, reporter.NotifyAll))
 			}
 
-			runner := NewTestRunner(
+			runner := runner.NewTestRunner(
 				runnerLog,
 				testTrigger,
 				grafanaInstance,

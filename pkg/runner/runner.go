@@ -1,4 +1,5 @@
-package test
+// Package runner implements the test runners
+package runner
 
 import (
 	"context"
