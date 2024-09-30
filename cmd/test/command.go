@@ -9,10 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/grafana/grafana-bench/cmd/test/k6"
-	"github.com/grafana/grafana-bench/cmd/test/playwright"
+
 	"github.com/grafana/grafana-bench/pkg/compile"
 	"github.com/grafana/grafana-bench/pkg/executor"
+	"github.com/grafana/grafana-bench/pkg/executor/k6"
+	"github.com/grafana/grafana-bench/pkg/executor/playwright"
 	"github.com/grafana/grafana-bench/pkg/grafana"
 	"github.com/grafana/grafana-bench/pkg/notifier"
 	"github.com/grafana/grafana-bench/pkg/runner"
