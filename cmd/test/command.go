@@ -1,21 +1,10 @@
 package test
 
 import (
-	"context"
-	"fmt"
 	"log/slog"
 	"os"
-	"path"
-	"strings"
-	"time"
 
-	"github.com/grafana/grafana-bench/pkg/compile"
-	"github.com/grafana/grafana-bench/pkg/executor"
-	"github.com/grafana/grafana-bench/pkg/executor/k6"
-	"github.com/grafana/grafana-bench/pkg/executor/playwright"
 	"github.com/grafana/grafana-bench/pkg/grafana"
-	"github.com/grafana/grafana-bench/pkg/notifier"
-	"github.com/grafana/grafana-bench/pkg/reporter"
 	"github.com/grafana/grafana-bench/pkg/runner"
 
 	"github.com/spf13/cobra"
@@ -113,7 +102,8 @@ environment variable wil be used. This token requires channel.read, groups.read 
 // NewCmd creates a new test command
 func NewCmd(log *slog.Logger) *cobra.Command {
 	var (
-		config = &BenchConfig{}
+		config      = &BenchConfig{}
+		suiteConfig = &TestSuiteConfig{}
 	)
 
 	cmd := cobra.Command{
@@ -123,144 +113,18 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		Long:    longDescription,
 		Example: examples,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// merge configuration with environment variables
-			MergeEnv(config)
+			suiteConfig.MergeEnv()
 
-			trt, err := runner.ParseTestType(config.Type)
-			if err != nil {
-				return err
-			}
-			grafanaInstance, grafanaVersion, err := getGrafanaInstance(
-				log,
-				config.Grafana.Url,
-				config.Grafana.UserName,
-				config.Grafana.Password,
-				config.Grafana.Timeout,
-			)
+			suite, err := suiteConfig.BuildTestSuite(log)
 			if err != nil {
 				return err
 			}
 
-			// if the name of the test suite was not given, use the last element of the test suit path as name
-			if config.Suite.Name == "" {
-				config.Suite.Name = strings.TrimSuffix(path.Base(config.Suite.Path), path.Ext(config.Suite.Path))
+			config.MergeEnv()
+			testRunner, err := config.BuildTestRunner(log, suiteConfig.TestExecutor)
+			if err != nil {
+				return err
 			}
-
-			if config.Suite.BaseDir == "" {
-				config.Suite.BaseDir, err = os.Getwd()
-				if err != nil {
-					return fmt.Errorf("getting work directory %w", err)
-				}
-			}
-
-			testSuiteRevision := config.Suite.Revision
-			if config.Suite.Repo != "" {
-				log.Info("checking out test suite", "repository", config.Suite.Repo)
-
-				compiler := compile.NewTestCompiler(
-					log,
-					config.Suite.BaseDir,
-					config.Suite.Repo,
-					config.Suite.RepoDirs,
-					config.Suite.RepoToken,
-					config.Suite.Revision,
-					[]string{},
-				)
-
-				testSuiteRevision, err = compiler.CompileTestSuite(context.TODO())
-				if err != nil {
-					return fmt.Errorf("checking out test suite: %w", err)
-				}
-			}
-
-			if config.Suite.RevisionFile != "" {
-				testSuiteRevision, err = getTestSuiteRevision(config.Suite.RevisionFile)
-				if err != nil {
-					return fmt.Errorf("getting version from file %s: %w", config.Suite.RevisionFile, err)
-				}
-			}
-
-			suite := executor.TestSuite{
-				Name:     config.Suite.Name,
-				BaseDir:  config.Suite.BaseDir,
-				Path:     config.Suite.Path,
-				Revision: testSuiteRevision,
-			}
-
-			var executor executor.TestExecutor
-			if config.Suite.TestRunner == "k6" {
-				executor = k6.NewK6TestExecutor(
-					log,
-					config.Verbose,
-					config.K6.CloudOutput,
-					config.K6.CloudToken,
-					config.K6.CloudProjectId,
-				)
-			}
-
-			if config.Suite.TestRunner == "playwright" {
-				executor = playwright.NewPlaywrightTestExecutor(
-					log,
-					config.Verbose,
-					config.PW.PrepareCmd,
-					config.PW.ExecuteCmd,
-				)
-			}
-
-			runnerLog := log.With(
-				"testTrigger", config.Trigger,
-				"benchRevision", config.BenchRevision,
-				//TODO: deprecate this attribute
-				"grafanaUrl", grafanaInstance.Hostname(),
-				"grafanSlug", grafanaInstance.Slug(),
-				"grafanaVersion", grafanaVersion,
-				"testExecutor", config.Suite.TestRunner,
-			)
-
-			// chain of test reporters
-			reporters := []reporter.SuiteRunReporter{}
-
-			// create test reporter
-			var suiteReporter reporter.SuiteRunReporter
-			switch config.ReportFormat {
-			case "log":
-				suiteReporter = reporter.NewLogReporter(runnerLog)
-			case "text":
-				suiteReporter = reporter.NewTextReporter(os.Stdout)
-			default:
-				return fmt.Errorf("invalid report format %q", config.ReportFormat)
-			}
-			reporters = append(reporters, suiteReporter)
-
-			if config.SlackNotifications {
-				if config.Slack.Token == "" {
-					return fmt.Errorf("no slack token provided")
-				}
-
-				notifier, err := notifier.NewSlackNotifier(notifier.SlackNotifierOptions{
-					Token:        config.Slack.Token,
-					MappingFile:  config.Slack.CodeownersMap,
-					DashboardURL: config.DashboardURL,
-				})
-
-				if err != nil {
-					return fmt.Errorf("creating slack notifier: %w", err)
-				}
-
-				reporters = append(reporters, reporter.NewNotificationReporter(notifier, reporter.NotifyAll))
-			}
-
-			runner := runner.NewTestRunner(
-				runnerLog,
-				config.Trigger,
-				grafanaInstance,
-				grafanaVersion,
-				config.MachineSpec,
-				config.BenchRevision,
-				config.DashboardURL,
-				executor,
-				reporter.NewChainReporter(reporters...),
-			)
 
 			// ensure environment variable values are expanded
 			testEnvVars := map[string]string{}
@@ -268,7 +132,12 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				testEnvVars[k] = os.ExpandEnv(v)
 			}
 
-			return runner.Exec(cmd.Context(), trt, suite, testEnvVars)
+			trt, err := runner.ParseTestType(config.Type)
+			if err != nil {
+				return err
+			}
+
+			return testRunner.Exec(cmd.Context(), trt, *suite, testEnvVars)
 		},
 	}
 
@@ -276,7 +145,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	fs.StringToStringVar(&config.EnvVars, "test-env-vars", nil, "custom test environment variables")
 	fs.StringVar(&config.Trigger, "test-trigger", "local", "test trigger")
 	fs.StringVar(&config.Type, "test-type", "smoke", "test type. Allowed values: 'smoke', 'load'")
-	fs.StringVar(&config.Suite.TestRunner, "test-runner", "k6", "test runner. Allowed values: 'k6', 'playwright'")
+	fs.StringVar(&suiteConfig.TestExecutor, "test-runner", "k6", "test runner. Allowed values: 'k6', 'playwright'")
 	fs.StringVar(&config.PW.PrepareCmd, "pw-prepare-cmd", "", "command used to install dependencies for the test suite eg: \"npm install\"")
 	fs.StringVar(&config.PW.ExecuteCmd, "pw-execute-cmd", "", "command used to execute the test suite eg: \"npm run test\"")
 	fs.StringVar(
@@ -313,14 +182,14 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	)
 	fs.StringVar(&config.MachineSpec, "machine-spec", "", "grafana instance machine spec")
 	fs.StringVar(
-		&config.Suite.RevisionFile,
+		&suiteConfig.RevisionFile,
 		"test-suite-revision-file",
 		"",
 		"path to a file with the test suite revision. Has precedence over test-suite-revision",
 	)
 	// TODO: add default value as the revision is used to generate the run id
 	fs.StringVar(
-		&config.Suite.Repo,
+		&suiteConfig.Repo,
 		"test-suite-repo",
 		"",
 		"repository to get the test suite from. If not set TEST_SUITE_REPO environment variable is used."+
@@ -328,19 +197,19 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			"\nIf test-suite-revision is specified, that revision will be checkout. Otherwise the default branch will be checkout",
 	)
 	fs.StringVar(
-		&config.Suite.RepoToken,
+		&suiteConfig.RepoToken,
 		"test-suite-repo-token",
 		"",
 		"authentication token for the test suite repository. If not set TEST_SUITE_REPO_TOKEN environment variable is used.",
 	)
 	fs.StringSliceVar(
-		&config.Suite.RepoDirs,
+		&suiteConfig.RepoDirs,
 		"test-suite-repo-dirs",
 		nil,
 		"Directories to checkout from test suite repo. If omitted, all folders will be checkout",
 	)
 	fs.StringVar(
-		&config.Suite.Revision,
+		&suiteConfig.Revision,
 		"test-suite-revision",
 		"",
 		"test suite revision. If not set TEST_SUITE_REVISION environment variable is used",
@@ -378,20 +247,20 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			"\n    SuiteRun: identifier of the suite run"+
 			"\nExample: http://localhost/dashboards?run={{.SuiteRun}}",
 	)
-	fs.StringVar(&config.Suite.Path, "test-suite", "", "path to the tests to be executed."+
+	fs.StringVar(&suiteConfig.Path, "test-suite", "", "path to the tests to be executed."+
 		"\nThe path must be relative to the base dir (which defaults to the current directory)."+
 		"\nA single .js file or a directory can be specified."+
 		"\nIf a directory is specified, all .js files in the directory and its sub-directories will be executed.")
 	cmd.MarkFlagRequired("test-suite")
 	fs.StringVar(
-		&config.Suite.BaseDir,
+		&suiteConfig.BaseDir,
 		"test-suite-base",
 		"",
 		"base directory for searching test suites. Defaults to current directory"+
 			"\nIf specified, it is prefixed to the --test-suite.",
 	)
 	fs.StringVar(
-		&config.Suite.Name,
+		&suiteConfig.Name,
 		"test-suite-name",
 		"",
 		"test suite name. If not specified, TEST_SUITE_NAME environment variable is used."+
@@ -420,47 +289,3 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 
 	return &cmd
 }
-
-// read test suite revision from file
-func getTestSuiteRevision(revisionFile string) (string, error) {
-	bytes, err := os.ReadFile(revisionFile)
-	if err != nil {
-		return "", fmt.Errorf("getting test suite revision  from %w", err)
-	}
-	return strings.TrimSpace(string(bytes)), nil
-}
-
-func getGrafanaInstance(
-	log *slog.Logger,
-	url string,
-	username string,
-	password string,
-	timeout time.Duration,
-) (grafana.GrafanaInstance, string, error) {
-	grafanaInstance, err := grafana.NewInstance(
-		url,
-		username,
-		password,
-		grafana.WithTimeout(timeout),
-	)
-	if err != nil {
-		return nil, "", err
-	}
-
-	log.Info("Waiting for grafana server...", "address", grafanaInstance.Url())
-
-	err = grafanaInstance.WaitForLiveGrafana(context.TODO())
-	if err != nil {
-		return nil, "", fmt.Errorf("checking Grafana is Live... %w", err)
-	}
-	log.Debug("Grafana server is ready!")
-
-	grafanaVersion, err := grafanaInstance.GetGrafanaBuildVersion()
-	if err != nil {
-		return nil, "", fmt.Errorf("getting grafana version %w", err)
-	}
-
-	return grafanaInstance, grafanaVersion, nil
-
-}
-
