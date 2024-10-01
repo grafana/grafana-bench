@@ -19,7 +19,6 @@ type TestRunner struct {
 	Trigger         string
 	GrafanaInstance grafana.GrafanaInstance
 	GrafanaVersion  string
-	MachineSpec     string
 	BenchRevision   string
 	DashboardURL    string
 	Executor        executor.TestExecutor
@@ -31,7 +30,6 @@ func 	NewTestRunner(
 	testTrigger string,
 	grafanaInstance grafana.GrafanaInstance,
 	grafanaVersion string,
-	machineSpec string,
 	benchRevision string,
 	dashboardURL string,
 	executor executor.TestExecutor,
@@ -43,7 +41,6 @@ func 	NewTestRunner(
 		Trigger:         testTrigger,
 		GrafanaInstance: grafanaInstance,
 		GrafanaVersion:  grafanaVersion,
-		MachineSpec:     machineSpec,
 		BenchRevision:   benchRevision,
 		DashboardURL:    dashboardURL,
 		Executor:        executor,
@@ -64,7 +61,6 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 
 	// set common test execution variables
 	env := map[string]string{
-		"MACHINE_SPEC":        t.MachineSpec,
 		"TEST_TYPE":           testType.Name(),
 		"TEST_SUITE_REVISION": suite.Revision,
 		// TODO unify variable names

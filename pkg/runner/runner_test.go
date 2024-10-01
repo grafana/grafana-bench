@@ -120,7 +120,6 @@ func testRunnerForTesting(
 		"test", // trigger
 		grafanaInstance,
 		"test",  // grafana version
-		"local", // machine spec
 		"devel", // bench revision
 		"",      // dashboard URL
 		executor,
