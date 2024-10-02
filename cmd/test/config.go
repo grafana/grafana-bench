@@ -214,10 +214,14 @@ func (config *TestSuiteConfig) BuildTestSuite(log *slog.Logger) (*executor.TestS
 			[]string{},
 		)
 
-		testSuiteRevision, err = compiler.CompileTestSuite(context.TODO())
+		revisionHash, err := compiler.CompileTestSuite(context.TODO())
 		if err != nil {
 			return nil, fmt.Errorf("checking out test suite: %w", err)
 		}
+
+		if testSuiteRevision == "" {
+			testSuiteRevision = revisionHash
+		}	
 	}
 
 	return &executor.TestSuite{
