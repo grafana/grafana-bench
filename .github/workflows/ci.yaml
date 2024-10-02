@@ -70,6 +70,8 @@ jobs:
     needs: [test-bench, test-container]
     runs-on: ubuntu-latest
     steps:
+      - name: get short sha
+        run: echo ""SHORT_SHA=$(echo ${{ github.sha }} | cut -c 1-7)" >> $GITHUB_ENV
       - name: Log into ghcr.io
         uses: docker/login-action@v3
         with:
@@ -86,9 +88,9 @@ jobs:
           image_name: grafana-bench
           platforms: linux/amd64,linux/arm64
           build-args: |-
-            BENCH_REVISION=${{ github.sha }}
+            BENCH_REVISION=${{ env.SHORT_SHA }}
           tags: |-
-            ${{ github.sha }}
+            ${{ env.SHORT_SHA }}
             latest
       - name: copy image to ghcr.io
         run: |
