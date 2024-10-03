@@ -52,8 +52,7 @@ func (r *LogReporter) Report(
 // suiteLogAttrs formats suite's attributes as log attributes
 func suiteLogAttrs(suite executor.TestSuite) []any {
 	return []any{
-		"suiteId", fmt.Sprintf("%s-%s", suite.Name, suite.Revision),
-		"suiteIdName", suite.Name,
+		"suiteName", suite.Name,
 		"suiteRevision", suite.Revision,
 	}
 }

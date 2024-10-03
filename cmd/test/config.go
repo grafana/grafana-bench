@@ -5,8 +5,10 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -188,11 +190,6 @@ func (c *TestSuiteConfig) MergeEnv() {
 func (config *TestSuiteConfig) BuildTestSuite(log *slog.Logger) (*executor.TestSuite, error) {
 	var err error
 
-	// if the name of the test suite was not given, use the last element of the test suit path as name
-	if config.Name == "" {
-		config.Name = strings.TrimSuffix(path.Base(config.Path), path.Ext(config.Path))
-	}
-
 	if config.BaseDir == "" {
 		config.BaseDir, err = os.Getwd()
 		if err != nil {
@@ -222,6 +219,16 @@ func (config *TestSuiteConfig) BuildTestSuite(log *slog.Logger) (*executor.TestS
 		if testSuiteRevision == "" {
 			testSuiteRevision = revisionHash
 		}	
+	}
+
+	// if the test suite name was not given, use repo name (if Any) and the last element of the test suite path
+	if config.Name == "" {
+		name := strings.TrimSuffix(path.Base(config.Path), path.Ext(config.Path))
+		if config.Repo != "" {
+			repoURL, _ := url.Parse(config.Repo)
+			name,_ = strings.CutPrefix(filepath.Join(repoURL.Path, name), "/")
+		}
+		config.Name = name
 	}
 
 	return &executor.TestSuite{
