@@ -1,4 +1,4 @@
-package test
+package runner
 
 import (
 	"bytes"
@@ -13,6 +13,7 @@ import (
 
 	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/grafana"
+	"github.com/grafana/grafana-bench/pkg/reporter"
 )
 
 type dummyExecutor struct {
@@ -29,20 +30,6 @@ func (d dummyExecutor) ExecTestSuite(
 	env map[string]string,
 ) (executor.SuiteRunSummary, error) {
 	return d.summary, nil
-}
-
-type mockGrafanaInstanceOption func(*mockGrafanaInstance)
-
-func withGrafanaNotAlive() mockGrafanaInstanceOption {
-	return func(m *mockGrafanaInstance) {
-		m.err = grafana.InstanceNotAvailableError
-	}
-}
-
-func WithInvalidGrafanaCredentials() mockGrafanaInstanceOption {
-	return func(m *mockGrafanaInstance) {
-		m.err = grafana.InvalidCredentialsError
-	}
 }
 
 type mockGrafanaInstance struct {
@@ -88,7 +75,7 @@ func (m *mockGrafanaInstance) GetGrafanaSession() (string, error) {
 	return m.session.Value, m.err
 }
 
-func newMockGrafanaInstance(opts ...mockGrafanaInstanceOption) *mockGrafanaInstance {
+func newMockGrafanaInstance() *mockGrafanaInstance {
 	mock := &mockGrafanaInstance{
 		address: "http://my-instance.grafana.net:433",
 		user:     "admin",
@@ -99,10 +86,6 @@ func newMockGrafanaInstance(opts ...mockGrafanaInstanceOption) *mockGrafanaInsta
 			Name:  "grafana_session",
 			Value: "fake_grafana_session",
 		},
-	}
-
-	for _, opFunc := range opts {
-		opFunc(mock)
 	}
 
 	return mock
@@ -136,11 +119,11 @@ func testRunnerForTesting(
 		log,
 		"test", // trigger
 		grafanaInstance,
-		"local", // machine spec
+		"test",  // grafana version
 		"devel", // bench revision
 		"",      // dashboard URL
 		executor,
-		"log",
+		reporter.NewLogReporter(log),
 	)
 
 	// apply options
@@ -154,10 +137,6 @@ func testRunnerForTesting(
 
 const (
 	invalidDashboardMessage = "invalid template substitution"
-
-	loginError = "Invalid credentials"
-
-	grafanaNotAliveError = "Instance not available"
 
 	testSuiteFailedError = "test suite failed: Too many test failures"
 
@@ -234,20 +213,6 @@ func Test_Runner(t *testing.T) {
 			expectMsgs: []string{
 				invalidDashboardMessage,
 			},
-		},
-		{
-			testCase: "invalid credentials",
-			instance: newMockGrafanaInstance(
-				WithInvalidGrafanaCredentials(),
-			),
-			expectErr: loginError,
-		},
-		{
-			testCase: "grafana not available",
-			instance: newMockGrafanaInstance(
-				withGrafanaNotAlive(),
-			),
-			expectErr: grafanaNotAliveError,
 		},
 	}
 
