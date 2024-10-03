@@ -46,7 +46,7 @@ jobs:
       - name: checkout code
         uses: actions/checkout@v4
       - name: build container
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           build-args: |-
