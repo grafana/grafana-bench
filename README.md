@@ -1,7 +1,7 @@
 
 # Grafana Bench
 
-Grafana bench is a tool to build, provision, and test Grafana.
+Grafana bench is a tool for testing Grafana.
 
 It's built on top of k6, and [Grafana API Tests](https://github.com/grafana/grafana-api-tests) to build and test a grafana on the platform and architecture of your choosing.
 

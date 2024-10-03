@@ -1,9 +1,9 @@
 package reporter
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
-	"os"
 	"strconv"
 	"time"
 
@@ -16,20 +16,19 @@ type LogReporter struct {
 }
 
 // creates a new log reporter with the given attributes
-func NewLogReporter(attr []any) *LogReporter {
-	log := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	log = log.With(attr...)
+func NewLogReporter(log *slog.Logger) *LogReporter {
 	return &LogReporter{
 		Log: log,
 	}
 }
  
 func (r *LogReporter) Report(
+	_ context.Context,
 	runId string,
 	suiteRunId string,
 	suite executor.TestSuite,
 	suiteRun executor.SuiteRunSummary,
-) {
+) error {
 	log := r.Log.With("runId", runId, "suiteRun", suiteRunId)
 
 	for order, testRun := range suiteRun.TestRuns {
@@ -46,13 +45,14 @@ func (r *LogReporter) Report(
 	log.With(suiteLogAttrs(suite)...).
 		With(suiteRunLogAttrs(suiteRun)...).
 		Info("suiteRun", "anyFailures", anyFailures)
+
+	return nil
 }
 
 // suiteLogAttrs formats suite's attributes as log attributes
 func suiteLogAttrs(suite executor.TestSuite) []any {
 	return []any{
-		"suiteId", fmt.Sprintf("%s-%s", suite.Name, suite.Revision),
-		"suiteIdName", suite.Name,
+		"suiteName", suite.Name,
 		"suiteRevision", suite.Revision,
 	}
 }
