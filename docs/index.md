@@ -15,10 +15,12 @@ Bench is a tool for executing e2e tests against an instance of Grafana.
     however, in CI or for plugin-e2e tests we recommend using the Bench image as
     all dependencies for browser tests are provided for you.
 
-    `go install github.com/grafana/grafana-bench`
+    `go install github.com/grafana/grafana-bench@v0.2.3`
 
     Bench is published to GAR and github container registry. It is recommended
     to use GAR as the GHCR image may be removed in the future.
+
+   ### figure out auth for GAR
 
     `docker pull us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.2.3`
 
