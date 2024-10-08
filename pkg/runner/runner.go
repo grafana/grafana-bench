@@ -63,20 +63,17 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 	env := map[string]string{
 		"TEST_TYPE":           testType.Name(),
 		"TEST_SUITE_REVISION": suite.Revision,
-		// TODO unify variable names
-		"GRAFANA_URL":      t.GrafanaInstance.Url(),
-		"GRAFANA_USERNAME": t.GrafanaInstance.UserName(),
-		"GRAFANA_PASSWORD": t.GrafanaInstance.Password(),
-		// ----
+		"GRAFANA_URL":         t.GrafanaInstance.Url(),
+		"GRAFANA_USERNAME":    t.GrafanaInstance.UserName(),
+		"GRAFANA_PASSWORD":    t.GrafanaInstance.Password(),
 	}
 
 	maps.Copy(env, testVars)
 
 	suiteRun, err := t.Executor.ExecTestSuite(ctx, suite, env)
 	if err != nil {
-		return fmt.Errorf("executing test suite %w", err)
+		return fmt.Errorf("executing test suite: %w", err)
 	}
-	println("test3")
 
 	// TODO: handle error from reporter
 	err = t.Reporter.Report(ctx, runId, suiteRunId, suite, suiteRun)
@@ -93,7 +90,7 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 			// the suiteRun ID and leaving it up to the user.
 			dashboard, err := dashboard.RenderDashboardURL(t.DashboardURL, runId)
 			if err != nil {
-				t.Log.Error("getting URL dashboard: %w", err)
+				t.Log.Error("getting URL dashboard", "error", err)
 			} else {
 				dashboardMsg = fmt.Sprintf(". See dashboard: %s", dashboard)
 			}

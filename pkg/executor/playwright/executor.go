@@ -95,9 +95,6 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 	playwrightEnv["PLAYWRIGHT_JSON_OUTPUT_NAME"] = jsonOutputName
 	executeCmd := fmt.Sprintf("%s --reporter=json %s", t.ExecuteCmd, suite.Path)
 
-	//fmt.Printf("\n execute: %#v \n", executeCmd)
-	fmt.Println("path:", suite.Path)
-	fmt.Println("basedir:", suite.BaseDir)
 	if err := t.executeCommand(execDir, playwrightEnv, executeCmd); err != nil {
 		return executor.SuiteRunSummary{}, fmt.Errorf("error executing tests: %w", err)
 	}
@@ -117,10 +114,6 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 
 func (t *PlaywrightTestExecutor) executeCommand(execDir string, env map[string]string, cmd string) error {
 	cmdFields := strings.Fields(cmd)
-
-	//for _, v := range cmdFields {
-	//  println(v)
-	//}
 
 	execCmd := exec.Command(cmdFields[0], cmdFields[1:]...)
 	execCmd.Dir = execDir

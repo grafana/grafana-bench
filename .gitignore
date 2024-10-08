@@ -6,9 +6,7 @@ scratch
 grafana-bench.tar.gz
 .env*
 .DS_Store
-
 test-repo/**
-
 infra_back
 
 # Binaries for programs and plugins
@@ -50,3 +48,7 @@ node_modules/
 package-lock.json
 package.json
 site/
+
+# playwright output from tests
+CI/plugin-e2e/playwright
+CI/plugin-e2e/test-results

@@ -24,6 +24,7 @@ func parseJsonOutput(buf []byte) (executor.SuiteRunSummary, error) {
 
 	testRuns := make([]executor.TestRun, 0, output.Stats.Expected+output.Stats.Unexpected)
 
+	var suiteStatus executor.SuiteStatus = executor.SuitePassed
 	for _, suite := range output.Suites {
 		for _, spec := range suite.Specs {
 			folder := "unknown"
@@ -40,6 +41,9 @@ func parseJsonOutput(buf []byte) (executor.SuiteRunSummary, error) {
 			tearDownDuration := float32(output.Config.GlobalTeardown)
 
 			run := formatTestRuns(spec, folder, setupDuration, tearDownDuration)
+			if run.Status == executor.TestFailed {
+				suiteStatus = executor.SuiteFailed
+			}
 			testRuns = append(testRuns, run)
 		}
 	}
@@ -47,6 +51,7 @@ func parseJsonOutput(buf []byte) (executor.SuiteRunSummary, error) {
 	totalTestAmount := int32(output.Stats.Unexpected) + int32(output.Stats.Expected)
 
 	suiteRunSummary := executor.SuiteRunSummary{
+		Status:            suiteStatus,
 		StartTime:         output.Stats.StartTime,
 		ScenariosDuration: float32(output.Stats.Duration),
 		TestsExecuted:     totalTestAmount,
