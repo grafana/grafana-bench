@@ -58,6 +58,18 @@ jobs:
           docker run --rm --entrypoint='k6' \
             --volume="./CI/:/CI/" --volume="./screenshots:/home/bench/screenshots/" \
             localhost:5000/grafana-bench-test:latest run /CI/browser_test.js
+      - name: check playwright test
+        run: |
+          docker run --rm --volume="./CI/:/CI/" \
+            localhost:5000/grafana-bench-test:latest test \
+            --grafana-url "http://localhost:3000" \
+            --grafana-username "admin" \
+            --grafana-password "admin" \
+            --test-suite "/CI/plugin-e2e"  \
+            --test-runner playwright \
+            --pw-prepare-cmd "yarn install" \
+            --pw-execute-cmd "yarn run test" \
+            --log-level DEBUG
       - name: archive screenshots
         uses: actions/upload-artifact@v3
         with:
