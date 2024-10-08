@@ -25,7 +25,7 @@ type TestRunner struct {
 	Reporter        reporter.SuiteRunReporter
 }
 
-func 	NewTestRunner(
+func NewTestRunner(
 	log *slog.Logger,
 	testTrigger string,
 	grafanaInstance grafana.GrafanaInstance,
@@ -67,9 +67,6 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 		"GRAFANA_URL":      t.GrafanaInstance.Url(),
 		"GRAFANA_USERNAME": t.GrafanaInstance.UserName(),
 		"GRAFANA_PASSWORD": t.GrafanaInstance.Password(),
-		"GT_URL":           t.GrafanaInstance.Url(),
-		"GT_USERNAME":      t.GrafanaInstance.UserName(),
-		"GT_PASSWORD":      t.GrafanaInstance.Password(),
 		// ----
 	}
 
@@ -79,9 +76,10 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 	if err != nil {
 		return fmt.Errorf("executing test suite %w", err)
 	}
+	println("test3")
 
 	// TODO: handle error from reporter
-	err = t.Reporter.Report(ctx, runId,suiteRunId, suite, suiteRun)
+	err = t.Reporter.Report(ctx, runId, suiteRunId, suite, suiteRun)
 	if err != nil {
 		t.Log.Error("reporting test suite run", "error", err)
 	}
@@ -106,7 +104,6 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 
 	return nil
 }
-
 
 // returns an unique id for the run
 // format: {test type}-{year}{day of year}-{hour}{min}{second}
@@ -134,4 +131,3 @@ func (t *TestRunner) getSuiteRunId(runId string, suite executor.TestSuite) strin
 		runId,
 	)
 }
-

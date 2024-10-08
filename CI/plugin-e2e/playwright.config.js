@@ -1,4 +1,10 @@
+import { dirname } from 'path';
+import { defineConfig } from '@playwright/test';
+
 const pluginE2eAuth = `${dirname(require.resolve('@grafana/plugin-e2e'))}/auth`;
+
+console.log(pluginE2eAuth);
+console.log(process.env.GRAFANA_URL);
 
 export default defineConfig({
   testDir: "./tests",
