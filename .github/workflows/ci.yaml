@@ -43,14 +43,14 @@ jobs:
       grafana:
         image: grafana/grafana:latest
         ports:
-          - 80:80
+          - 8080:80
 
     env:
       DOCKER_CLI_EXPERIMENTAL: enabled
     steps:
       - name: check Grafana instance
         run: |
-          curl http://grafana
+          curl http://localhost:8080
           #echo "Response status: $RESPONSE"
           #if [ $RESPONSE -ne 200 ]; then
           #  echo "Grafana is not accessible"
