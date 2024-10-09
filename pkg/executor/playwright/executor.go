@@ -128,7 +128,7 @@ func (t *PlaywrightTestExecutor) executeCommand(execDir string, env map[string]s
 	}
 
 	if err := execCmd.Run(); err != nil {
-		// FIXME is this logic correct and should it go here???
+		// If we're in verbose mode, we will already have the error.
 		if !t.Verbose {
 			fmt.Println("!verbose output:", buf.String())
 		}
