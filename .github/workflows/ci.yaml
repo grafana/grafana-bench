@@ -44,6 +44,11 @@ jobs:
         image: grafana/grafana:latest
         ports:
           - 3000:3000
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     env:
       DOCKER_CLI_EXPERIMENTAL: enabled
@@ -66,6 +71,7 @@ jobs:
             localhost:5000/grafana-bench-test:latest run /CI/browser_test.js
       - name: check playwright test
         run: |
+          sleep 15; \
           docker run --rm --volume="./CI/:/CI/" \
             localhost:5000/grafana-bench-test:latest test \
             --grafana-url "http://grafana:3000" \
