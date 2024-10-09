@@ -64,6 +64,17 @@ jobs:
             --volume="./CI/:/CI/" \
             --volume="./screenshots:/home/bench/screenshots/" \
             localhost:5000/grafana-bench-test:latest run /CI/browser_test.js
+      - name: check Grafana instance
+        run: |
+          curl http://localhost:3000
+          #RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000)
+          #echo $response
+          #if [ $RESPONSE -ne 200 ]; then
+          #  sleep 5;
+          #  echo "Grafana is not accessible"
+          #  exit 1
+          #fi
+
       - name: check playwright test
         run: |
           docker run --rm --volume="./CI/:/CI/" \
