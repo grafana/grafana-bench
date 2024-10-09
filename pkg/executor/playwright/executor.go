@@ -80,7 +80,7 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 
 	// prepare test execution
 	if t.PrepareCmd != "" {
-		if err := t.executeCommand(execDir, playwrightEnv, t.PrepareCmd); err != nil {
+		if err := t.executeCommand(suite.BaseDir, playwrightEnv, t.PrepareCmd); err != nil {
 			return executor.SuiteRunSummary{}, fmt.Errorf("failed to prepare codebase: %w", err)
 		}
 	}
