@@ -50,7 +50,7 @@ jobs:
     steps:
       - name: check Grafana instance
         run: |
-          curl -s -o /dev/null -w "%{http_code}" http://grafana
+          curl http://grafana
           #echo "Response status: $RESPONSE"
           #if [ $RESPONSE -ne 200 ]; then
           #  echo "Grafana is not accessible"
