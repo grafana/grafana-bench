@@ -43,7 +43,7 @@ jobs:
       grafana:
         image: grafana/grafana:latest
         ports:
-          - 3000:3000
+          - 80:80
 
     env:
       DOCKER_CLI_EXPERIMENTAL: enabled
@@ -69,7 +69,7 @@ jobs:
           sleep 15; \
           docker run --rm --volume="./CI/:/CI/" \
             localhost:5000/grafana-bench-test:latest test \
-            --grafana-url "http://grafana:3000" \
+            --grafana-url "http://grafana" \
             --grafana-username "admin" \
             --grafana-password "admin" \
             --test-suite "/CI/plugin-e2e"  \
