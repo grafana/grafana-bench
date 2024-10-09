@@ -56,8 +56,7 @@ ENV K6_BROWSER_ARGS=no-sandbox
 
 WORKDIR /home/bench
 RUN mkdir /home/bench/tests
-RUN mkdir /home/bench/CI
-RUN chmod 777 /home/bench/CI
 
+RUN chown -R bench /home/bench
 
 ENTRYPOINT ["grafana-bench"]
