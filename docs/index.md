@@ -10,66 +10,81 @@ Bench is a tool for executing e2e tests against an instance of Grafana.
 
     `gh auth token | docker login ghcr.io -u {YOUR_USERNAME} --password-stdin`
 
-1. Pull the container down
+1. Install Bench
+    For this tutorial, we want to get your running bench for local development quickly,
+    however, in CI or for plugin-e2e tests we recommend using the Bench image as
+    all dependencies for browser tests are provided for you.
 
-    `docker pull ghcr.io/grafana/grafana-bench:latest`
+    `go install github.com/grafana/grafana-bench@v0.2.3`
 
-1. Download the grafana-api-tests repository
+    Bench is published to GAR and github container registry. It is recommended
+    to use GAR as the GHCR image may be removed in the future.
 
-    `git clone git@github.com:grafana/grafana-api-tests.git`
+   ### figure out auth for GAR
 
-1. Build the tests
+    `docker pull us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.2.3`
 
-    ``` shell
-      cd grafana-api-tests
-      yarn install
-      yarn build
-    ```
+    Images are tagged with the release version. To encourage versioning for use
+    in ci pipelines, we don't produce a `latest` tag.
 
-1. Boot up an instance of grafana
+    Alternatively
+
+    `docker pull ghcr.io/grafana/grafana-bench:v0.2.3`
+
+1. See the help docs
+
+    `grafana-bench help`
+
+1. See the docs for `test` command
+
+    `grafana-bench test --help`
+
+1. Start a grafana instance to test against
 
     `docker run -d --name=grafana -p 3000:3000 grafana/grafana`
+
+1. Create a K6 test
+    We're going to make a basic request to the Grafana instance and make sure
+    it's running. K6 has support for typescript, so create a file called `check_grafana_instance.ts`
+    with the following:
+
+    ```typescript
+
+import { check } from 'k6';
+import { http } from 'k6/http'
+
+export const options = {
+    scenarios: {
+        api: {
+          executor: 'shared-iterations',
+        },
+    },
+};
+
+export default function () {
+    const res = http.request('GET', '<http://localhost:3000>');
+    check(res, { 'status ok': res.status === 200 });
+}
+    ```
 
 1. Run the tests
 
     ``` shell
-        docker run --rm \
-         --network host \
-         --platform=linux/amd64 \
-         --volume="./dist/tests:/home/bench/tests" \
-         ghcr.io/grafana/grafana-bench:latest test \
-         --test-type="smoke" \
-         --test-suite-base="tests" \
-         --test-suite dashboards
+    grafana-bench test --test-suite check_grafana_instance.ts
     ```
 
-### Reporting to k6 cloud
+    You should see output which looks like
 
-1. Go to <https://ops.grafana-ops.net/a/k6-app/projects>
-1. Click the "Create a new project" button and create a new project
-1. Copy your project ID
-1. Go to <https://ops.grafana-ops.net/a/k6-app/settings/api-token> and copy your api token
-1. Add `K6_CLOUD_PROJECT_ID` and `K6_CLOUD_TOKEN` environment variables to the container and
-`--k6-cloud-output=true` to the bench command run in the container.
+    ```shell
 
-``` shell
-    docker run --rm \
-     --network host \
-     --platform=linux/amd64 \
-     --volume="./dist/tests:/home/bench/tests" \
-     -e K6_CLOUD_PROJECT_ID="{YOUR_PROJECT_ID}" \
-     -e K6_CLOUD_TOKEN="{YOUR_CLOUD_TOKEN}" \
-     ghcr.io/grafana/grafana-bench:latest test \
-     --k6-cloud-output=true \
-     --test-type="smoke" \
-     --test-suite-base="tests" \
-     --test-suite dashboards
-```
+CI/api_test.ts ... passed
 
-## Discover additional bench commands
+Tests executed 1
+Tests passed 1
+Tests failed 0
+Tests error 0
 
-``` shell
-    docker run --rm ghcr.io/grafana/grafana-bench:v0.1.0-rc2 help 
-```
+Tests suite passed
+    ```
 
 ## Next [Write some K6 API tests](writing_k6_api_tests.md)

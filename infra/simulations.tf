@@ -13,6 +13,7 @@ resource "google_storage_bucket" "bench_simulations" {
   }
 }
 
+# simulation service
 resource "google_service_account" "simulation_service_account" {
   account_id   = "simulation-service"
   display_name = "bench simulation service"

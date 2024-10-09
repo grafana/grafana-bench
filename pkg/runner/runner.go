@@ -25,7 +25,7 @@ type TestRunner struct {
 	Reporter        reporter.SuiteRunReporter
 }
 
-func 	NewTestRunner(
+func NewTestRunner(
 	log *slog.Logger,
 	testTrigger string,
 	grafanaInstance grafana.GrafanaInstance,
@@ -63,25 +63,20 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 	env := map[string]string{
 		"TEST_TYPE":           testType.Name(),
 		"TEST_SUITE_REVISION": suite.Revision,
-		// TODO unify variable names
-		"GRAFANA_URL":      t.GrafanaInstance.Url(),
-		"GRAFANA_USERNAME": t.GrafanaInstance.UserName(),
-		"GRAFANA_PASSWORD": t.GrafanaInstance.Password(),
-		"GT_URL":           t.GrafanaInstance.Url(),
-		"GT_USERNAME":      t.GrafanaInstance.UserName(),
-		"GT_PASSWORD":      t.GrafanaInstance.Password(),
-		// ----
+		"GRAFANA_URL":         t.GrafanaInstance.Url(),
+		"GRAFANA_USERNAME":    t.GrafanaInstance.UserName(),
+		"GRAFANA_PASSWORD":    t.GrafanaInstance.Password(),
 	}
 
 	maps.Copy(env, testVars)
 
 	suiteRun, err := t.Executor.ExecTestSuite(ctx, suite, env)
 	if err != nil {
-		return fmt.Errorf("executing test suite %w", err)
+		return fmt.Errorf("executing test suite: %w", err)
 	}
 
 	// TODO: handle error from reporter
-	err = t.Reporter.Report(ctx, runId,suiteRunId, suite, suiteRun)
+	err = t.Reporter.Report(ctx, runId, suiteRunId, suite, suiteRun)
 	if err != nil {
 		t.Log.Error("reporting test suite run", "error", err)
 	}
@@ -95,7 +90,7 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 			// the suiteRun ID and leaving it up to the user.
 			dashboard, err := dashboard.RenderDashboardURL(t.DashboardURL, runId)
 			if err != nil {
-				t.Log.Error("getting URL dashboard: %w", err)
+				t.Log.Error("getting URL dashboard", "error", err)
 			} else {
 				dashboardMsg = fmt.Sprintf(". See dashboard: %s", dashboard)
 			}
@@ -106,7 +101,6 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 
 	return nil
 }
-
 
 // returns an unique id for the run
 // format: {test type}-{year}{day of year}-{hour}{min}{second}
@@ -134,4 +128,3 @@ func (t *TestRunner) getSuiteRunId(runId string, suite executor.TestSuite) strin
 		runId,
 	)
 }
-

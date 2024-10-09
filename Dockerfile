@@ -35,7 +35,7 @@ FROM alpine:3.20 AS runtime
 USER root
 RUN apk add --no-cache ca-certificates git chromium-swiftshader yarn nodejs npm
 
-RUN adduser -D -u 1010 -g 1010 bench
+RUN adduser -D -u 1001 -g 127 bench
 
 USER bench
 

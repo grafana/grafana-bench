@@ -3,6 +3,7 @@ package playwright
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -15,12 +16,16 @@ import (
 )
 
 const (
-	chromiumPath    = "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH"
+	chromiumPath = "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH"
+)
+
+var (
+	errMissingExecuteCmd = errors.New("error missing --pw-execute-cmd from command line arguments ")
 )
 
 // PlaywrightTestExecutor implements TestExecutor interface for running k6 test suites
 type PlaywrightTestExecutor struct {
-	Log *slog.Logger
+	Log        *slog.Logger
 	PrepareCmd string
 	ExecuteCmd string
 	Verbose    bool
@@ -52,16 +57,23 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 	env map[string]string,
 ) (executor.SuiteRunSummary, error) {
 	if t.ExecuteCmd == "" {
-		return executor.SuiteRunSummary{}, fmt.Errorf("missing execute command.")
+		return executor.SuiteRunSummary{}, errMissingExecuteCmd
 	}
 
-	if os.Getenv(chromiumPath) ==  "" {
+	if os.Getenv(chromiumPath) == "" {
 		t.Log.Warn("playwright configuration", "environment variable not set", chromiumPath)
+	}
+
+	playwrightEnv := map[string]string{}
+	playwrightEnv["path"] = os.Getenv("PATH")
+	playwrightEnv[chromiumPath] = os.Getenv(chromiumPath)
+	for k, v := range env {
+		playwrightEnv[k] = v
 	}
 
 	// prepare test execution
 	if t.PrepareCmd != "" {
-		if err := t.executeCommand(suite.BaseDir, env, t.PrepareCmd); err != nil {
+		if err := t.executeCommand(suite.BaseDir, playwrightEnv, t.PrepareCmd); err != nil {
 			return executor.SuiteRunSummary{}, fmt.Errorf("failed to prepare codebase: %w", err)
 		}
 	}
@@ -71,28 +83,23 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 
 	// execute tests in the test suite and redirect output to a json file
 	// we assume here we can append the reporter and the test suite to the execute command
-	//
-	// e.g yarn test --reporter json tests/
-	// FIXME: we are modifying env. Maybe we should copy it
-	env["PLAYWRIGHT_JSON_OUTPUT_NAME"] = jsonOutputName
-	executeCmd := fmt.Sprintf(
-		"%s --reporter json %s",
-		t.ExecuteCmd,
-		suite.Path,
-	)
+	// e.g yarn run test --reporter json tests/
+	// set the output
+	playwrightEnv["PLAYWRIGHT_JSON_OUTPUT_NAME"] = jsonOutputName
+	executeCmd := fmt.Sprintf("%s --reporter=json %s", t.ExecuteCmd, suite.Path)
 
-	if err := t.executeCommand(suite.BaseDir, env, executeCmd); err != nil {
-		return executor.SuiteRunSummary{}, fmt.Errorf("executing tests %w", err)
+	if err := t.executeCommand(suite.BaseDir, playwrightEnv, executeCmd); err != nil {
+		return executor.SuiteRunSummary{}, fmt.Errorf("error executing tests: %w", err)
 	}
 
 	file, err := os.ReadFile(jsonOutputName)
 	if err != nil {
-		return executor.SuiteRunSummary{}, fmt.Errorf("failed to read report.json: %s", err.Error())
+		return executor.SuiteRunSummary{}, fmt.Errorf("error failed to read report.json: %s", err.Error())
 	}
 
 	runSummary, err := parseJsonOutput(file)
 	if err != nil {
-		return executor.SuiteRunSummary{}, fmt.Errorf("failed parsing playwright report: %w", err)
+		return executor.SuiteRunSummary{}, fmt.Errorf("error failed parsing playwright report: %w", err)
 	}
 
 	return runSummary, nil
@@ -100,9 +107,16 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 
 func (t *PlaywrightTestExecutor) executeCommand(execDir string, env map[string]string, cmd string) error {
 	cmdFields := strings.Fields(cmd)
+
 	execCmd := exec.Command(cmdFields[0], cmdFields[1:]...)
 	execCmd.Dir = execDir
 
+	// add env variables
+	for key, value := range env {
+		execCmd.Env = append(execCmd.Env, fmt.Sprintf("%s=%s", strings.ToUpper(key), strings.TrimSpace(value)))
+	}
+
+	//fmt.Printf("\n cmd: %#v \n", execCmd)
 	// capture output. Replicate to stdout/stderr if verbose mode
 	buf := bytes.NewBuffer(nil)
 	if t.Verbose {
@@ -113,20 +127,13 @@ func (t *PlaywrightTestExecutor) executeCommand(execDir string, env map[string]s
 		execCmd.Stderr = buf
 	}
 
-	//set path
-	execCmd.Env = append(execCmd.Env, os.Getenv("PATH"))
-
-	// add env variables
-	for key, value := range env {
-		execCmd.Env = append(execCmd.Env, fmt.Sprintf("%s=%s", strings.ToUpper(key), strings.TrimSpace(value)))
-	}
-
 	if err := execCmd.Run(); err != nil {
-		if!t.Verbose {
-			fmt.Println(buf.String())
+		// If we're in verbose mode, we will already have the error.
+		if !t.Verbose {
+			fmt.Println("!verbose output:", buf.String())
 		}
 
-		return fmt.Errorf("executing command %w", err)
+		return fmt.Errorf("error command failed: %w", err)
 	}
 
 	return nil

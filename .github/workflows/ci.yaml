@@ -40,6 +40,11 @@ jobs:
         image: registry:2
         ports:
           - 5000:5000
+      grafana:
+        image: grafana/grafana:latest
+        ports:
+          - 3000:3000
+
     env:
       DOCKER_CLI_EXPERIMENTAL: enabled
     steps:
@@ -56,8 +61,34 @@ jobs:
       - name: check k6 browser dependencies
         run: |
           docker run --rm --entrypoint='k6' \
-            --volume="./CI/:/CI/" --volume="./screenshots:/home/bench/screenshots/" \
+            --volume="./CI/:/CI/" \
+            --volume="./screenshots:/home/bench/screenshots/" \
             localhost:5000/grafana-bench-test:latest run /CI/browser_test.js
+      - name: check Grafana instance
+        run: |
+          curl http://localhost:3000
+          #RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000)
+          #echo $response
+          #if [ $RESPONSE -ne 200 ]; then
+          #  sleep 5;
+          #  echo "Grafana is not accessible"
+          #  exit 1
+          #fi
+
+      - name: check playwright test
+        run: |
+          docker run --rm \
+            --network=host \
+            --volume="./CI/:/home/bench/tests/CI/" \
+            localhost:5000/grafana-bench-test:latest test \
+            --grafana-url "http://localhost:3000" \
+            --grafana-username "admin" \
+            --grafana-password "admin" \
+            --test-suite-base "/home/bench/tests/CI/plugin-e2e"  \
+            --test-runner "playwright" \
+            --pw-prepare-cmd "yarn install" \
+            --pw-execute-cmd "yarn run test" \
+            --log-level DEBUG
       - name: archive screenshots
         uses: actions/upload-artifact@v3
         with:

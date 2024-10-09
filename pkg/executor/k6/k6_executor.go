@@ -18,6 +18,8 @@ import (
 
 	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/utils"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"github.com/szkiba/k6pack"
 )
@@ -29,8 +31,9 @@ const (
 var (
 	missingK6CloudConfigError = errors.New("k6 Token and project ID are required for cloud output")
 	testFilesError            = errors.New("getting test files")
-	testExts                  = []string{".js",".ts"}
-
+	testExts                  = []string{".js", ".ts"}
+	// used to replace strings.Title
+	caser = cases.Title(language.AmericanEnglish)
 )
 
 // K6TestExecutor implements TestExecutor interface for running k6 test suites
@@ -59,7 +62,6 @@ func NewK6TestExecutor(
 		CloudProjectID: cloudProjectID,
 	}
 }
-
 
 type k6Output struct {
 	iterations string
@@ -174,8 +176,8 @@ func (t *K6TestExecutor) ExecTestSuite(
 		suiteSummary.TestRuns = append(suiteSummary.TestRuns, summary)
 	}
 
-       if suiteSummary.TestsFailed + suiteSummary.TestsError == 0 {
-	        suiteSummary.Status = executor.SuitePassed
+	if suiteSummary.TestsFailed+suiteSummary.TestsError == 0 {
+		suiteSummary.Status = executor.SuitePassed
 	} else {
 		suiteSummary.Status = executor.SuiteFailed
 	}
@@ -309,7 +311,7 @@ func getScenarioName(filename string) string {
 		if i == 0 {
 			continue
 		}
-		parts[i] = strings.Title(p)
+		parts[i] = caser.String(p)
 	}
 	return strings.Join(parts, "")
 }
