@@ -79,12 +79,12 @@ jobs:
         run: |
           docker run --rm \
             --network=host \
-            --volume="./CI/:/CI/" \
+            --volume="./CI/:/home/bench/CI/" \
             localhost:5000/grafana-bench-test:latest test \
             --grafana-url "http://localhost:3000" \
             --grafana-username "admin" \
             --grafana-password "admin" \
-            --test-suite "/CI/plugin-e2e"  \
+            --test-suite "CI/plugin-e2e"  \
             --test-runner playwright \
             --pw-prepare-cmd "yarn install" \
             --pw-execute-cmd "yarn run test" \
