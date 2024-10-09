@@ -69,7 +69,6 @@ jobs:
             localhost:5000/grafana-bench-test:latest run /CI/browser_test.js
       - name: check playwright test
         run: |
-          sleep 15; \
           docker run --rm --volume="./CI/:/CI/" \
             localhost:5000/grafana-bench-test:latest test \
             --grafana-url "http://grafana" \
