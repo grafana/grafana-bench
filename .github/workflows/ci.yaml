@@ -43,7 +43,7 @@ jobs:
       grafana:
         image: grafana/grafana:latest
         ports:
-          - 8080:80
+          - 8080:3000
 
     env:
       DOCKER_CLI_EXPERIMENTAL: enabled
