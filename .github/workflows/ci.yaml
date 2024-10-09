@@ -50,12 +50,7 @@ jobs:
     steps:
       - name: check Grafana instance
         run: |
-          sleep 20; curl http://localhost:8080
-          #echo "Response status: $RESPONSE"
-          #if [ $RESPONSE -ne 200 ]; then
-          #  echo "Grafana is not accessible"
-          #  exit 1
-          #fi
+          sleep 5; curl http://localhost:8080
       - name: checkout code
         uses: actions/checkout@v4
       - name: build container
