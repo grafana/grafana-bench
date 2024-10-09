@@ -244,7 +244,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		"\nThe path must be relative to the base dir (which defaults to the current directory)."+
 		"\nA single .js file or a directory can be specified."+
 		"\nIf a directory is specified, all .js files in the directory and its sub-directories will be executed.")
-	//cmd.MarkFlagRequired("test-suite")
 	fs.StringVar(
 		&suiteConfig.BaseDir,
 		"test-suite-base",
