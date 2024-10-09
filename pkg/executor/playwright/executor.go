@@ -9,12 +9,10 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"strings"
 
 	"github.com/grafana/grafana-bench/pkg/executor"
-	"github.com/grafana/grafana-bench/pkg/utils"
 )
 
 const (
@@ -58,11 +56,6 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 	suite executor.TestSuite,
 	env map[string]string,
 ) (executor.SuiteRunSummary, error) {
-	execDir, err := getExecDir(suite)
-	if err != nil {
-		return executor.SuiteRunSummary{}, err
-	}
-
 	if t.ExecuteCmd == "" {
 		return executor.SuiteRunSummary{}, errMissingExecuteCmd
 	}
@@ -95,7 +88,7 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 	playwrightEnv["PLAYWRIGHT_JSON_OUTPUT_NAME"] = jsonOutputName
 	executeCmd := fmt.Sprintf("%s --reporter=json %s", t.ExecuteCmd, suite.Path)
 
-	if err := t.executeCommand(execDir, playwrightEnv, executeCmd); err != nil {
+	if err := t.executeCommand(suite.BaseDir, playwrightEnv, executeCmd); err != nil {
 		return executor.SuiteRunSummary{}, fmt.Errorf("error executing tests: %w", err)
 	}
 
@@ -144,32 +137,4 @@ func (t *PlaywrightTestExecutor) executeCommand(execDir string, env map[string]s
 	}
 
 	return nil
-}
-
-// gets the path to test suite
-func getExecDir(suite executor.TestSuite) (string, error) {
-	if filepath.IsAbs(suite.Path) {
-		return "", fmt.Errorf("test suite must be a relative to base dir. Got %q", suite.Path)
-	}
-
-	testSuitePath, err := filepath.Abs(path.Join(suite.BaseDir, suite.Path))
-	if err != nil {
-		return "", fmt.Errorf("getting path to test suite %w", err)
-	}
-
-	exists, _ := utils.PathExists(testSuitePath)
-	if !exists {
-		return "", fmt.Errorf("test suite %s not found", testSuitePath)
-	}
-
-	fileInfo, err := os.Stat(testSuitePath)
-	if err != nil {
-		return "", fmt.Errorf("opening test suite at %s: %w", testSuitePath, err)
-	}
-
-	if !fileInfo.IsDir() {
-		return "", fmt.Errorf("test suite must be a directory")
-	}
-
-	return testSuitePath, nil
 }
