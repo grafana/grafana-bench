@@ -3,9 +3,7 @@ package coverage
 
 import (
 	"errors"
-	"io"
 	"strings"
-	"text/template"
 )
 
 var (
@@ -138,19 +136,4 @@ func (p *EndPoint) Coverage() CoverageReport {
 
 	return coverage
 
-}
-
-func (c CoverageReport) Print(template template.Template, out io.Writer) error {
-	err := template.Execute(out, c)
-	if err != nil {
-		return err
-	}
-	for _, s := range c.Subpaths {
-		err = s.Print(template, out)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
