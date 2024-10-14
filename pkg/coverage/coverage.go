@@ -3,9 +3,13 @@ package coverage
 
 import (
 	"errors"
+	"fmt"
+	"io"
 	"strings"
+	"text/template"
 
 	"github.com/grafana/grafana-bench/pkg/openapi"
+	"github.com/grafana/grafana-bench/pkg/recorder"
 )
 
 var (
@@ -18,6 +22,13 @@ type Path struct {
 	Tested     bool
 	Operations map[string]bool
 	Children   map[string]*Path
+}
+
+type Coverage struct {
+	Path     string
+	Total    int32
+	Covered  int32
+	Children []Coverage
 }
 
 type Analizer struct {
@@ -101,3 +112,68 @@ func (p *Path) Find(path string) *Path {
 	return element
 }
 
+func (p *Path) Record(path string, op string) {
+	element := p.Find(path)
+	if element == nil {
+		return
+	}
+
+	if _, valid := element.Operations[op]; valid {
+		element.Operations[op] = true
+	}
+}
+
+func (p *Path) Coverage() Coverage {
+	coverage := Coverage{
+		Path:  p.Name,
+		Total: int32(len(p.Operations)),
+	}
+
+	// coverage of this path (if it has no operations it does not affect calculation)
+	for _, v := range p.Operations {
+		if v {
+			coverage.Covered = coverage.Covered + 1
+		}
+	}
+
+	// aggregate coverage of children
+	for _, c := range p.Children {
+		cc := c.Coverage()
+		coverage.Total = coverage.Total + cc.Total
+		coverage.Covered = coverage.Covered + cc.Covered
+		coverage.Children = append(coverage.Children, cc)
+	}
+
+	return coverage
+
+}
+
+func (c Coverage) Print(template template.Template, out io.Writer) error {
+	err := template.Execute(out, c)
+	if err != nil {
+		return err
+	}
+	for _, s := range c.Children {
+		err = s.Print(template, out)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (a *Analizer) Analize(r recorder.Recording) {
+	for _, req := range r.Requests {
+		a.root.Record(req.Path, req.Method)
+	}
+}
+
+func (a *Analizer) Coverage(path string) (Coverage, error) {
+	p := a.root.Find(path)
+	if p == nil {
+		return Coverage{}, fmt.Errorf("%w: %s", ErrPathNotFound, path)
+	}
+
+	return p.Coverage(), nil
+}
