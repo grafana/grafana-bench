@@ -217,25 +217,107 @@ func TestRecorOperation(t *testing.T) {
 			// /path/subpath/ (POST)
 			// /path/subpath/{parameter} (GET, DELETE)
 			// /path/subpath/{parameter}/subsubpath (GET)
-			path := NewEndpoint("path").
+			endpoint := NewEndpoint("path").
 				AddSubpath("/subpath", "POST").
 				AddSubpath("/subpath/{parameter}", "GET", "DELETE").
 				AddSubpath("/subpath/{parameter}/subsubpath", "GET")
 
 			for p, ops := range tc.ops {
 				for _, o := range ops {
-					path.RecordOperation(p, o)
+					endpoint.RecordOperation(p, o)
 				}
 			}
 
 			for pathName, expected := range tc.expect {
-				target := path.Find(pathName)
+				target := endpoint.Find(pathName)
 				for op, expected := range expected {
 					actual := target.Operations[op]
 					if actual != expected {
 						t.Fatalf("expected %t got %t for %s %s", expected, actual, pathName, op)
 					}
 				}
+			}
+		})
+	}
+}
+
+func TestCoverage(t *testing.T) {
+	testCases := []struct {
+		title string
+		// path -> operations
+		ops      map[string][]string
+		expected CoverageReport
+	}{
+		{
+			title: "one operation at /path",
+			ops: map[string][]string{
+				"/path": []string{"POST"},
+			},
+			expected: CoverageReport{
+				Path:    "path",
+				Total:   4,
+				Covered: 1,
+				Subpaths: []CoverageReport{
+					{
+						Path:    "{parameter}",
+						Total:   3,
+						Covered: 0,
+						Subpaths: []CoverageReport{
+							{
+								Path:    "subpath",
+								Total:   1,
+								Covered: 0,
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			title: "one operation at /path/{parameter/subpath}",
+			ops: map[string][]string{
+				"/path/<value>/subpath": []string{"GET"},
+			},
+			expected: CoverageReport{
+				Path:    "path",
+				Total:   4,
+				Covered: 1,
+				Subpaths: []CoverageReport{
+					{
+						Path:    "{parameter}",
+						Total:   3,
+						Covered: 1,
+						Subpaths: []CoverageReport{
+							{
+								Path:    "subpath",
+								Total:   1,
+								Covered: 1,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.title, func(t *testing.T) {
+			// /path  (POST)
+			// /path/{parameter} (GET, DELETE)
+			// /path/{parameter}/subpath (GET)
+			endpoint := NewEndpoint("path", "POST").
+				AddSubpath("/{parameter}", "GET", "DELETE").
+				AddSubpath("/{parameter}/subpath", "GET")
+
+			for p, ops := range tc.ops {
+				for _, o := range ops {
+					endpoint.RecordOperation(p, o)
+				}
+			}
+
+			actual := endpoint.Coverage()
+			if !reflect.DeepEqual(actual, tc.expected) {
+				t.Fatalf("expected %s got %s", deepPrint(tc.expected), deepPrint(actual))
 			}
 		})
 	}
