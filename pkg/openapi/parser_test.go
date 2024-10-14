@@ -6,8 +6,6 @@ import (
 )
 
 func TestParsing(t *testing.T) {
-
-
 	testCase := []struct{
 		title     string
 		document  string

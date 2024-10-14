@@ -65,6 +65,58 @@ func TestLoadAPI(t *testing.T) {
 			prefix: "",
 			api: NewFakeAPI().
 				WithPath("/path", map[string]string{"DELETE": "Delete", "GET": "get"}),
+			expected: NewPath("api").AddSubpath("/path", "DELETE", "GET"),
+		},
+		{
+			title:  "with prefix",
+			prefix: "/prefix",
+			api: NewFakeAPI().
+				WithPath("/prefix/path", map[string]string{"DELETE": "Delete", "GET": "get"}).
+				WithPath("/another/path", map[string]string{"DELETE": "Delete", "GET": "get"}),
+			expected: NewPath("api").
+				AddSubpath("/prefix/path", "DELETE", "GET"),
+		},
+		{
+			title:  "multiple children",
+			prefix: "",
+			api: NewFakeAPI().
+				WithPath("/path1", map[string]string{"DELETE": "Delete", "POST": "post"}).
+				WithPath("/path2", map[string]string{"DELETE": "Delete", "GET": "get"}),
+			expected: NewPath("api").
+				AddSubpath("/path1", "DELETE", "POST").
+				AddSubpath("/path2", "DELETE", "GET"),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.title, func(t *testing.T) {
+			actual, err := LoadAPI("api", tc.prefix, tc.api)
+			if !errors.Is(err, tc.expectErr) {
+				t.Fatalf("expected error %v got %v", tc.expectErr, err)
+			}
+
+			if tc.expectErr != nil {
+				return
+			}
+
+			if !reflect.DeepEqual(actual, tc.expected) {
+				t.Fatalf("expected %s got %s", deepPrint(tc.expected), deepPrint(actual))
+			}
+		})
+	}
+}
+
+func TestAddSubpath(t *testing.T) {
+	testCases := []struct {
+		title    string
+		paths    map[string][]string
+		expected *Path
+	}{
+		{
+			title: "one path api",
+			paths: map[string][]string{
+				"/path": []string{"DELETE", "GET"},
+			},
 			expected: &Path{
 				Name:       "api",
 				Operations: map[string]bool{},
@@ -80,37 +132,11 @@ func TestLoadAPI(t *testing.T) {
 			},
 		},
 		{
-			title:  "with prefix",
-			prefix: "/prefix",
-			api: NewFakeAPI().
-				WithPath("/prefix/path", map[string]string{"DELETE": "Delete", "GET": "get"}).
-				WithPath("/another/path", map[string]string{"DELETE": "Delete", "GET": "get"}),
-			expected: &Path{
-				Name:       "api",
-				Operations: map[string]bool{},
-				Children: map[string]*Path{
-					"prefix": &Path{
-						Name:       "prefix",
-						Operations: map[string]bool{},
-						Children: map[string]*Path{
-							"path": &Path{
-								Name: "path",
-								Operations: map[string]bool{
-									"DELETE": false, "GET": false,
-								},
-								Children: map[string]*Path{},
-							},
-						},
-					},
-				},
+			title: "multiple children",
+			paths: map[string][]string{
+				"/path1": []string{"DELETE", "POST"},
+				"/path2": []string{"DELETE", "GET"},
 			},
-		},
-		{
-			title:  "multiple children",
-			prefix: "",
-			api: NewFakeAPI().
-				WithPath("/path1", map[string]string{"DELETE": "Delete", "POST": "post"}).
-				WithPath("/path2", map[string]string{"DELETE": "Delete", "GET": "get"}),
 			expected: &Path{
 				Name:       "api",
 				Operations: map[string]bool{},
@@ -133,10 +159,10 @@ func TestLoadAPI(t *testing.T) {
 			},
 		},
 		{
-			title:  "path with parameter",
-			prefix: "",
-			api: NewFakeAPI().
-				WithPath("/path/{parameter}", map[string]string{"DELETE": "Delete", "GET": "get"}),
+			title: "path with parameter",
+			paths: map[string][]string{
+				"/path/{parameter}": []string{"DELETE", "GET"},
+			},
 			expected: &Path{
 				Name:       "api",
 				Operations: map[string]bool{},
@@ -161,17 +187,14 @@ func TestLoadAPI(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.title, func(t *testing.T) {
-			actual, err := LoadAPI("api", tc.prefix, tc.api)
-			if !errors.Is(err, tc.expectErr) {
-				t.Fatalf("expected error %v got %v", tc.expectErr, err)
+			path := NewPath("api")
+
+			for pathName, operations := range tc.paths {
+				path.AddSubpath(pathName, operations...)
 			}
 
-			if tc.expectErr != nil {
-				return
-			}
-
-			if !reflect.DeepEqual(actual, tc.expected) {
-				t.Fatalf("expected %s got %s", deepPrint(tc.expected), deepPrint(actual))
+			if !reflect.DeepEqual(path, tc.expected) {
+				t.Fatalf("expected %s got %s", deepPrint(tc.expected), deepPrint(path))
 			}
 		})
 	}
