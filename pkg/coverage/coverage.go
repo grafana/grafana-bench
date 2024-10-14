@@ -33,7 +33,7 @@ func NewEndpoint(path string, operations ...string) *EndPoint {
 	}
 
 	return &EndPoint{
-		Path:       path,
+		Path:       strings.Trim(path, "/"),
 		SubPaths:   map[string]*EndPoint{},
 		Operations: ops,
 	}

@@ -105,7 +105,7 @@ func TestFind(t *testing.T) {
 	// /path/subpath/
 	// /path/subpath/{parameter}
 	// /path/subpath/{parameter}/subsubpath
-	endpoint := NewEndpoint("path").
+	endpoint := NewEndpoint("/path").
 		AddSubpath("/subpath/{parameter}/subsubpath")
 
 	testCases := []struct {
