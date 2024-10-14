@@ -149,3 +149,94 @@ func TestFind(t *testing.T) {
 		})
 	}
 }
+
+func TestRecorOperation(t *testing.T) {
+	testCases := []struct {
+		title string
+		// path -> operations
+		ops map[string][]string
+		// path -> operations (recorded or not)
+		expect map[string]map[string]bool
+	}{
+		{
+			title: "one operation at /path/subpath",
+			ops: map[string][]string{
+				"/path/subpath": []string{"POST"},
+			},
+			expect: map[string]map[string]bool{
+				"/path/subpath": map[string]bool{
+					"POST": true,
+				},
+				"/path/subpath/{parameter}": map[string]bool{
+					"GET": false, "DELETE": false,
+				},
+				"/path/subpath/{parameter}/subsubpath": map[string]bool{
+					"GET": false,
+				},
+			},
+		},
+		{
+			title: "invalid operation",
+			ops: map[string][]string{
+				"/path/subpath": []string{"GET"},
+			},
+			expect: map[string]map[string]bool{
+				"/path/subpath": map[string]bool{
+					"POST": false,
+				},
+				"/path/subpath/{parameter}": map[string]bool{
+					"GET": false, "DELETE": false,
+				},
+				"/path/subpath/{parameter}/subsubpath": map[string]bool{
+					"GET": false,
+				},
+			},
+		},
+		{
+			title: "different operations on same path",
+			ops: map[string][]string{
+				"/path/subpath/<parameter>": []string{"GET", "DELETE"},
+			},
+			expect: map[string]map[string]bool{
+				"/path/subpath": map[string]bool{
+					"POST": false,
+				},
+				"/path/subpath/{parameter}": map[string]bool{
+					"GET": true, "DELETE": true,
+				},
+				"/path/subpath/{parameter}/subsubpath": map[string]bool{
+					"GET": false,
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.title, func(t *testing.T) {
+			// /path/
+			// /path/subpath/ (POST)
+			// /path/subpath/{parameter} (GET, DELETE)
+			// /path/subpath/{parameter}/subsubpath (GET)
+			path := NewPath("path").
+				AddSubpath("/subpath", "POST").
+				AddSubpath("/subpath/{parameter}", "GET", "DELETE").
+				AddSubpath("/subpath/{parameter}/subsubpath", "GET")
+
+			for p, ops := range tc.ops {
+				for _, o := range ops {
+					path.RecordOperation(p, o)
+				}
+			}
+
+			for pathName, expected := range tc.expect {
+				target := path.Find(pathName)
+				for op, expected := range expected {
+					actual := target.Operations[op]
+					if actual != expected {
+						t.Fatalf("expected %t got %t for %s %s", expected, actual, pathName, op)
+					}
+				}
+			}
+		})
+	}
+}

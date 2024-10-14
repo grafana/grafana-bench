@@ -43,7 +43,7 @@ func NewAnalizer(rootPath string, prefix string, api openapi.API) (*Analizer, er
 
 func (a *Analizer) Analize(r recorder.Recording) {
 	for _, req := range r.Requests {
-		a.root.Record(req.Path, req.Method)
+		a.root.RecordOperation(req.Path, req.Method)
 	}
 }
 

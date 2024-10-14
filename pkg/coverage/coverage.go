@@ -104,7 +104,7 @@ func (p *Path) Find(path string) *Path {
 	return element
 }
 
-func (p *Path) Record(path string, op string) {
+func (p *Path) RecordOperation(path string, op string) {
 	element := p.Find(path)
 	if element == nil {
 		return
