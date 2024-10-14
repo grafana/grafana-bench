@@ -9,23 +9,23 @@ func TestAddSubpath(t *testing.T) {
 	testCases := []struct {
 		title    string
 		paths    map[string][]string
-		expected *Path
+		expected *EndPoint
 	}{
 		{
 			title: "one path api",
 			paths: map[string][]string{
 				"/path": []string{"DELETE", "GET"},
 			},
-			expected: &Path{
-				Name:       "api",
+			expected: &EndPoint{
+				Path:       "api",
 				Operations: map[string]bool{},
-				Children: map[string]*Path{
-					"path": &Path{
-						Name: "path",
+				SubPaths: map[string]*EndPoint{
+					"path": &EndPoint{
+						Path: "path",
 						Operations: map[string]bool{
 							"DELETE": false, "GET": false,
 						},
-						Children: map[string]*Path{},
+						SubPaths: map[string]*EndPoint{},
 					},
 				},
 			},
@@ -36,23 +36,23 @@ func TestAddSubpath(t *testing.T) {
 				"/path1": []string{"DELETE", "POST"},
 				"/path2": []string{"DELETE", "GET"},
 			},
-			expected: &Path{
-				Name:       "api",
+			expected: &EndPoint{
+				Path:       "api",
 				Operations: map[string]bool{},
-				Children: map[string]*Path{
-					"path1": &Path{
-						Name: "path1",
+				SubPaths: map[string]*EndPoint{
+					"path1": &EndPoint{
+						Path: "path1",
 						Operations: map[string]bool{
 							"DELETE": false, "POST": false,
 						},
-						Children: map[string]*Path{},
+						SubPaths: map[string]*EndPoint{},
 					},
-					"path2": &Path{
-						Name: "path2",
+					"path2": &EndPoint{
+						Path: "path2",
 						Operations: map[string]bool{
 							"DELETE": false, "GET": false,
 						},
-						Children: map[string]*Path{},
+						SubPaths: map[string]*EndPoint{},
 					},
 				},
 			},
@@ -62,20 +62,20 @@ func TestAddSubpath(t *testing.T) {
 			paths: map[string][]string{
 				"/path/{parameter}": []string{"DELETE", "GET"},
 			},
-			expected: &Path{
-				Name:       "api",
+			expected: &EndPoint{
+				Path:       "api",
 				Operations: map[string]bool{},
-				Children: map[string]*Path{
-					"path": &Path{
-						Name:       "path",
+				SubPaths: map[string]*EndPoint{
+					"path": &EndPoint{
+						Path:       "path",
 						Operations: map[string]bool{},
-						Children: map[string]*Path{
-							"*": &Path{
-								Name: "{parameter}",
+						SubPaths: map[string]*EndPoint{
+							"*": &EndPoint{
+								Path: "{parameter}",
 								Operations: map[string]bool{
 									"DELETE": false, "GET": false,
 								},
-								Children: map[string]*Path{},
+								SubPaths: map[string]*EndPoint{},
 							},
 						},
 					},
@@ -86,7 +86,7 @@ func TestAddSubpath(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.title, func(t *testing.T) {
-			path := NewPath("api")
+			path := NewEndpoint("api")
 
 			for pathName, operations := range tc.paths {
 				path.AddSubpath(pathName, operations...)
@@ -105,18 +105,18 @@ func TestFind(t *testing.T) {
 	// /path/subpath/
 	// /path/subpath/{parameter}
 	// /path/subpath/{parameter}/subsubpath
-	path := NewPath("path").
+	endpoint := NewEndpoint("path").
 		AddSubpath("/subpath/{parameter}/subsubpath")
 
 	testCases := []struct {
 		title    string
 		path     string
-		expected *Path
+		expected *EndPoint
 	}{
 		{
 			title:    "find path",
 			path:     "/path",
-			expected: path,
+			expected: endpoint,
 		},
 		{
 			title:    "find non existing path",
@@ -126,23 +126,23 @@ func TestFind(t *testing.T) {
 		{
 			title:    "find subpath",
 			path:     "/path/subpath",
-			expected: path.Children["subpath"],
+			expected: endpoint.SubPaths["subpath"],
 		},
 		{
 			title:    "find parameter",
 			path:     "/path/subpath/xxxxxxx",
-			expected: path.Children["subpath"].Children["*"],
+			expected: endpoint.SubPaths["subpath"].SubPaths["*"],
 		},
 		{
 			title:    "find parameter subpath",
 			path:     "/path/subpath/xxxxxxx/subsubpath",
-			expected: path.Children["subpath"].Children["*"].Children["subsubpath"],
+			expected: endpoint.SubPaths["subpath"].SubPaths["*"].SubPaths["subsubpath"],
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.title, func(t *testing.T) {
-			actual := path.Find(tc.path)
+			actual := endpoint.Find(tc.path)
 			if !reflect.DeepEqual(actual, tc.expected) {
 				t.Fatalf("expected %s got %s", deepPrint(tc.expected), deepPrint(actual))
 			}
@@ -217,7 +217,7 @@ func TestRecorOperation(t *testing.T) {
 			// /path/subpath/ (POST)
 			// /path/subpath/{parameter} (GET, DELETE)
 			// /path/subpath/{parameter}/subsubpath (GET)
-			path := NewPath("path").
+			path := NewEndpoint("path").
 				AddSubpath("/subpath", "POST").
 				AddSubpath("/subpath/{parameter}", "GET", "DELETE").
 				AddSubpath("/subpath/{parameter}/subsubpath", "GET")

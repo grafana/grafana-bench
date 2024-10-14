@@ -51,7 +51,7 @@ func TestLoadAPI(t *testing.T) {
 		title     string
 		api       openapi.API
 		prefix    string
-		expected  *Path
+		expected  *EndPoint
 		expectErr error
 	}{
 		{
@@ -59,7 +59,7 @@ func TestLoadAPI(t *testing.T) {
 			prefix: "",
 			api: NewFakeAPI().
 				WithPath("/path", map[string]string{"DELETE": "Delete", "GET": "get"}),
-			expected: NewPath("api").AddSubpath("/path", "DELETE", "GET"),
+			expected: NewEndpoint("api").AddSubpath("/path", "DELETE", "GET"),
 		},
 		{
 			title:  "with prefix",
@@ -67,7 +67,7 @@ func TestLoadAPI(t *testing.T) {
 			api: NewFakeAPI().
 				WithPath("/prefix/path", map[string]string{"DELETE": "Delete", "GET": "get"}).
 				WithPath("/another/path", map[string]string{"DELETE": "Delete", "GET": "get"}),
-			expected: NewPath("api").
+			expected: NewEndpoint("api").
 				AddSubpath("/prefix/path", "DELETE", "GET"),
 		},
 		{
@@ -76,7 +76,7 @@ func TestLoadAPI(t *testing.T) {
 			api: NewFakeAPI().
 				WithPath("/path1", map[string]string{"DELETE": "Delete", "POST": "post"}).
 				WithPath("/path2", map[string]string{"DELETE": "Delete", "GET": "get"}),
-			expected: NewPath("api").
+			expected: NewEndpoint("api").
 				AddSubpath("/path1", "DELETE", "POST").
 				AddSubpath("/path2", "DELETE", "GET"),
 		},

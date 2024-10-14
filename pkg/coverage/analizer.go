@@ -9,11 +9,11 @@ import (
 )
 
 var (
-	ErrLoadingAPI   = errors.New("loading API")
+	ErrLoadingAPI = errors.New("loading API")
 )
 
-func LoadAPI(rootPath string, prefix string, api openapi.API) (*Path, error) {
-	root := NewPath(rootPath)
+func LoadAPI(rootPath string, prefix string, api openapi.API) (*EndPoint, error) {
+	root := NewEndpoint(rootPath)
 
 	for _, path := range api.GetPaths(prefix) {
 		pathOps, _ := api.GetOperations(path) // path should exists, don't check err
@@ -27,9 +27,8 @@ func LoadAPI(rootPath string, prefix string, api openapi.API) (*Path, error) {
 	return root, nil
 }
 
-
 type Analizer struct {
-	root *Path
+	root *EndPoint
 }
 
 func NewAnalizer(rootPath string, prefix string, api openapi.API) (*Analizer, error) {
@@ -47,10 +46,10 @@ func (a *Analizer) Analize(r recorder.Recording) {
 	}
 }
 
-func (a *Analizer) Coverage(path string) (Coverage, error) {
+func (a *Analizer) Coverage(path string) (CoverageReport, error) {
 	p := a.root.Find(path)
 	if p == nil {
-		return Coverage{}, fmt.Errorf("%w: %s", ErrPathNotFound, path)
+		return CoverageReport{}, fmt.Errorf("%w: %s", ErrPathNotFound, path)
 	}
 
 	return p.Coverage(), nil

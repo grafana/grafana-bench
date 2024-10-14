@@ -12,56 +12,56 @@ var (
 	ErrPathNotFound = errors.New("path not found")
 )
 
-type Path struct {
-	Name       string
+type EndPoint struct {
+	Path       string
 	Tested     bool
 	Operations map[string]bool
-	Children   map[string]*Path
+	SubPaths   map[string]*EndPoint
 }
 
-type Coverage struct {
+type CoverageReport struct {
 	Path     string
 	Total    int32
 	Covered  int32
-	Children []Coverage
+	Subpaths []CoverageReport
 }
 
-func NewPath(path string, operations ...string) *Path {
+func NewEndpoint(path string, operations ...string) *EndPoint {
 	ops := map[string]bool{}
 	for _, o := range operations {
 		ops[o] = false
 	}
 
-	return &Path{
-		Name:       path,
-		Children:   map[string]*Path{},
+	return &EndPoint{
+		Path:       path,
+		SubPaths:   map[string]*EndPoint{},
 		Operations: ops,
 	}
 }
 
-func (p *Path) AddSubpath(subpath string, operations ...string) *Path {
+func (p *EndPoint) AddSubpath(subpath string, operations ...string) *EndPoint {
 	element := p
 	pathElements := strings.Split(strings.Trim(subpath, "/"), "/")
 
 	// Build tree of elements for the path
 	for _, e := range pathElements {
 		// matches a subpath?
-		child := element.Children[e]
-		if child == nil {
+		subpath := element.SubPaths[e]
+		if subpath == nil {
 			// there's parameter?
-			child = element.Children["*"]
+			subpath = element.SubPaths["*"]
 		}
 
 		// this path element can be a parameter?
-		if child != nil {
-			element = child
+		if subpath != nil {
+			element = subpath
 			continue
 		}
 
 		// it is a new sub path or a parameter
-		child = &Path{
-			Name:       e,
-			Children:   map[string]*Path{},
+		subpath = &EndPoint{
+			Path:       e,
+			SubPaths:   map[string]*EndPoint{},
 			Operations: map[string]bool{},
 		}
 		key := e
@@ -69,9 +69,9 @@ func (p *Path) AddSubpath(subpath string, operations ...string) *Path {
 		if strings.Contains(e, "{") {
 			key = "*"
 		}
-		element.Children[key] = child
+		element.SubPaths[key] = subpath
 
-		element = child
+		element = subpath
 	}
 
 	for _, o := range operations {
@@ -82,42 +82,42 @@ func (p *Path) AddSubpath(subpath string, operations ...string) *Path {
 	return p
 }
 
-func (p *Path) Find(path string) *Path {
+func (p *EndPoint) Find(path string) *EndPoint {
 	path = strings.Trim(path, "/")
 
 	pathElements := strings.Split(path, "/")
-	if pathElements[0] != p.Name {
+	if pathElements[0] != p.Path {
 		return nil
 	}
 
 	element := p
 	for _, e := range pathElements[1:] {
-		child := element.Children[e]
-		if child == nil {
-			child = element.Children["*"]
-			if child == nil {
+		subpath := element.SubPaths[e]
+		if subpath == nil {
+			subpath = element.SubPaths["*"]
+			if subpath == nil {
 				return nil
 			}
 		}
-		element = child
+		element = subpath
 	}
 	return element
 }
 
-func (p *Path) RecordOperation(path string, op string) {
-	element := p.Find(path)
-	if element == nil {
+func (p *EndPoint) RecordOperation(path string, op string) {
+	endpoint := p.Find(path)
+	if endpoint == nil {
 		return
 	}
 
-	if _, valid := element.Operations[op]; valid {
-		element.Operations[op] = true
+	if _, valid := endpoint.Operations[op]; valid {
+		endpoint.Operations[op] = true
 	}
 }
 
-func (p *Path) Coverage() Coverage {
-	coverage := Coverage{
-		Path:  p.Name,
+func (p *EndPoint) Coverage() CoverageReport {
+	coverage := CoverageReport{
+		Path:  p.Path,
 		Total: int32(len(p.Operations)),
 	}
 
@@ -129,23 +129,23 @@ func (p *Path) Coverage() Coverage {
 	}
 
 	// aggregate coverage of children
-	for _, c := range p.Children {
+	for _, c := range p.SubPaths {
 		cc := c.Coverage()
 		coverage.Total = coverage.Total + cc.Total
 		coverage.Covered = coverage.Covered + cc.Covered
-		coverage.Children = append(coverage.Children, cc)
+		coverage.Subpaths = append(coverage.Subpaths, cc)
 	}
 
 	return coverage
 
 }
 
-func (c Coverage) Print(template template.Template, out io.Writer) error {
+func (c CoverageReport) Print(template template.Template, out io.Writer) error {
 	err := template.Execute(out, c)
 	if err != nil {
 		return err
 	}
-	for _, s := range c.Children {
+	for _, s := range c.Subpaths {
 		err = s.Print(template, out)
 		if err != nil {
 			return err
