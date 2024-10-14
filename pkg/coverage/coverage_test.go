@@ -3,7 +3,6 @@ package coverage
 import (
 	"reflect"
 	"testing"
-
 )
 
 func TestAddSubpath(t *testing.T) {
@@ -102,34 +101,12 @@ func TestAddSubpath(t *testing.T) {
 
 func TestFind(t *testing.T) {
 
-	// /path/subpath
-	// /path/{parameter}
-	// /path/{parameter}/subsubpath
-	path := &Path{
-		Name:       "api",
-		Operations: map[string]bool{},
-		Children: map[string]*Path{
-			"path": &Path{
-				Name:       "path",
-				Operations: map[string]bool{},
-				Children: map[string]*Path{
-					"subpath": &Path{
-						Name:     "subpath",
-						Children: map[string]*Path{},
-					},
-					"*": &Path{
-						Name: "{parameter}",
-						Children: map[string]*Path{
-							"subsubpath": &Path{
-								Name:     "subsubpath",
-								Children: map[string]*Path{},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
+	// /path/
+	// /path/subpath/
+	// /path/subpath/{parameter}
+	// /path/subpath/{parameter}/subsubpath
+	path := NewPath("path").
+		AddSubpath("/subpath/{parameter}/subsubpath")
 
 	testCases := []struct {
 		title    string
@@ -139,7 +116,7 @@ func TestFind(t *testing.T) {
 		{
 			title:    "find path",
 			path:     "/path",
-			expected: path.Children["path"],
+			expected: path,
 		},
 		{
 			title:    "find non existing path",
@@ -149,17 +126,17 @@ func TestFind(t *testing.T) {
 		{
 			title:    "find subpath",
 			path:     "/path/subpath",
-			expected: path.Children["path"].Children["subpath"],
+			expected: path.Children["subpath"],
 		},
 		{
 			title:    "find parameter",
-			path:     "/path/xxxxxxx",
-			expected: path.Children["path"].Children["*"],
+			path:     "/path/subpath/xxxxxxx",
+			expected: path.Children["subpath"].Children["*"],
 		},
 		{
 			title:    "find parameter subpath",
-			path:     "/path/xxxxxxx/subsubpath",
-			expected: path.Children["path"].Children["*"].Children["subsubpath"],
+			path:     "/path/subpath/xxxxxxx/subsubpath",
+			expected: path.Children["subpath"].Children["*"].Children["subsubpath"],
 		},
 	}
 

@@ -83,9 +83,15 @@ func (p *Path) AddSubpath(subpath string, operations ...string) *Path {
 }
 
 func (p *Path) Find(path string) *Path {
-	pathElements := strings.Split(strings.Trim(path, "/"), "/")
+	path = strings.Trim(path, "/")
+
+	pathElements := strings.Split(path, "/")
+	if pathElements[0] != p.Name {
+		return nil
+	}
+
 	element := p
-	for _, e := range pathElements {
+	for _, e := range pathElements[1:] {
 		child := element.Children[e]
 		if child == nil {
 			child = element.Children["*"]
