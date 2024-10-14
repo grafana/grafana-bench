@@ -9,23 +9,23 @@ func TestAddSubpath(t *testing.T) {
 	testCases := []struct {
 		title    string
 		paths    map[string][]string
-		expected *EndPoint
+		expected *EndpointTracker
 	}{
 		{
 			title: "one path api",
 			paths: map[string][]string{
 				"/path": []string{"DELETE", "GET"},
 			},
-			expected: &EndPoint{
+			expected: &EndpointTracker{
 				Path:       "api",
 				Operations: map[string]bool{},
-				SubPaths: map[string]*EndPoint{
-					"path": &EndPoint{
+				SubPaths: map[string]*EndpointTracker{
+					"path": &EndpointTracker{
 						Path: "path",
 						Operations: map[string]bool{
 							"DELETE": false, "GET": false,
 						},
-						SubPaths: map[string]*EndPoint{},
+						SubPaths: map[string]*EndpointTracker{},
 					},
 				},
 			},
@@ -36,23 +36,23 @@ func TestAddSubpath(t *testing.T) {
 				"/path1": []string{"DELETE", "POST"},
 				"/path2": []string{"DELETE", "GET"},
 			},
-			expected: &EndPoint{
+			expected: &EndpointTracker{
 				Path:       "api",
 				Operations: map[string]bool{},
-				SubPaths: map[string]*EndPoint{
-					"path1": &EndPoint{
+				SubPaths: map[string]*EndpointTracker{
+					"path1": &EndpointTracker{
 						Path: "path1",
 						Operations: map[string]bool{
 							"DELETE": false, "POST": false,
 						},
-						SubPaths: map[string]*EndPoint{},
+						SubPaths: map[string]*EndpointTracker{},
 					},
-					"path2": &EndPoint{
+					"path2": &EndpointTracker{
 						Path: "path2",
 						Operations: map[string]bool{
 							"DELETE": false, "GET": false,
 						},
-						SubPaths: map[string]*EndPoint{},
+						SubPaths: map[string]*EndpointTracker{},
 					},
 				},
 			},
@@ -62,20 +62,20 @@ func TestAddSubpath(t *testing.T) {
 			paths: map[string][]string{
 				"/path/{parameter}": []string{"DELETE", "GET"},
 			},
-			expected: &EndPoint{
+			expected: &EndpointTracker{
 				Path:       "api",
 				Operations: map[string]bool{},
-				SubPaths: map[string]*EndPoint{
-					"path": &EndPoint{
+				SubPaths: map[string]*EndpointTracker{
+					"path": &EndpointTracker{
 						Path:       "path",
 						Operations: map[string]bool{},
-						SubPaths: map[string]*EndPoint{
-							"*": &EndPoint{
+						SubPaths: map[string]*EndpointTracker{
+							"*": &EndpointTracker{
 								Path: "{parameter}",
 								Operations: map[string]bool{
 									"DELETE": false, "GET": false,
 								},
-								SubPaths: map[string]*EndPoint{},
+								SubPaths: map[string]*EndpointTracker{},
 							},
 						},
 					},
@@ -86,10 +86,10 @@ func TestAddSubpath(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.title, func(t *testing.T) {
-			path := NewEndpoint("api")
+			path := NewEndpointTracker("api")
 
 			for pathName, operations := range tc.paths {
-				path.AddSubpath(pathName, operations...)
+				path.WithSubpath(pathName, operations...)
 			}
 
 			if !reflect.DeepEqual(path, tc.expected) {
@@ -105,13 +105,13 @@ func TestFind(t *testing.T) {
 	// /path/subpath/
 	// /path/subpath/{parameter}
 	// /path/subpath/{parameter}/subsubpath
-	endpoint := NewEndpoint("/path").
-		AddSubpath("/subpath/{parameter}/subsubpath")
+	endpoint := NewEndpointTracker("/path").
+		WithSubpath("/subpath/{parameter}/subsubpath")
 
 	testCases := []struct {
 		title    string
 		path     string
-		expected *EndPoint
+		expected *EndpointTracker
 	}{
 		{
 			title:    "find path",
@@ -217,10 +217,10 @@ func TestRecorOperation(t *testing.T) {
 			// /path/subpath/ (POST)
 			// /path/subpath/{parameter} (GET, DELETE)
 			// /path/subpath/{parameter}/subsubpath (GET)
-			endpoint := NewEndpoint("path").
-				AddSubpath("/subpath", "POST").
-				AddSubpath("/subpath/{parameter}", "GET", "DELETE").
-				AddSubpath("/subpath/{parameter}/subsubpath", "GET")
+			endpoint := NewEndpointTracker("path").
+				WithSubpath("/subpath", "POST").
+				WithSubpath("/subpath/{parameter}", "GET", "DELETE").
+				WithSubpath("/subpath/{parameter}/subsubpath", "GET")
 
 			for p, ops := range tc.ops {
 				for _, o := range ops {
@@ -305,9 +305,9 @@ func TestCoverage(t *testing.T) {
 			// /path  (POST)
 			// /path/{parameter} (GET, DELETE)
 			// /path/{parameter}/subpath (GET)
-			endpoint := NewEndpoint("path", "POST").
-				AddSubpath("/{parameter}", "GET", "DELETE").
-				AddSubpath("/{parameter}/subpath", "GET")
+			endpoint := NewEndpointTracker("path", "POST").
+				WithSubpath("/{parameter}", "GET", "DELETE").
+				WithSubpath("/{parameter}/subpath", "GET")
 
 			for p, ops := range tc.ops {
 				for _, o := range ops {

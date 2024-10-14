@@ -19,7 +19,7 @@ func NewFakeAPI() *FakeAPI {
 		paths: map[string]map[string]string{},
 	}
 }
-func (a *FakeAPI) WithPath(path string, operations map[string]string) *FakeAPI {
+func (a *FakeAPI) WithSubPath(path string, operations map[string]string) *FakeAPI {
 	a.paths[path] = operations
 	return a
 }
@@ -51,34 +51,34 @@ func TestLoadAPI(t *testing.T) {
 		title     string
 		api       openapi.API
 		prefix    string
-		expected  *EndPoint
+		expected  *EndpointTracker
 		expectErr error
 	}{
 		{
 			title:  "one path api",
 			prefix: "",
 			api: NewFakeAPI().
-				WithPath("/path", map[string]string{"DELETE": "Delete", "GET": "get"}),
-			expected: NewEndpoint("api").AddSubpath("/path", "DELETE", "GET"),
+				WithSubPath("/path", map[string]string{"DELETE": "Delete", "GET": "get"}),
+			expected: NewEndpointTracker("api").WithSubpath("/path", "DELETE", "GET"),
 		},
 		{
 			title:  "with prefix",
 			prefix: "/prefix",
 			api: NewFakeAPI().
-				WithPath("/prefix/path", map[string]string{"DELETE": "Delete", "GET": "get"}).
-				WithPath("/another/path", map[string]string{"DELETE": "Delete", "GET": "get"}),
-			expected: NewEndpoint("api").
-				AddSubpath("/prefix/path", "DELETE", "GET"),
+				WithSubPath("/prefix/path", map[string]string{"DELETE": "Delete", "GET": "get"}).
+				WithSubPath("/another/path", map[string]string{"DELETE": "Delete", "GET": "get"}),
+			expected: NewEndpointTracker("api").
+				WithSubpath("/prefix/path", "DELETE", "GET"),
 		},
 		{
 			title:  "multiple children",
 			prefix: "",
 			api: NewFakeAPI().
-				WithPath("/path1", map[string]string{"DELETE": "Delete", "POST": "post"}).
-				WithPath("/path2", map[string]string{"DELETE": "Delete", "GET": "get"}),
-			expected: NewEndpoint("api").
-				AddSubpath("/path1", "DELETE", "POST").
-				AddSubpath("/path2", "DELETE", "GET"),
+				WithSubPath("/path1", map[string]string{"DELETE": "Delete", "POST": "post"}).
+				WithSubPath("/path2", map[string]string{"DELETE": "Delete", "GET": "get"}),
+			expected: NewEndpointTracker("api").
+				WithSubpath("/path1", "DELETE", "POST").
+				WithSubpath("/path2", "DELETE", "GET"),
 		},
 	}
 

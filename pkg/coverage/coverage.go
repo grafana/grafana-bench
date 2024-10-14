@@ -10,13 +10,15 @@ var (
 	ErrPathNotFound = errors.New("path not found")
 )
 
-type EndPoint struct {
+// EndpointTracker tracks the operations executed on an endpoint's path or subpath
+type EndpointTracker struct {
 	Path       string
 	Tested     bool
 	Operations map[string]bool
-	SubPaths   map[string]*EndPoint
+	SubPaths   map[string]*EndpointTracker
 }
 
+// CoverateReport records the total operations supported and covered by an endpoint and all its subpaths
 type CoverageReport struct {
 	Path     string
 	Total    int32
@@ -24,20 +26,34 @@ type CoverageReport struct {
 	Subpaths []CoverageReport
 }
 
-func NewEndpoint(path string, operations ...string) *EndPoint {
+// NewEndpointTracker creates a new EndpointTracker with a root path
+func NewEndpointTracker(path string, operations ...string) *EndpointTracker {
 	ops := map[string]bool{}
 	for _, o := range operations {
 		ops[o] = false
 	}
 
-	return &EndPoint{
+	return &EndpointTracker{
 		Path:       strings.Trim(path, "/"),
-		SubPaths:   map[string]*EndPoint{},
+		SubPaths:   map[string]*EndpointTracker{},
 		Operations: ops,
 	}
 }
 
-func (p *EndPoint) AddSubpath(subpath string, operations ...string) *EndPoint {
+// WithSubpath adds a new subpath to the endpoint, creating any parent subpaths as needed.
+// Returns a pointer to the Endpoint to allow chaining multiple calls:
+// Example, create "root" endpoint with two subpaths
+// NewEndpoint("root").
+//	       WithSubpath("subpath1", "GET").
+//             WithSubpath("subpath2", "GET")
+func (p *EndpointTracker) WithSubpath(subpath string, operations ...string) *EndpointTracker {
+	p.AddSubpath(subpath, operations...)
+	return p
+}
+
+// AddSubpath adds a new subpath to the endpoint, creating any parent subpaths as needed.
+// Returns a pointer to the newly created endpoint
+func (p *EndpointTracker) AddSubpath(subpath string, operations ...string) *EndpointTracker {
 	element := p
 	pathElements := strings.Split(strings.Trim(subpath, "/"), "/")
 
@@ -57,9 +73,9 @@ func (p *EndPoint) AddSubpath(subpath string, operations ...string) *EndPoint {
 		}
 
 		// it is a new sub path or a parameter
-		subpath = &EndPoint{
+		subpath = &EndpointTracker{
 			Path:       e,
-			SubPaths:   map[string]*EndPoint{},
+			SubPaths:   map[string]*EndpointTracker{},
 			Operations: map[string]bool{},
 		}
 		key := e
@@ -76,11 +92,11 @@ func (p *EndPoint) AddSubpath(subpath string, operations ...string) *EndPoint {
 		element.Operations[o] = false
 	}
 
-	// allow chaining multiple call to AddSubpath
-	return p
+	return element
 }
 
-func (p *EndPoint) Find(path string) *EndPoint {
+// Find returns the endpoint that matches the path or nil if not found
+func (p *EndpointTracker) Find(path string) *EndpointTracker {
 	path = strings.Trim(path, "/")
 
 	pathElements := strings.Split(path, "/")
@@ -102,7 +118,9 @@ func (p *EndPoint) Find(path string) *EndPoint {
 	return element
 }
 
-func (p *EndPoint) RecordOperation(path string, op string) {
+// RecordOperation records the execution of an operation in a endpoint
+// If the path does does not exists or the operation is not supported, it is ignored
+func (p *EndpointTracker) RecordOperation(path string, op string) {
 	endpoint := p.Find(path)
 	if endpoint == nil {
 		return
@@ -113,7 +131,8 @@ func (p *EndPoint) RecordOperation(path string, op string) {
 	}
 }
 
-func (p *EndPoint) Coverage() CoverageReport {
+// Coverage returns the CoverageReport of the endpoint 
+func (p *EndpointTracker) Coverage() CoverageReport {
 	coverage := CoverageReport{
 		Path:  p.Path,
 		Total: int32(len(p.Operations)),
@@ -135,5 +154,4 @@ func (p *EndPoint) Coverage() CoverageReport {
 	}
 
 	return coverage
-
 }

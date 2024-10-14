@@ -12,8 +12,8 @@ var (
 	ErrLoadingAPI = errors.New("loading API")
 )
 
-func LoadAPI(rootPath string, prefix string, api openapi.API) (*EndPoint, error) {
-	root := NewEndpoint(rootPath)
+func LoadAPI(rootPath string, prefix string, api openapi.API) (*EndpointTracker, error) {
+	root := NewEndpointTracker(rootPath)
 
 	for _, path := range api.GetPaths(prefix) {
 		pathOps, _ := api.GetOperations(path) // path should exists, don't check err
@@ -21,14 +21,14 @@ func LoadAPI(rootPath string, prefix string, api openapi.API) (*EndPoint, error)
 		for o := range pathOps {
 			ops = append(ops, o)
 		}
-		root.AddSubpath(path, ops...)
+		root.WithSubpath(path, ops...)
 	}
 
 	return root, nil
 }
 
 type Analizer struct {
-	root *EndPoint
+	root *EndpointTracker
 }
 
 func NewAnalizer(rootPath string, prefix string, api openapi.API) (*Analizer, error) {
