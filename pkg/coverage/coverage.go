@@ -9,15 +9,15 @@ import (
 )
 
 var (
-	ErrLoadingAPI = errors.New("loading API")
+	ErrLoadingAPI   = errors.New("loading API")
+	ErrPathNotFound = errors.New("path not found")
 )
 
 type Path struct {
-	Name        string
-	Tested      bool
-	IsParameter bool
-	Operations  map[string]bool
-	Children    map[string]*Path
+	Name       string
+	Tested     bool
+	Operations map[string]bool
+	Children   map[string]*Path
 }
 
 type Analizer struct {
@@ -44,22 +44,34 @@ func LoadAPI(rootPath string, prefix string, api openapi.API) (*Path, error) {
 		element := root
 		pathElements := strings.Split(strings.Trim(path, "/"), "/")
 
-		// Build tree of elements for the API
+		// Build tree of elements for the path
 		for _, e := range pathElements {
+			// matches a subpath?
 			child := element.Children[e]
+			if child == nil {
+				// there's parameter?
+				child = element.Children["*"]
+			}
+
+			// this path element can be a parameter?
 			if child != nil {
 				element = child
 				continue
 			}
 
-			isParameter := strings.Contains(e, "{")
+			// it is a new sub path or a parameter
 			child = &Path{
-				Name:        e,
-				IsParameter: isParameter,
-				Children:    map[string]*Path{},
-				Operations:  map[string]bool{},
+				Name:       e,
+				Children:   map[string]*Path{},
+				Operations: map[string]bool{},
 			}
-			element.Children[e] = child
+			key := e
+			// parameters are stored as "*" for easy matching in search
+			if strings.Contains(e, "{") {
+				key = "*"
+			}
+			element.Children[key] = child
+
 			element = child
 		}
 
@@ -72,3 +84,20 @@ func LoadAPI(rootPath string, prefix string, api openapi.API) (*Path, error) {
 
 	return root, nil
 }
+
+func (p *Path) Find(path string) *Path {
+	pathElements := strings.Split(strings.Trim(path, "/"), "/")
+	element := p
+	for _, e := range pathElements {
+		child := element.Children[e]
+		if child == nil {
+			child = element.Children["*"]
+			if child == nil {
+				return nil
+			}
+		}
+		element = child
+	}
+	return element
+}
+
