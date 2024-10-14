@@ -3,17 +3,12 @@ package coverage
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"strings"
 	"text/template"
-
-	"github.com/grafana/grafana-bench/pkg/openapi"
-	"github.com/grafana/grafana-bench/pkg/recorder"
 )
 
 var (
-	ErrLoadingAPI   = errors.New("loading API")
 	ErrPathNotFound = errors.New("path not found")
 )
 
@@ -31,19 +26,6 @@ type Coverage struct {
 	Children []Coverage
 }
 
-type Analizer struct {
-	root *Path
-}
-
-func NewAnalizer(rootPath string, prefix string, api openapi.API) (*Analizer, error) {
-	root, err := LoadAPI(rootPath, prefix, api)
-	if err != nil {
-		return nil, err
-	}
-
-	return &Analizer{root: root}, nil
-}
-
 func NewPath(path string, operations ...string) *Path {
 	ops := map[string]bool{}
 	for _, o := range operations {
@@ -55,21 +37,6 @@ func NewPath(path string, operations ...string) *Path {
 		Children:   map[string]*Path{},
 		Operations: ops,
 	}
-}
-
-func LoadAPI(rootPath string, prefix string, api openapi.API) (*Path, error) {
-	root := NewPath(rootPath)
-
-	for _, path := range api.GetPaths(prefix) {
-		pathOps, _ := api.GetOperations(path) // path should exists, don't check err
-		ops := []string{}
-		for o := range pathOps {
-			ops = append(ops, o)
-		}
-		root.AddSubpath(path, ops...)
-	}
-
-	return root, nil
 }
 
 func (p *Path) AddSubpath(subpath string, operations ...string) *Path {
@@ -180,19 +147,4 @@ func (c Coverage) Print(template template.Template, out io.Writer) error {
 	}
 
 	return nil
-}
-
-func (a *Analizer) Analize(r recorder.Recording) {
-	for _, req := range r.Requests {
-		a.root.Record(req.Path, req.Method)
-	}
-}
-
-func (a *Analizer) Coverage(path string) (Coverage, error) {
-	p := a.root.Find(path)
-	if p == nil {
-		return Coverage{}, fmt.Errorf("%w: %s", ErrPathNotFound, path)
-	}
-
-	return p.Coverage(), nil
 }
