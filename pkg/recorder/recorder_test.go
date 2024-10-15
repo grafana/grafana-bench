@@ -152,7 +152,7 @@ func TestRecordingProxy(t *testing.T) {
 				t.Fatalf("starting recorder: %v", err)
 			}
 
-			proxyUrl, err := url.Parse(recorder.Url())
+			proxyUrl, err := url.Parse(recorder.ProxyURL())
 
 			client := &http.Client{Transport: &http.Transport{Proxy: http.ProxyURL(proxyUrl)}}
 

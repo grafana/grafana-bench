@@ -42,7 +42,8 @@ type Recorder interface {
 }
 
 type ProxyRecorder struct {
-	url     string
+	url      string
+	host     string
 	cmd     *exec.Cmd
 	capture *bytes.Buffer
 }
@@ -107,16 +108,16 @@ func NewProxyRecorder(opts ProxyOptions) (*ProxyRecorder, error) {
 	time.Sleep(opts.GracePeriod)
 	err = cmd.Process.Signal(syscall.Signal(0))
 	if err != nil {
-		return nil, fmt.Errorf("%w: %s", ErrStartProxy, stderr.String())	
+		return nil, fmt.Errorf("%w: %s", ErrStartProxy, stderr.String())
 	}
 
 	return &ProxyRecorder{
 		url:     fmt.Sprintf("%s://%s:%d", opts.Scheme, opts.Address, opts.Port),
+		host:    fmt.Sprintf("%s:%d", opts.Address, opts.Port),
 		cmd:     cmd,
 		capture: stdout,
 	}, nil
 }
-
 
 func (p *ProxyRecorder) GetRecording() (Recording, error) {
 	//stop the proxy
@@ -128,7 +129,13 @@ func (p *ProxyRecorder) GetRecording() (Recording, error) {
 	return ParseRecording(p.capture.Bytes())
 }
 
-func (p *ProxyRecorder) Url() string {
+// ProxyHost returns the host and port of the proxy used to capture the requests
+func (p *ProxyRecorder) ProxyHost() string {
+	return p.host
+}
+
+// ProxyURL returns the irl of the proxy used to capture the requests
+func (p *ProxyRecorder) ProxyURL() string {
 	return p.url
 }
 
