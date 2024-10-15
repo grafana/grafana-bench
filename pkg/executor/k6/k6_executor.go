@@ -47,7 +47,6 @@ type K6ExecutorOptions struct {
 	CloudOutput    bool
 	CloudToken     string
 	CloudProjectID string
-	K6Args         []string
 }
 // NewK6TestExecutor creates a new instance of K6TestExecutor
 func NewK6TestExecutor(
