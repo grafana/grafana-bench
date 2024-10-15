@@ -23,6 +23,7 @@ type CoverageReport struct {
 	Path     string
 	Total    int32
 	Covered  int32
+	Coverage int32
 	Subpaths []CoverageReport
 }
 
@@ -159,6 +160,10 @@ func (p *EndpointTracker) Coverage() CoverageReport {
 		coverage.Total = coverage.Total + cc.Total
 		coverage.Covered = coverage.Covered + cc.Covered
 		coverage.Subpaths = append(coverage.Subpaths, cc)
+	}
+
+	if coverage.Total > 0 {
+		coverage.Coverage = int32(100.0 * float32(coverage.Covered)/float32(coverage.Total))
 	}
 
 	return coverage

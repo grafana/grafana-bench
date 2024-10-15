@@ -257,16 +257,19 @@ func TestCoverage(t *testing.T) {
 				Path:    "path",
 				Total:   4,
 				Covered: 1,
+				Coverage: 25,
 				Subpaths: []CoverageReport{
 					{
 						Path:    "{parameter}",
 						Total:   3,
 						Covered: 0,
+						Coverage: 0,
 						Subpaths: []CoverageReport{
 							{
 								Path:    "subpath",
 								Total:   1,
 								Covered: 0,
+								Coverage: 0,
 							},
 						},
 					},
@@ -282,16 +285,19 @@ func TestCoverage(t *testing.T) {
 				Path:    "path",
 				Total:   4,
 				Covered: 1,
+				Coverage: 25,
 				Subpaths: []CoverageReport{
 					{
 						Path:    "{parameter}",
 						Total:   3,
 						Covered: 1,
+						Coverage: 33,
 						Subpaths: []CoverageReport{
 							{
 								Path:    "subpath",
 								Total:   1,
 								Covered: 1,
+								Coverage: 100,
 							},
 						},
 					},
