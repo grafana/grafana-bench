@@ -31,14 +31,6 @@ func WithK6Credentials() k6TestExecutorOption {
 	}
 }
 
-// configure TestRunner to run typescript tests
-func UseTypescript() k6TestExecutorOption {
-	return func(t *K6TestExecutor) error {
-		t.UseTypescript = true
-		return nil
-	}
-}
-
 func k6TestRunnerForTesting(
 	log *slog.Logger,
 	opts ...k6TestExecutorOption,

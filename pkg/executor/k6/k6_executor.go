@@ -44,7 +44,6 @@ type K6TestExecutor struct {
 
 type K6ExecutorOptions struct {
 	Verbose        bool
-	UseTypescript  bool
 	CloudOutput    bool
 	CloudToken     string
 	CloudProjectID string
