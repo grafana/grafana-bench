@@ -20,6 +20,9 @@ type GrafanaInstance interface {
 	// Url returns the url to access the grafana instance
 	Url() string
 
+	// Adress returns the grafana instance host and port
+	Address() string
+
 	// Hostname returns the grafana instance host name
 	Hostname() string
 
@@ -114,6 +117,11 @@ func NewInstance(address, user, password string, opts ...grafanaInstanceOption) 
 // Url returns the url to access the grafana instance
 func (g *grafanaInstance) Url() string {
 	return g.url.String()
+}
+
+// Address returns the grafana instance host and port
+func (g *grafanaInstance) Address() string {
+	return g.url.Host
 }
 
 // Host returns the grafana instance Hostname

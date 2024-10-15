@@ -45,6 +45,11 @@ func (m *mockGrafanaInstance) Url() string {
 	return m.address
 }
 
+func (m *mockGrafanaInstance) Address() string {
+	url, _ := url.Parse(m.address)
+	return url.Host
+}
+
 func (m *mockGrafanaInstance) Hostname() string {
 	url, _ := url.Parse(m.address)
 	return url.Hostname()
