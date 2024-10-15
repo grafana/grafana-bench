@@ -99,13 +99,20 @@ func (p *EndpointTracker) AddSubpath(subpath string, operations ...string) *Endp
 func (p *EndpointTracker) Find(path string) *EndpointTracker {
 	path = strings.Trim(path, "/")
 
-	pathElements := strings.Split(path, "/")
-	if pathElements[0] != p.Path {
+	// path must start's with the endpoint's path
+	path, found := strings.CutPrefix(path, p.Path)
+	if !found {
 		return nil
 	}
 
+	pathElements := strings.Split(path, "/")
+
 	element := p
-	for _, e := range pathElements[1:] {
+	for _, e := range pathElements {
+		// skip any empty element that Split returned
+		if e == "" {
+			continue
+		}
 		subpath := element.SubPaths[e]
 		if subpath == nil {
 			subpath = element.SubPaths["*"]
