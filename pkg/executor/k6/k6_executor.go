@@ -38,28 +38,25 @@ var (
 
 // K6TestExecutor implements TestExecutor interface for running k6 test suites
 type K6TestExecutor struct {
-	Log            *slog.Logger
+	Log               *slog.Logger
+	K6ExecutorOptions
+}
+
+type K6ExecutorOptions struct {
 	Verbose        bool
-	UseTypescript  bool
 	CloudOutput    bool
 	CloudToken     string
 	CloudProjectID string
+	K6Args         []string
 }
-
 // NewK6TestExecutor creates a new instance of K6TestExecutor
 func NewK6TestExecutor(
 	log *slog.Logger,
-	verbose bool,
-	cloudOutput bool,
-	cloudToken string,
-	cloudProjectID string,
+	opts K6ExecutorOptions,
 ) *K6TestExecutor {
 	return &K6TestExecutor{
 		Log:            log.With("executor", "k6"),
-		Verbose:        verbose,
-		CloudOutput:    cloudOutput,
-		CloudToken:     cloudToken,
-		CloudProjectID: cloudProjectID,
+		K6ExecutorOptions: opts,
 	}
 }
 

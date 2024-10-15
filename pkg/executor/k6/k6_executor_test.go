@@ -31,24 +31,15 @@ func WithK6Credentials() k6TestExecutorOption {
 	}
 }
 
-// configure TestRunner to run typescript tests
-func UseTypescript() k6TestExecutorOption {
-	return func(t *K6TestExecutor) error {
-		t.UseTypescript = true
-		return nil
-	}
-}
-
 func k6TestRunnerForTesting(
 	log *slog.Logger,
 	opts ...k6TestExecutorOption,
 ) (*K6TestExecutor, error) {
 	te := NewK6TestExecutor(
 		log,
-		true,  // verbose
-		false, // cloud output
-		"",    // cloud token
-		"",    // cloud project
+		K6ExecutorOptions{
+			Verbose: true,
+		},
 	)
 
 	// apply options

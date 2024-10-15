@@ -118,10 +118,12 @@ func (config BenchConfig) BuildTestRunner(log *slog.Logger, testExecutor string)
 	if testExecutor == "k6" {
 		executor = k6.NewK6TestExecutor(
 			runnerLog,
-			config.Verbose,
-			config.K6.CloudOutput,
-			config.K6.CloudToken,
-			config.K6.CloudProjectId,
+			k6.K6ExecutorOptions{
+				Verbose:        config.Verbose,
+				CloudOutput:    config.K6.CloudOutput,
+				CloudToken:     config.K6.CloudToken,
+				CloudProjectID: config.K6.CloudProjectId,
+			},
 		)
 	}
 
