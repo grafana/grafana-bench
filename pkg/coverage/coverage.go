@@ -89,7 +89,7 @@ func (p *EndpointTracker) AddSubpath(subpath string, operations ...string) *Endp
 	}
 
 	for _, o := range operations {
-		element.Operations[o] = false
+		element.Operations[strings.ToUpper(o)] = false
 	}
 
 	return element
@@ -133,6 +133,7 @@ func (p *EndpointTracker) RecordOperation(path string, op string) {
 		return
 	}
 
+	op = strings.ToUpper(op)
 	if _, valid := endpoint.Operations[op]; valid {
 		endpoint.Operations[op] = true
 	}
