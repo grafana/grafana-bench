@@ -45,10 +45,9 @@ func k6TestRunnerForTesting(
 ) (*K6TestExecutor, error) {
 	te := NewK6TestExecutor(
 		log,
-		true,  // verbose
-		false, // cloud output
-		"",    // cloud token
-		"",    // cloud project
+		K6ExecutorOptions{
+			Verbose: true,
+		},
 	)
 
 	// apply options
