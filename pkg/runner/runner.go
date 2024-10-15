@@ -8,9 +8,12 @@ import (
 	"maps"
 	"time"
 
+	"github.com/grafana/grafana-bench/pkg/coverage"
 	"github.com/grafana/grafana-bench/pkg/dashboard"
 	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/grafana"
+	"github.com/grafana/grafana-bench/pkg/openapi"
+	"github.com/grafana/grafana-bench/pkg/recorder"
 	"github.com/grafana/grafana-bench/pkg/reporter"
 )
 
@@ -23,6 +26,7 @@ type TestRunner struct {
 	DashboardURL    string
 	Executor        executor.TestExecutor
 	Reporter        reporter.SuiteRunReporter
+	ReportAPICoverage    bool
 }
 
 func NewTestRunner(
@@ -34,6 +38,7 @@ func NewTestRunner(
 	dashboardURL string,
 	executor executor.TestExecutor,
 	reporter reporter.SuiteRunReporter,
+	reportAPICoverage bool,
 
 ) *TestRunner {
 	return &TestRunner{
@@ -45,6 +50,7 @@ func NewTestRunner(
 		DashboardURL:    dashboardURL,
 		Executor:        executor,
 		Reporter:        reporter,
+		ReportAPICoverage:    reportAPICoverage,
 	}
 }
 
@@ -58,6 +64,17 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 	// get an unique identification for the suite run (used for backward compatibility)
 	suiteRunId := t.getSuiteRunId(runId, suite)
 	t.Log = t.Log.With("suiteRun", suiteRunId)
+
+	var proxy *recorder.ProxyRecorder
+	if t.ReportAPICoverage {
+		proxy, err = recorder.NewProxyRecorder(recorder.ProxyOptions{
+			Target: t.GrafanaInstance.Address(),
+		})
+		if err != nil {
+			return fmt.Errorf("starting recorder API %v", err)
+		}
+		testVars["HTTPS_PROXY"] = proxy.ProxyHost()
+	}
 
 	// set common test execution variables
 	env := map[string]string{
@@ -97,6 +114,37 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 		}
 
 		return fmt.Errorf("test suite failed: Too many test failures%s", dashboardMsg)
+	}
+
+	if t.ReportAPICoverage {
+		recording, err := proxy.GetRecording()
+		if err != nil {
+			return fmt.Errorf("getting recording %w", err)
+		}
+
+		httpbinAPI, err := openapi.FromFile("grafanaV3.json")
+		if err != nil {
+			return fmt.Errorf("loading HTTPBIN API %w", err)
+		}
+
+		analizer, err := coverage.NewAnalizer("/api", "", httpbinAPI)
+		if err != nil {
+			return fmt.Errorf("loading HTTPBIN API %v", err)
+		}
+
+		analizer.Analize(recording)
+
+		report, err := analizer.Coverage("/api")
+		if err != nil {
+			return fmt.Errorf("getting coverage %v", err)
+		}
+
+		fmt.Println("\ntest api coverage (operations tested/total)")
+		for _, c := range report.Subpaths {
+			if c.Covered > 0 {
+				fmt.Printf("%s %d%% (%d/%d)\n", c.Path, c.Coverage, c.Covered, c.Total )
+			}
+		}
 	}
 
 	return nil

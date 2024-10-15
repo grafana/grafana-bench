@@ -156,6 +156,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			"\n 'log' produced a structure log. 'text' produced an human readable output",
 	)
 	fs.BoolVar(&config.Verbose, "verbose", false, "show test outputs")
+	fs.BoolVar(&config.ReportAPICoverage, "report-api-coverage", false, "generate api coverage report")
 	fs.StringVar(
 		&config.Grafana.Url,
 		"grafana-url",

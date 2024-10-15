@@ -33,6 +33,7 @@ type BenchConfig struct {
 	Verbose            bool
 	SlackNotifications bool
 	DashboardURL       string
+	ReportAPICoverage  bool
 	Grafana            GrafanaConfig
 	K6                 K6Config
 	PW                 PWConfig
@@ -178,6 +179,7 @@ func (config BenchConfig) BuildTestRunner(log *slog.Logger, testExecutor string)
 		config.DashboardURL,
 		executor,
 		reporter.NewChainReporter(reporters...),
+		config.ReportAPICoverage,
 	), nil
 }
 
@@ -220,7 +222,7 @@ func (config *TestSuiteConfig) BuildTestSuite(log *slog.Logger) (*executor.TestS
 
 		if testSuiteRevision == "" {
 			testSuiteRevision = revisionHash
-		}	
+		}
 	}
 
 	// if the test suite name was not given, use repo name (if Any) and the last element of the test suite path
@@ -228,7 +230,7 @@ func (config *TestSuiteConfig) BuildTestSuite(log *slog.Logger) (*executor.TestS
 		name := strings.TrimSuffix(path.Base(config.Path), path.Ext(config.Path))
 		if config.Repo != "" {
 			repoURL, _ := url.Parse(config.Repo)
-			name,_ = strings.CutPrefix(filepath.Join(repoURL.Path, name), "/")
+			name, _ = strings.CutPrefix(filepath.Join(repoURL.Path, name), "/")
 		}
 		config.Name = name
 	}

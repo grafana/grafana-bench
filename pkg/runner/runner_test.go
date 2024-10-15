@@ -129,6 +129,7 @@ func testRunnerForTesting(
 		"",      // dashboard URL
 		executor,
 		reporter.NewLogReporter(log),
+		false,  // api test coverage
 	)
 
 	// apply options
