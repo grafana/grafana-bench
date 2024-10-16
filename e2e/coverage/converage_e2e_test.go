@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"os"
+	"os/exec"
 	"testing"
 
 	"github.com/grafana/grafana-bench/pkg/coverage"
@@ -14,6 +15,10 @@ import (
 )
 
 func TestCoverage(t *testing.T) {
+	if _, err := exec.LookPath(recorder.Binary); err != nil {
+		t.Skipf("could not find recorder proxy binary %s", recorder.Binary)
+	}
+
 	recoderOptions := recorder.ProxyOptions{
 		Target: "httpbin.org",
 	}

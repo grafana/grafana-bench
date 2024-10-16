@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os/exec"
 	"reflect"
 	"testing"
 )
@@ -85,6 +86,10 @@ type flow struct {
 }
 
 func TestRecordingProxy(t *testing.T) {
+	if _, err := exec.LookPath(Binary); err != nil {
+		t.Skipf("could not find recorder proxy binary %s", Binary)
+	}
+
 	t.Parallel()
 
 	testCases := []struct {

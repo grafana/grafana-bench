@@ -17,6 +17,7 @@ import (
 
 const (
 	DefaultProxyPort = 8080
+	Binary           = "/usr/bin/mitmdump"
 )
 
 var (
@@ -93,7 +94,7 @@ func NewProxyRecorder(opts ProxyOptions) (*ProxyRecorder, error) {
 
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
-	cmd := exec.Command("/usr/bin/mitmdump", args...)
+	cmd := exec.Command(Binary, args...)
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
 	if opts.Verbose {
