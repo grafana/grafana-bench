@@ -1,6 +1,7 @@
 package coverage
 
 import (
+	"bytes"
 	"reflect"
 	"testing"
 )
@@ -322,6 +323,85 @@ func TestCoverage(t *testing.T) {
 			}
 
 			actual := endpoint.Coverage()
+			if !reflect.DeepEqual(actual, tc.expected) {
+				t.Fatalf("expected %s got %s", deepPrint(tc.expected), deepPrint(actual))
+			}
+		})
+	}
+}
+
+
+func TestPrint(t *testing.T) {
+	testCases := []struct {
+		title string
+		opts PrintOptions
+		expected string
+	}{
+		{
+			title: "print depth 1",
+			opts: PrintOptions {
+				MaxDepth: 1,
+			},
+			expected: "/path 25% (1/4)\n",
+		},
+		{
+			title: "print depth 2",
+			opts: PrintOptions {
+				MaxDepth: 2,
+			},
+			expected: "/path 25% (1/4)\n" +
+				"/path/subpath1 0% (0/3)\n" +
+				"/path/subpath2 0% (0/2)\n",
+
+		},
+		{
+			title: "print indented",
+			opts: PrintOptions {
+				MaxDepth: 2,
+				Indent: true,
+			},
+			expected: "/path 25% (1/4)\n" +
+				"\t/subpath1 0% (0/3)\n" +
+				"\t/subpath2 0% (0/2)\n",
+
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.title, func(t *testing.T) {
+			report := CoverageReport{
+				Path:    "path",
+				Total:   4,
+				Covered: 1,
+				Coverage: 25,
+				Subpaths: []CoverageReport{
+					{
+						Path:    "subpath1",
+						Total:   3,
+						Covered: 0,
+						Coverage: 0,
+						Subpaths: []CoverageReport{
+							{
+								Path:    "subsubpath",
+								Total:   1,
+								Covered: 0,
+								Coverage: 0,
+							},
+						},
+					},
+					{
+						Path:    "subpath2",
+						Total:   2,
+						Covered: 0,
+						Coverage: 0,
+						Subpaths: []CoverageReport{},
+					},
+				},
+			}
+
+			buffer := &bytes.Buffer{}
+			report.Print(tc.opts, buffer)
+			actual := buffer.String()
 			if !reflect.DeepEqual(actual, tc.expected) {
 				t.Fatalf("expected %s got %s", deepPrint(tc.expected), deepPrint(actual))
 			}

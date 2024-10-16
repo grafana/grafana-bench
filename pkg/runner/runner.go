@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"maps"
+	"os"
 	"time"
 
 	"github.com/grafana/grafana-bench/pkg/coverage"
@@ -139,12 +140,12 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 			return fmt.Errorf("getting coverage %v", err)
 		}
 
-		fmt.Println("\ntest api coverage (operations tested/total)")
-		for _, c := range report.Subpaths {
-			if c.Covered > 0 {
-				fmt.Printf("%s %d%% (%d/%d)\n", c.Path, c.Coverage, c.Covered, c.Total )
-			}
-		}
+		// TODO: add CLI options to control print options
+		report.Print(coverage.PrintOptions{
+			MaxDepth: 2,
+			Indent: true,
+			SkipUncovered: true,
+		}, os.Stdout)
 	}
 
 	return nil

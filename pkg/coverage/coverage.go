@@ -3,6 +3,8 @@ package coverage
 
 import (
 	"errors"
+	"fmt"
+	"io"
 	"strings"
 )
 
@@ -167,4 +169,62 @@ func (p *EndpointTracker) Coverage() CoverageReport {
 	}
 
 	return coverage
+}
+
+
+type VisitState struct {
+	Depth    int
+	FullPath []string
+	Any      any
+}
+
+// Visit executes a visitor function recursively on a Coverage Report for a path and its subpaths
+// until it returns false. state argument can be used to carry information along the process (e.g. calculate total)
+func (c CoverageReport) Visit( visitor func(c CoverageReport, state VisitState) bool, any any) {
+	state := VisitState{
+		Depth: 1,
+		FullPath: []string{c.Path},
+		Any: any,
+	}
+
+	c.doVisit(visitor, state)
+}
+
+func (c CoverageReport) doVisit( visitor func(c CoverageReport, s VisitState) bool, state VisitState) bool {
+	if visitor(c, state) {
+		for _, p := range c.Subpaths {
+			vs := VisitState{
+				Depth: state.Depth+1,
+				FullPath: append(state.FullPath, p.Path), 
+				Any: state.Any,
+			}
+			p.doVisit(visitor, vs)
+		}
+		return true
+	}
+
+	return false
+}
+
+type PrintOptions struct {
+	MaxDepth      int
+	Indent        bool
+	SkipUncovered bool
+}
+func (c  CoverageReport)Print(opts PrintOptions, writer io.Writer) {
+	c.Visit(func(c CoverageReport, state VisitState) bool {
+		if state.Depth > opts.MaxDepth || (c.Covered == 0 && opts.SkipUncovered) {
+			return false
+		}
+
+		var path string
+		if opts.Indent {
+			path = fmt.Sprintf("%s/%s", strings.Repeat("\t", state.Depth-1), c.Path) 
+		} else {
+			path = "/"+ strings.Join(state.FullPath, "/")
+		}
+		fmt.Fprintf(writer, "%s %d%% (%d/%d)\n", path, c.Coverage, c.Covered, c.Total)
+		
+		return true
+	}, nil)
 }
