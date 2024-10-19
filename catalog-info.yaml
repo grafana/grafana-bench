@@ -3,7 +3,7 @@ kind: Component
 metadata:
   name: grafana-bench
   title: Grafana Bench
-  description: 'Documentation for the Grafana Bench Platform and Grafana Testing Strategy'
+  description: 'Documentation for Grafana Bench'
   annotations:
     github.com/project-slug: grafana/grafana-bench
     backstage.io/techdocs-ref: dir:./docs/
