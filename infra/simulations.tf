@@ -2,7 +2,7 @@ resource "google_storage_bucket" "bench_simulations" {
   name     = "bench-simulations"
   location = local.location
 
-  force_destroy = false
+  force_destroy = true
   lifecycle_rule {
     condition {
       age = 1

@@ -11,7 +11,7 @@ resource "google_storage_bucket" "bench_vms" {
 
   // don't allow deleting the bucket once we've started putting
   // builds in it
-  force_destroy = false
+  force_destroy = true
 
   // delete aborted uploads after 1 day
   lifecycle_rule {
