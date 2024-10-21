@@ -99,24 +99,6 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 		t.Log.Error("reporting test suite run", "error", err)
 	}
 
-	var anyFailures = suiteRun.Status != executor.SuitePassed
-
-	if anyFailures {
-		dashboardMsg := ""
-		if t.DashboardURL != "" {
-			// This functionality is ALPHA and may be removed in favor of outputting
-			// the suiteRun ID and leaving it up to the user.
-			dashboard, err := dashboard.RenderDashboardURL(t.DashboardURL, runId)
-			if err != nil {
-				t.Log.Error("getting URL dashboard", "error", err)
-			} else {
-				dashboardMsg = fmt.Sprintf(". See dashboard: %s", dashboard)
-			}
-		}
-
-		return fmt.Errorf("test suite failed: Too many test failures%s", dashboardMsg)
-	}
-
 	if t.ReportAPICoverage {
 		recording, err := proxy.GetRecording()
 		if err != nil {
@@ -146,6 +128,23 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 			Indent: true,
 			SkipUncovered: true,
 		}, os.Stdout)
+	}
+
+	var anyFailures = suiteRun.Status != executor.SuitePassed
+	if anyFailures {
+		dashboardMsg := ""
+		if t.DashboardURL != "" {
+			// This functionality is ALPHA and may be removed in favor of outputting
+			// the suiteRun ID and leaving it up to the user.
+			dashboard, err := dashboard.RenderDashboardURL(t.DashboardURL, runId)
+			if err != nil {
+				t.Log.Error("getting URL dashboard", "error", err)
+			} else {
+				dashboardMsg = fmt.Sprintf(". See dashboard: %s", dashboard)
+			}
+		}
+
+		return fmt.Errorf("test suite failed: Too many test failures%s", dashboardMsg)
 	}
 
 	return nil
