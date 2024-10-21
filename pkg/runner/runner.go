@@ -105,29 +105,14 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 			return fmt.Errorf("getting recording %w", err)
 		}
 
-		httpbinAPI, err := openapi.FromFile("grafanaV3.json")
-		if err != nil {
-			return fmt.Errorf("loading HTTPBIN API %w", err)
+		if len(recording.Requests) > 0 {
+			err = reportCoverage(recording)
+			if err != nil {
+				return err
+			}
+		} else {
+			t.Log.Warn("no requests capture for test coverage")
 		}
-
-		analizer, err := coverage.NewAnalizer("/api", "", httpbinAPI)
-		if err != nil {
-			return fmt.Errorf("loading HTTPBIN API %v", err)
-		}
-
-		analizer.Analize(recording)
-
-		report, err := analizer.Coverage("/api")
-		if err != nil {
-			return fmt.Errorf("getting coverage %v", err)
-		}
-
-		// TODO: add CLI options to control print options
-		report.Print(coverage.PrintOptions{
-			MaxDepth: 0,
-			Indent: true,
-			SkipUncovered: true,
-		}, os.Stdout)
 	}
 
 	var anyFailures = suiteRun.Status != executor.SuitePassed
@@ -146,6 +131,35 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 
 		return fmt.Errorf("test suite failed: Too many test failures%s", dashboardMsg)
 	}
+
+	return nil
+}
+
+
+func reportCoverage(recording recorder.Recording) error {
+	httpbinAPI, err := openapi.FromFile("grafanaV3.json")
+	if err != nil {
+		return fmt.Errorf("loading HTTPBIN API %w", err)
+	}
+
+	analizer, err := coverage.NewAnalizer("/api", "", httpbinAPI)
+	if err != nil {
+		return fmt.Errorf("loading HTTPBIN API %v", err)
+	}
+
+	analizer.Analize(recording)
+
+	report, err := analizer.Coverage("/api")
+	if err != nil {
+		return fmt.Errorf("getting coverage %v", err)
+	}
+
+	// TODO: add CLI options to control print options
+	report.Print(coverage.PrintOptions{
+		MaxDepth: 0,
+		Indent: true,
+		SkipUncovered: true,
+	}, os.Stdout)
 
 	return nil
 }
