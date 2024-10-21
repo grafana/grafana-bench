@@ -361,8 +361,8 @@ func TestPrint(t *testing.T) {
 				Indent: true,
 			},
 			expected: "/path 25% (1/4)\n" +
-				"\t/subpath1 0% (0/3)\n" +
-				"\t/subpath2 0% (0/2)\n",
+				"    /subpath1 0% (0/3)\n" +
+				"    /subpath2 0% (0/2)\n",
 
 		},
 	}

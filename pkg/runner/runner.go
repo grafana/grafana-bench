@@ -142,7 +142,7 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 
 		// TODO: add CLI options to control print options
 		report.Print(coverage.PrintOptions{
-			MaxDepth: 2,
+			MaxDepth: 0,
 			Indent: true,
 			SkipUncovered: true,
 		}, os.Stdout)

@@ -213,15 +213,16 @@ type PrintOptions struct {
 }
 func (c  CoverageReport)Print(opts PrintOptions, writer io.Writer) {
 	c.Visit(func(c CoverageReport, state VisitState) bool {
-		if state.Depth > opts.MaxDepth || (c.Covered == 0 && opts.SkipUncovered) {
+		if (opts.MaxDepth > 0 && state.Depth > opts.MaxDepth) || (c.Covered == 0 && opts.SkipUncovered) {
 			return false
 		}
 
-		var path string
+		path := ""
 		if opts.Indent {
-			path = fmt.Sprintf("%s/%s", strings.Repeat("\t", state.Depth-1), c.Path) 
+			parentPath := strings.Join(state.FullPath[:state.Depth-1], "/")
+			path = fmt.Sprintf("%s/%s", strings.Repeat(" ", len(parentPath)), c.Path)
 		} else {
-			path = "/"+ strings.Join(state.FullPath, "/")
+			path = "/"+strings.Join(state.FullPath, "/")
 		}
 		fmt.Fprintf(writer, "%s %d%% (%d/%d)\n", path, c.Coverage, c.Covered, c.Total)
 		
