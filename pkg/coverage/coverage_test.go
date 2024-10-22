@@ -259,18 +259,27 @@ func TestCoverage(t *testing.T) {
 				Total:   4,
 				Covered: 1,
 				Coverage: 25,
+				Operations: map[string]bool{
+					"POST": true,	
+				},
 				Subpaths: []CoverageReport{
 					{
 						Path:    "{parameter}",
 						Total:   3,
 						Covered: 0,
 						Coverage: 0,
+						Operations: map[string]bool{
+							"GET": false, "DELETE": false,
+						},
 						Subpaths: []CoverageReport{
 							{
 								Path:    "subpath",
 								Total:   1,
 								Covered: 0,
 								Coverage: 0,
+								Operations: map[string]bool{
+									"GET": false,
+								},
 							},
 						},
 					},
@@ -287,18 +296,27 @@ func TestCoverage(t *testing.T) {
 				Total:   4,
 				Covered: 1,
 				Coverage: 25,
+				Operations: map[string]bool{
+					"POST": false,	
+				},
 				Subpaths: []CoverageReport{
 					{
 						Path:    "{parameter}",
 						Total:   3,
 						Covered: 1,
 						Coverage: 33,
+						Operations: map[string]bool{
+							"GET": false, "DELETE": false,
+						},
 						Subpaths: []CoverageReport{
 							{
 								Path:    "subpath",
 								Total:   1,
 								Covered: 1,
 								Coverage: 100,
+								Operations: map[string]bool{
+									"GET": true,
+								},
 							},
 						},
 					},

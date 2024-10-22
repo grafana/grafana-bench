@@ -22,11 +22,12 @@ type EndpointTracker struct {
 
 // CoverateReport records the total operations supported and covered by an endpoint and all its subpaths
 type CoverageReport struct {
-	Path     string
-	Total    int32
-	Covered  int32
-	Coverage int32
-	Subpaths []CoverageReport
+	Path       string
+	Total      int32
+	Covered    int32
+	Coverage   int32
+	Operations map[string]bool
+	Subpaths   []CoverageReport
 }
 
 // NewEndpointTracker creates a new EndpointTracker with a root path
@@ -147,10 +148,12 @@ func (p *EndpointTracker) Coverage() CoverageReport {
 	coverage := CoverageReport{
 		Path:  p.Path,
 		Total: int32(len(p.Operations)),
+		Operations: map[string]bool{},
 	}
 
 	// coverage of this path (if it has no operations it does not affect calculation)
-	for _, v := range p.Operations {
+	for o, v := range p.Operations {
+		coverage.Operations[o] = v
 		if v {
 			coverage.Covered = coverage.Covered + 1
 		}
@@ -210,6 +213,7 @@ type PrintOptions struct {
 	MaxDepth      int
 	Indent        bool
 	SkipUncovered bool
+	Detailed      bool
 }
 func (c  CoverageReport)Print(opts PrintOptions, writer io.Writer) {
 	c.Visit(func(c CoverageReport, state VisitState) bool {
@@ -225,6 +229,17 @@ func (c  CoverageReport)Print(opts PrintOptions, writer io.Writer) {
 			path = "/"+strings.Join(state.FullPath, "/")
 		}
 		fmt.Fprintf(writer, "%s %d%% (%d/%d)\n", path, c.Coverage, c.Covered, c.Total)
+		if opts.Detailed {
+			indent := strings.Repeat(" ", len(path)+len(c.Path))
+			for op, tested := range c.Operations {
+				status := ""
+
+				if tested {
+					status = "tested"
+				}
+				fmt.Fprintf(writer, "%s%s %s\n", indent, op, status)
+			}
+		}
 		
 		return true
 	}, nil)

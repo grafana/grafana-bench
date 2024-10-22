@@ -135,7 +135,6 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 	return nil
 }
 
-
 func reportCoverage(recording recorder.Recording) error {
 	httpbinAPI, err := openapi.FromFile("grafanaV3.json")
 	if err != nil {
@@ -157,6 +156,7 @@ func reportCoverage(recording recorder.Recording) error {
 	// TODO: add CLI options to control print options
 	report.Print(coverage.PrintOptions{
 		MaxDepth: 0,
+		Detailed: false,
 		Indent: true,
 		SkipUncovered: true,
 	}, os.Stdout)
