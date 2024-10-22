@@ -73,8 +73,14 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 
 	// prepare test execution
 	if t.PrepareCmd != "" {
-		if err := t.executeCommand(suite.BaseDir, playwrightEnv, t.PrepareCmd); err != nil {
-			return executor.SuiteRunSummary{}, fmt.Errorf("failed to prepare codebase: %w", err)
+		// allow multiple commands separated by ";"
+		for _, cmd := range strings.Split(t.PrepareCmd, ";") {
+			if cmd == "" {
+				continue
+			}
+			if err := t.executeCommand(suite.BaseDir, playwrightEnv, cmd); err != nil {
+				return executor.SuiteRunSummary{}, fmt.Errorf("failed to prepare codebase: %w", err)
+			}
 		}
 	}
 
