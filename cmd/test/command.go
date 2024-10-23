@@ -146,7 +146,13 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	fs.StringVar(&config.Trigger, "test-trigger", "local", "test trigger")
 	fs.StringVar(&config.Type, "test-type", "smoke", "test type. Allowed values: 'smoke', 'load'")
 	fs.StringVar(&suiteConfig.TestExecutor, "test-runner", "k6", "test runner. Allowed values: 'k6', 'playwright'")
-	fs.StringVar(&config.PW.PrepareCmd, "pw-prepare-cmd", "", "command used to install dependencies for the test suite eg: \"npm install\"")
+	fs.StringVar(
+		&config.PW.PrepareCmd,
+		"pw-prepare-cmd",
+		"",
+		"commands used to install dependencies for the test suite eg: \"npm install\"." +
+		"\nMultiple commands can be specified by separating with ';'.",
+	)
 	fs.StringVar(&config.PW.ExecuteCmd, "pw-execute-cmd", "", "command used to execute the test suite eg: \"npm run test\"")
 	fs.StringVar(
 		&config.ReportFormat,
