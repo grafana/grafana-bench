@@ -186,18 +186,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		"admin",
 		"grafana admin user's password. Overridden by the GRAFANA_ADMIN_PASSWORD environment variable",
 	)
-	fs.StringVar(
-		&config.Grafana.UserName,
-		"grafana-username",
-		"admin",
-		"grafana user name. Overridden by the GRAFANA_USER environment variable",
-	)
-	fs.StringVar(
-		&config.Grafana.Password,
-		"grafana-password",
-		"admin",
-		"grafana password. Overridden by the GRAFANA_PASSWORD environment variable",
-	)
 	// TODO: add default value as the revision is used to generate the run id
 	fs.StringVar(
 		&suiteConfig.Repo,

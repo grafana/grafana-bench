@@ -112,10 +112,8 @@ bench test  \
                                         Example: http://localhost/dashboards?run={{.SuiteRun}}
       --grafana-admin-password string   grafana admin user's password. Overridden by the GRAFANA_ADMIN_PASSWORD environment variable (default "admin")
       --grafana-admin-user string       grafana admin user name. Overridden by the GRAFANA_ADMIN_USER environment variable (default "admin")
-      --grafana-password string         grafana password. Overridden by the GRAFANA_PASSWORD environment variable (default "admin")
       --grafana-timeout duration        timeout for waiting grafana to be live (default 1m0s)
       --grafana-url string              url to grafana instance. Overridden by the GRAFANA_URL environment variable (default "http://localhost:3000")
-      --grafana-username string         grafana user name. Overridden by the GRAFANA_USER environment variable (default "admin")
   -h, --help                            help for test
       --k6-cloud-output                 send output to GCK6. Requires setting the GCK6 project ID and access token.
       --k6-cloud-project string         K6 cloud project ID. If not set K6_CLOUD_PROJECT_ID environment variable is used

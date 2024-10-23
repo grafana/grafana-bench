@@ -32,12 +32,6 @@ type GrafanaInstance interface {
 	// Admin user's password
 	AdminPassword() string
 
-	// UserName returns the user por accessing the instance
-	UserName() string
-
-	// Password returns the password for the grafana user
-	Password() string
-
 	// GetGrafanaBuildVersio returns the build version of the grafana instance
 	GetGrafanaBuildVersion() (string, error)
 
@@ -64,8 +58,6 @@ type grafanaInstance struct {
 	url           *url.URL
 	adminUser     string
 	adminPassword string
-	user          string
-	password      string
 	session       *http.Cookie
 	timeout       time.Duration
 	backoff       time.Duration
@@ -94,30 +86,21 @@ func WithBackoff(backoff time.Duration) InstanceOption {
 	}
 }
 
-// WithAdminUser sets the instance's admin user and password
-func WithAdminUser(user string, password string) InstanceOption{
-	return func(g *grafanaInstance) error {
-		g.adminUser = user
-		g.adminPassword = password
-		return nil
-	}
-}
-
 // NewGrafanaInstance creates a reference to access a grafana instance
 // Takes a fully qualified address such as https://jefflevinslunch.grafana.net
 // and a user credentials
-func NewInstance(address, user, password string, opts ...InstanceOption) (GrafanaInstance, error) {
+func NewInstance(address, adminUser, password string, opts ...InstanceOption) (GrafanaInstance, error) {
 	url, err := parseAddress(address)
 	if err != nil {
 		return nil, err
 	}
 
 	instance := &grafanaInstance{
-		url:      url,
-		user:     user,
-		password: password,
-		timeout:  DefaultGrafanaTimeout,
-		backoff:  DefaultGrafanaBackoff,
+		url:           url,
+		adminUser:     adminUser,
+		adminPassword: password,
+		timeout:       DefaultGrafanaTimeout,
+		backoff:       DefaultGrafanaBackoff,
 	}
 
 	for _, optFunc := range opts {
@@ -155,15 +138,6 @@ func (g *grafanaInstance) AdminPassword() string {
 	return g.adminPassword
 }
 
-// UserName returns the user for accessing the instance
-func (g *grafanaInstance) UserName() string {
-	return g.user
-}
-
-// Password returns the password for the grafana user
-func (g *grafanaInstance) Password() string {
-	return g.password
-}
 
 // GetSession returns the current grafana session value
 func (g *grafanaInstance) GetGrafanaSession() (string, error) {
@@ -220,8 +194,8 @@ func (g *grafanaInstance) getGrafanaSessionCookie() (*http.Cookie, error) {
 		User     string `json:"user"`
 		Password string `json:"password"`
 	}{
-		User:     g.user,
-		Password: g.password,
+		User:     g.adminUser,
+		Password: g.adminPassword,
 	}
 
 	jsonPayload, err := json.Marshal(loginPayload)

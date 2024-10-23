@@ -64,8 +64,6 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 		"TEST_TYPE":              testType.Name(),
 		"TEST_SUITE_REVISION":    suite.Revision,
 		"GRAFANA_URL":            t.GrafanaInstance.Url(),
-		"GRAFANA_USERNAME":       t.GrafanaInstance.UserName(),
-		"GRAFANA_PASSWORD":       t.GrafanaInstance.Password(),
 		"GRAFANA_ADMIN_USER":     t.GrafanaInstance.AdminUser(),
 		"GRAFANA_ADMIN_PASSWORD": t.GrafanaInstance.AdminPassword(),
 	}

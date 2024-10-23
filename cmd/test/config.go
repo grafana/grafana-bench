@@ -43,8 +43,6 @@ type GrafanaConfig struct {
 	Url           string
 	AdminUser     string
 	AdminPassword string
-	UserName      string
-	Password      string
 	Timeout       time.Duration
 }
 
@@ -85,8 +83,6 @@ func (c *BenchConfig) MergeEnv() {
 
 	// Grafana
 	c.Grafana.Url = env.EnvOrDefault("GRAFANA_URL", c.Grafana.Url)
-	c.Grafana.UserName = env.EnvOrDefault("GRAFANA_USER", c.Grafana.UserName)
-	c.Grafana.Password = env.EnvOrDefault("GRAFANA_PASSWORD", c.Grafana.Password)
 	c.Grafana.AdminUser = env.EnvOrDefault("GRAFANA_ADMIN_USER", c.Grafana.AdminUser)
 	c.Grafana.AdminPassword = env.EnvOrDefault("GRAFANA_ADMIN_PASSWORD", c.Grafana.AdminPassword)
 

@@ -15,10 +15,9 @@ func getGrafanaInstance(
 ) (grafana.GrafanaInstance, string, error) {
 	grafanaInstance, err := grafana.NewInstance(
 		config.Url,
-		config.UserName,
-		config.Password,
+		config.AdminUser,
+		config.AdminPassword,
 		grafana.WithTimeout(config.Timeout),
-		grafana.WithAdminUser(config.AdminUser, config.AdminPassword),
 	)
 	if err != nil {
 		return nil, "", err
