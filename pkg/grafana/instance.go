@@ -155,7 +155,7 @@ func (g *grafanaInstance) AdminPassword() string {
 	return g.adminPassword
 }
 
-// UserName returns the user por accessing the instance
+// UserName returns the user for accessing the instance
 func (g *grafanaInstance) UserName() string {
 	return g.user
 }
