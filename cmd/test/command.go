@@ -175,6 +175,18 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		"timeout for waiting grafana to be live",
 	)
 	fs.StringVar(
+		&config.Grafana.AdminUser,
+		"grafana-admin-user",
+		"admin",
+		"grafana admin user name. Overridden by the GRAFANA_ADMIN_USER environment variable",
+	)
+	fs.StringVar(
+		&config.Grafana.AdminPassword,
+		"grafana-admin-password",
+		"admin",
+		"grafana admin user's password. Overridden by the GRAFANA_ADMIN_PASSWORD environment variable",
+	)
+	fs.StringVar(
 		&config.Grafana.UserName,
 		"grafana-username",
 		"admin",

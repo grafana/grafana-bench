@@ -61,11 +61,13 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 
 	// set common test execution variables
 	env := map[string]string{
-		"TEST_TYPE":           testType.Name(),
-		"TEST_SUITE_REVISION": suite.Revision,
-		"GRAFANA_URL":         t.GrafanaInstance.Url(),
-		"GRAFANA_USERNAME":    t.GrafanaInstance.UserName(),
-		"GRAFANA_PASSWORD":    t.GrafanaInstance.Password(),
+		"TEST_TYPE":              testType.Name(),
+		"TEST_SUITE_REVISION":    suite.Revision,
+		"GRAFANA_URL":            t.GrafanaInstance.Url(),
+		"GRAFANA_USERNAME":       t.GrafanaInstance.UserName(),
+		"GRAFANA_PASSWORD":       t.GrafanaInstance.Password(),
+		"GRAFANA_ADMIN_USER":     t.GrafanaInstance.AdminUser(),
+		"GRAFANA_ADMIN_PASSWORD": t.GrafanaInstance.AdminPassword(),
 	}
 
 	maps.Copy(env, testVars)

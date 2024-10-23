@@ -26,6 +26,12 @@ type GrafanaInstance interface {
 	// Slug returns the grafana instance slug
 	Slug() string
 
+	// Admin user
+	AdminUser() string
+
+	// Admin user's password
+	AdminPassword() string
+
 	// UserName returns the user por accessing the instance
 	UserName() string
 
@@ -55,18 +61,21 @@ var (
 )
 
 type grafanaInstance struct {
-	url      *url.URL
-	user     string
-	password string
-	session  *http.Cookie
-	timeout  time.Duration
-	backoff  time.Duration
+	url           *url.URL
+	adminUser     string
+	adminPassword string
+	user          string
+	password      string
+	session       *http.Cookie
+	timeout       time.Duration
+	backoff       time.Duration
 }
 
-type grafanaInstanceOption func(*grafanaInstance) error
+// InstanceOption defines an option for configuring the grafana instance
+type InstanceOption func(*grafanaInstance) error
 
 // Sets the grafana timeout. If 0, the default is used
-func WithTimeout(timeout time.Duration) grafanaInstanceOption {
+func WithTimeout(timeout time.Duration) InstanceOption {
 	return func(g *grafanaInstance) error {
 		if timeout != 0 {
 			g.timeout = timeout
@@ -76,7 +85,7 @@ func WithTimeout(timeout time.Duration) grafanaInstanceOption {
 }
 
 // Sets the grafana backoff time. If 0, the default is used
-func WithBackoff(backoff time.Duration) grafanaInstanceOption {
+func WithBackoff(backoff time.Duration) InstanceOption {
 	return func(g *grafanaInstance) error {
 		if backoff != 0 {
 			g.backoff = backoff
@@ -85,10 +94,19 @@ func WithBackoff(backoff time.Duration) grafanaInstanceOption {
 	}
 }
 
+// WithAdminUser sets the instance's admin user and password
+func WithAdminUser(user string, password string) InstanceOption{
+	return func(g *grafanaInstance) error {
+		g.adminUser = user
+		g.adminPassword = password
+		return nil
+	}
+}
+
 // NewGrafanaInstance creates a reference to access a grafana instance
 // Takes a fully qualified address such as https://jefflevinslunch.grafana.net
 // and a user credentials
-func NewInstance(address, user, password string, opts ...grafanaInstanceOption) (GrafanaInstance, error) {
+func NewInstance(address, user, password string, opts ...InstanceOption) (GrafanaInstance, error) {
 	url, err := parseAddress(address)
 	if err != nil {
 		return nil, err
@@ -124,6 +142,17 @@ func (g *grafanaInstance) Hostname() string {
 // Slug returns the grafana instance slug
 func (g *grafanaInstance) Slug() string {
 	return slugEx.ReplaceAllString(g.url.Hostname(), "")
+}
+
+
+// AdminUser returns the instance's admin user
+func (g *grafanaInstance) AdminUser() string {
+	return g.adminUser
+}
+
+// AdminPassword returns the password for the admin user
+func (g *grafanaInstance) AdminPassword() string {
+	return g.adminPassword
 }
 
 // UserName returns the user por accessing the instance

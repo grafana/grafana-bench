@@ -33,12 +33,14 @@ func (d dummyExecutor) ExecTestSuite(
 }
 
 type mockGrafanaInstance struct {
-	session  *http.Cookie
-	address  string
-	user     string
-	password string
-	err      error
-	version  string
+	session       *http.Cookie
+	address       string
+	adminUser     string
+	adminPassword string
+	user          string
+	password      string
+	err           error
+	version       string
 }
 
 func (m *mockGrafanaInstance) Url() string {
@@ -53,6 +55,14 @@ func (m *mockGrafanaInstance) Hostname() string {
 func (m *mockGrafanaInstance) Slug() string {
 	slug, _, _ := strings.Cut(m.Hostname(), ".")
 	return slug
+}
+
+func (m *mockGrafanaInstance) AdminPassword() string {
+	return m.adminPassword
+}
+
+func (m *mockGrafanaInstance) AdminUser() string {
+	return m.adminUser
 }
 
 func (m *mockGrafanaInstance) Password() string {
