@@ -33,12 +33,12 @@ func (d dummyExecutor) ExecTestSuite(
 }
 
 type mockGrafanaInstance struct {
-	session  *http.Cookie
-	address  string
-	user     string
-	password string
-	err      error
-	version  string
+	session       *http.Cookie
+	address       string
+	adminUser     string
+	adminPassword string
+	err           error
+	version       string
 }
 
 func (m *mockGrafanaInstance) Url() string {
@@ -55,12 +55,12 @@ func (m *mockGrafanaInstance) Slug() string {
 	return slug
 }
 
-func (m *mockGrafanaInstance) Password() string {
-	return m.password
+func (m *mockGrafanaInstance) AdminPassword() string {
+	return m.adminPassword
 }
 
-func (m *mockGrafanaInstance) UserName() string {
-	return m.user
+func (m *mockGrafanaInstance) AdminUser() string {
+	return m.adminUser
 }
 
 func (m *mockGrafanaInstance) WaitForLiveGrafana(_ context.Context) error {
@@ -77,11 +77,11 @@ func (m *mockGrafanaInstance) GetGrafanaSession() (string, error) {
 
 func newMockGrafanaInstance() *mockGrafanaInstance {
 	mock := &mockGrafanaInstance{
-		address: "http://my-instance.grafana.net:433",
-		user:     "admin",
-		password: "admin",
-		err:      nil,
-		version:  "test",
+		address:       "http://my-instance.grafana.net:433",
+		adminUser:     "admin",
+		adminPassword: "admin",
+		err:           nil,
+		version:       "test",
 		session: &http.Cookie{
 			Name:  "grafana_session",
 			Value: "fake_grafana_session",

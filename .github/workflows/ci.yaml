@@ -82,8 +82,8 @@ jobs:
             --volume="./CI/:/home/bench/tests/CI/" \
             localhost:5000/grafana-bench-test:latest test \
             --grafana-url "http://localhost:3000" \
-            --grafana-username "admin" \
-            --grafana-password "admin" \
+            --grafana-admin-user "admin" \
+            --grafana-admin-password "admin" \
             --test-suite-base "/home/bench/tests/CI/plugin-e2e"  \
             --test-runner "playwright" \
             --pw-prepare-cmd "yarn install" \

@@ -40,10 +40,10 @@ type BenchConfig struct {
 }
 
 type GrafanaConfig struct {
-	Url      string
-	UserName string
-	Password string
-	Timeout  time.Duration
+	Url           string
+	AdminUser     string
+	AdminPassword string
+	Timeout       time.Duration
 }
 
 type K6Config struct {
@@ -83,8 +83,8 @@ func (c *BenchConfig) MergeEnv() {
 
 	// Grafana
 	c.Grafana.Url = env.EnvOrDefault("GRAFANA_URL", c.Grafana.Url)
-	c.Grafana.UserName = env.EnvOrDefault("GRAFANA_USER", c.Grafana.UserName)
-	c.Grafana.Password = env.EnvOrDefault("GRAFANA_PASSWORD", c.Grafana.Password)
+	c.Grafana.AdminUser = env.EnvOrDefault("GRAFANA_ADMIN_USER", c.Grafana.AdminUser)
+	c.Grafana.AdminPassword = env.EnvOrDefault("GRAFANA_ADMIN_PASSWORD", c.Grafana.AdminPassword)
 
 	// k6 config
 	c.K6.CloudToken = env.EnvOrDefault("K6_CLOUD_TOKEN", c.K6.CloudToken)
@@ -96,10 +96,7 @@ func (c *BenchConfig) MergeEnv() {
 func (config BenchConfig) BuildTestRunner(log *slog.Logger, testExecutor string) (*runner.TestRunner, error) {
 	grafanaInstance, grafanaVersion, err := getGrafanaInstance(
 		log,
-		config.Grafana.Url,
-		config.Grafana.UserName,
-		config.Grafana.Password,
-		config.Grafana.Timeout,
+		config.Grafana,
 	)
 	if err != nil {
 		return nil, err
@@ -220,7 +217,7 @@ func (config *TestSuiteConfig) BuildTestSuite(log *slog.Logger) (*executor.TestS
 
 		if testSuiteRevision == "" {
 			testSuiteRevision = revisionHash
-		}	
+		}
 	}
 
 	// if the test suite name was not given, use repo name (if Any) and the last element of the test suite path

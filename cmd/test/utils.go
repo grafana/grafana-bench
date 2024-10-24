@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"time"
 
 	"github.com/grafana/grafana-bench/pkg/grafana"	
 )
@@ -12,16 +11,13 @@ import (
 
 func getGrafanaInstance(
 	log *slog.Logger,
-	url string,
-	username string,
-	password string,
-	timeout time.Duration,
+	config GrafanaConfig,
 ) (grafana.GrafanaInstance, string, error) {
 	grafanaInstance, err := grafana.NewInstance(
-		url,
-		username,
-		password,
-		grafana.WithTimeout(timeout),
+		config.Url,
+		config.AdminUser,
+		config.AdminPassword,
+		grafana.WithTimeout(config.Timeout),
 	)
 	if err != nil {
 		return nil, "", err

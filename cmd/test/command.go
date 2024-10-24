@@ -175,16 +175,16 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		"timeout for waiting grafana to be live",
 	)
 	fs.StringVar(
-		&config.Grafana.UserName,
-		"grafana-username",
+		&config.Grafana.AdminUser,
+		"grafana-admin-user",
 		"admin",
-		"grafana user name. Overridden by the GRAFANA_USER environment variable",
+		"grafana admin user name. Overridden by the GRAFANA_ADMIN_USER environment variable",
 	)
 	fs.StringVar(
-		&config.Grafana.Password,
-		"grafana-password",
+		&config.Grafana.AdminPassword,
+		"grafana-admin-password",
 		"admin",
-		"grafana password. Overridden by the GRAFANA_PASSWORD environment variable",
+		"grafana admin user's password. Overridden by the GRAFANA_ADMIN_PASSWORD environment variable",
 	)
 	// TODO: add default value as the revision is used to generate the run id
 	fs.StringVar(
