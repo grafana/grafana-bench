@@ -30,8 +30,8 @@ RUN CGO_ENABLED=0 go build \
    -ldflags="-X github.com/grafana/grafana-bench/pkg/revision.bench=${BENCH_REVISION}" \
    -trimpath -o build/grafana-bench .
 
-RUN CGO_ENABLED=0 go install github.com/boxboat/fixuid@${FIXUID_VERSION}
-RUN mv $GOPATH/bin/fixuid build/
+RUN go get github.com/boxboat/fixuid@${FIXUID_VERSION} && \
+    CGO_ENABLED=0 go build -o build/fixuid github.com/boxboat/fixuid
 
 FROM grafana/k6:latest AS k6
 FROM debian:12.7-slim AS runtime
