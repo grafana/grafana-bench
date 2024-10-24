@@ -7,6 +7,7 @@ ARG TARGETOS=linux
 ARG TARGETARCH=amd64
 ARG TARGETVARIANT
 ENV GOOS=$TARGETOS GOARCH=$TARGETARCH
+ARG FIXUID_VERSION=v0.6.0
 
 RUN apk add --no-cache ca-certificates git
 
@@ -24,10 +25,12 @@ RUN --mount=type=cache,id=go-build-${TARGETOS}-${TARGETARCH}${TARGETVARIANT},tar
 COPY bench.go ./bench.go
 COPY cmd ./cmd
 COPY pkg ./pkg
-RUN --mount=type=cache,id=go-build-${TARGETOS}-${TARGETARCH}${TARGETVARIANT},target=/root/.cache/go-build \
-    --mount=type=cache,id=go-pkg-${TARGETOS}-${TARGETARCH}${TARGETVARIANT},target=/go/pkg \
-    CGO_ENABLED=0 \
-    go build -ldflags="-X github.com/grafana/grafana-bench/pkg/revision.bench=${BENCH_REVISION}" -trimpath -o grafana-bench .
+
+RUN CGO_ENABLED=0 go build \
+   -ldflags="-X github.com/grafana/grafana-bench/pkg/revision.bench=${BENCH_REVISION}" \
+   -trimpath -o grafana-bench .
+
+RUN CGO_ENABLED=0 GOBIN=/build go install github.com/boxboat/fixuid@${FIXUID_VERSION}
 
 FROM grafana/k6:latest AS k6
 FROM debian:12.7-slim AS runtime
@@ -45,11 +48,17 @@ RUN addgroup --gid 127 bench && \
     adduser --disabled-password --uid 1001 --gid 127 bench && \
     apt clean
 
-USER bench
+RUN mkdir -p /etc/fixuid && \
+    printf "user: bench\ngroup: bench\n" > /etc/fixuid/config.yml
 
 # copy binaries
 COPY --from=k6 /usr/bin/k6 /usr/local/bin/k6
 COPY --from=builder /app/grafana-bench /usr/local/bin/grafana-bench
+COPY --from=builder /build/fixuid /usr/local/bin/
+COPY docker-entrypoint.sh /usr/local/bin/entrypoint.sh
+
+RUN chown root:root /usr/local/bin/fixuid && \
+    chmod 4755 /usr/local/bin/fixuid
 
 # config playwright
 ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
@@ -63,6 +72,12 @@ ENV K6_BROWSER_HEADLESS=true
 ENV K6_BROWSER_ARGS=no-sandbox
 
 WORKDIR /home/bench
+
 RUN mkdir /home/bench/tests
 
-ENTRYPOINT ["grafana-bench"]
+RUN chown -R bench:bench /home/bench/tests
+
+USER bench
+
+# ENTRYPOINT ["grafana-bench"]
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
