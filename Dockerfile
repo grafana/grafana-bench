@@ -37,7 +37,9 @@ RUN apt update && apt install --no-install-recommends -y \
     ca-certificates \
     git \
     chromium chromium-sandbox \
-    yarn nodejs npm
+    nodejs npm
+
+RUN npm install -g yarn
 
 RUN addgroup --gid 127 bench && \
     adduser --disabled-password --uid 1001 --gid 127 bench && \
