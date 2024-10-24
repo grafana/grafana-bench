@@ -28,9 +28,10 @@ COPY pkg ./pkg
 
 RUN CGO_ENABLED=0 go build \
    -ldflags="-X github.com/grafana/grafana-bench/pkg/revision.bench=${BENCH_REVISION}" \
-   -trimpath -o grafana-bench .
+   -trimpath -o build/grafana-bench .
 
-RUN CGO_ENABLED=0 GOBIN=/build go install github.com/boxboat/fixuid@${FIXUID_VERSION}
+RUN CGO_ENABLED=0 go install github.com/boxboat/fixuid@${FIXUID_VERSION}
+RUN mv $GOPATH/bin/fixuid build/
 
 FROM grafana/k6:latest AS k6
 FROM debian:12.7-slim AS runtime
@@ -53,8 +54,8 @@ RUN mkdir -p /etc/fixuid && \
 
 # copy binaries
 COPY --from=k6 /usr/bin/k6 /usr/local/bin/k6
-COPY --from=builder /app/grafana-bench /usr/local/bin/grafana-bench
-COPY --from=builder /build/fixuid /usr/local/bin/
+COPY --from=builder /app/build/grafana-bench /usr/local/bin/grafana-bench
+COPY --from=builder /app/build/fixuid /usr/local/bin/
 COPY docker-entrypoint.sh /usr/local/bin/entrypoint.sh
 
 RUN chown root:root /usr/local/bin/fixuid && \
