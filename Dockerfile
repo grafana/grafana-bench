@@ -30,10 +30,14 @@ RUN --mount=type=cache,id=go-build-${TARGETOS}-${TARGETARCH}${TARGETVARIANT},tar
     go build -ldflags="-X github.com/grafana/grafana-bench/pkg/revision.bench=${BENCH_REVISION}" -trimpath -o grafana-bench .
 
 FROM grafana/k6:latest AS k6
-FROM ubuntu:22.04 AS runtime
+FROM debian:12.7-slim AS runtime
 
 USER root
-RUN apt update && apt install --no-install-recommends -y ca-certificates git chromium-browser yarn nodejs npm
+RUN apt update && apt install --no-install-recommends -y \
+    ca-certificates \
+    git \
+    chromium chromium-sandbox \
+    yarn nodejs npm
 
 RUN addgroup --gid 127 bench && \
     adduser --disabled-password --uid 1001 --gid 127 bench && \
@@ -49,7 +53,7 @@ COPY --from=builder /app/grafana-bench /usr/local/bin/grafana-bench
 ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
 
 # config k6 browser
-ENV CHROME_BIN=/usr/bin/chromium-browser
+ENV CHROME_BIN=/usr/bin/chromium
 ENV CHROME_PATH=/usr/lib/chromium/
 ENV K6_BROWSER_HEADLESS=true
 # no-sandbox chrome arg is required to run chrome browser in
