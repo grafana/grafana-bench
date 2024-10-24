@@ -26,10 +26,10 @@ type GrafanaInstance interface {
 	// Slug returns the grafana instance slug
 	Slug() string
 
-	// Admin user
+	// AdminUser returns the instance's admin user
 	AdminUser() string
 
-	// Admin user's password
+	// AdminPassword returns the password for the admin user
 	AdminPassword() string
 
 	// GetGrafanaBuildVersio returns the build version of the grafana instance
