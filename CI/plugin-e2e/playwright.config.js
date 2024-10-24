@@ -24,8 +24,8 @@ export default defineConfig({
                 user: {
                  // username and password passed via cli params
                  // available as environment variables
-                 user: process.env.GRAFANA_USERNAME,
-                 password: process.env.GRAFANA_PASSWORD,
+                 user: process.env.GRAFANA_ADMIN_USER,
+                 password: process.env.GRAFANA_ADMIN_PASSWORD,
                  role: 'Admin',
             },
         },
