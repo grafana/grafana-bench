@@ -60,8 +60,8 @@ export default defineConfig<PluginOptions>({
     // useful since the e2e CI tests run a different admin user
     // see https://grafana.com/developers/plugin-tools/e2e-test-a-plugin/use-authentication
     grafanaAPICredentials: {
-      user: process.env.GRAFANA_USER || "admin",
-      password: process.env.GRAFANA_PASSWORD || "admin",
+      user: process.env.GRAFANA_ADMIN_USER || "admin",
+      password: process.env.GRAFANA_ADMIN_PASSWORD || "admin",
     },
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
@@ -145,7 +145,7 @@ Currently, there is no way to set the baseURL or executablePath of playwright vi
 The following cli arguments will be passed through Bench and available in the Playwright config as environment variables via the `process.env`. They will be :
 
 `--grafana-url` will be available as `process.env.GRAFANA_URL`
-`--grafana-username` will be available as `process.env.GRAFANA_USERNAME`
-`--grafana-password` will be available as `process.env.GRAFANA_PASSWORD`
+`--grafana-admin-user` will be available as `process.env.GRAFANA_ADMIN_USER`
+`--grafana-admin-password` will be available as `process.env.GRAFANA_ADMIN_PASSWORD`
 
 `process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` is set in the docker image of bench. It refers to the chromium executable on the image itself, currently "/usr/bin/chromium". This is used because the playwright install command provided by playwright does not support alpine / musl. If you do not include this in your config your tests may not run.
