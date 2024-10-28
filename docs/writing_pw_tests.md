@@ -4,12 +4,12 @@ Grafana uses the grafana/plugin-e2e which is based on playwright to browser test
 
 ## Quickstart
 
-### Grab the docker image
-This is the Bench image to run the tests.
-`docker pull ghcr.io/grafana/grafana-bench:v0.2.4`
+### [Install Bench](index.md#installing-bench)
 
 ### Create a package.json
 This is a minimul package.json to init your project. The important bits are the `setup` and `e2e` commands.
+**note: plugin-e2e must be >= 1.10.0
+
 ```typescript
 {
   "name": "YOUR_NAME",
@@ -26,7 +26,7 @@ This is a minimul package.json to init your project. The important bits are the 
     "playwright": "^1.42.1"
   },
   "devDependencies": {
-    "@grafana/plugin-e2e": "^1.8.3",
+    "@grafana/plugin-e2e": "^1.10.0",
     "@types/node": "^22.7.7"
   }
 }
@@ -129,6 +129,8 @@ docker run \
 ### Add playwright
 `yarn add grafana/plugin-e2e`
 
+**verify plugin-e2e is >= 1.10.0
+
 ### Add setup and test scripts to your scripts block in package.json
 ```typescript
   "scripts": {
@@ -136,9 +138,6 @@ docker run \
     "e2e": "playwright test",
   }
 ```
-
-
-
 
 Currently, there is no way to set the baseURL or executablePath of playwright via the command line. Instead, Bench will pass these values via Environment variable that will need to be referenced in the playwright.config.ts file of the project being tested.
 

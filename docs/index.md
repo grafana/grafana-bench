@@ -16,13 +16,19 @@ Bench can be run as a Go binary natively or in a docker container. We recommend 
 We currently publish the docker image to both GAR and github packages. Some users have reported issues pulling the container from github. So we currently recommend using GAR. If you run into issues with either of these, please reach out to use in #grafana-bench.
 
 #### GAR
-    `docker pull us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.2.3`
+
+`docker pull us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.2.4`
 
 #### Github
+
 1. Generate a set a github personal access token. Then run the command
     `gh auth token | docker login ghcr.io -u {YOUR_USERNAME} --password-stdin`
+
 2. Pull the github container
-    `docker pull ghcr.io/grafana/grafana-bench:v0.2.3`
+    `docker pull ghcr.io/grafana/grafana-bench:v0.2.4`
+    
+3. Verify installation
+`docker run --rm us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.2.4 --help`
     
 ### Go Package
 1. Make sure you have a Go environment configured and install Go
@@ -48,66 +54,5 @@ Get the latest release version from github.com/grafana/grafana-bench
 
 ### Core concepts
 1. Bench is a wrapper around test executors
-### Write an API Test with K6
-### Write a browser test with plugin-e2e framework and Playwright
-
-## Diving deeper
-
-
-1. See the help docs
-
-    `grafana-bench help`
-
-1. See the docs for `test` command
-
-    `grafana-bench test --help`
-
-1. Start a grafana instance to test against
-
-    `docker run -d --name=grafana -p 3000:3000 grafana/grafana`
-
-1. Create a K6 test
-    We're going to make a basic request to the Grafana instance and make sure
-    it's running. K6 has support for typescript, so create a file called `check_grafana_instance.ts`
-    with the following:
-
-    ```typescript
-
-import { check } from 'k6';
-import { http } from 'k6/http'
-
-export const options = {
-    scenarios: {
-        api: {
-          executor: 'shared-iterations',
-        },
-    },
-};
-
-export default function () {
-    const res = http.request('GET', '<http://localhost:3000>');
-    check(res, { 'status ok': res.status === 200 });
-}
-    ```
-
-1. Run the tests
-
-    ``` shell
-    grafana-bench test --test-suite check_grafana_instance.ts
-    ```
-
-    You should see output which looks like
-
-    ```shell
-
-CI/api_test.ts ... passed
-
-Tests executed 1
-Tests passed 1
-Tests failed 0
-Tests error 0
-
-Tests suite passed
-    ```
-
-## Next [Write some K6 API tests](writing_k6_api_tests.md)
+### [API tests with K6](writing_k6_api_tests.md)
+### [Broswer tests with plugin-e2e framework and Playwright](writing_pw_tests.md)
