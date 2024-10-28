@@ -41,8 +41,11 @@ RUN apt update && apt install --no-install-recommends -y \
     ca-certificates \
     git \
     wget \
-    chromium chromium-sandbox \
-    npm
+    chromium chromium-sandbox
+
+RUN wget -qO- https://deb.nodesource.com/setup_20.x | bash
+
+RUN apt install -y nodejs
 
 RUN npm install -g yarn
 
@@ -80,10 +83,6 @@ RUN mkdir /home/bench/tests
 RUN chown -R bench:bench /home/bench/tests
 
 USER bench
-
-RUN wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash 
-
-RUN nvm install 20
 
 # ENTRYPOINT ["grafana-bench"]
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
