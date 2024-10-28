@@ -40,8 +40,12 @@ USER root
 RUN apt update && apt install --no-install-recommends -y \
     ca-certificates \
     git \
-    chromium chromium-sandbox \
-    nodejs npm
+    wget \
+    chromium chromium-sandbox
+
+RUN wget -qO- https://deb.nodesource.com/setup_20.x | bash
+
+RUN apt install -y nodejs
 
 RUN npm install -g yarn
 
