@@ -9,7 +9,6 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 
 	"github.com/grafana/grafana-bench/pkg/executor"
@@ -85,25 +84,28 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 	}
 
 	// create temporary file for test output
-	jsonOutputName := filepath.Join(os.TempDir(), "playwright-report-*.json")
+	jsonOutput, err := os.CreateTemp(os.TempDir(), "playwright-report-*.json")
+	if err != nil {
+		return executor.SuiteRunSummary{}, fmt.Errorf("creating report.json: %s", err.Error())
+	}
 
 	// execute tests in the test suite and redirect output to a json file
 	// we assume here we can append the reporter and the test suite to the execute command
 	// e.g yarn run test --reporter json tests/
 	// set the output
-	playwrightEnv["PLAYWRIGHT_JSON_OUTPUT_NAME"] = jsonOutputName
+	playwrightEnv["PLAYWRIGHT_JSON_OUTPUT_NAME"] = jsonOutput.Name()
 	executeCmd := fmt.Sprintf("%s --reporter=json %s", t.ExecuteCmd, suite.Path)
 
 	if err := t.executeCommand(suite.BaseDir, playwrightEnv, executeCmd); err != nil {
-		return executor.SuiteRunSummary{}, fmt.Errorf("error executing tests: %w", err)
+re		return executor.SuiteRunSummary{}, fmt.Errorf("error executing tests: %w", err)
 	}
 
-	file, err := os.ReadFile(jsonOutputName)
+	report, err := io.ReadAll(jsonOutput)
 	if err != nil {
 		return executor.SuiteRunSummary{}, fmt.Errorf("error failed to read report.json: %s", err.Error())
 	}
 
-	runSummary, err := parseJsonOutput(file)
+	runSummary, err := parseJsonOutput(report)
 	if err != nil {
 		return executor.SuiteRunSummary{}, fmt.Errorf("error failed parsing playwright report: %w", err)
 	}
