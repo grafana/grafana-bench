@@ -86,7 +86,7 @@ jobs:
             --grafana-admin-password "admin" \
             --test-suite-base "/home/bench/tests/CI/plugin-e2e"  \
             --test-runner "playwright" \
-            --pw-prepare-cmd "yarn install" \
+            --pw-prepare-cmd "yarn install; yarn playwright install" \
             --pw-execute-cmd "yarn run test" \
             --log-level DEBUG
       - name: archive screenshots
