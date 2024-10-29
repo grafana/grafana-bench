@@ -16,81 +16,170 @@ func assert(t *testing.T, expected, actual interface{}) {
 
 func TestParsePlaywrightJSONReport(t *testing.T) {
 	testCases := []struct {
-		title             string
-		file              string
-		expectedTotal     int32
-		expectedPassed    int32
-		expectedFailed    int32
-		expectedError     int32
-		expectedDuration  float32
-		expectedFile      string
-		expectedStatus    string
-		expectedErrorMsg  string
-		expectedTestTitle string
+		title    string
+		file     string
+		expected executor.SuiteRunSummary
 	}{
 		{
-			title:             "parse successful test correctly",
-			file:              "./mocks/success.json",
-			expectedTotal:     1,
-			expectedPassed:    1,
-			expectedFailed:    0,
-			expectedError:     0,
-			expectedDuration:  float32(2745.645),
-			expectedFile:      "smoke.test.ts",
-			expectedStatus:    "passed",
-			expectedErrorMsg:  "success",
-			expectedTestTitle: "should redirect to start page when permissions to navigate to page is missing",
+			title: "parse successful test correctly",
+			file:  "./mocks/success.json",
+			expected: executor.SuiteRunSummary{
+				TestRuns: []executor.TestRun{
+					{
+						TestFile:    "smoke.test.ts",
+						Status:      executor.TestPassed,
+						ExitMessage: "success",
+						Attributes: map[string]string{
+							"title": "should redirect to start page when permissions to navigate to page is missing",
+						},
+					},
+				},
+				TotalDuration: float32(2745.645),
+				TestsExecuted: 1,
+				TestsPassed:   1,
+				TestsFailed:   0,
+				TestsError:    0,
+			},
 		},
 		{
-			title:             "parse failure test correctly",
-			file:              "./mocks/failures.json",
-			expectedTotal:     1,
-			expectedPassed:    0,
-			expectedFailed:    1,
-			expectedError:     0,
-			expectedDuration:  float32(5942.315),
-			expectedFile:      "failures.test.ts",
-			expectedStatus:    "failed",
-			expectedErrorMsg:  "failures.test.ts:22:6 => Test timeout of 5000ms exceeded.",
-			expectedTestTitle: "should fail due to missing element",
+			title: "parse failure test correctly",
+			file:  "./mocks/failures.json",
+			expected: executor.SuiteRunSummary{
+				TestRuns: []executor.TestRun{
+					{
+						TestFile:    "failures.test.ts",
+						Status:      executor.TestFailed,
+						ExitMessage: "failures.test.ts:22:6 => Test timeout of 5000ms exceeded.",
+						Attributes: map[string]string{
+							"title": "should fail due to missing element",
+						},
+					},
+				},
+				TotalDuration: float32(5942.315),
+				TestsExecuted: 1,
+				TestsPassed:   0,
+				TestsFailed:   1,
+				TestsError:    0,
+			},
 		},
 		{
 			title:             "parse fully skipped tests correctly",
 			file:              "./mocks/broken.json",
-			expectedTotal:     1,
-			expectedPassed:    0,
-			expectedFailed:    1,
-			expectedError:     0,
-			expectedDuration:  float32(2327.512),
-			expectedFile:      "skipped.test.ts",
-			expectedStatus:    "skipped",
-			expectedErrorMsg:  "skipped",
-			expectedTestTitle: "data query should return values 1 and 3",
+			expected: executor.SuiteRunSummary{
+				TestRuns: []executor.TestRun{
+					{
+						TestFile:    "skipped.test.ts",
+						Status:      executor.TestSkipped,
+						ExitMessage: "skipped",
+						Attributes: map[string]string{
+							"title": "data query should return values 1 and 3",
+						},
+					},
+				},
+				TotalDuration: float32(2327.512),
+				TestsExecuted: 1,
+				TestsPassed:   0,
+				TestsFailed:   1,
+				TestsError:    0,
+			},
+		},
+		{
+			title:             "parse output with passed and failed tests",
+			file:              "./mocks/full-report.json",
+			expected: executor.SuiteRunSummary{
+				TestRuns: []executor.TestRun{
+					{
+						TestFile:    "auth.setup.js",
+						Status:      executor.TestPassed,
+						ExitMessage: "success",
+						Attributes: map[string]string{
+							"title": "authenticate",
+						},
+					},
+					{
+						TestFile:    "failures.test.ts",
+						Status:      executor.TestFailed,
+						ExitMessage: "failures.test.ts:3:5 => Error: ENOENT: no such file or directory, open '/Users/timmulqueen/projects/grafana-plugin-tests/provisioning/datasources/jfkladsjfkldasjdfklasjlk.yml'",
+						Attributes: map[string]string{
+							"title": "should fail due to missing file",
+						},
+					},
+					{
+						TestFile:    "failures.test.ts",
+						Status:      executor.TestFailed,
+						ExitMessage: "failures.test.ts:13:5 => Error: expect(received).toEqual(expected) // deep equality",
+						Attributes: map[string]string{
+							"title": "should fail due to expect",
+						},
+					},
+					{
+						TestFile:    "failures.test.ts",
+						Status:      executor.TestFailed,
+						ExitMessage: "failures.test.ts:21:5 => Test timeout of 30000ms exceeded.",
+						Attributes: map[string]string{
+							"title": "should fail due to missing element",
+						},
+					},
+					{
+						TestFile:    "failures.test.ts",
+						Status:      executor.TestFailed,
+						ExitMessage: "failures.test.ts:26:5 => Error: This is a random javascript type error failure",
+						Attributes: map[string]string{
+							"title": "should fail due to type error in test",
+						},
+					},
+					{
+						TestFile:    "smoke.test.ts",
+						Status:      executor.TestPassed,
+						ExitMessage: "success",
+						Attributes: map[string]string{
+							"title": "data query should return values 1 and 3",
+						},
+					},
+					{
+						TestFile:    "smoke.test.ts",
+						Status:      executor.TestPassed,
+						ExitMessage: "success",
+						Attributes: map[string]string{
+							"title": "should redirect to start page when permissions to navigate to page is missing",
+						},
+					},
+
+				},
+				TotalDuration: float32(37814.297),
+				TestsExecuted: 7,
+				TestsPassed:   3,
+				TestsFailed:   4,
+				TestsError:    0,
+			},
 		},
 	}
 
-	for _, testCase := range testCases {
-		t.Run(testCase.title, func(t *testing.T) {
-			file, err := os.Open(testCase.file)
+	for _, tc := range testCases {
+		t.Run(tc.title, func(t *testing.T) {
+			file, err := os.Open(tc.file)
 			if err != nil {
 				t.Fatalf("failed reading file: %s", err)
 			}
 
-			output, err := parseJsonOutput(file)
+			summary, err := parseJsonOutput(file)
 			if err != nil {
 				t.Fatalf("failed parsing json file: %s", err)
 			}
 
-			assert(t, testCase.expectedTotal, output.TestsExecuted)
-			assert(t, testCase.expectedPassed, output.TestsPassed)
-			assert(t, testCase.expectedError, output.TestsError)
-			assert(t, testCase.expectedFailed, output.TestsFailed)
-			assert(t, testCase.expectedDuration, output.TotalDuration)
+			assert(t, tc.expected.TestsExecuted, summary.TestsExecuted)
+			assert(t, tc.expected.TestsPassed, summary.TestsPassed)
+			assert(t, tc.expected.TestsError, summary.TestsError)
+			assert(t, tc.expected.TestsFailed, summary.TestsFailed)
+			assert(t, tc.expected.TotalDuration, summary.TotalDuration)
 
-			assert(t, testCase.expectedFile, output.TestRuns[0].TestFile)
-			assert(t, executor.TestStatus(testCase.expectedStatus), output.TestRuns[0].Status)
-			assert(t, testCase.expectedErrorMsg, output.TestRuns[0].ExitMessage)
-			assert(t, testCase.expectedTestTitle, output.TestRuns[0].Attributes["title"])
+			for i, tr := range tc.expected.TestRuns {
+				assert(t, tr.TestFile, summary.TestRuns[i].TestFile)
+				assert(t, tr.Status, summary.TestRuns[i].Status)
+				assert(t, tr.ExitMessage, summary.TestRuns[i].ExitMessage)
+				assert(t, tr.Attributes["title"], summary.TestRuns[i].Attributes["title"])
+			}
+
 		})
 	}
 }
