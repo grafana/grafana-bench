@@ -71,7 +71,7 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.title, func(t *testing.T) {
-			file, err := os.ReadFile(testCase.file)
+			file, err := os.Open(testCase.file)
 			if err != nil {
 				t.Fatalf("failed reading file: %s", err)
 			}

@@ -3,6 +3,7 @@ package playwright
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"math"
 	"path"
 	"strings"
@@ -14,10 +15,15 @@ import (
 
 // parseJsonOutput parses the json output from playwright --report json and returns a slice of RunSummary
 // this will work if only one test is run and the output but will also work for if this contains an entire suite
-func parseJsonOutput(buf []byte) (executor.SuiteRunSummary, error) {
+func parseJsonOutput(report io.Reader) (executor.SuiteRunSummary, error) {
 	output := PlaywrightJsonOutput{}
 
-	err := json.Unmarshal(buf, &output)
+	buf, err := io.ReadAll(report)
+	if err != nil {
+		return executor.SuiteRunSummary{}, fmt.Errorf("error failed to read report.json: %s", err.Error())
+	}
+
+	err = json.Unmarshal(buf, &output)
 	if err != nil {
 		return executor.SuiteRunSummary{}, fmt.Errorf("parsing Playwright json summary output: %w", err)
 	}
