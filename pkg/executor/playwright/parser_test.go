@@ -22,7 +22,7 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 	}{
 		{
 			title: "parse successful test correctly",
-			file:  "./mocks/success.json",
+			file:  "./testdata/success.json",
 			expected: executor.SuiteRunSummary{
 				TestRuns: []executor.TestRun{
 					{
@@ -47,7 +47,7 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 		},
 		{
 			title: "parse failure test correctly",
-			file:  "./mocks/failures.json",
+			file:  "./testdata/failures.json",
 			expected: executor.SuiteRunSummary{
 				TestRuns: []executor.TestRun{
 					{
@@ -72,7 +72,7 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 		},
 		{
 			title:             "parse fully skipped tests correctly",
-			file:              "./mocks/skipped.json",
+			file:              "./testdata/skipped.json",
 			expected: executor.SuiteRunSummary{
 				TestRuns: []executor.TestRun{},
 				TotalDuration: float32(2327.512),
@@ -84,7 +84,7 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 		},
 		{
 			title:             "parse output with passed and failed tests",
-			file:              "./mocks/full-report.json",
+			file:              "./testdata/full-report.json",
 			expected: executor.SuiteRunSummary{
 				TestRuns: []executor.TestRun{
 					{
@@ -182,7 +182,7 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 		},
 		{
 			title: "parse nested suites",
-			file:  "./mocks/nested-suites.json",
+			file:  "./testdata/nested-suites.json",
 			expected: executor.SuiteRunSummary{
 				TestRuns: []executor.TestRun{
 					{
