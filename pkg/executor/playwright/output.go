@@ -62,7 +62,7 @@ type Suite struct {
 	Column int     `json:"column"`
 	Line   int     `json:"line"`
 	Specs  []Specs `json:"specs"`
-	Suites []Suite  `json:"suites`
+	Suites []Suite  `json:"suites"`
 }
 
 // This corresponds to the a individual of the test in a file eg. test('should do something', () => {})
