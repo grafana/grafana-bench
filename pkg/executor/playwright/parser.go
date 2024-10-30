@@ -27,25 +27,14 @@ func parseJsonOutput(report io.Reader) (executor.SuiteRunSummary, error) {
 		return executor.SuiteRunSummary{}, fmt.Errorf("parsing Playwright json summary output: %w", err)
 	}
 
-	testRuns := make([]executor.TestRun, 0, output.Stats.Expected+output.Stats.Unexpected)
-
-	for _, suite := range output.Suites {
-		for _, spec := range suite.Specs {
-			folder := "unknown"
-			if len(spec.Tests) > 0 {
-				for _, project := range output.Config.Projects {
-					if spec.Tests[0].ProjectID == project.ID {
-						folder = project.TestDir
-						break
-					}
-				}
-			}
-
-			run := formatTestRun(spec, folder)
-			testRuns = append(testRuns, run)
-		}
+	// collect the test dirs per project. Needed to map tests to folders
+	testDirs := map[string]string{}
+	for _, project := range output.Config.Projects {
+		testDirs[project.ID] = project.TestDir
 	}
 
+	testRuns := parseSuites(output.Suites, testDirs, nil)
+	
 	totalTestAmount := int32(output.Stats.Unexpected) + int32(output.Stats.Expected)
 	var suiteStatus executor.SuiteStatus = executor.SuitePassed
 	if output.Stats.Unexpected > 0 {
@@ -68,7 +57,25 @@ func parseJsonOutput(report io.Reader) (executor.SuiteRunSummary, error) {
 
 }
 
-func formatTestRun(spec Specs, folder string) executor.TestRun {
+
+func parseSuites( suites []Suite, testDirs map[string]string, testRuns []executor.TestRun) []executor.TestRun {
+	for _, suite := range suites {
+		for _, spec := range suite.Specs {
+			folder := "unknown"
+			if len(spec.Tests) > 0 {
+				folder = testDirs[spec.Tests[0].ProjectID]
+			}
+
+			testRuns = append(testRuns, parseTestRun(spec, folder))
+		}
+
+		testRuns = parseSuites(suite.Suites, testDirs, testRuns)
+	}
+
+	return testRuns
+}
+
+func parseTestRun(spec Specs, folder string) executor.TestRun {
 	exitMessage := "success"
 	testStatus := executor.TestPassed
 

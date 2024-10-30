@@ -1,0 +1,310 @@
+{
+  "config": {
+    "configFile": "/home/pablo/go/src/github.com/grafana/clickhouse-datasource/playwright.config.ts",
+    "rootDir": "/home/pablo/go/src/github.com/grafana/clickhouse-datasource/tests/e2e",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 3
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 15000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/home/pablo/go/src/github.com/grafana/clickhouse-datasource/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "auth",
+        "name": "auth",
+        "testDir": "/home/pablo/go/src/github.com/grafana/clickhouse-datasource/node_modules/@grafana/plugin-e2e/dist/auth",
+        "testIgnore": [],
+        "testMatch": [
+          "/.*\\.js/"
+        ],
+        "timeout": 10000
+      },
+      {
+        "outputDir": "/home/pablo/go/src/github.com/grafana/clickhouse-datasource/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "run-tests",
+        "name": "run-tests",
+        "testDir": "/home/pablo/go/src/github.com/grafana/clickhouse-datasource/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 10000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "version": "1.48.1",
+    "workers": 10,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "../../node_modules/@grafana/plugin-e2e/dist/auth/auth.setup.js",
+      "file": "../../node_modules/@grafana/plugin-e2e/dist/auth/auth.setup.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "authenticate",
+          "ok": true,
+          "tags": [
+            "grafana/plugin-e2e/dist/auth/auth.setup.js"
+          ],
+          "tests": [
+            {
+              "timeout": 10000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "auth",
+              "projectName": "auth",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "status": "passed",
+                  "duration": 63,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2024-10-29T20:38:02.579Z",
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f376efe52c54b1a876fd-2573d33d0c7ecd42968b",
+          "file": "../../node_modules/@grafana/plugin-e2e/dist/auth/auth.setup.js",
+          "line": 4,
+          "column": 14
+        }
+      ]
+    },
+    {
+      "title": "configEditor.spec.ts",
+      "file": "configEditor.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Config Editor",
+          "file": "configEditor.spec.ts",
+          "line": 6,
+          "column": 6,
+          "specs": [
+            {
+              "title": "invalid credentials should return an error",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 10000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "run-tests",
+                  "projectName": "run-tests",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "status": "timedOut",
+                      "duration": 10159,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "/home/pablo/go/src/github.com/grafana/clickhouse-datasource/tests/e2e/configEditor.spec.ts",
+                            "column": 51,
+                            "line": 9
+                          },
+                          "message": "Error: locator.fill: Test timeout of 10000ms exceeded.\nCall log:\n  \u001b[2m- waiting for getByPlaceholder('Server address')\u001b[22m\n\n\n   7 |   test('invalid credentials should return an error', async ({ createDataSourceConfigPage, page }) => {\n   8 |     const configPage = await createDataSourceConfigPage({ type: PLUGIN_UID });\n>  9 |     await page.getByPlaceholder('Server address').fill(CLICKHOUSE_DB_URL);\n     |                                                   ^\n  10 |     await expect(configPage.saveAndTest()).not.toBeOK();\n  11 |   });\n  12 |\n\n    at /home/pablo/go/src/github.com/grafana/clickhouse-datasource/tests/e2e/configEditor.spec.ts:9:51"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2024-10-29T20:38:03.268Z",
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/pablo/go/src/github.com/grafana/clickhouse-datasource/test-results/configEditor-Config-Editor-b8bd0-ials-should-return-an-error-run-tests/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/home/pablo/go/src/github.com/grafana/clickhouse-datasource/test-results/configEditor-Config-Editor-b8bd0-ials-should-return-an-error-run-tests/video.webm"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "903986ecc0b6c44cb2cd-e670b0685ccb94b7f969",
+              "file": "configEditor.spec.ts",
+              "line": 7,
+              "column": 7
+            },
+            {
+              "title": "valid credentials should display a success alert on the page",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 10000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "run-tests",
+                  "projectName": "run-tests",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "status": "timedOut",
+                      "duration": 10155,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "/home/pablo/go/src/github.com/grafana/clickhouse-datasource/tests/e2e/configEditor.spec.ts",
+                            "column": 51,
+                            "line": 16
+                          },
+                          "message": "Error: locator.fill: Test timeout of 10000ms exceeded.\nCall log:\n  \u001b[2m- waiting for getByPlaceholder('Server address')\u001b[22m\n\n\n  14 |     const configPage = await createDataSourceConfigPage({ type: PLUGIN_UID });\n  15 |\n> 16 |     await page.getByPlaceholder('Server address').fill(CLICKHOUSE_DB_URL);\n     |                                                   ^\n  17 |     await page.getByPlaceholder('9000').fill('9000');\n  18 |     await page.getByPlaceholder('default').fill('default');\n  19 |\n\n    at /home/pablo/go/src/github.com/grafana/clickhouse-datasource/tests/e2e/configEditor.spec.ts:16:51"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2024-10-29T20:38:03.255Z",
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/pablo/go/src/github.com/grafana/clickhouse-datasource/test-results/configEditor-Config-Editor-9cde5-a-success-alert-on-the-page-run-tests/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/home/pablo/go/src/github.com/grafana/clickhouse-datasource/test-results/configEditor-Config-Editor-9cde5-a-success-alert-on-the-page-run-tests/video.webm"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "903986ecc0b6c44cb2cd-99ef0954569655533dbb",
+              "file": "configEditor.spec.ts",
+              "line": 13,
+              "column": 7
+            },
+            {
+              "title": "mandatory fields should show error if left empty",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 10000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "run-tests",
+                  "projectName": "run-tests",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "status": "timedOut",
+                      "duration": 10155,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 10000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "/home/pablo/go/src/github.com/grafana/clickhouse-datasource/tests/e2e/configEditor.spec.ts",
+                            "column": 51,
+                            "line": 29
+                          },
+                          "message": "Error: locator.fill: Test timeout of 10000ms exceeded.\nCall log:\n  \u001b[2m- waiting for getByPlaceholder('Server address')\u001b[22m\n\n\n  27 |     const configPage = await createDataSourceConfigPage({ type: PLUGIN_UID });\n  28 |\n> 29 |     await page.getByPlaceholder('Server address').fill('');\n     |                                                   ^\n  30 |     await page.keyboard.press('Tab');\n  31 |     await expect(page.getByText('Server address required')).toBeVisible();\n  32 |\n\n    at /home/pablo/go/src/github.com/grafana/clickhouse-datasource/tests/e2e/configEditor.spec.ts:29:51"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2024-10-29T20:38:03.254Z",
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/pablo/go/src/github.com/grafana/clickhouse-datasource/test-results/configEditor-Config-Editor-80846-ld-show-error-if-left-empty-run-tests/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/home/pablo/go/src/github.com/grafana/clickhouse-datasource/test-results/configEditor-Config-Editor-80846-ld-show-error-if-left-empty-run-tests/video.webm"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "903986ecc0b6c44cb2cd-8b89b4615218370047b1",
+              "file": "configEditor.spec.ts",
+              "line": 26,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2024-10-29T20:38:02.250Z",
+    "duration": 11508.904,
+    "expected": 1,
+    "skipped": 0,
+    "unexpected": 3,
+    "flaky": 0
+  }
+}
