@@ -28,6 +28,10 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 					{
 						TestFile:    "smoke.test.ts",
 						Status:      executor.TestPassed,
+						Durations:    executor.TestDurations{
+							ScenarioDuration: 2148,
+							TotalDuration: 2148,
+						},
 						ExitMessage: "success",
 						Attributes: map[string]string{
 							"title": "should redirect to start page when permissions to navigate to page is missing",
@@ -49,6 +53,10 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 					{
 						TestFile:    "failures.test.ts",
 						Status:      executor.TestFailed,
+						Durations:    executor.TestDurations{
+							ScenarioDuration: 5001,
+							TotalDuration: 5001,
+						},
 						ExitMessage: "failures.test.ts:22:6 => Test timeout of 5000ms exceeded.",
 						Attributes: map[string]string{
 							"title": "should fail due to missing element",
@@ -70,6 +78,10 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 					{
 						TestFile:    "skipped.test.ts",
 						Status:      executor.TestSkipped,
+						Durations:    executor.TestDurations{
+							ScenarioDuration: 0,
+							TotalDuration: 0,
+						},
 						ExitMessage: "skipped",
 						Attributes: map[string]string{
 							"title": "data query should return values 1 and 3",
@@ -92,6 +104,10 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 						TestFile:    "auth.setup.js",
 						Status:      executor.TestPassed,
 						ExitMessage: "success",
+						Durations:    executor.TestDurations{
+							ScenarioDuration: 104,
+							TotalDuration: 104,
+						},
 						Attributes: map[string]string{
 							"title": "authenticate",
 						},
@@ -99,6 +115,10 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 					{
 						TestFile:    "failures.test.ts",
 						Status:      executor.TestFailed,
+						Durations:    executor.TestDurations{
+							ScenarioDuration: 2557,
+							TotalDuration: 2557,
+						},
 						ExitMessage: "failures.test.ts:3:5 => Error: ENOENT: no such file or directory, open '/Users/timmulqueen/projects/grafana-plugin-tests/provisioning/datasources/jfkladsjfkldasjdfklasjlk.yml'",
 						Attributes: map[string]string{
 							"title": "should fail due to missing file",
@@ -107,6 +127,10 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 					{
 						TestFile:    "failures.test.ts",
 						Status:      executor.TestFailed,
+						Durations:    executor.TestDurations{
+							ScenarioDuration: 1570,
+							TotalDuration: 1570,
+						},
 						ExitMessage: "failures.test.ts:13:5 => Error: expect(received).toEqual(expected) // deep equality",
 						Attributes: map[string]string{
 							"title": "should fail due to expect",
@@ -115,6 +139,10 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 					{
 						TestFile:    "failures.test.ts",
 						Status:      executor.TestFailed,
+						Durations:    executor.TestDurations{
+							ScenarioDuration: 30000,
+							TotalDuration: 30000,
+						},
 						ExitMessage: "failures.test.ts:21:5 => Test timeout of 30000ms exceeded.",
 						Attributes: map[string]string{
 							"title": "should fail due to missing element",
@@ -123,6 +151,10 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 					{
 						TestFile:    "failures.test.ts",
 						Status:      executor.TestFailed,
+						Durations:    executor.TestDurations{
+							ScenarioDuration: 1437,
+							TotalDuration: 1437,
+						},
 						ExitMessage: "failures.test.ts:26:5 => Error: This is a random javascript type error failure",
 						Attributes: map[string]string{
 							"title": "should fail due to type error in test",
@@ -131,6 +163,10 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 					{
 						TestFile:    "smoke.test.ts",
 						Status:      executor.TestPassed,
+						Durations:    executor.TestDurations{
+							ScenarioDuration: 2774,
+							TotalDuration: 2774,
+						},
 						ExitMessage: "success",
 						Attributes: map[string]string{
 							"title": "data query should return values 1 and 3",
@@ -139,6 +175,10 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 					{
 						TestFile:    "smoke.test.ts",
 						Status:      executor.TestPassed,
+						Durations:    executor.TestDurations{
+							ScenarioDuration: 1518,
+							TotalDuration: 1518,
+						},
 						ExitMessage: "success",
 						Attributes: map[string]string{
 							"title": "should redirect to start page when permissions to navigate to page is missing",
@@ -176,6 +216,7 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 			for i, tr := range tc.expected.TestRuns {
 				assert(t, tr.TestFile, summary.TestRuns[i].TestFile)
 				assert(t, tr.Status, summary.TestRuns[i].Status)
+				assert(t, tr.Durations, summary.TestRuns[i].Durations)
 				assert(t, tr.ExitMessage, summary.TestRuns[i].ExitMessage)
 				assert(t, tr.Attributes["title"], summary.TestRuns[i].Attributes["title"])
 			}

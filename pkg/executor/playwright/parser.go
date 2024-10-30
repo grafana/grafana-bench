@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"math"
 	"path"
 	"strings"
 
@@ -42,17 +41,14 @@ func parseJsonOutput(report io.Reader) (executor.SuiteRunSummary, error) {
 				}
 			}
 
-			setupDuration := float32(output.Config.GlobalSetup)
-			tearDownDuration := float32(output.Config.GlobalTeardown)
-
-			run := formatTestRuns(spec, folder, setupDuration, tearDownDuration)
+			run := formatTestRun(spec, folder)
 			testRuns = append(testRuns, run)
 		}
 	}
 
 	totalTestAmount := int32(output.Stats.Unexpected) + int32(output.Stats.Expected)
 	var suiteStatus executor.SuiteStatus = executor.SuitePassed
-	if output.Stats.Unexpected  > 0 {
+	if output.Stats.Unexpected > 0 {
 		suiteStatus = executor.SuiteFailed
 	}
 
@@ -68,13 +64,11 @@ func parseJsonOutput(report io.Reader) (executor.SuiteRunSummary, error) {
 		TestRuns:          testRuns,
 	}
 
-
-
 	return suiteRunSummary, nil
 
 }
 
-func formatTestRuns(spec Specs, folder string, globalSetupDuration, globalTeardownDuration float32) executor.TestRun {
+func formatTestRun(spec Specs, folder string) executor.TestRun {
 	exitMessage := "success"
 	testStatus := executor.TestPassed
 
@@ -86,13 +80,6 @@ func formatTestRuns(spec Specs, folder string, globalSetupDuration, globalTeardo
 			Status:      executor.TestSkipped,
 			ExitMessage: "skipped",
 			Iterations:  "0",
-
-			Durations: executor.TestDurations{
-				SetupDuration:    globalSetupDuration,
-				TeardownDuration: globalTeardownDuration,
-				ScenarioDuration: float32(0),
-				TotalDuration:    float32(0),
-			},
 
 			Attributes: map[string]string{
 				"title":  spec.Title,
@@ -111,17 +98,13 @@ func formatTestRuns(spec Specs, folder string, globalSetupDuration, globalTeardo
 	}
 
 	scenarioTotal := 0
-	amount := 0
 	for _, test := range spec.Tests {
 		for _, result := range test.Results {
 			scenarioTotal += result.Duration
 		}
-		amount += len(test.Results)
 	}
 
-	averageScenarioDuration := float32(math.Round(float64(scenarioTotal / amount)))
-
-	summary := executor.TestRun{
+	run := executor.TestRun{
 		TestFolder: folder,
 		TestFile:   path.Base(spec.File),
 
@@ -132,9 +115,7 @@ func formatTestRuns(spec Specs, folder string, globalSetupDuration, globalTeardo
 		Iterations:  fmt.Sprintf("%d", len(spec.Tests[0].Results)),
 
 		Durations: executor.TestDurations{
-			SetupDuration:    globalSetupDuration,
-			TeardownDuration: globalTeardownDuration,
-			ScenarioDuration: averageScenarioDuration,
+			ScenarioDuration: float32(scenarioTotal),
 			TotalDuration:    float32(scenarioTotal),
 		},
 
@@ -145,5 +126,5 @@ func formatTestRuns(spec Specs, folder string, globalSetupDuration, globalTeardo
 		},
 	}
 
-	return summary
+	return run
 }
