@@ -20,179 +20,166 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 		file     string
 		expected executor.SuiteRunSummary
 	}{
-		// {
-		// 	title: "parse successful test correctly",
-		// 	file:  "./mocks/success.json",
-		// 	expected: executor.SuiteRunSummary{
-		// 		TestRuns: []executor.TestRun{
-		// 			{
-		// 				TestFile:    "smoke.test.ts",
-		// 				Status:      executor.TestPassed,
-		// 				Durations:    executor.TestDurations{
-		// 					ScenarioDuration: 2148,
-		// 					TotalDuration: 2148,
-		// 				},
-		// 				ExitMessage: "success",
-		// 				Attributes: map[string]string{
-		// 					"title": "should redirect to start page when permissions to navigate to page is missing",
-		// 				},
-		// 			},
-		// 		},
-		// 		TotalDuration: float32(2745.645),
-		// 		TestsExecuted: 1,
-		// 		TestsPassed:   1,
-		// 		TestsFailed:   0,
-		// 		TestsError:    0,
-		// 	},
-		// },
-		// {
-		// 	title: "parse failure test correctly",
-		// 	file:  "./mocks/failures.json",
-		// 	expected: executor.SuiteRunSummary{
-		// 		TestRuns: []executor.TestRun{
-		// 			{
-		// 				TestFile:    "failures.test.ts",
-		// 				Status:      executor.TestFailed,
-		// 				Durations:    executor.TestDurations{
-		// 					ScenarioDuration: 5001,
-		// 					TotalDuration: 5001,
-		// 				},
-		// 				ExitMessage: "failures.test.ts:22:6 => Test timeout of 5000ms exceeded.",
-		// 				Attributes: map[string]string{
-		// 					"title": "should fail due to missing element",
-		// 				},
-		// 			},
-		// 		},
-		// 		TotalDuration: float32(5942.315),
-		// 		TestsExecuted: 1,
-		// 		TestsPassed:   0,
-		// 		TestsFailed:   1,
-		// 		TestsError:    0,
-		// 	},
-		// },
-		// {
-		// 	title:             "parse fully skipped tests correctly",
-		// 	file:              "./mocks/broken.json",
-		// 	expected: executor.SuiteRunSummary{
-		// 		TestRuns: []executor.TestRun{
-		// 			{
-		// 				TestFile:    "skipped.test.ts",
-		// 				Status:      executor.TestSkipped,
-		// 				Durations:    executor.TestDurations{
-		// 					ScenarioDuration: 0,
-		// 					TotalDuration: 0,
-		// 				},
-		// 				ExitMessage: "skipped",
-		// 				Attributes: map[string]string{
-		// 					"title": "data query should return values 1 and 3",
-		// 				},
-		// 			},
-		// 		},
-		// 		TotalDuration: float32(2327.512),
-		// 		TestsExecuted: 1,
-		// 		TestsPassed:   0,
-		// 		TestsFailed:   1,
-		// 		TestsError:    0,
-		// 	},
-		// },
-		// {
-		// 	title:             "parse output with passed and failed tests",
-		// 	file:              "./mocks/full-report.json",
-		// 	expected: executor.SuiteRunSummary{
-		// 		TestRuns: []executor.TestRun{
-		// 			{
-		// 				TestFile:    "auth.setup.js",
-		// 				Status:      executor.TestPassed,
-		// 				ExitMessage: "success",
-		// 				Durations:    executor.TestDurations{
-		// 					ScenarioDuration: 104,
-		// 					TotalDuration: 104,
-		// 				},
-		// 				Attributes: map[string]string{
-		// 					"title": "authenticate",
-		// 				},
-		// 			},
-		// 			{
-		// 				TestFile:    "failures.test.ts",
-		// 				Status:      executor.TestFailed,
-		// 				Durations:    executor.TestDurations{
-		// 					ScenarioDuration: 2557,
-		// 					TotalDuration: 2557,
-		// 				},
-		// 				ExitMessage: "failures.test.ts:3:5 => Error: ENOENT: no such file or directory, open '/Users/timmulqueen/projects/grafana-plugin-tests/provisioning/datasources/jfkladsjfkldasjdfklasjlk.yml'",
-		// 				Attributes: map[string]string{
-		// 					"title": "should fail due to missing file",
-		// 				},
-		// 			},
-		// 			{
-		// 				TestFile:    "failures.test.ts",
-		// 				Status:      executor.TestFailed,
-		// 				Durations:    executor.TestDurations{
-		// 					ScenarioDuration: 1570,
-		// 					TotalDuration: 1570,
-		// 				},
-		// 				ExitMessage: "failures.test.ts:13:5 => Error: expect(received).toEqual(expected) // deep equality",
-		// 				Attributes: map[string]string{
-		// 					"title": "should fail due to expect",
-		// 				},
-		// 			},
-		// 			{
-		// 				TestFile:    "failures.test.ts",
-		// 				Status:      executor.TestFailed,
-		// 				Durations:    executor.TestDurations{
-		// 					ScenarioDuration: 30000,
-		// 					TotalDuration: 30000,
-		// 				},
-		// 				ExitMessage: "failures.test.ts:21:5 => Test timeout of 30000ms exceeded.",
-		// 				Attributes: map[string]string{
-		// 					"title": "should fail due to missing element",
-		// 				},
-		// 			},
-		// 			{
-		// 				TestFile:    "failures.test.ts",
-		// 				Status:      executor.TestFailed,
-		// 				Durations:    executor.TestDurations{
-		// 					ScenarioDuration: 1437,
-		// 					TotalDuration: 1437,
-		// 				},
-		// 				ExitMessage: "failures.test.ts:26:5 => Error: This is a random javascript type error failure",
-		// 				Attributes: map[string]string{
-		// 					"title": "should fail due to type error in test",
-		// 				},
-		// 			},
-		// 			{
-		// 				TestFile:    "smoke.test.ts",
-		// 				Status:      executor.TestPassed,
-		// 				Durations:    executor.TestDurations{
-		// 					ScenarioDuration: 2774,
-		// 					TotalDuration: 2774,
-		// 				},
-		// 				ExitMessage: "success",
-		// 				Attributes: map[string]string{
-		// 					"title": "data query should return values 1 and 3",
-		// 				},
-		// 			},
-		// 			{
-		// 				TestFile:    "smoke.test.ts",
-		// 				Status:      executor.TestPassed,
-		// 				Durations:    executor.TestDurations{
-		// 					ScenarioDuration: 1518,
-		// 					TotalDuration: 1518,
-		// 				},
-		// 				ExitMessage: "success",
-		// 				Attributes: map[string]string{
-		// 					"title": "should redirect to start page when permissions to navigate to page is missing",
-		// 				},
-		// 			},
+		{
+			title: "parse successful test correctly",
+			file:  "./mocks/success.json",
+			expected: executor.SuiteRunSummary{
+				TestRuns: []executor.TestRun{
+					{
+						TestFile:    "smoke.test.ts",
+						Status:      executor.TestPassed,
+						Durations:    executor.TestDurations{
+							ScenarioDuration: 2148,
+							TotalDuration: 2148,
+						},
+						ExitMessage: "success",
+						Attributes: map[string]string{
+							"title": "should redirect to start page when permissions to navigate to page is missing",
+						},
+					},
+				},
+				TotalDuration: float32(2745.645),
+				TestsExecuted: 1,
+				TestsPassed:   1,
+				TestsFailed:   0,
+				TestsError:    0,
+			},
+		},
+		{
+			title: "parse failure test correctly",
+			file:  "./mocks/failures.json",
+			expected: executor.SuiteRunSummary{
+				TestRuns: []executor.TestRun{
+					{
+						TestFile:    "failures.test.ts",
+						Status:      executor.TestFailed,
+						Durations:    executor.TestDurations{
+							ScenarioDuration: 5001,
+							TotalDuration: 5001,
+						},
+						ExitMessage: "failures.test.ts:22:6 => Test timeout of 5000ms exceeded.",
+						Attributes: map[string]string{
+							"title": "should fail due to missing element",
+						},
+					},
+				},
+				TotalDuration: float32(5942.315),
+				TestsExecuted: 1,
+				TestsPassed:   0,
+				TestsFailed:   1,
+				TestsError:    0,
+			},
+		},
+		{
+			title:             "parse fully skipped tests correctly",
+			file:              "./mocks/skipped.json",
+			expected: executor.SuiteRunSummary{
+				TestRuns: []executor.TestRun{},
+				TotalDuration: float32(2327.512),
+				TestsExecuted: 0,
+				TestsPassed:   0,
+				TestsFailed:   0,
+				TestsError:    0,
+			},
+		},
+		{
+			title:             "parse output with passed and failed tests",
+			file:              "./mocks/full-report.json",
+			expected: executor.SuiteRunSummary{
+				TestRuns: []executor.TestRun{
+					{
+						TestFile:    "auth.setup.js",
+						Status:      executor.TestPassed,
+						ExitMessage: "success",
+						Durations:    executor.TestDurations{
+							ScenarioDuration: 104,
+							TotalDuration: 104,
+						},
+						Attributes: map[string]string{
+							"title": "authenticate",
+						},
+					},
+					{
+						TestFile:    "failures.test.ts",
+						Status:      executor.TestFailed,
+						Durations:    executor.TestDurations{
+							ScenarioDuration: 2557,
+							TotalDuration: 2557,
+						},
+						ExitMessage: "failures.test.ts:3:5 => Error: ENOENT: no such file or directory, open '/Users/timmulqueen/projects/grafana-plugin-tests/provisioning/datasources/jfkladsjfkldasjdfklasjlk.yml'",
+						Attributes: map[string]string{
+							"title": "should fail due to missing file",
+						},
+					},
+					{
+						TestFile:    "failures.test.ts",
+						Status:      executor.TestFailed,
+						Durations:    executor.TestDurations{
+							ScenarioDuration: 1570,
+							TotalDuration: 1570,
+						},
+						ExitMessage: "failures.test.ts:13:5 => Error: expect(received).toEqual(expected) // deep equality",
+						Attributes: map[string]string{
+							"title": "should fail due to expect",
+						},
+					},
+					{
+						TestFile:    "failures.test.ts",
+						Status:      executor.TestFailed,
+						Durations:    executor.TestDurations{
+							ScenarioDuration: 30000,
+							TotalDuration: 30000,
+						},
+						ExitMessage: "failures.test.ts:21:5 => Test timeout of 30000ms exceeded.",
+						Attributes: map[string]string{
+							"title": "should fail due to missing element",
+						},
+					},
+					{
+						TestFile:    "failures.test.ts",
+						Status:      executor.TestFailed,
+						Durations:    executor.TestDurations{
+							ScenarioDuration: 1437,
+							TotalDuration: 1437,
+						},
+						ExitMessage: "failures.test.ts:26:5 => Error: This is a random javascript type error failure",
+						Attributes: map[string]string{
+							"title": "should fail due to type error in test",
+						},
+					},
+					{
+						TestFile:    "smoke.test.ts",
+						Status:      executor.TestPassed,
+						Durations:    executor.TestDurations{
+							ScenarioDuration: 2774,
+							TotalDuration: 2774,
+						},
+						ExitMessage: "success",
+						Attributes: map[string]string{
+							"title": "data query should return values 1 and 3",
+						},
+					},
+					{
+						TestFile:    "smoke.test.ts",
+						Status:      executor.TestPassed,
+						Durations:    executor.TestDurations{
+							ScenarioDuration: 1518,
+							TotalDuration: 1518,
+						},
+						ExitMessage: "success",
+						Attributes: map[string]string{
+							"title": "should redirect to start page when permissions to navigate to page is missing",
+						},
+					},
 
-		// 		},
-		// 		TotalDuration: float32(37814.297),
-		// 		TestsExecuted: 7,
-		// 		TestsPassed:   3,
-		// 		TestsFailed:   4,
-		// 		TestsError:    0,
-		// 	},
-		// },
+				},
+				TotalDuration: float32(37814.297),
+				TestsExecuted: 7,
+				TestsPassed:   3,
+				TestsFailed:   4,
+				TestsError:    0,
+			},
+		},
 		{
 			title: "parse nested suites",
 			file:  "./mocks/nested-suites.json",

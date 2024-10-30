@@ -66,7 +66,10 @@ func parseSuites( suites []Suite, testDirs map[string]string, testRuns []executo
 				folder = testDirs[spec.Tests[0].ProjectID]
 			}
 
-			testRuns = append(testRuns, parseTestRun(spec, folder))
+			run := parseTestRun(spec, folder)
+			if run.Status != executor.TestSkipped {
+				testRuns = append(testRuns, run)
+			}
 		}
 
 		testRuns = parseSuites(suite.Suites, testDirs, testRuns)
