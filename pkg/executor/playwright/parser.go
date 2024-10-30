@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"path"
 	"strings"
 
@@ -107,11 +108,19 @@ func parseTestRun(spec Specs, folder string) executor.TestRun {
 		testStatus = executor.TestFailed
 	}
 
+	// tests can be executed more than once due to retries so we need to average the duration
 	scenarioTotal := 0
+	executions := 0
 	for _, test := range spec.Tests {
 		for _, result := range test.Results {
 			scenarioTotal += result.Duration
+			executions += 1
 		}
+	}
+
+	averageScenarioDuration := float32(scenarioTotal)
+	if executions > 0 {
+		averageScenarioDuration	= float32(math.Round(float64(scenarioTotal) / float64(executions)))
 	}
 
 	run := executor.TestRun{
@@ -125,7 +134,7 @@ func parseTestRun(spec Specs, folder string) executor.TestRun {
 		Iterations:  fmt.Sprintf("%d", len(spec.Tests[0].Results)),
 
 		Durations: executor.TestDurations{
-			ScenarioDuration: float32(scenarioTotal),
+			ScenarioDuration: float32(averageScenarioDuration),
 			TotalDuration:    float32(scenarioTotal),
 		},
 
