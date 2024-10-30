@@ -181,6 +181,104 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 			},
 		},
 		{
+			title:             "parse output with retries",
+			file:              "./testdata/report-retries.json",
+			expected: executor.SuiteRunSummary{
+				TestRuns: []executor.TestRun{
+					{
+						TestFile:    "auth.setup.js",
+						Status:      executor.TestPassed,
+						ExitMessage: "success",
+						Durations:    executor.TestDurations{
+							ScenarioDuration: 101,
+							TotalDuration: 101,
+						},
+						Attributes: map[string]string{
+							"title": "authenticate",
+						},
+					},
+					{
+						TestFile:    "failures.test.ts",
+						Status:      executor.TestFailed,
+						Durations:    executor.TestDurations{
+							ScenarioDuration: 2252,
+							TotalDuration: 6757,
+						},
+						ExitMessage: "failures.test.ts:3:5 => Error: ENOENT: no such file or directory, open '/Users/timmulqueen/projects/grafana-plugin-tests/provisioning/datasources/jfkladsjfkldasjdfklasjlk.yml'",
+						Attributes: map[string]string{
+							"title": "should fail due to missing file",
+						},
+					},
+					{
+						TestFile:    "failures.test.ts",
+						Status:      executor.TestFailed,
+						Durations:    executor.TestDurations{
+							ScenarioDuration: 1543,
+							TotalDuration: 4628,
+						},
+						ExitMessage: "failures.test.ts:13:5 => Error: expect(received).toEqual(expected) // deep equality",
+						Attributes: map[string]string{
+							"title": "should fail due to expect",
+						},
+					},
+					{
+						TestFile:    "failures.test.ts",
+						Status:      executor.TestFailed,
+						Durations:    executor.TestDurations{
+							ScenarioDuration: 30000,
+							TotalDuration: 90000,
+						},
+						ExitMessage: "failures.test.ts:21:5 => Test timeout of 30000ms exceeded.",
+						Attributes: map[string]string{
+							"title": "should fail due to missing element",
+						},
+					},
+					{
+						TestFile:    "failures.test.ts",
+						Status:      executor.TestFailed,
+						Durations:    executor.TestDurations{
+							ScenarioDuration: 1527,
+							TotalDuration: 4581,
+						},
+						ExitMessage: "failures.test.ts:26:5 => Error: This is a random javascript type error failure",
+						Attributes: map[string]string{
+							"title": "should fail due to type error in test",
+						},
+					},
+					{
+						TestFile:    "smoke.test.ts",
+						Status:      executor.TestPassed,
+						Durations:    executor.TestDurations{
+							ScenarioDuration: 2854,
+							TotalDuration: 2854,
+						},
+						ExitMessage: "success",
+						Attributes: map[string]string{
+							"title": "data query should return values 1 and 3",
+						},
+					},
+					{
+						TestFile:    "smoke.test.ts",
+						Status:      executor.TestPassed,
+						Durations:    executor.TestDurations{
+							ScenarioDuration: 1565,
+							TotalDuration: 1565,
+						},
+						ExitMessage: "success",
+						Attributes: map[string]string{
+							"title": "should redirect to start page when permissions to navigate to page is missing",
+						},
+					},
+
+				},
+				TotalDuration: float32(111140.61499999999),
+				TestsExecuted: 7,
+				TestsPassed:   3,
+				TestsFailed:   4,
+				TestsError:    0,
+			},
+		},
+		{
 			title: "parse nested suites",
 			file:  "./testdata/nested-suites.json",
 			expected: executor.SuiteRunSummary{
