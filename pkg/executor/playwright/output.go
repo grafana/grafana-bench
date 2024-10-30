@@ -43,7 +43,7 @@ type PlaywrightJsonOutput struct {
 		Workers         int    `json:"workers"`
 		WebServer       any    `json:"webServer"`
 	} `json:"config"`
-	Suites []Suites `json:"suites"`
+	Suites []Suite `json:"suites"`
 	Errors []any    `json:"errors"`
 	Stats  struct {
 		StartTime  time.Time `json:"startTime"`
@@ -56,12 +56,13 @@ type PlaywrightJsonOutput struct {
 }
 
 // This corresponds to the files of the test eg. smoke.spec.js
-type Suites struct {
+type Suite struct {
 	Title  string  `json:"title"`
 	File   string  `json:"file"`
 	Column int     `json:"column"`
 	Line   int     `json:"line"`
 	Specs  []Specs `json:"specs"`
+	Suites []Suite  `json:"suites`
 }
 
 // This corresponds to the a individual of the test in a file eg. test('should do something', () => {})

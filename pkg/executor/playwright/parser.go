@@ -3,6 +3,7 @@ package playwright
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"math"
 	"path"
 	"strings"
@@ -14,41 +15,32 @@ import (
 
 // parseJsonOutput parses the json output from playwright --report json and returns a slice of RunSummary
 // this will work if only one test is run and the output but will also work for if this contains an entire suite
-func parseJsonOutput(buf []byte) (executor.SuiteRunSummary, error) {
+func parseJsonOutput(report io.Reader) (executor.SuiteRunSummary, error) {
 	output := PlaywrightJsonOutput{}
 
-	err := json.Unmarshal(buf, &output)
+	buf, err := io.ReadAll(report)
+	if err != nil {
+		return executor.SuiteRunSummary{}, fmt.Errorf("error failed to read report.json: %s", err.Error())
+	}
+
+	err = json.Unmarshal(buf, &output)
 	if err != nil {
 		return executor.SuiteRunSummary{}, fmt.Errorf("parsing Playwright json summary output: %w", err)
 	}
 
-	testRuns := make([]executor.TestRun, 0, output.Stats.Expected+output.Stats.Unexpected)
-
-	var suiteStatus executor.SuiteStatus = executor.SuitePassed
-	for _, suite := range output.Suites {
-		for _, spec := range suite.Specs {
-			folder := "unknown"
-			if len(spec.Tests) > 0 {
-				for _, project := range output.Config.Projects {
-					if spec.Tests[0].ProjectID == project.ID {
-						folder = project.TestDir
-						break
-					}
-				}
-			}
-
-			setupDuration := float32(output.Config.GlobalSetup)
-			tearDownDuration := float32(output.Config.GlobalTeardown)
-
-			run := formatTestRuns(spec, folder, setupDuration, tearDownDuration)
-			if run.Status == executor.TestFailed {
-				suiteStatus = executor.SuiteFailed
-			}
-			testRuns = append(testRuns, run)
-		}
+	// collect the test dirs per project. Needed to map tests to folders
+	testDirs := map[string]string{}
+	for _, project := range output.Config.Projects {
+		testDirs[project.ID] = project.TestDir
 	}
 
+	testRuns := parseSuites(output.Suites, testDirs, nil)
+	
 	totalTestAmount := int32(output.Stats.Unexpected) + int32(output.Stats.Expected)
+	var suiteStatus executor.SuiteStatus = executor.SuitePassed
+	if output.Stats.Unexpected > 0 {
+		suiteStatus = executor.SuiteFailed
+	}
 
 	suiteRunSummary := executor.SuiteRunSummary{
 		Status:            suiteStatus,
@@ -66,7 +58,28 @@ func parseJsonOutput(buf []byte) (executor.SuiteRunSummary, error) {
 
 }
 
-func formatTestRuns(spec Specs, folder string, globalSetupDuration, globalTeardownDuration float32) executor.TestRun {
+
+func parseSuites( suites []Suite, testDirs map[string]string, testRuns []executor.TestRun) []executor.TestRun {
+	for _, suite := range suites {
+		for _, spec := range suite.Specs {
+			folder := "unknown"
+			if len(spec.Tests) > 0 {
+				folder = testDirs[spec.Tests[0].ProjectID]
+			}
+
+			run := parseTestRun(spec, folder)
+			if run.Status != executor.TestSkipped {
+				testRuns = append(testRuns, run)
+			}
+		}
+
+		testRuns = parseSuites(suite.Suites, testDirs, testRuns)
+	}
+
+	return testRuns
+}
+
+func parseTestRun(spec Specs, folder string) executor.TestRun {
 	exitMessage := "success"
 	testStatus := executor.TestPassed
 
@@ -78,13 +91,6 @@ func formatTestRuns(spec Specs, folder string, globalSetupDuration, globalTeardo
 			Status:      executor.TestSkipped,
 			ExitMessage: "skipped",
 			Iterations:  "0",
-
-			Durations: executor.TestDurations{
-				SetupDuration:    globalSetupDuration,
-				TeardownDuration: globalTeardownDuration,
-				ScenarioDuration: float32(0),
-				TotalDuration:    float32(0),
-			},
 
 			Attributes: map[string]string{
 				"title":  spec.Title,
@@ -102,18 +108,22 @@ func formatTestRuns(spec Specs, folder string, globalSetupDuration, globalTeardo
 		testStatus = executor.TestFailed
 	}
 
+	// tests can be executed more than once due to retries so we need to average the duration
 	scenarioTotal := 0
-	amount := 0
+	executions := 0
 	for _, test := range spec.Tests {
 		for _, result := range test.Results {
 			scenarioTotal += result.Duration
+			executions += 1
 		}
-		amount += len(test.Results)
 	}
 
-	averageScenarioDuration := float32(math.Round(float64(scenarioTotal / amount)))
+	averageScenarioDuration := float32(scenarioTotal)
+	if executions > 0 {
+		averageScenarioDuration	= float32(math.Round(float64(scenarioTotal) / float64(executions)))
+	}
 
-	summary := executor.TestRun{
+	run := executor.TestRun{
 		TestFolder: folder,
 		TestFile:   path.Base(spec.File),
 
@@ -124,9 +134,7 @@ func formatTestRuns(spec Specs, folder string, globalSetupDuration, globalTeardo
 		Iterations:  fmt.Sprintf("%d", len(spec.Tests[0].Results)),
 
 		Durations: executor.TestDurations{
-			SetupDuration:    globalSetupDuration,
-			TeardownDuration: globalTeardownDuration,
-			ScenarioDuration: averageScenarioDuration,
+			ScenarioDuration: float32(averageScenarioDuration),
 			TotalDuration:    float32(scenarioTotal),
 		},
 
@@ -137,5 +145,5 @@ func formatTestRuns(spec Specs, folder string, globalSetupDuration, globalTeardo
 		},
 	}
 
-	return summary
+	return run
 }

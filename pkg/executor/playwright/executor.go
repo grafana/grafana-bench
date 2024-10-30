@@ -9,7 +9,6 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 
 	"github.com/grafana/grafana-bench/pkg/executor"
@@ -85,30 +84,30 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 	}
 
 	// create temporary file for test output
-	jsonOutputName := filepath.Join(os.TempDir(), "playwright-report-*.json")
+	jsonOutput, err := os.CreateTemp(os.TempDir(), "playwright-report-*.json")
+	if err != nil {
+		return executor.SuiteRunSummary{}, fmt.Errorf("creating report.json: %s", err.Error())
+	}
 
 	// execute tests in the test suite and redirect output to a json file
 	// we assume here we can append the reporter and the test suite to the execute command
 	// e.g yarn run test --reporter json tests/
 	// set the output
-	playwrightEnv["PLAYWRIGHT_JSON_OUTPUT_NAME"] = jsonOutputName
+	playwrightEnv["PLAYWRIGHT_JSON_OUTPUT_NAME"] = jsonOutput.Name()
 	executeCmd := fmt.Sprintf("%s --reporter=json %s", t.ExecuteCmd, suite.Path)
 
 	if err := t.executeCommand(suite.BaseDir, playwrightEnv, executeCmd); err != nil {
-		return executor.SuiteRunSummary{}, fmt.Errorf("error executing tests: %w", err)
+		// we can't tell if there was a error executing the test or the test command was wrong (e.g. misspelled)
+		// so we check if there's any report. If not, we assume the test was not executed and return
+		// otherwise we are trying to process the report with parseJsonOutput below
+		reportInfo, errStat := os.Stat(jsonOutput.Name())
+		if errStat != nil || reportInfo.Size() == 0 {
+			return executor.SuiteRunSummary{}, fmt.Errorf("error executing tests: %w", err)
+		}
 	}
 
-	file, err := os.ReadFile(jsonOutputName)
-	if err != nil {
-		return executor.SuiteRunSummary{}, fmt.Errorf("error failed to read report.json: %s", err.Error())
-	}
-
-	runSummary, err := parseJsonOutput(file)
-	if err != nil {
-		return executor.SuiteRunSummary{}, fmt.Errorf("error failed parsing playwright report: %w", err)
-	}
-
-	return runSummary, nil
+	//parse output or report any problem
+	return parseJsonOutput(jsonOutput)
 }
 
 func (t *PlaywrightTestExecutor) executeCommand(execDir string, env map[string]string, cmd string) error {
@@ -122,8 +121,6 @@ func (t *PlaywrightTestExecutor) executeCommand(execDir string, env map[string]s
 		execCmd.Env = append(execCmd.Env, fmt.Sprintf("%s=%s", strings.ToUpper(key), strings.TrimSpace(value)))
 	}
 
-	//fmt.Printf("\n cmd: %#v \n", execCmd)
-	// capture output. Replicate to stdout/stderr if verbose mode
 	buf := bytes.NewBuffer(nil)
 	if t.Verbose {
 		execCmd.Stdout = io.MultiWriter(buf, os.Stderr)
@@ -134,7 +131,8 @@ func (t *PlaywrightTestExecutor) executeCommand(execDir string, env map[string]s
 	}
 
 	if err := execCmd.Run(); err != nil {
-		// If we're in verbose mode, we will already have the error.
+		// If we're in verbose mode, we will already have the error in the output
+		// otherwise, print it now
 		if !t.Verbose {
 			fmt.Println("!verbose output:", buf.String())
 		}

@@ -100,8 +100,8 @@
       "startTime": "2024-05-01T11:33:33.818Z",
       "duration": 2327.512,
       "expected": 0,
-      "skipped": 6,
-      "unexpected": 1,
+      "skipped": 2,
+      "unexpected": 0,
       "flaky": 0
     }
   }
