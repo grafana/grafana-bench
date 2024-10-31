@@ -102,14 +102,16 @@ func (config BenchConfig) BuildTestRunner(log *slog.Logger, testExecutor string)
 		return nil, err
 	}
 
-	runnerLog := log.With(
+	logAttrs := []any{
 		"testTrigger", config.Trigger,
 		"testExecutor", testExecutor,
 		"benchRevision", config.BenchRevision,
 		"grafanaUrl", grafanaInstance.Hostname(),
 		"grafanaSlug", grafanaInstance.Slug(),
 		"grafanaVersion", grafanaVersion,
-	)
+	}
+
+	runnerLog := log.With(logAttrs...)
 
 	var executor executor.TestExecutor
 	if testExecutor == "k6" {
@@ -140,7 +142,7 @@ func (config BenchConfig) BuildTestRunner(log *slog.Logger, testExecutor string)
 	var suiteReporter reporter.SuiteRunReporter
 	switch config.ReportFormat {
 	case "log":
-		suiteReporter = reporter.NewLogReporter(runnerLog)
+		suiteReporter = reporter.NewLogReporter(logAttrs)
 	case "text":
 		suiteReporter = reporter.NewTextReporter(os.Stdout)
 	default:

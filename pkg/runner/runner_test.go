@@ -123,7 +123,7 @@ func testRunnerForTesting(
 		"devel", // bench revision
 		"",      // dashboard URL
 		executor,
-		reporter.NewLogReporter(log),
+		reporter.NewLogReporter(nil),
 	)
 
 	// apply options

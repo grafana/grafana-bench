@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 	"strconv"
 	"time"
 
@@ -15,8 +16,9 @@ type LogReporter struct {
 	Log *slog.Logger
 }
 
-// creates a new log reporter with the given attributes
-func NewLogReporter(log *slog.Logger) *LogReporter {
+func NewLogReporter(attr []any) *LogReporter {
+	log := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	log = log.With(attr...)
 	return &LogReporter{
 		Log: log,
 	}
