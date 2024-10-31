@@ -56,13 +56,6 @@ export default defineConfig<PluginOptions>({
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
     baseURL: process.env.GRAFANA_URL || `http://localhost:${process.env.PORT || 3000}`,
-    // This is used to authenticate the user before running the tests.
-    // useful since the e2e CI tests run a different admin user
-    // see https://grafana.com/developers/plugin-tools/e2e-test-a-plugin/use-authentication
-    grafanaAPICredentials: {
-      user: process.env.GRAFANA_ADMIN_USER || "admin",
-      password: process.env.GRAFANA_ADMIN_PASSWORD || "admin",
-    },
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',

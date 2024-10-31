@@ -1,7 +1,19 @@
 # Grafana Bench
-Bench is a tool for executing e2e tests against an instance of Grafana.
+Bench is a tool to provide test observability across the Grafana ecosystem. It works by:
+1. Wrapping your e2e testing tool of choice with conventions for testing Grafana
+2. Massaging the test output into a standardized log format
+3. Shipping the logs to a Loki instance
+4. Dashboarding the results to provide insights
+4. 
 
-## Value proposition
+[Product DNA](https://docs.google.com/document/d/1rs1RN8UHKAowcQX-cqJ5ilhOnykAMUSoqakWICOGtcY/edit?tab=t.0#heading=h.soj854l81770)
+
+## Quickstart
+1. [Installing Bench](index.md#installing-bench)
+2. [API tests with K6](writing_k6_api_tests.md)
+3. [Broswer tests with plugin-e2e framework and Playwright](writing_pw_tests.md)
+
+## The Bench Value Proposition
 1. Conventions for passing a Grafana instance to a test
 2. Consistent failure modes for tests
 3. Consistent structured output for results
@@ -26,7 +38,7 @@ We currently publish the docker image to both GAR and github packages. Some user
 
 2. Pull the github container
     `docker pull ghcr.io/grafana/grafana-bench:v0.2.4`
-    
+
 3. Verify installation
 `docker run --rm us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.2.4 --help`
     
