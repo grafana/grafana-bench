@@ -1,17 +1,35 @@
 # Grafana Bench
-Bench is a tool to provide test observability across the Grafana ecosystem. It works by:
-1. Wrapping your e2e testing tool of choice with conventions for testing Grafana
+Bench is a tool to provide test observability across the Grafana ecosystem. 
+
+It works by:
+1. Wrapping your e2e testing tool of choice with conventions for passing an instance of Grafana to the test
 2. Massaging the test output into a standardized log format
 3. Shipping the logs to a Loki instance
-4. Dashboarding the results to provide insights
-4. 
+4. Dashboarding the results
+4. Optionally performing slack alerts based on CodeOwners file
 
-[Product DNA](https://docs.google.com/document/d/1rs1RN8UHKAowcQX-cqJ5ilhOnykAMUSoqakWICOGtcY/edit?tab=t.0#heading=h.soj854l81770)
+## **Bench is under active development.**
 
-## Quickstart
+Our basic featureset and value proposition is defined along with a mostly stable api, however, we are trying to move fast to accomodate teams across Grafana and do release breaking changes. 
+
+We recognize that as teams are using Bench in CI and for their release pipelines this Bench is critical infrastructure. In order to reduce the blast radius of any change, we provide __versioned__ releases that follow semantic versioning.
+
+### [Roadmap](roadmap.md)
+
+## Table of Contents
+
+### Quickstart
 1. [Installing Bench](index.md#installing-bench)
 2. [API tests with K6](writing_k6_api_tests.md)
 3. [Broswer tests with plugin-e2e framework and Playwright](writing_pw_tests.md)
+4. [Implementing a pipeline in Jsonnet]()
+
+#### [Principles of Bench](principles.md)
+
+5. [Product DNA](https://docs.google.com/document/d/1rs1RN8UHKAowcQX-cqJ5ilhOnykAMUSoqakWICOGtcY/edit?tab=t.0#heading=h.soj854l81770)
+6. [Log Format](princples.md#log_format)
+7. 
+
 
 ## The Bench Value Proposition
 1. Conventions for passing a Grafana instance to a test
