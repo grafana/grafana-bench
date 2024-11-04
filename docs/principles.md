@@ -1,5 +1,5 @@
 # Principles of Bench
-Bench is the glue that provides observability between local development, CI, and release pipelines. 
+Bench is the glue that provides testing observability between local development, CI, and release pipelines. 
 
 ## A simple idea
 At it's core, we wrap our testing tools and provide a standardized structured logging output for tests and test suites that looks like:
