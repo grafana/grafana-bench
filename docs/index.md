@@ -6,7 +6,7 @@ It works by:
 2. Massaging the test output into a standardized log format
 3. Shipping the logs to a Loki instance
 4. Dashboarding the results
-4. Optionally performing slack alerts based on CodeOwners file
+4. Optionally sending slack alerts based on CodeOwners file on the test suite
 
 ## **Bench is under active development.**
 
