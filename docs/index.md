@@ -35,7 +35,7 @@ You can see our roadmap on [Github](https://github.com/orgs/grafana/projects/554
 1. [Product DNA](https://docs.google.com/document/d/1rs1RN8UHKAowcQX-cqJ5ilhOnykAMUSoqakWICOGtcY/edit?tab=t.0#heading=h.soj854l81770)
 
 ## Installing Bench
-Bench can be run natively or in a docker container. We recommend docker for portability, however, using the binary may be beneficial when developing tests locally.
+Bench can be run as a native command or in a docker container. We recommend docker for portability, however, using the binary may be beneficial when developing tests locally.
 
 ### Docker
 We currently publish the docker image to both GAR and github packages. Some users have reported issues pulling the container from github. So we currently recommend using GAR. If you run into issues with either of these, please reach out to us in #grafana-bench.
