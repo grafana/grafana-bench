@@ -23,7 +23,7 @@ You can see our roadmap on [Github](https://github.com/orgs/grafana/projects/554
 1. [API tests with K6](writing_k6_api_tests.md)
 1. [Broswer tests with plugin-e2e framework and Playwright](writing_pw_tests.md)
 
-### Additional usecases
+### Use cases
 1. [Configuring CI](github_actions.md)
 1. [Implementing a pipeline in Jsonnet](libsonnet.md)
 1. [Configuring slack notifications with Codeowners](notifications.md)
