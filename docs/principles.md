@@ -14,7 +14,6 @@ Since Bench runs in CI and as part of release pipelines we view it as critical s
 
 ## The Bench Value Proposition
 1. Conventions for passing a Grafana instance to a test
-2. Consistent failure modes for tests
 3. Consistent structured output for results
 4. Conventions for linking products, pipelines, test suites, and tests for downstream analysis and querying
 
