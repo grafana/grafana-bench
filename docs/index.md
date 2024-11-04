@@ -2,7 +2,7 @@
 Bench is a tool to provide test observability across the Grafana ecosystem. 
 
 It works by:
-1. Wrapping your e2e testing tool of choice with conventions for passing an instance of Grafana to the test
+1. Wrapping your e2e testing tool of choice (playwright or k6) with conventions for passing an instance of Grafana to the test
 2. Massaging the test output into a standardized log format
 3. Shipping the logs to a Loki instance
 4. Dashboarding the results
