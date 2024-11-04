@@ -26,10 +26,9 @@ type mockServer struct {
 	messages map[string][]string
 }
 
-func newMockServer(channels map[string]string) *mockServer {
+func newMockServer() *mockServer {
 	return &mockServer{
 		mutext:   &sync.Mutex{},
-		channels: channels,
 		messages: map[string][]string{},
 	}
 }
@@ -70,30 +69,6 @@ func (m *mockServer) HandleChatPostMessage(w http.ResponseWriter, r *http.Reques
 	_ = json.NewEncoder(w).Encode(resp)
 }
 
-func (m *mockServer) HandleConversationsList(w http.ResponseWriter, r *http.Request) {
-	resp := struct {
-		Ok       bool            `json:"ok"`
-		Channels []slack.Channel `json:"channels"`
-	}{}
-
-	resp.Ok = true
-	for ch, id := range m.channels {
-		resp.Channels = append(
-			resp.Channels,
-			slack.Channel{
-				GroupConversation: slack.GroupConversation{
-					Name: ch,
-					Conversation: slack.Conversation{
-						ID: id,
-					},
-				},
-			},
-		)
-	}
-
-	_ = json.NewEncoder(w).Encode(resp)
-}
-
 // TODO: test errors from slack server
 func TestNotify(t *testing.T) {
 	testCases := []struct {
@@ -126,34 +101,21 @@ func TestNotify(t *testing.T) {
 			expectedMsgs: map[string][]string{},
 			expectedErr:  ErrNoMappingForCodeowner,
 		},
-		{
-			title:        "recipient's channel does not exist",
-			recipient:    "codeowner-with-missing-channel",
-			testRuns:     []executor.TestRun{},
-			expectedMsgs: map[string][]string{},
-			expectedErr:  ErrChannelDoesNotExist,
-		},
 	}
 
-	channels := map[string]string{
-		"codeowner-channel": "CHANNEL_ID",
-		"another-channel":   "ANOTHER_CHANNEL_ID",
-	}
 
 	mapping := CodeownersMapping{
-		"codeowner-team":                 "codeowner-channel",
-		"codeowner-with-missing-channel": "missing-channel",
+		"codeowner-team": "CHANNEL_ID",
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.title, func(t *testing.T) {
 			t.Parallel()
 
-			mock := newMockServer(channels)
+			mock := newMockServer()
 
 			handler := http.NewServeMux()
 			handler.HandleFunc("/chat.postMessage", mock.HandleChatPostMessage)
-			handler.HandleFunc("/conversations.list", mock.HandleConversationsList)
 			srv := httptest.NewServer(handler)
 
 			notifier, _ := NewSlackNotifier(SlackNotifierOptions{
