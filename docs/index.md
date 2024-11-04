@@ -10,7 +10,7 @@ It works by:
 
 ## **Bench is under active development.**
 
-Our basic featureset and value proposition is defined along with a mostly stable api, however, we are trying to move fast to accomodate teams across Grafana and do release breaking changes. 
+Our basic feature set and value proposition is defined along with a mostly stable API, however, we are trying to move fast to accommodate teams across Grafana and do release-breaking changes. 
 
 We recognize that as teams are using Bench in CI and for their release pipelines that Bench is critical infrastructure. In order to reduce the blast radius of any change, we provide semantically __versioned__ releases.
 
