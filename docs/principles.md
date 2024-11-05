@@ -1,5 +1,5 @@
 # Principles of Bench
-Bench is the glue that provides observability between local development, CI, and release pipelines. 
+Bench is the glue that provides testing observability between local development, CI, and release pipelines. 
 
 ## A simple idea
 At it's core, we wrap our testing tools and provide a standardized structured logging output for tests and test suites. The spec is in progress. 
@@ -20,9 +20,8 @@ Since Bench runs in CI and as part of release pipelines we view it as critical s
 
 ## The Bench Value Proposition
 1. Conventions for passing a Grafana credentials to a test as environment variables
-2. Consistent failure modes for tests
 3. Consistent structured output for results
-4. Conventions for linking products, pipelines, test suites, and tests for downstream analysis and querying
+4. Conventions for linking test results to products, pipelines, and test suites for analysis
 
 ## Project Values
 * Aim for simplicity
