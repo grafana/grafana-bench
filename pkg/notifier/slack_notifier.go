@@ -139,18 +139,9 @@ func (s *slackNotifier) Notify(
 	suiteRunId string,
 	testRuns []executor.TestRun,
 ) error {
-	channel, err := s.mapping.GetChannel(recipient)
+	channelID, err := s.mapping.GetChannel(recipient)
 	if err != nil {
 		return err
-	}
-
-	channelID, err := s.getChannelID(ctx, channel)
-	if err != nil {
-		return err
-	}
-
-	if channelID == "" {
-		return fmt.Errorf("%w %q", ErrChannelDoesNotExist, channel)
 	}
 
 	blocks, err := FormatTestResults(s.dashboardURL, suiteRunId, executor.TestSuite{}, testRuns)
@@ -167,52 +158,3 @@ func (s *slackNotifier) Notify(
 	return nil
 }
 
-// getChannelID returns the ID of a Slack channel with the given name.
-//
-// The ID is cached after the first lookup, so subsequent calls with the same
-// channel name are fast. If the channel is not found, an empty string is returned.
-func (s *slackNotifier) getChannelID(ctx context.Context, channel string) (string, error) {
-	channelID, found := s.channels[channel]
-
-	if channelID != "" {
-		return channelID, nil
-	}
-
-	// we already looked and didn't find it channelID, don't try again
-	if found {
-		return "", nil
-	}
-
-	cursor := ""
-	for {
-		channels, nextCursor, err := s.client.GetConversationsContext(
-			ctx,
-			&slack.GetConversationsParameters{
-				Cursor:          cursor,
-				Limit:           100,
-				ExcludeArchived: true,
-				Types:           []string{"public_channel", "private_channel"},
-			},
-		)
-		if err != nil {
-			return "", fmt.Errorf("%w: %w", ErrGettingChannels, err)
-		}
-
-		for _, c := range channels {
-			if c.Name == channel {
-				s.channels[channel] = c.ID
-				return c.ID, nil
-			}
-		}
-
-		if nextCursor == "" {
-			break
-		}
-		cursor = nextCursor
-	}
-
-	// we did find the channel, save for later
-	s.channels[channel] = ""
-
-	return "", nil
-}
