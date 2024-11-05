@@ -192,8 +192,8 @@ This boots a docker container running grafana and mounts port 3000 to localhost 
 Bench assumes the following defaults for specifying the grafana instance, so we don't need to add those to the command.
 #### defaults
 ```sh
-  --grafana-url "http://localhost:3000" \
-  --grafana-admin-user "admin" \
+  --grafana-url "http://localhost:3000"
+  --grafana-admin-user "admin"
   --grafana-admin-password "admin"
 ```
 

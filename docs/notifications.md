@@ -1,5 +1,7 @@
 # Configuring notifications with Bench
 
+COMING SOON
+
 In rolling release channels you can configure notifications for slack. In order to support large repos and provide flexibility we use a combination of github CODEOWNERS file for the team and a codeowners mapping for the slack channel.
 
 Format for codeowners

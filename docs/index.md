@@ -26,7 +26,7 @@ You can see our roadmap on [Github](https://github.com/orgs/grafana/projects/554
 ### Additional usecases
 1. [Configuring CI](github_actions.md)
 1. [Implementing a pipeline in Jsonnet](libsonnet.md)
-1. [Configuring slack notifications with Codeowners](notifications.md)
+1. Configuring slack notifications with Codeowners - **coming soon**
 
 #### Deep Dive
 
