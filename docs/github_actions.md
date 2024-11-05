@@ -68,7 +68,7 @@ jobs:
             --log-level DEBUG 
 ```
 
-### What's happening
+### Workflow Breakdown
 We configure the tests to run on every PR and merge to Main. This gives us early and often feedback.
 
 
