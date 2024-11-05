@@ -282,7 +282,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		&config.Slack.CodeownersMap,
 		"codeowners-channel-map",
 		"slack_teams_mapping.yaml",
-		"path or url to the codeowner to slack channel mapping",
+		"path or url to the codeowner to slack channel id mapping",
 	)
 
 	return &cmd
