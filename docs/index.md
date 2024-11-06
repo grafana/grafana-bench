@@ -51,7 +51,7 @@ Fetch the container from Google Artifact registry.
     `gh auth token | docker login ghcr.io -u {YOUR_USERNAME} --password-stdin`
 
 2. Pull the github container
-    `docker pull ghcr.io/grafana/grafana-bench:v0.2.4`
+    `docker pull ghcr.io/grafana/grafana-bench:v0.3.0`
 
 3. Verify installation
 `docker run --rm us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.3.0 --help`
