@@ -54,7 +54,7 @@ Fetch the container from Google Artifact registry.
     `docker pull ghcr.io/grafana/grafana-bench:v0.2.4`
 
 3. Verify installation
-`docker run --rm us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.2.4 --help`
+`docker run --rm us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.3.0 --help`
     
 ### Binary / Go Package
 We do not currently ship a binary, but you can install directly from the go project.
