@@ -24,6 +24,8 @@ You can see our roadmap on [Github](https://github.com/orgs/grafana/projects/554
 1. [Broswer tests with plugin-e2e framework and Playwright](writing_pw_tests.md)
 
 ### Use cases
+
+One of the key goals of Bench is to provide portability. We do this by making bench part of the development workflow- running tests locally during development, in CI as part of the SDLC, and finally in release pipelines as part of release.
 1. [Configuring CI](github_actions.md)
 1. [Implementing a pipeline in Jsonnet](libsonnet.md)
 1. Configuring slack notifications with Codeowners - **coming soon**
