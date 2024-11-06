@@ -1,90 +1,94 @@
 # Grafana Bench
+Bench is a tool to provide test observability across the Grafana ecosystem. 
 
-Bench is a tool for executing e2e tests against an instance of Grafana.
+It works by:
+1. Wrapping your e2e testing tool of choice (playwright or k6) with conventions for passing an instance of Grafana to the test
+2. Massaging the test output into a standardized log format
+3. Shipping the logs to a Loki instance
+4. Dashboarding the results
+4. Optionally sending slack alerts based on CodeOwners file on the test suite
 
-## Quickstart tutorial
+## **Bench is under active development.**
 
-1. Prepare github credentials and sign into ghcr repository
+Our basic feature set and value proposition is defined along with a mostly stable API, however, we are trying to move fast to accommodate teams across Grafana and do release-breaking changes. 
 
-    Generate a personal access token. Then run the command
+We recognize that as teams are using Bench in CI and for their release pipelines that Bench is critical infrastructure. In order to reduce the blast radius of any change, we provide semantically __versioned__ releases.
 
+You can see our roadmap on [Github](https://github.com/orgs/grafana/projects/554)
+
+## Table of Contents
+
+### Quickstart
+1. [Installing Bench](index.md#installing-bench)
+1. [API tests with K6](writing_k6_api_tests.md)
+1. [Broswer tests with plugin-e2e framework and Playwright](writing_pw_tests.md)
+
+### Use cases
+
+One of the key goals of Bench is to provide portability. We do this by making bench part of the development workflow- running tests locally during development, in CI as part of the SDLC, and finally in release pipelines as part of release.
+1. [Configuring CI](github_actions.md)
+1. [Implementing a pipeline in Jsonnet](libsonnet.md)
+1. Configuring slack notifications with Codeowners - **coming soon**
+
+#### Deep Dive
+
+1. [Principles of Bench](principles.md)
+1. [Log Format](princples.md#log_format)
+1. [Product DNA](https://docs.google.com/document/d/1rs1RN8UHKAowcQX-cqJ5ilhOnykAMUSoqakWICOGtcY/edit?tab=t.0#heading=h.soj854l81770)
+
+## Installing Bench
+Bench can be run as a native command or in a docker container. We recommend docker for portability, however, using the binary may be beneficial when developing tests locally.
+
+### Docker
+We currently publish the docker image to both GAR and github packages. Some users have reported issues pulling the container from github. So we currently recommend using GAR. If you run into issues with either of these, please reach out to us in #grafana-bench.
+
+#### Google Artifact Registry (GAR)
+Fetch the container from Google Artifact registry.
+
+    docker pull us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.3.0`
+
+#### Github
+
+1. Generate a set a github personal access token. Then run the command
     `gh auth token | docker login ghcr.io -u {YOUR_USERNAME} --password-stdin`
 
-1. Install Bench
-    For this tutorial, we want to get your running bench for local development quickly,
-    however, in CI or for plugin-e2e tests we recommend using the Bench image as
-    all dependencies for browser tests are provided for you.
+2. Pull the github container
+    `docker pull ghcr.io/grafana/grafana-bench:v0.3.0`
 
-    `go install github.com/grafana/grafana-bench@v0.2.3`
+3. Verify installation
+`docker run --rm us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.3.0 --help`
+    
+### Binary / Go Package
+We do not currently ship a binary, but you can install directly from the go project.
 
-    Bench is published to GAR and github container registry. It is recommended
-    to use GAR as the GHCR image may be removed in the future.
+1. Make sure you have a [Go environment configured](https://go.dev/doc/install)
+2. Configure [github to authenticate with SSH keys](https://docs.github.com/en/authentication/connecting-to-github-with-ssh). 
+3. Configure github to use ssh instead of https
 
-   ### figure out auth for GAR
+   Add this block to ~/.gitconfig or wherever your configuration is located.
 
-    `docker pull us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.2.3`
+```ini
+[url "git@github.com:"]
+	insteadOf = https://github.com/
+```
 
-    Images are tagged with the release version. To encourage versioning for use
-    in ci pipelines, we don't produce a `latest` tag.
+3. Set GOPRIVATE to ensure we go straight to github instead of go module proxy.
 
-    Alternatively
+    We recommend adding this to your ~/.profile or wherever your terminal config lives.
 
-    `docker pull ghcr.io/grafana/grafana-bench:v0.2.3`
+    `export GOPRIVATE=github.com/grafana/grafana-bench`
 
-1. See the help docs
 
-    `grafana-bench help`
+4. Install Bench
 
-1. See the docs for `test` command
+    Get the latest release version from github.com/grafana/grafana-bench
 
-    `grafana-bench test --help`
+    `go install github.com/grafana/grafana-bench@v<VERSION>`. 
 
-1. Start a grafana instance to test against
+5. Verify installation
 
-    `docker run -d --name=grafana -p 3000:3000 grafana/grafana`
+   `grafana-bench --help`
 
-1. Create a K6 test
-    We're going to make a basic request to the Grafana instance and make sure
-    it's running. K6 has support for typescript, so create a file called `check_grafana_instance.ts`
-    with the following:
+### Next steps
 
-    ```typescript
-
-import { check } from 'k6';
-import { http } from 'k6/http'
-
-export const options = {
-    scenarios: {
-        api: {
-          executor: 'shared-iterations',
-        },
-    },
-};
-
-export default function () {
-    const res = http.request('GET', '<http://localhost:3000>');
-    check(res, { 'status ok': res.status === 200 });
-}
-    ```
-
-1. Run the tests
-
-    ``` shell
-    grafana-bench test --test-suite check_grafana_instance.ts
-    ```
-
-    You should see output which looks like
-
-    ```shell
-
-CI/api_test.ts ... passed
-
-Tests executed 1
-Tests passed 1
-Tests failed 0
-Tests error 0
-
-Tests suite passed
-    ```
-
-## Next [Write some K6 API tests](writing_k6_api_tests.md)
+Write an [API test with K6](writing_k6_api_tests.md) or a [Browser test with Playwright and plugin-e2e](writing_pw_tests.md)
