@@ -43,7 +43,7 @@ We currently publish the docker image to both GAR and github packages. Some user
 #### Google Artifact Registry (GAR)
 Fetch the container from Google Artifact registry.
 
-    docker pull us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.2.4`
+    docker pull us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.3.0`
 
 #### Github
 
