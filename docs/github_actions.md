@@ -1,5 +1,4 @@
 # Running bench in Github Action CI
-One of the key goals of Bench is to provide portability. We do this by making bench part of the development workflow- running tests locally during development, in CI as part of the SDLC, and finally in [release pipelines](libsonnet.md) as part of release.
 
 ## CI Example
 This is an abreviated version of the [CI used for Bench](../.github/workflows/ci.yaml).
