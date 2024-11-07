@@ -15,13 +15,15 @@ import (
 type NotificationOption func(r *notificationReporter)
 
 // NotifyAll notifies all codeowners of the test results, not just owners of failed tests.
-func NotifyAll(r *notificationReporter) {
-	r.notifyAll = true
+func NotifyPassing(notifyPassing bool) NotificationOption {
+	return func(r *notificationReporter) {
+		r.notifyPassing = notifyPassing
+	}
 }
 
 type notificationReporter struct {
-	notifier  notifier.Notifier
-	notifyAll bool
+	notifier      notifier.Notifier
+	notifyPassing bool
 }
 
 // NewNotificationReporter returns a Reporter that notifies codeowners of test results using a Notifier
@@ -49,7 +51,7 @@ func (r *notificationReporter) Report(
 	// collects the test runs to be notified to each code owner
 	recipients := map[string][]executor.TestRun{}
 
-	c, err := codeowners.FromFileWithFS(os.DirFS(suite.BaseDir), suite.Path) 
+	c, err := codeowners.FromFileWithFS(os.DirFS(suite.BaseDir), suite.Path)
 
 	if errors.Is(err, codeowners.ErrNoCodeownersFound) {
 		return nil
@@ -62,7 +64,7 @@ func (r *notificationReporter) Report(
 	for _, testRun := range suiteRun.TestRuns {
 		owners := c.Owners(filepath.Join(testRun.TestFolder, testRun.TestFile))
 		for _, o := range owners {
-			if r.notifyAll || testRun.Status != executor.TestPassed {
+			if r.notifyPassing || testRun.Status != executor.TestPassed {
 				recipients[o] = append(recipients[o], testRun)
 			}
 		}

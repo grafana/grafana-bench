@@ -35,6 +35,7 @@ type BenchConfig struct {
 	ReportFormat       string
 	Verbose            bool
 	SlackNotifications bool
+	NotifyPassing      bool
 	DashboardURL       string
 	Grafana            GrafanaConfig
 	K6                 K6Config
@@ -162,7 +163,7 @@ func (config BenchConfig) BuildTestRunner(log *slog.Logger, testExecutor string)
 		if config.Slack.Token == "" {
 			return nil, fmt.Errorf("no slack token provided")
 		}
-		
+
 		codeownersMap := config.Slack.CodeownersMap
 		if !filepath.IsAbs(codeownersMap) {
 			codeownersMap = filepath.Join(config.BaseDir, codeownersMap)
@@ -177,7 +178,7 @@ func (config BenchConfig) BuildTestRunner(log *slog.Logger, testExecutor string)
 			return nil, fmt.Errorf("creating slack notifier: %w", err)
 		}
 
-		reporters = append(reporters, reporter.NewNotificationReporter(notifier, reporter.NotifyAll))
+		reporters = append(reporters, reporter.NewNotificationReporter(notifier, reporter.NotifyPassing(config.NotifyPassing)))
 	}
 
 	return runner.NewTestRunner(
@@ -230,7 +231,7 @@ func (config *TestSuiteConfig) BuildTestSuite(log *slog.Logger, baseDir string) 
 		name := strings.TrimSuffix(path.Base(config.Path), path.Ext(config.Path))
 		if config.Repo != "" {
 			repoURL, _ := url.Parse(config.Repo)
-			name,_ = strings.CutPrefix(filepath.Join(repoURL.Path, name), "/")
+			name, _ = strings.CutPrefix(filepath.Join(repoURL.Path, name), "/")
 		}
 		config.Name = name
 	}

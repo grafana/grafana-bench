@@ -266,6 +266,12 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			"\nFor example --test-suite /path/to/testsuite will give a test suite name of 'testsuite'.",
 	)
 	fs.BoolVar(
+		&config.NotifyPassing,
+		"notify-passing",
+		false,
+		"send notifications for passing test suites. By default only not passing test suites are notified",
+	)
+	fs.BoolVar(
 		&config.SlackNotifications,
 		"slack-notifications",
 		false,
@@ -280,8 +286,8 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	)
 	fs.StringVar(
 		&config.Slack.CodeownersMap,
-		"codeowners-channel-map",
-		"slack_teams_mapping.yaml",
+		"codeowners-mapping",
+		"codeowners-mapping.yaml",
 		"path or url to the codeowner to slack channel id mapping." +
 		"\nRelative to test suite base dir.",
 	)
