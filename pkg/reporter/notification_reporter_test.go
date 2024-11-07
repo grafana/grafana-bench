@@ -60,7 +60,7 @@ func TestNotificationReporter(t *testing.T) {
 		},
 		{
 			title:   "notify all tests to global code owner",
-			options: []NotificationOption{NotifyAll},
+			options: []NotificationOption{NotifyPassing(true)},
 			suiteRun: executor.SuiteRunSummary{
 				TestRuns: []executor.TestRun{
 					{TestFolder: "test-suite", TestFile: "pass.js", Status: executor.TestPassed},
@@ -84,7 +84,7 @@ func TestNotificationReporter(t *testing.T) {
 		},
 		{
 			title:   "notify only failed tests with code owner",
-			options: []NotificationOption{NotifyAll},
+			options: []NotificationOption{NotifyPassing(true)},
 			suiteRun: executor.SuiteRunSummary{
 				TestRuns: []executor.TestRun{
 					{TestFolder: "test-suite/folder", TestFile: "failed.js", Status: executor.TestFailed},

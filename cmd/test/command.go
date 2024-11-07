@@ -92,8 +92,10 @@ test runner.
 Slack Notifications
 -------------------
 If the --slack-notifications flag is set, test suite failures will be notified using slack.
-Notification will be send to the codeowners of the test. The --codeowners-channel-map argument is used
-to find the mapping between codeowners and slack channels.
+Use the --notify-passing option to send notifications also for passing test suites. 
+
+Notification will be send to the codeowners of the test. The --codeowners-mapping argument
+is used to find the mapping between codeowners and slack channels.
 
 The --slack-token argument provides the slack token. If not provided, the SLACK_TOKEN 
 environment variable wil be used. This token requires channel.read, groups.read and chat.write scopes.
@@ -115,7 +117,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			suiteConfig.MergeEnv()
 
-			suite, err := suiteConfig.BuildTestSuite(log)
+			suite, err := suiteConfig.BuildTestSuite(log, config.BaseDir)
 			if err != nil {
 				return err
 			}
@@ -251,7 +253,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		"\nA single .js file or a directory can be specified."+
 		"\nIf a directory is specified, all .js files in the directory and its sub-directories will be executed.")
 	fs.StringVar(
-		&suiteConfig.BaseDir,
+		&config.BaseDir,
 		"test-suite-base",
 		"",
 		"base directory for searching test suites. Defaults to current directory"+
@@ -264,6 +266,12 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		"test suite name. If not specified, TEST_SUITE_NAME environment variable is used."+
 			"\nDefaults to the last component of --test-suite."+
 			"\nFor example --test-suite /path/to/testsuite will give a test suite name of 'testsuite'.",
+	)
+	fs.BoolVar(
+		&config.NotifyPassing,
+		"notify-passing",
+		false,
+		"send notifications for passing test suites. By default only not passing test suites are notified",
 	)
 	fs.BoolVar(
 		&config.SlackNotifications,
@@ -280,9 +288,10 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	)
 	fs.StringVar(
 		&config.Slack.CodeownersMap,
-		"codeowners-channel-map",
-		"slack_teams_mapping.yaml",
-		"path or url to the codeowner to slack channel id mapping",
+		"codeowners-mapping",
+		"codeowners-mapping.yaml",
+		"path or url to the codeowner to slack channel id mapping." +
+		"\nRelative to test suite base dir.",
 	)
 
 	return &cmd
