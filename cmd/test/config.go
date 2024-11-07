@@ -24,6 +24,9 @@ import (
 )
 
 type BenchConfig struct {
+	// FIXME: moved there because is needed by the slack notifications
+	// for the codeowners mapping.
+	BaseDir            string
 	BenchRevision      string
 	Type               string
 	Trigger            string
@@ -64,7 +67,6 @@ type TestSuiteConfig struct {
 	RepoToken    string
 	RepoDirs     []string
 	Path         string
-	BaseDir      string
 	Revision     string
 	TestExecutor string
 }
@@ -77,6 +79,12 @@ type SlackNotifierConfig struct {
 // MergeEnv updates the config by overriding some fields with environment variables.
 // Any environment variables that are not set will not override the config fields.
 func (c *BenchConfig) MergeEnv() {
+	// FIXME: doing here because we don't have any other place to do it
+	// needed after BaseDir was moved to BenchConfig
+	if c.BaseDir == "" {
+		c.BaseDir, _ = os.Getwd()
+	}
+
 	if c.BenchRevision == "" {
 		c.BenchRevision = env.EnvOrDefault("BENCH_REVISION", revision.BenchRevision())
 	}
@@ -154,10 +162,14 @@ func (config BenchConfig) BuildTestRunner(log *slog.Logger, testExecutor string)
 		if config.Slack.Token == "" {
 			return nil, fmt.Errorf("no slack token provided")
 		}
-
+		
+		codeownersMap := config.Slack.CodeownersMap
+		if !filepath.IsAbs(codeownersMap) {
+			codeownersMap = filepath.Join(config.BaseDir, codeownersMap)
+		}
 		notifier, err := notifier.NewSlackNotifier(notifier.SlackNotifierOptions{
 			Token:        config.Slack.Token,
-			MappingFile:  config.Slack.CodeownersMap,
+			MappingFile:  codeownersMap,
 			DashboardURL: config.DashboardURL,
 		})
 
@@ -188,23 +200,14 @@ func (c *TestSuiteConfig) MergeEnv() {
 	c.RepoToken = env.EnvOrDefault("TEST_SUITE_REPO_TOKEN", c.RepoToken)
 }
 
-func (config *TestSuiteConfig) BuildTestSuite(log *slog.Logger) (*executor.TestSuite, error) {
-	var err error
-
-	if config.BaseDir == "" {
-		config.BaseDir, err = os.Getwd()
-		if err != nil {
-			return nil, fmt.Errorf("getting work directory %w", err)
-		}
-	}
-
+func (config *TestSuiteConfig) BuildTestSuite(log *slog.Logger, baseDir string) (*executor.TestSuite, error) {
 	testSuiteRevision := config.Revision
 	if config.Repo != "" {
 		log.Info("checking out test suite", "repository", config.Repo)
 
 		compiler := compile.NewTestCompiler(
 			log,
-			config.BaseDir,
+			baseDir,
 			config.Repo,
 			config.RepoDirs,
 			config.RepoToken,
@@ -234,7 +237,7 @@ func (config *TestSuiteConfig) BuildTestSuite(log *slog.Logger) (*executor.TestS
 
 	return &executor.TestSuite{
 		Name:     config.Name,
-		BaseDir:  config.BaseDir,
+		BaseDir:  baseDir,
 		Path:     config.Path,
 		Revision: testSuiteRevision,
 	}, nil

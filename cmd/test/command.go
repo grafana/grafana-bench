@@ -115,7 +115,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			suiteConfig.MergeEnv()
 
-			suite, err := suiteConfig.BuildTestSuite(log)
+			suite, err := suiteConfig.BuildTestSuite(log, config.BaseDir)
 			if err != nil {
 				return err
 			}
@@ -251,7 +251,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		"\nA single .js file or a directory can be specified."+
 		"\nIf a directory is specified, all .js files in the directory and its sub-directories will be executed.")
 	fs.StringVar(
-		&suiteConfig.BaseDir,
+		&config.BaseDir,
 		"test-suite-base",
 		"",
 		"base directory for searching test suites. Defaults to current directory"+
@@ -282,7 +282,8 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		&config.Slack.CodeownersMap,
 		"codeowners-channel-map",
 		"slack_teams_mapping.yaml",
-		"path or url to the codeowner to slack channel id mapping",
+		"path or url to the codeowner to slack channel id mapping." +
+		"\nRelative to test suite base dir.",
 	)
 
 	return &cmd
