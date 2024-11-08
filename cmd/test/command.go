@@ -1,8 +1,10 @@
 package test
 
 import (
+	"fmt"
 	"log/slog"
 	"os"
+	"strings"
 
 	"github.com/grafana/grafana-bench/pkg/grafana"
 	"github.com/grafana/grafana-bench/pkg/runner"
@@ -115,6 +117,9 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		Long:    longDescription,
 		Example: examples,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) > 0 {
+				return fmt.Errorf("invalid argument(s): '%s'", strings.Join(args, "', '"))
+			}
 			suiteConfig.MergeEnv()
 
 			suite, err := suiteConfig.BuildTestSuite(log, config.BaseDir)
