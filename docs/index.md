@@ -6,7 +6,7 @@ It works by:
 2. Massaging the test output into a standardized log format
 3. Shipping the logs to a Loki instance
 4. Dashboarding the results
-4. Optionally sending slack alerts based on CodeOwners file on the test suite
+5. Optionally sending slack alerts based on CodeOwners file on the test suite
 
 ## **Bench is under active development.**
 
@@ -20,21 +20,22 @@ You can see our roadmap on [Github](https://github.com/orgs/grafana/projects/554
 
 ### Quickstart
 1. [Installing Bench](index.md#installing-bench)
-1. [API tests with K6](writing_k6_api_tests.md)
-1. [Broswer tests with plugin-e2e framework and Playwright](writing_pw_tests.md)
+2. [API tests with K6](writing_k6_api_tests.md)
+3. [Broswer tests with plugin-e2e framework and Playwright](writing_pw_tests.md)
 
 ### Use cases
 
 One of the key goals of Bench is to provide portability. We do this by making bench part of the development workflow- running tests locally during development, in CI as part of the SDLC, and finally in release pipelines as part of release.
+
 1. [Configuring CI](github_actions.md)
-1. [Implementing a pipeline in Jsonnet](libsonnet.md)
-1. Configuring slack notifications with Codeowners - **coming soon**
+2. [Implementing a pipeline in Jsonnet](libsonnet.md)
+3. Configuring slack notifications with Codeowners - **coming soon**
 
 #### Deep Dive
 
 1. [Principles of Bench](principles.md)
-1. [Log Format](princples.md#log_format)
-1. [Product DNA](https://docs.google.com/document/d/1rs1RN8UHKAowcQX-cqJ5ilhOnykAMUSoqakWICOGtcY/edit?tab=t.0#heading=h.soj854l81770)
+2. [Log Format](princples.md#log_format)
+3. [Product DNA](https://docs.google.com/document/d/1rs1RN8UHKAowcQX-cqJ5ilhOnykAMUSoqakWICOGtcY/edit?tab=t.0#heading=h.soj854l81770)
 
 ## Installing Bench
 Bench can be run as a native command or in a docker container. We recommend docker for portability, however, using the binary may be beneficial when developing tests locally.
@@ -45,7 +46,7 @@ We currently publish the docker image to both GAR and github packages. Some user
 #### Google Artifact Registry (GAR)
 Fetch the container from Google Artifact registry.
 
-    docker pull us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.3.0`
+    docker pull us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.3.0
 
 #### Github
 
@@ -72,20 +73,20 @@ We do not currently ship a binary, but you can install directly from the go proj
 	insteadOf = https://github.com/
 ```
 
-3. Set GOPRIVATE to ensure we go straight to github instead of go module proxy.
+4. Set GOPRIVATE to ensure we go straight to github instead of go module proxy.
 
     We recommend adding this to your ~/.profile or wherever your terminal config lives.
 
     `export GOPRIVATE=github.com/grafana/grafana-bench`
 
 
-4. Install Bench
+5. Install Bench
 
     Get the latest release version from github.com/grafana/grafana-bench
 
     `go install github.com/grafana/grafana-bench@v<VERSION>`. 
 
-5. Verify installation
+6. Verify installation
 
    `grafana-bench --help`
 
