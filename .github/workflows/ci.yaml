@@ -90,7 +90,7 @@ jobs:
             --pw-execute-cmd "yarn run test" \
             --log-level DEBUG
       - name: archive screenshots
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: screenshots
           path: screenshots
