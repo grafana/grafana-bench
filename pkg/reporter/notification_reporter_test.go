@@ -83,8 +83,7 @@ func TestNotificationReporter(t *testing.T) {
 			expected:   map[string][]string{},
 		},
 		{
-			title:   "notify only failed tests with code owner",
-			options: []NotificationOption{NotifyPassing(true)},
+			title: "notify only failed tests with code owner",
 			suiteRun: executor.SuiteRunSummary{
 				TestRuns: []executor.TestRun{
 					{TestFolder: "test-suite/folder", TestFile: "failed.js", Status: executor.TestFailed},
@@ -100,7 +99,6 @@ func TestNotificationReporter(t *testing.T) {
 			title: "no codeowners file",
 			suiteRun: executor.SuiteRunSummary{
 				TestRuns: []executor.TestRun{
-					{TestFolder: "test-suite", TestFile: "pass.js", Status: executor.TestPassed},
 					{TestFolder: "test-suite", TestFile: "failed.js", Status: executor.TestFailed},
 				},
 			},
@@ -117,8 +115,7 @@ func TestNotificationReporter(t *testing.T) {
 			if err := os.MkdirAll(filepath.Join(testSuiteBaseDir, testSuiteDir), 0o755); err != nil {
 				t.Fatal(err)
 			}
-
-			// write codeowners if not empty
+		
 			if tc.codeowners != "" {
 				if err := os.WriteFile(filepath.Join(testSuiteBaseDir, "CODEOWNERS"), []byte(tc.codeowners), 0o644); err != nil {
 					t.Fatal(err)

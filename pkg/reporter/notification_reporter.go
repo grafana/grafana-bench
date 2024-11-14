@@ -51,7 +51,17 @@ func (r *notificationReporter) Report(
 	// collects the test runs to be notified to each code owner
 	recipients := map[string][]executor.TestRun{}
 
-	c, err := codeowners.FromFileWithFS(os.DirFS(suite.BaseDir), suite.Path)
+	// get path to the suite's directory
+	suitePath := suite.Path
+	info, err := os.Stat(filepath.Join(suite.BaseDir, suitePath))
+	if err != nil {
+		return fmt.Errorf("stat suite path %q %w", suitePath, err)
+	}
+	if !info.IsDir() {
+		suitePath = filepath.Dir(suitePath)
+	}
+
+	c, err := codeowners.FromFileWithFS(os.DirFS(suite.BaseDir), suitePath)
 
 	if errors.Is(err, codeowners.ErrNoCodeownersFound) {
 		return nil
