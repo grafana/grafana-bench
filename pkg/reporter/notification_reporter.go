@@ -70,11 +70,16 @@ func (r *notificationReporter) Report(
 		}
 	}
 
+	errs := []error{}
 	for recipient, testRuns := range recipients {
 		err := r.notifier.Notify(ctx, recipient, suiteRunId, testRuns)
 		if err != nil {
-			return fmt.Errorf("sending notification to %q %w", recipient, err)
+			errs = append(errs, fmt.Errorf("recipient %q %w", recipient, err))
 		}
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("sending notifications %w", errors.Join(errs...))
 	}
 
 	return nil
