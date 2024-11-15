@@ -9,15 +9,18 @@ import (
 	"testing"
 
 	"github.com/grafana/grafana-bench/pkg/executor"
+	"github.com/grafana/grafana-bench/pkg/notifier"
 )
 
 // fakeNotifier collects the list of tests to be notified to each recipient
 type fakeNotifier struct {
+	err           error
 	notifications map[string][]string
 }
 
-func newFakeNotifier() *fakeNotifier {
+func newFakeNotifier(err error) *fakeNotifier {
 	return &fakeNotifier{
+		err:           err,
 		notifications: map[string][]string{},
 	}
 }
@@ -28,6 +31,10 @@ func (f *fakeNotifier) Notify(
 	suiteRunId string,
 	testRuns []executor.TestRun,
 ) error {
+	if f.err != nil {
+		return f.err
+	}
+
 	for _, testRun := range testRuns {
 		f.notifications[recipient] = append(f.notifications[recipient], testRun.TestFile)
 	}
@@ -38,12 +45,13 @@ func TestNotificationReporter(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		title       string
-		options     []NotificationOption
-		suiteRun    executor.SuiteRunSummary
-		codeowners  string
-		expected    map[string][]string
-		expectedErr error
+		title           string 
+		options         []NotificationOption
+		notificationErr error
+		suiteRun        executor.SuiteRunSummary
+		codeowners      string
+		expected        map[string][]string
+		expectedErr     error
 	}{
 		{
 			title: "notify failed test to global code owner",
@@ -106,6 +114,30 @@ func TestNotificationReporter(t *testing.T) {
 			expectedErr: nil,
 			expected:    map[string][]string{},
 		},
+		{
+			title:           "error sending notification",
+			notificationErr: errors.New("fake notification error"),
+			suiteRun: executor.SuiteRunSummary{
+				TestRuns: []executor.TestRun{
+					{TestFolder: "test-suite", TestFile: "failed.js", Status: executor.TestFailed},
+				},
+			},
+			codeowners:  "* @grafana-bench",
+			expectedErr: ErrSendingNotification,
+			expected:    map[string][]string{},
+		},
+		{
+			title:           "Ignore No mapping for recipient error",
+			notificationErr: notifier.ErrNoMappingForCodeowner,
+			suiteRun: executor.SuiteRunSummary{
+				TestRuns: []executor.TestRun{
+					{TestFolder: "test-suite", TestFile: "failed.js", Status: executor.TestFailed},
+				},
+			},
+			codeowners:  "* @grafana-bench",
+			expectedErr: nil,
+			expected:    map[string][]string{},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -115,7 +147,7 @@ func TestNotificationReporter(t *testing.T) {
 			if err := os.MkdirAll(filepath.Join(testSuiteBaseDir, testSuiteDir), 0o755); err != nil {
 				t.Fatal(err)
 			}
-		
+
 			if tc.codeowners != "" {
 				if err := os.WriteFile(filepath.Join(testSuiteBaseDir, "CODEOWNERS"), []byte(tc.codeowners), 0o644); err != nil {
 					t.Fatal(err)
@@ -142,7 +174,7 @@ func TestNotificationReporter(t *testing.T) {
 				}
 			}
 
-			notifier := newFakeNotifier()
+			notifier := newFakeNotifier(tc.notificationErr)
 			reporter := NewNotificationReporter(notifier, tc.options...)
 
 			err := reporter.Report(

@@ -12,6 +12,9 @@ import (
 	"github.com/hairyhenderson/go-codeowners"
 )
 
+var (
+	ErrSendingNotification = errors.New("sending notification")
+)
 type NotificationOption func(r *notificationReporter)
 
 // NotifyAll notifies all codeowners of the test results, not just owners of failed tests.
@@ -83,13 +86,14 @@ func (r *notificationReporter) Report(
 	errs := []error{}
 	for recipient, testRuns := range recipients {
 		err := r.notifier.Notify(ctx, recipient, suiteRunId, testRuns)
-		if err != nil {
+		// it's ok not to have a notifications mapping for a codeowner
+		if err != nil && !errors.Is(err, notifier.ErrNoMappingForCodeowner) {
 			errs = append(errs, fmt.Errorf("recipient %q %w", recipient, err))
 		}
 	}
 
 	if len(errs) > 0 {
-		return fmt.Errorf("sending notifications %w", errors.Join(errs...))
+		return fmt.Errorf("%w %w", ErrSendingNotification, errors.Join(errs...))
 	}
 
 	return nil
