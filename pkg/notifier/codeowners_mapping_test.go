@@ -13,9 +13,9 @@ import (
 const validYamlMapping = `
 mapping:
   - slack_channel: slack-channel
-    github_team: github-team
+    github_team: "@github-team"
   - slack_channel: null
-    github_team: another-team
+    github_team: "@another-team"
 `
 
 func checkExpected(t *testing.T, mapping CodeownersMapping, expected map[string]string) {
@@ -44,8 +44,8 @@ func TestYamMappingFromReader(t *testing.T) {
 			title:  "valid yaml",
 			source: validYamlMapping,
 			expected: map[string]string{
-				"github-team":  "slack-channel",
-				"another-team": "",
+				"@github-team":  "slack-channel",
+				"@another-team": "",
 			},
 		},
 	}
@@ -108,8 +108,8 @@ func TestMappingFromFile(t *testing.T) {
 
 			// expected mapping between github team and slack channel
 			expected := map[string]string{
-				"github-team":  "slack-channel",
-				"another-team": "",
+				"@github-team":  "slack-channel",
+				"@another-team": "",
 			}
 
 			checkExpected(t, mapping, expected)
@@ -158,8 +158,8 @@ func TestYamlDirectoryFromURL(t *testing.T) {
 
 			// expected mapping between github team and slack channel
 			expected := map[string]string{
-				"github-team":  "slack-channel",
-				"another-team": "",
+				"@github-team":  "slack-channel",
+				"@another-team": "",
 			}
 
 			checkExpected(t, mapping, expected)
