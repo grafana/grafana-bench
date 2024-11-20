@@ -157,7 +157,7 @@ jobs:
           image_name: grafana-bench
           platforms: linux/amd64,linux/arm64
           build-args: |-
-            BENCH_REVISION=${{ github.GITHUB_REF_NAME }}
+            BENCH_REVISION=${{ github.ref_name }}
           tags: |-
             ${{ github.ref_name }}
             ${{ github.sha }}
