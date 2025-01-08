@@ -107,7 +107,7 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 	}
 
 	//parse output or report any problem
-	return parseJsonOutput(jsonOutput)
+	return ParseJsonOutput(jsonOutput)
 }
 
 func (t *PlaywrightTestExecutor) executeCommand(execDir string, env map[string]string, cmd string) error {

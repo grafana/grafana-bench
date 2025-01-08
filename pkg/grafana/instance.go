@@ -86,6 +86,10 @@ func WithBackoff(backoff time.Duration) InstanceOption {
 	}
 }
 
+func Slug(host string) string {
+	return slugEx.ReplaceAllString(host, "")
+}
+
 // NewGrafanaInstance creates a reference to access a grafana instance
 // Takes a fully qualified address such as https://jefflevinslunch.grafana.net
 // and a user credentials
@@ -124,9 +128,8 @@ func (g *grafanaInstance) Hostname() string {
 
 // Slug returns the grafana instance slug
 func (g *grafanaInstance) Slug() string {
-	return slugEx.ReplaceAllString(g.url.Hostname(), "")
+	return Slug(g.url.Hostname())
 }
-
 
 // AdminUser returns the instance's admin user
 func (g *grafanaInstance) AdminUser() string {

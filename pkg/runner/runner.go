@@ -12,6 +12,7 @@ import (
 	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/grafana"
 	"github.com/grafana/grafana-bench/pkg/reporter"
+	"github.com/grafana/grafana-bench/pkg/utils/id"
 )
 
 type TestRunner struct {
@@ -106,15 +107,7 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 // format: {test type}-{year}{day of year}-{hour}{min}{second}
 // Example load-2024123-140035
 func (t *TestRunner) getRunId(testType TestType) string {
-	now := time.Now().UTC()
-	return fmt.Sprintf("%s-%d%d-%d%d%d",
-		testType.Name(),
-		now.Year(),
-		now.YearDay(),
-		now.Hour(),
-		now.Minute(),
-		now.Second(),
-	)
+	return id.GenRunId(time.Now().UTC(), testType.Name())
 }
 
 // returns an unique id for the suite run (DEPRECATED)
