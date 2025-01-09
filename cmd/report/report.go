@@ -32,16 +32,18 @@ grafana-bench report --format log /path/to/playwright/report.json
 // NewCmd returns a new bench report command
 func NewCmd(log *slog.Logger) *cobra.Command {
 	var (
-		benchRevision     string
-		grafanaURL        string
-		grafanaVersion    string
-		format            string
-		testType	  string
-		trigger           string
-		runId             string
-		testSuiteName     string
-		testSuiteRevision string
-		suiteRun          string
+		benchRevision        string
+		grafanaURL           string
+		grafanaAdminPassword string
+		grafanaAdminUser     string
+		grafanaVersion       string
+		format               string
+		testType             string
+		trigger              string
+		runId                string
+		testSuiteName        string
+		testSuiteRevision    string
+		suiteRun             string
 	)
 	cmd := cobra.Command{
 		Use:     "report",
@@ -58,9 +60,33 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			}
 
 			grafanaURL = env.EnvOrDefault("GRAFANA_URL", grafanaURL)
+			if grafanaURL == "" {
+				return fmt.Errorf("grafana url is required")
+			}
+			grafanaAdminUser = env.EnvOrDefault("GRAFANA_ADMIN_USER", grafanaAdminUser)
+			grafanaAdminPassword = env.EnvOrDefault("GRAFANA_ADMIN_PASSWORD", grafanaAdminPassword)
 			grafanaVersion = env.EnvOrDefault("GRAFANA_VERSION", grafanaVersion)
-			grafanaSlug := grafana.Slug(grafanaURL)
 
+			// get grafana version if not provided
+			if grafanaVersion == "" {
+				if grafanaAdminUser == "" || grafanaAdminPassword == "" {
+					return fmt.Errorf("grafana admin user and password are needed to get grafana version")
+				}
+				grafanaInstance, err := grafana.NewInstance(
+					grafanaURL,
+					grafanaAdminUser,
+					grafanaAdminPassword,
+				)
+				if err != nil {
+					return fmt.Errorf("failed to create grafana instance: %w", err)
+				}
+				grafanaVersion, err = grafanaInstance.GetGrafanaBuildVersion()
+				if err != nil {
+					return fmt.Errorf("failed to get grafana version: %w", err)
+				}
+			}
+
+			// get playwright json report
 			input, err := os.Open(args[0])
 			if err != nil {
 				return fmt.Errorf("failed to open report file: %s", err)
@@ -69,10 +95,10 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 
 			logAttrs := []any{
 				"testTrigger", trigger,
-				"testExecutor", "playwrigh",
+				"testExecutor", playwright.ExecutorName,
 				"benchRevision", benchRevision,
 				"grafanaUrl", grafanaURL,
-				"grafanaSlug", grafanaSlug,
+				"grafanaSlug", grafana.Slug(grafanaURL),
 				"grafanaVersion", grafanaVersion,
 			}
 
@@ -88,11 +114,11 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 
 			suiteRun, err := playwright.ParseJsonOutput(input)
 			if err != nil {
-				return fmt.Errorf("parsing input %w", err)
+				return fmt.Errorf("parsing playwright json input %w", err)
 			}
 
 			suite := executor.TestSuite{
-				Name: testSuiteName,
+				Name:     testSuiteName,
 				Revision: testSuiteRevision,
 			}
 
@@ -101,6 +127,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				runId = id.GenRunId(time.Now(), testType)
 			}
 
+			// TODO: generate suite run id
 			err = suiteReporter.Report(cmd.Context(), runId, "suiteRunId", suite, suiteRun)
 			if err != nil {
 				return fmt.Errorf("reporting test suite run %w", err)
@@ -111,11 +138,10 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	}
 
 	fs := cmd.Flags()
-
 	fs.StringVar(
 		&format,
 		"format",
-		"text",
+		"log",
 		"format of the test execution report. Allowed values 'log' or 'text'."+
 			"\n 'log' produced a structure log. 'text' produced an human readable output",
 	)
@@ -151,6 +177,18 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		"grafana version. If not provided GRAFANA_VERSION env var is used",
 	)
 	fs.StringVar(
+		&grafanaAdminUser,
+		"grafana-admin-user",
+		"admin",
+		"grafana admin user name. Overridden by the GRAFANA_ADMIN_USER environment variable",
+	)
+	fs.StringVar(
+		&grafanaAdminPassword,
+		"grafana-admin-password",
+		"admin",
+		"grafana admin user's password. Overridden by the GRAFANA_ADMIN_PASSWORD environment variable",
+	)
+	fs.StringVar(
 		&testSuiteName,
 		"test-suite-name",
 		"",
@@ -161,7 +199,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		"test-suite-run",
 		"",
 		"test suite run id. If not specified, TEST_SUITE_NAME environment variable is used."+
-		"\nIf not set, an id is generated from the execution timestamp",
+			"\nIf not set, an id is generated from the execution timestamp",
 	)
 
 	return &cmd
