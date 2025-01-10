@@ -22,6 +22,18 @@ report subcommand reports test suite execution results.
 Presently if supports only playwright test results in json format.
 
 It produces a human readable output or a structured log output based on the format flag.
+
+When using the log format, in order to report the test suite execution results, the following
+information is needed:
+- test trigger
+- test type
+- test suite name
+- test suite revision
+- grafana url
+- grafana version
+
+If the grafana version is not provided, the reporter will connect to the grafana instance
+using the admin user and password provided and get the version.
 `
 	examples = `
 grafana-bench report --format log /path/to/playwright/report.json
