@@ -6,7 +6,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/executor/playwright"
 	"github.com/grafana/grafana-bench/pkg/grafana"
 	"github.com/grafana/grafana-bench/pkg/reporter"
@@ -117,25 +116,20 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				return fmt.Errorf("parsing playwright json input %w", err)
 			}
 
-			// FIXME: we cannot reliably know the test suite base directory and path so
-			// this TestSuite struct is incomplete.
-			// The TestSuite struct is used by the reporters to get only the test suite name and revision
-			// except for the notifications reporter, that use the base directory and path to get the codeowners
-			// The Report method should be modified to accept the suite name and revision as arguments instead of the TestSuite struct
-			// The Notifications reporter should be modified to accept the base directory in its constructor arguments
-			// But this would limit the location of the CODEOWNERS file to the test suite base directory
-			suite := executor.TestSuite{
-				Name:     testSuiteName,
-				Revision: testSuiteRevision,
-			}
-
 			runId = env.EnvOrDefault("RUN_ID", runId)
 			if runId == "" {
 				runId = id.GenRunId(time.Now(), testType)
 			}
 
 			// TODO: generate suite run id
-			err = suiteReporter.Report(cmd.Context(), runId, "suiteRunId", suite, suiteRun)
+			err = suiteReporter.Report(
+				cmd.Context(),
+				testSuiteName,
+				testSuiteRevision,
+				runId,
+				"suiteRunId",
+				suiteRun,
+			)
 			if err != nil {
 				return fmt.Errorf("reporting test suite run %w", err)
 			}

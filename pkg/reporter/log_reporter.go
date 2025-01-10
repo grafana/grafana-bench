@@ -26,16 +26,17 @@ func NewLogReporter(attr []any) *LogReporter {
  
 func (r *LogReporter) Report(
 	_ context.Context,
+	suiteName string,
+	suiteRevision string,
 	runId string,
 	suiteRunId string,
-	suite executor.TestSuite,
 	suiteRun executor.SuiteRunSummary,
 ) error {
 	log := r.Log.With("runId", runId, "suiteRun", suiteRunId)
 
 	for order, testRun := range suiteRun.TestRuns {
 		testRunId := fmt.Sprintf("%s-%d", runId, order)
-		log.With(suiteLogAttrs(suite)...).
+		log.With(suiteLogAttrs(suiteName, suiteRevision)...).
 			// TODO: deprecate order attribute
 			With("order", strconv.Itoa(order)).
 			With(testRunLogAttrs(testRun)...).
@@ -44,7 +45,7 @@ func (r *LogReporter) Report(
 
 	var anyFailures = (suiteRun.TestsFailed + suiteRun.TestsError) > 0
 
-	log.With(suiteLogAttrs(suite)...).
+	log.With(suiteLogAttrs(suiteName, suiteRevision)...).
 		With(suiteRunLogAttrs(suiteRun)...).
 		Info("suiteRun", "anyFailures", anyFailures)
 
@@ -52,10 +53,10 @@ func (r *LogReporter) Report(
 }
 
 // suiteLogAttrs formats suite's attributes as log attributes
-func suiteLogAttrs(suite executor.TestSuite) []any {
+func suiteLogAttrs(suiteName string, suiteRevision string) []any {
 	return []any{
-		"suiteName", suite.Name,
-		"suiteRevision", suite.Revision,
+		"suiteName", suiteName,
+		"suiteRevision", suiteRevision,
 	}
 }
 

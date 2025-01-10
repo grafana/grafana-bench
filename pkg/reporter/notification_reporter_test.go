@@ -182,9 +182,10 @@ func TestNotificationReporter(t *testing.T) {
 
 			err = reporter.Report(
 				context.Background(),
+				testSuite.Name,
+				testSuite.Revision,
 				"123", // run id
 				"456", // test suite run id
-				testSuite,
 				tc.suiteRun,
 			)
 

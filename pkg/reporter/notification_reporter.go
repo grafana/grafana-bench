@@ -67,9 +67,10 @@ func NewNotificationReporter(
 
 func (r *notificationReporter) Report(
 	ctx context.Context,
+	suiteName string,
+	suiteRevision string,
 	runId string,
 	suiteRunId string,
-	suite executor.TestSuite,
 	suiteRun executor.SuiteRunSummary,
 ) error {
 	// skip if codeowners wasn't found

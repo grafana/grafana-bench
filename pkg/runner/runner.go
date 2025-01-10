@@ -77,7 +77,7 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 	}
 
 	// TODO: handle error from reporter
-	err = t.Reporter.Report(ctx, runId, suiteRunId, suite, suiteRun)
+	err = t.Reporter.Report(ctx, suite.Name, suite.Revision, runId, suiteRunId, suiteRun)
 	if err != nil {
 		t.Log.Error("reporting test suite run", "error", err)
 	}
