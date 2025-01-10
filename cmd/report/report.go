@@ -139,7 +139,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				testSuiteName,
 				testSuiteRevision,
 				runId,
-				"suiteRunId",
+				getSuiteRunId(testSuiteName, testSuiteRevision, grafanaVersion, runId),
 				suiteRun,
 			)
 			if err != nil {
@@ -216,4 +216,17 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	)
 
 	return &cmd
+}
+
+// FIXME: this is duplicated from pkg/runner/runner.go
+// returns an unique id for the suite run (DEPRECATED)
+// format: {suite name}-{suite-revision}-graf-{grafana version}-{run-id}
+// Example api-tests-ee654f-graf-10.3-load-2024123-140035
+func getSuiteRunId(suiteName, suiteRevision, grafanaVersion, runId string) string {
+	return fmt.Sprintf("%s-%s-graf-%s-%s",
+		suiteName,
+		suiteRevision,
+		grafanaVersion,
+		runId,
+	)
 }
