@@ -74,6 +74,12 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			if grafanaURL == "" {
 				return fmt.Errorf("grafana url is required")
 			}
+
+			grafanaSlug, err := grafana.Slug(grafanaURL)
+			if err != nil {
+				return fmt.Errorf("failed to get grafana slug: %w", err)
+			}
+
 			grafanaAdminUser = env.EnvOrDefault("GRAFANA_ADMIN_USER", grafanaAdminUser)
 			grafanaAdminPassword = env.EnvOrDefault("GRAFANA_ADMIN_PASSWORD", grafanaAdminPassword)
 			grafanaVersion = env.EnvOrDefault("GRAFANA_VERSION", grafanaVersion)
@@ -109,7 +115,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				"testExecutor", playwright.ExecutorName,
 				"benchRevision", benchRevision,
 				"grafanaUrl", grafanaURL,
-				"grafanaSlug", grafana.Slug(grafanaURL),
+				"grafanaSlug", grafanaSlug,
 				"grafanaVersion", grafanaVersion,
 			}
 
