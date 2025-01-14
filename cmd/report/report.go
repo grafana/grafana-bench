@@ -139,7 +139,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				runId = id.GenRunId(time.Now(), testType)
 			}
 
-			// TODO: generate suite run id
 			err = suiteReporter.Report(
 				cmd.Context(),
 				testSuiteName,
