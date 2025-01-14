@@ -20,14 +20,15 @@ func NewChainReporter(reporters ...SuiteRunReporter) SuiteRunReporter {
 
 func (c *ChainReporter) Report(
 	ctx context.Context,
+	suiteName string,
+	suiteRevision string,
 	runId string,
 	suiteRunId string,
-	suite executor.TestSuite,
 	suiteRun executor.SuiteRunSummary,
 ) error {
 	errs := []error{}
 	for _, reporter := range c.reporters {
-		err := reporter.Report(ctx, runId, suiteRunId, suite, suiteRun)
+		err := reporter.Report(ctx, suiteName, suiteRevision, runId, suiteRunId, suiteRun)
 		errs = append(errs, err)
 	}
 	return errors.Join(errs...)

@@ -13,9 +13,9 @@ import (
 	"github.com/grafana/grafana-bench/pkg/executor"
 )
 
-// parseJsonOutput parses the json output from playwright --report json and returns a slice of RunSummary
+// ParseJsonOutput parses the json output from playwright --report json and returns a slice of RunSummary
 // this will work if only one test is run and the output but will also work for if this contains an entire suite
-func parseJsonOutput(report io.Reader) (executor.SuiteRunSummary, error) {
+func ParseJsonOutput(report io.Reader) (executor.SuiteRunSummary, error) {
 	output := PlaywrightJsonOutput{}
 
 	buf, err := io.ReadAll(report)
@@ -35,7 +35,7 @@ func parseJsonOutput(report io.Reader) (executor.SuiteRunSummary, error) {
 	}
 
 	testRuns := parseSuites(output.Suites, testDirs, nil)
-	
+
 	totalTestAmount := int32(output.Stats.Unexpected) + int32(output.Stats.Expected)
 	var suiteStatus executor.SuiteStatus = executor.SuitePassed
 	if output.Stats.Unexpected > 0 {
@@ -58,8 +58,7 @@ func parseJsonOutput(report io.Reader) (executor.SuiteRunSummary, error) {
 
 }
 
-
-func parseSuites( suites []Suite, testDirs map[string]string, testRuns []executor.TestRun) []executor.TestRun {
+func parseSuites(suites []Suite, testDirs map[string]string, testRuns []executor.TestRun) []executor.TestRun {
 	for _, suite := range suites {
 		for _, spec := range suite.Specs {
 			folder := "unknown"
@@ -120,7 +119,7 @@ func parseTestRun(spec Specs, folder string) executor.TestRun {
 
 	averageScenarioDuration := float32(scenarioTotal)
 	if executions > 0 {
-		averageScenarioDuration	= float32(math.Round(float64(scenarioTotal) / float64(executions)))
+		averageScenarioDuration = float32(math.Round(float64(scenarioTotal) / float64(executions)))
 	}
 
 	run := executor.TestRun{

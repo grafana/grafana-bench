@@ -175,13 +175,17 @@ func TestNotificationReporter(t *testing.T) {
 			}
 
 			notifier := newFakeNotifier(tc.notificationErr)
-			reporter := NewNotificationReporter(notifier, tc.options...)
+			reporter, err := NewNotificationReporter(testSuiteBaseDir, notifier, tc.options...)
+			if err != nil {
+				t.Fatalf("failed to create notification reporter: %v", err)
+			}
 
-			err := reporter.Report(
+			err = reporter.Report(
 				context.Background(),
+				testSuite.Name,
+				testSuite.Revision,
 				"123", // run id
 				"456", // test suite run id
-				testSuite,
 				tc.suiteRun,
 			)
 

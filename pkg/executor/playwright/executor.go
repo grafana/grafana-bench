@@ -16,6 +16,7 @@ import (
 
 const (
 	chromiumPath = "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH"
+	ExecutorName = "playwright"
 )
 
 var (
@@ -46,7 +47,7 @@ func NewPlaywrightTestExecutor(
 }
 
 func (t *PlaywrightTestExecutor) Name() string {
-	return "playwright"
+	return ExecutorName
 }
 
 // ExecTestSuite runs a test suite using playwright
@@ -107,7 +108,7 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 	}
 
 	//parse output or report any problem
-	return parseJsonOutput(jsonOutput)
+	return ParseJsonOutput(jsonOutput)
 }
 
 func (t *PlaywrightTestExecutor) executeCommand(execDir string, env map[string]string, cmd string) error {

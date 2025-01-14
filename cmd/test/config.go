@@ -173,12 +173,20 @@ func (config BenchConfig) BuildTestRunner(log *slog.Logger, testExecutor string)
 			MappingFile:  codeownersMap,
 			DashboardURL: config.DashboardURL,
 		})
-
 		if err != nil {
 			return nil, fmt.Errorf("creating slack notifier: %w", err)
 		}
 
-		reporters = append(reporters, reporter.NewNotificationReporter(notifier, reporter.NotifyPassing(config.NotifyPassing)))
+		notificationReporter, err := reporter.NewNotificationReporter(
+			config.BaseDir,
+			notifier,
+			reporter.NotifyPassing(config.NotifyPassing),
+		)
+		if err != nil {
+			return nil, fmt.Errorf("creating notification reporter: %w", err)
+		}
+
+		reporters = append(reporters, notificationReporter)
 	}
 
 	return runner.NewTestRunner(

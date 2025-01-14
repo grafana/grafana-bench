@@ -86,6 +86,16 @@ func WithBackoff(backoff time.Duration) InstanceOption {
 	}
 }
 
+func Slug(grafanaURL string) (string, error) {
+	u, err := url.Parse(grafanaURL)
+	if err != nil {
+		return "", fmt.Errorf("invalid grafana url: %w", err)
+	}
+	grafanaSlug := slugEx.ReplaceAllString(u.Hostname(), "")
+
+	return grafanaSlug, nil
+}
+
 // NewGrafanaInstance creates a reference to access a grafana instance
 // Takes a fully qualified address such as https://jefflevinslunch.grafana.net
 // and a user credentials
@@ -124,9 +134,10 @@ func (g *grafanaInstance) Hostname() string {
 
 // Slug returns the grafana instance slug
 func (g *grafanaInstance) Slug() string {
-	return slugEx.ReplaceAllString(g.url.Hostname(), "")
+	// ignore error, we already validated the url
+	slug, _ := Slug(g.url.String())
+	return slug
 }
-
 
 // AdminUser returns the instance's admin user
 func (g *grafanaInstance) AdminUser() string {

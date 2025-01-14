@@ -21,9 +21,10 @@ func NewTextReporter(report io.Writer) *TextReporter {
 
 func (r *TextReporter) Report(
 	_ context.Context,
+	suiteName string,
+	suiteRevision string,
 	runId string,
 	suiteRunId string,
-	suite executor.TestSuite,
 	suiteRun executor.SuiteRunSummary,
 ) error {
 	for _, testRun := range suiteRun.TestRuns {

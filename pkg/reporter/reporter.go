@@ -11,8 +11,9 @@ type SuiteRunReporter interface {
 	Report(
 		ctx context.Context,
 		runId string,
+		suiteName string,
+		suiteRevision string,
 		suiteRunId string,
-		suite executor.TestSuite,
 		suiteRun executor.SuiteRunSummary,
 	) error
 }
