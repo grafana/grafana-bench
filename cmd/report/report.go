@@ -55,6 +55,8 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		testSuiteName        string
 		testSuiteRevision    string
 		suiteRun             string
+		metrics              map[string]string
+		metricsPrefix        string
 	)
 	cmd := cobra.Command{
 		Use:     "report",
@@ -132,6 +134,14 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			suiteRun, err := playwright.ParseJsonOutput(input)
 			if err != nil {
 				return fmt.Errorf("parsing playwright json input %w", err)
+			}
+
+			// add custom metrics adding the prefix to the name
+			if suiteRun.Metrics == nil {
+				suiteRun.Metrics = map[string]string{}
+			}
+			for k, v := range metrics {
+				suiteRun.Metrics[metricsPrefix+k] = v
 			}
 
 			runId = env.EnvOrDefault("RUN_ID", runId)
@@ -219,6 +229,19 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		"test suite run id. If not specified, TEST_SUITE_NAME environment variable is used."+
 			"\nIf not set, an id is generated from the execution timestamp",
 	)
+	fs.StringToStringVar(
+		&metrics,
+		"suite-run-metrics",
+		nil,
+		"test suite run custom metrics",
+	)
+	fs.StringVar(
+		&metricsPrefix,
+		"suite-run-metrics-prefix",
+		"",
+		"prefix to append to the suite run metric names",
+	)
+
 
 	return &cmd
 }

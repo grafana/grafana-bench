@@ -62,7 +62,7 @@ func suiteLogAttrs(suiteName string, suiteRevision string) []any {
 
 // suiteRunLogAttrs formats suite run's attributes as log attributes
 func suiteRunLogAttrs(suiteRun executor.SuiteRunSummary) []any {
-	return []any{
+	attrs := []any{
 		"startTime", suiteRun.StartTime.Format(time.RFC3339),
 		"totalScenarioDurations", suiteRun.ScenariosDuration,
 		"duration", suiteRun.TotalDuration,
@@ -71,6 +71,12 @@ func suiteRunLogAttrs(suiteRun executor.SuiteRunSummary) []any {
 		"testsFailed", suiteRun.TestsFailed,
 		"testsError", suiteRun.TestsError,
 	}
+
+	for k, v := range suiteRun.Metrics {
+		attrs = append(attrs, k, v)
+	}
+
+	return attrs
 }
 
 // testRunLogAttrs returns the k6RunSummary attributes formatted as log attributes
