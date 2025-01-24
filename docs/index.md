@@ -1,13 +1,34 @@
 # Grafana Bench
 Bench is a tool to provide test observability across the Grafana ecosystem. 
 
-It works by:
+## Background
 
-1. Wrapping your e2e testing tool of choice (playwright or k6) with conventions for passing an instance of Grafana to the test
-2. Massaging the test output into a standardized log format
-3. Shipping the logs to a Loki instance
-4. Dashboarding the results
-5. Optionally sending slack alerts based on CodeOwners file on the test suite
+* [Delivery Targets and the need for Testing Observability](https://docs.google.com/document/d/1pQoU3sccwayVK_LLzQUnOQLq-0jduH-4FibpdaAztX8/edit?tab=t.0)
+
+### What we're trying to accomplish
+* Increase the test coverage of Grafana by building reusable tests
+* Empower teams to author, register, and receive timely feedback from their tests across delivery pipelines with as little friction as possible.
+* Increase developer trust in integration and e2e tests across Grafana
+* Observe the state of test across all components of Grafana
+
+### How it works
+
+The Bench CLI can be used either as a test executor OR as a reporter. The basics are:
+
+In reporter mode:
+
+1. run your test and write the output to a file
+2. pass the file to the bench cli reporter command
+3. standardized test output is sent to a loki instance
+4. results are available in loki-ops
+5. Optionally, slack alerts can be configured based on a CODEOWNERS file.
+
+In executor mode:
+
+1. run your test with the becnch cli exector command. output is parsed and formated automatically
+2. output is sent to loki instance
+3. results are available in loki-ops
+4. Optionally, slack alerts can be configured based on a CODEOWNERS file.
 
 ## **Bench is under active development.**
 
