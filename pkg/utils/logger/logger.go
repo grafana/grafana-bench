@@ -15,9 +15,12 @@ type Logger struct {
 
 
 // NewLogger creates a new Logger
-func NewLogger() *Logger {
+func NewLogger(attributes...any) *Logger {
 	level := new(slog.LevelVar)
 	log := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level}))
+	if len(attributes) > 0 {
+		log = log.With(attributes...)
+	}
 
 	return &Logger{
 		Logger: log,
