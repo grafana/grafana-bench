@@ -1,11 +1,18 @@
 # Grafana Bench
-Bench is a tool to provide test observability across the Grafana ecosystem. 
+
+Bench is a tool to provide test observability across the Grafana ecosystem.
 
 ## Background
 
-* [Delivery Targets and the need for Testing Observability](https://docs.google.com/document/d/1pQoU3sccwayVK_LLzQUnOQLq-0jduH-4FibpdaAztX8/edit?tab=t.0)
+Grafana is a complex application that can be built for many architectures, operating systems, and configured with many
+options and plugins. We're currently doing most of our testing in CI, which only tests a single architecture. The Bench
+project aims to improve our test coverage by providing all of the tools and glue necessary to write and observe e2e
+tests for Grafana frontend browser tests and backend k6 api tests.
+
+For a deep dive see: [Delivery Targets and the need for Testing Observability](https://docs.google.com/document/d/1pQoU3sccwayVK_LLzQUnOQLq-0jduH-4FibpdaAztX8/edit?tab=t.0)
 
 ### What we're trying to accomplish
+
 * Increase the test coverage of Grafana by building reusable tests
 * Empower teams to author, register, and receive timely feedback from their tests across delivery pipelines with as little friction as possible.
 * Increase developer trust in integration and e2e tests across Grafana
@@ -32,15 +39,16 @@ In executor mode:
 
 ## **Bench is under active development.**
 
-Our basic feature set and value proposition is defined along with a mostly stable API, however, we are trying to move fast to accommodate teams across Grafana and do release-breaking changes. 
+Our basic feature set and value proposition is defined along with a mostly stable API, however, we are trying to move fast to accommodate teams across Grafana and do release-breaking changes.
 
-We recognize that as teams are using Bench in CI and for their release pipelines that Bench is critical infrastructure. In order to reduce the blast radius of any change, we provide semantically __versioned__ releases.
+We recognize that as teams are using Bench in CI and for their release pipelines that Bench is critical infrastructure. In order to reduce the blast radius of any change, we provide semantically **versioned** releases.
 
 You can see our roadmap on [Github](https://github.com/orgs/grafana/projects/554)
 
 ## Table of Contents
 
 ### Quickstart
+
 1. [Installing Bench](index.md#installing-bench)
 2. [API tests with K6](writing_k6_api_tests.md)
 3. [Broswer tests with plugin-e2e framework and Playwright](writing_pw_tests.md)
@@ -60,12 +68,15 @@ One of the key goals of Bench is to provide portability. We do this by making be
 3. [Product DNA](https://docs.google.com/document/d/1rs1RN8UHKAowcQX-cqJ5ilhOnykAMUSoqakWICOGtcY/edit?tab=t.0#heading=h.soj854l81770)
 
 ## Installing Bench
+
 Bench can be run as a native command or in a docker container. We recommend docker for portability, however, using the binary may be beneficial when developing tests locally.
 
 ### Docker
+
 We currently publish the docker image to both GAR and github packages. Some users have reported issues pulling the container from github. So we currently recommend using GAR. If you run into issues with either of these, please reach out to us in #grafana-bench.
 
 #### Google Artifact Registry (GAR)
+
 Fetch the container from Google Artifact registry.
 
     docker pull us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.3.0
@@ -80,19 +91,20 @@ Fetch the container from Google Artifact registry.
 
 3. Verify installation
 `docker run --rm us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.3.0 --help`
-    
+
 ### Binary / Go Package
+
 We do not currently ship a binary, but you can install directly from the go project.
 
 1. Make sure you have a [Go environment configured](https://go.dev/doc/install)
-2. Configure [github to authenticate with SSH keys](https://docs.github.com/en/authentication/connecting-to-github-with-ssh). 
+2. Configure [github to authenticate with SSH keys](https://docs.github.com/en/authentication/connecting-to-github-with-ssh).
 3. Configure github to use ssh instead of https
 
    Add this block to ~/.gitconfig or wherever your configuration is located.
 
 ```ini
 [url "git@github.com:"]
-	insteadOf = https://github.com/
+ insteadOf = https://github.com/
 ```
 
 4. Set GOPRIVATE to ensure we go straight to github instead of go module proxy.
@@ -101,12 +113,11 @@ We do not currently ship a binary, but you can install directly from the go proj
 
     `export GOPRIVATE=github.com/grafana/grafana-bench`
 
-
 5. Install Bench
 
     Get the latest release version from github.com/grafana/grafana-bench
 
-    `go install github.com/grafana/grafana-bench@v<VERSION>`. 
+    `go install github.com/grafana/grafana-bench@v<VERSION>`.
 
 6. Verify installation
 
