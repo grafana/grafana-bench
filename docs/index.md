@@ -4,10 +4,10 @@ Bench is a tool to provide test observability across the Grafana ecosystem.
 
 ## Background
 
-Grafana is a complex application that can be built for many architectures, operating systems, and configured with many
-options and plugins. We're currently doing most of our testing in CI, which only tests a single architecture. The Bench
-project aims to improve our test coverage by providing all of the tools and glue necessary to write and observe e2e
-tests for Grafana frontend browser tests and backend k6 api tests.
+Grafana can be built for many architectures, operating systems, and configured with many options
+and plugins. We're currently doing most of our testing in CI, which only tests a single architecture, but
+defects can occur at the packaging and configuration stages as well. The Bench project aims to improve our
+test coverage by providing all of the tools and glue necessary to write and observe e2e tests for Grafana.
 
 For a deep dive see: [Delivery Targets and the need for Testing Observability](https://docs.google.com/document/d/1pQoU3sccwayVK_LLzQUnOQLq-0jduH-4FibpdaAztX8/edit?tab=t.0)
 
