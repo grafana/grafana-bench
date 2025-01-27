@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	log := logger.NewLogger()
+	log := logger.NewLogger("service", "bench")
 
 	root := root.NewCmd(log)
 
