@@ -149,10 +149,30 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	}
 
 	fs := cmd.Flags()
-	fs.StringToStringVar(&config.EnvVars, "test-env-vars", nil, "custom test environment variables")
-	fs.StringVar(&config.Trigger, "test-trigger", "local", "test trigger")
-	fs.StringVar(&config.Type, "test-type", "smoke", "test type. Allowed values: 'smoke', 'load'")
-	fs.StringVar(&suiteConfig.TestExecutor, "test-runner", "k6", "test runner. Allowed values: 'k6', 'playwright'")
+	fs.StringToStringVar(
+		&config.EnvVars,
+		"test-env-vars",
+		nil,
+		"custom test environment variables",
+	)
+	fs.StringVar(
+		&config.Trigger,
+		"test-trigger",
+		"local",
+		"test trigger",
+	)
+	fs.StringVar(
+		&config.Type,
+		"test-type",
+		"smoke",
+		"test type. Allowed values: 'smoke', 'load'",
+	)
+	fs.StringVar(
+		&suiteConfig.TestExecutor,
+		"test-runner",
+		"k6",
+		"test runner. Allowed values: 'k6', 'playwright'",
+	)
 	fs.StringVar(
 		&config.PW.PrepareCmd,
 		"pw-prepare-cmd",
@@ -160,7 +180,12 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		"commands used to install dependencies for the test suite eg: \"npm install\"." +
 		"\nMultiple commands can be specified by separating with ';'.",
 	)
-	fs.StringVar(&config.PW.ExecuteCmd, "pw-execute-cmd", "", "command used to execute the test suite eg: \"npm run test\"")
+	fs.StringVar(
+		&config.PW.ExecuteCmd,
+		"pw-execute-cmd",
+		"",
+		"command used to execute the test suite eg: \"npm run test\"",
+	)
 	fs.StringVar(
 		&config.ReportFormat,
 		"test-report-format",
@@ -168,7 +193,12 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		"format of the test execution report. Allowed values 'log' or 'text'."+
 			"\n 'log' produced a structure log. 'text' produced an human readable output",
 	)
-	fs.BoolVar(&config.Verbose, "verbose", false, "show test outputs")
+	fs.BoolVar(
+		&config.Verbose,
+		"verbose",
+		false,
+		"show test outputs",
+	)
 	fs.StringVar(
 		&config.Grafana.Url,
 		"grafana-url",
@@ -200,13 +230,15 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		"",
 		"repository to get the test suite from. If not set TEST_SUITE_REPO environment variable is used."+
 			"\nIf specified, the repo will be checkout into the test-suite-base directory."+
-			"\nIf test-suite-revision is specified, that revision will be checkout. Otherwise the default branch will be checkout",
+			"\nIf test-suite-revision is specified, that revision will be checkout." +
+			"\nOtherwise the default branch will be checkout",
 	)
 	fs.StringVar(
 		&suiteConfig.RepoToken,
 		"test-suite-repo-token",
 		"",
-		"authentication token for the test suite repository. If not set TEST_SUITE_REPO_TOKEN environment variable is used.",
+		"authentication token for the test suite repository. " +
+		"\nIf not set TEST_SUITE_REPO_TOKEN environment variable is used.",
 	)
 	fs.StringSliceVar(
 		&suiteConfig.RepoDirs,
@@ -253,10 +285,14 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			"\n    SuiteRun: identifier of the suite run"+
 			"\nExample: http://localhost/dashboards?run={{.SuiteRun}}",
 	)
-	fs.StringVar(&suiteConfig.Path, "test-suite", "", "path to the tests to be executed."+
+	fs.StringVar(
+		&suiteConfig.Path,
+		"test-suite",
+		"",
+		"path to the tests to be executed."+
 		"\nThe path must be relative to the base dir (which defaults to the current directory)."+
 		"\nA single .js file or a directory can be specified."+
-		"\nIf a directory is specified, all .js files in the directory and its sub-directories will be executed.")
+		"\nIf a directory is specified, all files in the directory and its sub-directories will be executed.")
 	fs.StringVar(
 		&config.BaseDir,
 		"test-suite-base",

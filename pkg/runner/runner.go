@@ -53,12 +53,13 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 	var err error
 
 	// get an unique identification for the run
-	runId := t.getRunId(testType)
+	runId := id.Run(t.Trigger, time.Now())
 	t.Log = t.Log.With("runId", runId)
 
 	// get an unique identification for the suite run (used for backward compatibility)
-	suiteRunId := t.getSuiteRunId(runId, suite)
-	t.Log = t.Log.With("suiteRun", suiteRunId)
+	suiteRunName := id.SuiteRunName(t.Trigger, suite.Name, testType.Name())
+	// TODO: remove suiteRun
+	t.Log = t.Log.With("suiteRun", suiteRunName)
 
 	// set common test execution variables
 	env := map[string]string{
@@ -77,7 +78,7 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 	}
 
 	// TODO: handle error from reporter
-	err = t.Reporter.Report(ctx, suite.Name, suite.Revision, runId, suiteRunId, suiteRun)
+	err = t.Reporter.Report(ctx, suite.Name, suite.Revision, runId, suiteRunName, suiteRun)
 	if err != nil {
 		t.Log.Error("reporting test suite run", "error", err)
 	}
@@ -101,23 +102,4 @@ func (t *TestRunner) Exec(ctx context.Context, testType TestType, suite executor
 	}
 
 	return nil
-}
-
-// returns an unique id for the run
-// format: {test type}-{year}{day of year}-{hour}{min}{second}
-// Example load-2024123-140035
-func (t *TestRunner) getRunId(testType TestType) string {
-	return id.GenRunId(time.Now().UTC(), testType.Name())
-}
-
-// returns an unique id for the suite run (DEPRECATED)
-// format: {suite name}-{suite-revision}-graf-{grafana version}-{run-id}
-// Example api-tests-ee654f-graf-10.3-load-2024123-140035
-func (t *TestRunner) getSuiteRunId(runId string, suite executor.TestSuite) string {
-	return fmt.Sprintf("%s-%s-graf-%s-%s",
-		suite.Name,
-		suite.Revision,
-		t.GrafanaVersion,
-		runId,
-	)
 }

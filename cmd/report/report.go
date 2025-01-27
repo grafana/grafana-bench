@@ -146,7 +146,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 
 			runId = env.EnvOrDefault("RUN_ID", runId)
 			if runId == "" {
-				runId = id.GenRunId(time.Now(), testType)
+				runId = id.Run(trigger, time.Now())
 			}
 
 			err = suiteReporter.Report(
@@ -154,7 +154,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				testSuiteName,
 				testSuiteRevision,
 				runId,
-				getSuiteRunId(testSuiteName, testSuiteRevision, grafanaVersion, runId),
+				id.SuiteRunName(trigger, testSuiteName, testType),
 				suiteRun,
 			)
 			if err != nil {
@@ -242,19 +242,5 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		"prefix to append to the suite run metric names",
 	)
 
-
 	return &cmd
-}
-
-// FIXME: this is duplicated from pkg/runner/runner.go
-// returns an unique id for the suite run (DEPRECATED)
-// format: {suite name}-{suite-revision}-graf-{grafana version}-{run-id}
-// Example api-tests-ee654f-graf-10.3-load-2024123-140035
-func getSuiteRunId(suiteName, suiteRevision, grafanaVersion, runId string) string {
-	return fmt.Sprintf("%s-%s-graf-%s-%s",
-		suiteName,
-		suiteRevision,
-		grafanaVersion,
-		runId,
-	)
 }
