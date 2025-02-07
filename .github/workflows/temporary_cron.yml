@@ -1,0 +1,45 @@
+name: Create some bench logs for testing
+
+# These permissions are needed to assume roles from Github's OIDC.
+permissions:
+  contents: read
+  id-token: write
+  packages: write
+
+on:
+  schedule:
+    - cron: '0 */3 * * *'
+  # Optional: Also allow manual triggering
+  workflow_dispatch:
+
+jobs:
+  generate-logs:
+    runs-on: ubuntu-latest
+
+    services:
+      grafana:
+        image: grafana/grafana:latest
+        ports:
+          - 3000:3000
+
+    steps:
+      - name: login to GAR
+        run: |
+          echo "Hello World!"
+          echo "Current time is $(date)"
+
+      - name: run playwright tests
+        run: |
+          docker run --rm \
+            --network=host \
+            --volume="./CI/:/home/bench/tests/CI/" \
+            us-docker.pkg.dev/grafanalabs-dev/docker-grafana-bench-dev/grafana-bench:latest test \
+            --grafana-url "http://localhost:3000" \
+            --grafana-admin-user "admin" \
+            --grafana-admin-password "admin" \
+            --test-suite-base "/home/bench/tests/CI/plugin-e2e"  \
+            --test-runner "playwright" \
+            --pw-prepare-cmd "yarn install; yarn playwright install" \
+            --pw-execute-cmd "yarn run test" \
+            --log-level DEBUG
+
