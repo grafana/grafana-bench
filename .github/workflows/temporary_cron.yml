@@ -27,10 +27,8 @@ jobs:
           - 3000:3000
 
     steps:
-      - name: login to GAR
-        run: |
-          echo "Hello World!"
-          echo "Current time is $(date)"
+      - name: checkout code
+        uses: actions/checkout@v4
 
       - name: run playwright tests
         run: |
