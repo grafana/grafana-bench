@@ -7,6 +7,10 @@ permissions:
   packages: write
 
 on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
   schedule:
     - cron: '0 */3 * * *'
   # Optional: Also allow manual triggering
@@ -23,34 +27,20 @@ jobs:
           - 3000:3000
 
     steps:
-      - name: Say Hello
+      - name: checkout code
+        uses: actions/checkout@v4
+
+      - name: run playwright tests
         run: |
-          echo "Hello World!"
-          echo "Current time is $(date)"
-      
-      - name: Print Job Status
-        run: |
-          echo "Job completed successfully!"
-          echo "Next run will be in 3 hours"
-
-    #steps:
-    #  - name: login to GAR
-    #    run: |
-    #      echo "Hello World!"
-    #      echo "Current time is $(date)"
-
-    #  - name: run playwright tests
-    #    run: |
-    #      docker run --rm \
-    #        --network=host \
-    #        --volume="./CI/:/home/bench/tests/CI/" \
-    #        us-docker.pkg.dev/grafanalabs-dev/docker-grafana-bench-dev/grafana-bench:latest test \
-    #        --grafana-url "http://localhost:3000" \
-    #        --grafana-admin-user "admin" \
-    #        --grafana-admin-password "admin" \
-    #        --test-suite-base "/home/bench/tests/CI/plugin-e2e"  \
-    #        --test-runner "playwright" \
-    #        --pw-prepare-cmd "yarn install; yarn playwright install" \
-    #        --pw-execute-cmd "yarn run test" \
-    #        --log-level DEBUG
-
+          docker run --rm \
+            --network=host \
+            --volume="./CI/:/home/bench/tests/CI/" \
+            us-docker.pkg.dev/grafanalabs-dev/docker-grafana-bench-dev/grafana-bench:latest test \
+            --grafana-url "http://localhost:3000" \
+            --grafana-admin-user "admin" \
+            --grafana-admin-password "admin" \
+            --test-suite-base "/home/bench/tests/CI/plugin-e2e"  \
+            --test-runner "playwright" \
+            --pw-prepare-cmd "yarn install; yarn playwright install" \
+            --pw-execute-cmd "yarn run test" \
+            --log-level DEBUG
