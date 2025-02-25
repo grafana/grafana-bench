@@ -33,7 +33,7 @@ export default defineConfig({
     // npx playwright test --project=payload-size --ui
     {
       name: 'payload-size',
-      // testMatch: [/.*\.js/],
+      testMatch: [/.*\.js/],
       use: {
         baseURL: "https://leeoniya.grafana.net",
         dashPath: "/d/bds35fot3cv7kb/empty?orgId=1&from=now-6h&to=now&timezone=browser",
@@ -48,7 +48,7 @@ export default defineConfig({
 });
 
 export const test = base.extend({
-  // dashPath: ["", { option: true }],
+  dashPath: ["", { option: true }],
   // panelLocator: [(fixtures) => fixtures.page.getByTestId("header-container"), { option: true }],
   // panel: [
   //   async ({ page }, use) => await use(page.getByTestId("header-container")),
