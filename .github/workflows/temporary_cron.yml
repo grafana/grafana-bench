@@ -1,11 +1,9 @@
 name: Create some bench logs for testing
-
 # These permissions are needed to assume roles from Github's OIDC.
 permissions:
   contents: read
   id-token: write
   packages: write
-
 on:
   push:
     branches: ["main"]
@@ -15,21 +13,17 @@ on:
     - cron: '0 */3 * * *'
   # Optional: Also allow manual triggering
   workflow_dispatch:
-
 jobs:
   generate-logs:
     runs-on: ubuntu-latest
-
     services:
       grafana:
         image: grafana/grafana:latest
         ports:
           - 3000:3000
-
     steps:
       - name: checkout code
         uses: actions/checkout@v4
-
 
       - name: run playwright tests with config
         run: |
