@@ -18,9 +18,7 @@ import (
 	"github.com/grafana/grafana-bench/pkg/executor/playwright"
 	"github.com/grafana/grafana-bench/pkg/notifier"
 	"github.com/grafana/grafana-bench/pkg/reporter"
-	"github.com/grafana/grafana-bench/pkg/revision"
 	"github.com/grafana/grafana-bench/pkg/runner"
-	"github.com/grafana/grafana-bench/pkg/utils/env"
 )
 
 type BenchConfig struct {
@@ -75,31 +73,6 @@ type TestSuiteConfig struct {
 type SlackNotifierConfig struct {
 	CodeownersMap string
 	Token         string
-}
-
-// MergeEnv updates the config by overriding some fields with environment variables.
-// Any environment variables that are not set will not override the config fields.
-func (c *BenchConfig) MergeEnv() {
-	// FIXME: doing here because we don't have any other place to do it
-	// needed after BaseDir was moved to BenchConfig
-	if c.BaseDir == "" {
-		c.BaseDir, _ = os.Getwd()
-	}
-
-	if c.BenchRevision == "" {
-		c.BenchRevision = env.EnvOrDefault("BENCH_REVISION", revision.BenchRevision())
-	}
-
-	// Grafana
-	c.Grafana.Url = env.EnvOrDefault("GRAFANA_URL", c.Grafana.Url)
-	c.Grafana.AdminUser = env.EnvOrDefault("GRAFANA_ADMIN_USER", c.Grafana.AdminUser)
-	c.Grafana.AdminPassword = env.EnvOrDefault("GRAFANA_ADMIN_PASSWORD", c.Grafana.AdminPassword)
-
-	// k6 config
-	c.K6.CloudToken = env.EnvOrDefault("K6_CLOUD_TOKEN", c.K6.CloudToken)
-	c.K6.CloudProjectId = env.EnvOrDefault("K6_CLOUD_PROJECT_ID", c.K6.CloudProjectId)
-
-	c.Slack.Token = env.EnvOrDefault("SLACK_TOKEN", c.Slack.Token)
 }
 
 func (config BenchConfig) BuildTestRunner(log *slog.Logger, testExecutor string) (*runner.TestRunner, error) {
@@ -203,14 +176,6 @@ func (config BenchConfig) BuildTestRunner(log *slog.Logger, testExecutor string)
 		executor,
 		reporter.NewChainReporter(reporters...),
 	), nil
-}
-
-// MergeEnv updates the config by overriding some fields with environment variables.
-// Any environment variables that are not set will not override the config fields.
-func (c *TestSuiteConfig) MergeEnv() {
-	c.Revision = env.EnvOrDefault("TEST_SUITE_REVISION", c.Revision)
-	c.Name = env.EnvOrDefault("TEST_SUITE_NAME", c.Name)
-	c.RepoToken = env.EnvOrDefault("TEST_SUITE_REPO_TOKEN", c.RepoToken)
 }
 
 func (config *TestSuiteConfig) BuildTestSuite(log *slog.Logger, baseDir string) (*executor.TestSuite, error) {
