@@ -82,11 +82,12 @@ Consider using the environment variables or secrets manager for storing sensitiv
 Also consider using .env files for storing this information in local development environments.
 
 # bench.yaml example
+trigger: "ci"
+
 test:
   env:
     VAR1: "value1"
     VAR2: "value2"
-  trigger: "ci"
   type: "smoke"
   runner: "k6"
   report:
@@ -223,8 +224,9 @@ bench test  \
       --test-suite-repo-dirs strings      deprecated. Use suite-repo-dirs
       --test-suite-repo-token string      deprecated. Use suite-repo-token
       --test-suite-revision string        deprecated. Use suite-revision
-      --test-trigger string               test trigger (default "local")
+      --test-trigger string               deprecated. Use trigger (default "local")
       --test-type string                  test type. Allowed values: 'smoke', 'load' (default "smoke")
+      --trigger string                    trigger of bench execution. For example, 'ci' or 'local'. (default "local")
       --verbose                           show test outputs
 ```
 

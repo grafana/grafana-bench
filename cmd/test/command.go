@@ -125,11 +125,12 @@ Consider using the environment variables or secrets manager for storing sensitiv
 Also consider using .env files for storing this information in local development environments.
 
 # bench.yaml example
+trigger: "ci"
+
 test:
   env:
     VAR1: "value1"
     VAR2: "value2"
-  trigger: "ci"
   type: "smoke"
   runner: "k6"
   report:
@@ -222,7 +223,13 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		&config.Trigger,
 		"test-trigger",
 		"local",
-		"test trigger",
+		"deprecated. Use trigger",
+	)
+	fs.StringVar(
+		&config.Trigger,
+		"trigger",
+		"local",
+		"trigger of bench execution. For example, 'ci' or 'local'.",
 	)
 	fs.StringVar(
 		&config.Type,
