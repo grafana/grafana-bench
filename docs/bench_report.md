@@ -13,11 +13,11 @@ It produces a human readable output or a structured log output based on the form
 
 When using the log format, in order to report the test suite execution results, the following
 information is needed:
-- test trigger
+- trigger
 - test type
-- test suite name
-- test suite revision
-- grafana url
+- suite name
+- suite revision (optional)
+- bench revision (optional)
 - grafana version
 
 If the grafana version is not provided, the reporter will connect to the grafana instance
@@ -32,7 +32,51 @@ bench report [flags]
 
 ```
 
-grafana-bench report --format log /path/to/playwright/report.json
+grafana-bench report \
+  --trigger local \
+  --test-type smoke \
+  --suite-name smoke-test \
+  --report-format log /path/to/playwright/report.json
+
+
+Configuration File
+------------------
+
+The report command supports reading configuration from a YAML file. The default file is bench.yaml.
+The file can be specified using the --config flag.
+
+The configuration file can contain any of the flags supported by the report command.
+
+As a convention, a flag with the name "--foo-bar" in the command line will be
+represented in the configuration file as:
+   foo:
+     bar: value
+
+Notice that some flag names have changed to accommodate the configuration file format.
+Deprecated flag names are not supported in the configuration file.
+
+The flags specified on the command line and the environment variables will take precedence over the
+values in the configuration file.
+
+
+# bench.yaml example
+trigger: "ci"
+
+test:
+  type: "smoke"
+
+report:
+    format: "text"
+
+suite:
+  name: "my-test-suite"
+  revision: "main"
+  
+grafana:
+  url: "http://localhost:3000"
+  admin
+    user: "admin"
+    password: "secret"
 
 ```
 
@@ -41,25 +85,30 @@ grafana-bench report --format log /path/to/playwright/report.json
 ```
       --bench-revision string              bench revision. If not provided BENCH_REVISION env var is used. 
                                            If not set, the current git revision is used
-      --format string                      format of the test execution report. Allowed values 'log' or 'text'.
-                                            'log' produced a structure log. 'text' produced an human readable output (default "log")
+      --format string                      deprecated. Use --report-format instead
       --grafana-admin-password string      grafana admin user's password. Overridden by the GRAFANA_ADMIN_PASSWORD environment variable (default "admin")
       --grafana-admin-user string          grafana admin user name. Overridden by the GRAFANA_ADMIN_USER environment variable (default "admin")
       --grafana-url string                 grafana url. If not provided GRAFANA_URL env var is used
       --grafana-version string             grafana version. If not provided GRAFANA_VERSION env var is used
   -h, --help                               help for report
+      --report-format string               format of the test execution report. Allowed values 'log' or 'text'.
+                                            'log' produced a structure log. 'text' produced an human readable output (default "log")
+      --suite-name string                  test suite name. If not specified, SUITE_NAME environment variable is used.
+      --suite-run-id string                test suite run id. If not specified, SUITE_RUN_ID environment variable is used.
+                                           If not set, an id is generated from the execution timestamp
       --suite-run-metrics stringToString   test suite run custom metrics (default [])
       --suite-run-metrics-prefix string    prefix to append to the suite run metric names
-      --test-suite-name string             test suite name. If not specified, TEST_SUITE_NAME environment variable is used.
-      --test-suite-run string              test suite run id. If not specified, TEST_SUITE_NAME environment variable is used.
-                                           If not set, an id is generated from the execution timestamp
-      --test-trigger string                test trigger (default "local")
+      --test-suite-name string             deprecated. Use --suite-name instead
+      --test-suite-run string              deprecated. Use --suite-run-id instead
+      --test-trigger string                deprecated. Use --trigger instead
       --test-type string                   test type. Allowed values: 'smoke', 'load' (default "smoke")
+      --trigger string                     bench execution trigger (default "local")
 ```
 
 ### Options inherited from parent commands
 
 ```
+      --config string      path to config file (default "bench.yaml")
       --env string         path to a file with the environment variables.
                            If none is specified and a .env files exists in the work directory, it will be used
       --log-level string   set the log level ('ERROR', 'WARN', 'INFO', 'DEBUG').
@@ -70,4 +119,4 @@ grafana-bench report --format log /path/to/playwright/report.json
 
 * [bench](bench.md)	 - grafana bench
 
-###### Auto generated by spf13/cobra on 14-Jan-2025
+###### Auto generated by spf13/cobra on 4-Mar-2025

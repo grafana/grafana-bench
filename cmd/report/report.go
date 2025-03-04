@@ -9,8 +9,6 @@ import (
 	"github.com/grafana/grafana-bench/pkg/executor/playwright"
 	"github.com/grafana/grafana-bench/pkg/grafana"
 	"github.com/grafana/grafana-bench/pkg/reporter"
-	"github.com/grafana/grafana-bench/pkg/revision"
-	"github.com/grafana/grafana-bench/pkg/utils/env"
 	"github.com/grafana/grafana-bench/pkg/utils/id"
 	"github.com/spf13/cobra"
 )
@@ -25,18 +23,62 @@ It produces a human readable output or a structured log output based on the form
 
 When using the log format, in order to report the test suite execution results, the following
 information is needed:
-- test trigger
+- trigger
 - test type
-- test suite name
-- test suite revision
-- grafana url
+- suite name
+- suite revision (optional)
+- bench revision (optional)
 - grafana version
 
 If the grafana version is not provided, the reporter will connect to the grafana instance
 using the admin user and password provided and get the version.
 `
 	examples = `
-grafana-bench report --format log /path/to/playwright/report.json
+grafana-bench report \
+  --trigger local \
+  --test-type smoke \
+  --suite-name smoke-test \
+  --report-format log /path/to/playwright/report.json
+
+
+Configuration File
+------------------
+
+The report command supports reading configuration from a YAML file. The default file is bench.yaml.
+The file can be specified using the --config flag.
+
+The configuration file can contain any of the flags supported by the report command.
+
+As a convention, a flag with the name "--foo-bar" in the command line will be
+represented in the configuration file as:
+   foo:
+     bar: value
+
+Notice that some flag names have changed to accommodate the configuration file format.
+Deprecated flag names are not supported in the configuration file.
+
+The flags specified on the command line and the environment variables will take precedence over the
+values in the configuration file.
+
+
+# bench.yaml example
+trigger: "ci"
+
+test:
+  type: "smoke"
+
+report:
+    format: "text"
+
+suite:
+  name: "my-test-suite"
+  revision: "main"
+  
+grafana:
+  url: "http://localhost:3000"
+  admin
+    user: "admin"
+    password: "secret"
 `
 )
 
@@ -68,11 +110,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				return fmt.Errorf("missing report file path")
 			}
 
-			if benchRevision == "" {
-				benchRevision = env.EnvOrDefault("BENCH_REVISION", revision.BenchRevision())
-			}
-
-			grafanaURL = env.EnvOrDefault("GRAFANA_URL", grafanaURL)
 			if grafanaURL == "" {
 				return fmt.Errorf("grafana url is required")
 			}
@@ -81,10 +118,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to get grafana slug: %w", err)
 			}
-
-			grafanaAdminUser = env.EnvOrDefault("GRAFANA_ADMIN_USER", grafanaAdminUser)
-			grafanaAdminPassword = env.EnvOrDefault("GRAFANA_ADMIN_PASSWORD", grafanaAdminPassword)
-			grafanaVersion = env.EnvOrDefault("GRAFANA_VERSION", grafanaVersion)
 
 			// get grafana version if not provided
 			if grafanaVersion == "" {
@@ -144,7 +177,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				suiteRun.Metrics[metricsPrefix+k] = v
 			}
 
-			runId = env.EnvOrDefault("RUN_ID", runId)
 			if runId == "" {
 				runId = id.Run(trigger, time.Now())
 			}
@@ -169,6 +201,12 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	fs.StringVar(
 		&format,
 		"format",
+		"",
+		"deprecated. Use --report-format instead",
+	)
+	fs.StringVar(
+		&format,
+		"report-format",
 		"log",
 		"format of the test execution report. Allowed values 'log' or 'text'."+
 			"\n 'log' produced a structure log. 'text' produced an human readable output",
@@ -182,8 +220,14 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	fs.StringVar(
 		&trigger,
 		"test-trigger",
+		"",
+		"deprecated. Use --trigger instead",
+	)
+	fs.StringVar(
+		&trigger,
+		"trigger",
 		"local",
-		"test trigger",
+		"bench execution trigger",
 	)
 	fs.StringVar(
 		&benchRevision,
@@ -220,13 +264,25 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		&testSuiteName,
 		"test-suite-name",
 		"",
-		"test suite name. If not specified, TEST_SUITE_NAME environment variable is used.",
+		"deprecated. Use --suite-name instead",
+	)
+	fs.StringVar(
+		&testSuiteName,
+		"suite-name",
+		"",
+		"test suite name. If not specified, SUITE_NAME environment variable is used.",
 	)
 	fs.StringVar(
 		&suiteRun,
 		"test-suite-run",
 		"",
-		"test suite run id. If not specified, TEST_SUITE_NAME environment variable is used."+
+		"deprecated. Use --suite-run-id instead",
+	)
+	fs.StringVar(
+		&suiteRun,
+		"suite-run-id",
+		"",
+		"test suite run id. If not specified, SUITE_RUN_ID environment variable is used."+
 			"\nIf not set, an id is generated from the execution timestamp",
 	)
 	fs.StringToStringVar(

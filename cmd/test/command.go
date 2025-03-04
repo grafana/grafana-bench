@@ -8,51 +8,50 @@ import (
 
 	"github.com/grafana/grafana-bench/pkg/grafana"
 	"github.com/grafana/grafana-bench/pkg/runner"
-
 	"github.com/spf13/cobra"
 )
 
 const examples = `
 # run a k6 smoke test from the test suite directory
-bench test --test-suite /path/to/test/folder
+bench test --suite-path /path/to/test/folder
 
 # run a k6 load test using a single test
-bench test --test-type load --test-suite /path/to/test.js"
+bench test --test-type load --suite-path /path/to/test.js"
 
 # checkout a test from a repo and run tests from my-branch branch
 bench test \
-  --test-suite-repo https://url/to/test-repo.git \
-  --test-suite-base path/to/local/repo/directory \
-  --test-suite-revision my-branch \
-  --test-suite tests
+  --suite-repo-url https://url/to/test-repo.git \
+  --suite-base path/to/local/repo/directory \
+  --suite-revision my-branch \
+  --suite-path tests
 
 # run k6 test with cloud output
 bench test \
   --grafana-url "http://host.docker.internal:3000" \
-  --test-suite /home/bench/work/grafana-plugin-tests \
+  --suite-path /home/bench/work/grafana-plugin-tests \
   --test-runner k6
   --k6-cloud-output=true
 
 # run k6 test with custom environment variables
 bench test \
-  --test-suite /home/bench/work/grafana-plugin-tests \
-  --test-env-vars VAR=value,ANOTHER_VAR=value        \
+  --suite-path /home/bench/work/grafana-plugin-tests \
+  --test-env VAR=value,ANOTHER_VAR=value        \
   --test-runner k6
 
 # run playwright test
 bench test  \
   --grafana-url "http://host.docker.internal:3000" \
-  --test-suite grafana-plugin-tests \
+  --suite-path grafana-plugin-tests \
   --test-runner playwright \
-  --pw-prepare-cmd "yarn install" \
-  --pw-execute-cmd "yarn test" \
+  --pw-prepare "yarn install" \
+  --pw-execute "yarn test" \
 `
 
 const longDescription = `
 test subcommand is a wrapper for running a suite of k6 or playwright tests
 against a grafana instance.
 
-The tests to be executed are defined by the --test-suite option.
+The tests to be executed are defined by the --suite-path option.
 
 The --test-runner option defines the type of test to execute. The default is k6.
 
@@ -94,24 +93,86 @@ test runner.
 Slack Notifications
 -------------------
 If the --slack-notifications flag is set, test suite failures will be notified using slack.
-Use the --notify-passing option to send notifications also for passing test suites. 
+Use the --slack-passing option to send notifications also for passing test suites. 
 
 Notification will be send to the codeowners of the test. The --codeowners-mapping argument
 is used to find the mapping between codeowners and slack channels.
 
 The --slack-token argument provides the slack token. If not provided, the SLACK_TOKEN 
 environment variable wil be used. This token requires channel.read, groups.read and chat.write scopes.
+
+Configuration File
+------------------
+
+The test command supports reading configuration from a YAML file. The default file is bench.yaml.
+The file can be specified using the --config flag.
+
+The configuration file can contain any of the flags supported by the test command.
+
+As a convention, a flag with the name "--foo-bar" in the command line will be
+represented in the configuration file as:
+   foo:
+     bar: value
+
+Notice that some flag names have changed to accommodate the configuration file format.
+Deprecated flag names are not supported in the configuration file.
+
+The flags specified on the command line and the environment variables will take precedence over the
+values in the configuration file.
+
+NOTE: we strongly discourage storing sensitive information such as tokens in the configuration file.
+Consider using the environment variables or secrets manager for storing sensitive information.
+Also consider using .env files for storing this information in local development environments.
+
+# bench.yaml example
+trigger: "ci"
+
+test:
+  env:
+    VAR1: "value1"
+    VAR2: "value2"
+  type: "smoke"
+  runner: "k6"
+
+report:
+  format: "text"
+
+suite:
+  name: "my-test-suite"
+  path: "/path/to/tests"
+  repo: "https://github.com/org/test-repo.git"
+  revision: "main"
+  
+grafana:
+  url: "http://localhost:3000"
+  admin
+    user: "admin"
+    password: "secret"
+
+k6:
+  cloud:
+    output: true
+    token: "your-token"
+    project: "your-project-id"
+
+pw:
+  prepare: "npm install"
+  execute: "npm test"
+
+slack:
+  notifications: true
+  passing: false
+  token: "xoxb-your-token"
 `
 
 // NewCmd creates a new test command
 func NewCmd(log *slog.Logger) *cobra.Command {
-	var (
+	var (	
 		config      = &BenchConfig{}
 		suiteConfig = &TestSuiteConfig{}
 	)
 
 	cmd := cobra.Command{
-		// test-suite is a mandatory option. highlight in the help
 		Use:     "test",
 		Short:   "bench test runner",
 		Long:    longDescription,
@@ -120,14 +181,12 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			if len(args) > 0 {
 				return fmt.Errorf("invalid argument(s): '%s'", strings.Join(args, "', '"))
 			}
-			suiteConfig.MergeEnv()
 
 			suite, err := suiteConfig.BuildTestSuite(log, config.BaseDir)
 			if err != nil {
 				return err
 			}
 
-			config.MergeEnv()
 			testRunner, err := config.BuildTestRunner(log, suiteConfig.TestExecutor)
 			if err != nil {
 				return err
@@ -153,13 +212,25 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		&config.EnvVars,
 		"test-env-vars",
 		nil,
-		"custom test environment variables",
+		"deprecated. Use test-env",
+	)
+	fs.StringToStringVar(
+		&config.EnvVars,
+		"test-env",
+		nil,
+		"environment variables passed to the test execution.",
 	)
 	fs.StringVar(
 		&config.Trigger,
 		"test-trigger",
 		"local",
-		"test trigger",
+		"deprecated. Use trigger",
+	)
+	fs.StringVar(
+		&config.Trigger,
+		"trigger",
+		"local",
+		"trigger of bench execution. For example, 'ci' or 'local'.",
 	)
 	fs.StringVar(
 		&config.Type,
@@ -177,18 +248,36 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		&config.PW.PrepareCmd,
 		"pw-prepare-cmd",
 		"",
-		"commands used to install dependencies for the test suite eg: \"npm install\"." +
-		"\nMultiple commands can be specified by separating with ';'.",
+		"deprecated. Use pw-prepare",
+	)
+	fs.StringVar(
+		&config.PW.PrepareCmd,
+		"pw-prepare",
+		"",
+		"commands used to install dependencies for the test suite eg: \"npm install\"."+
+			"\nMultiple commands can be specified by separating with ';'.",
 	)
 	fs.StringVar(
 		&config.PW.ExecuteCmd,
 		"pw-execute-cmd",
+		"",
+		"deprecated. Use pw-execute",
+	)
+	fs.StringVar(
+		&config.PW.ExecuteCmd,
+		"pw-execute",
 		"",
 		"command used to execute the test suite eg: \"npm run test\"",
 	)
 	fs.StringVar(
 		&config.ReportFormat,
 		"test-report-format",
+		"",
+		"deprecated. Use report-format",
+	)
+	fs.StringVar(
+		&config.ReportFormat,
+		"report-format",
 		"text",
 		"format of the test execution report. Allowed values 'log' or 'text'."+
 			"\n 'log' produced a structure log. 'text' produced an human readable output",
@@ -228,21 +317,39 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		&suiteConfig.Repo,
 		"test-suite-repo",
 		"",
-		"repository to get the test suite from. If not set TEST_SUITE_REPO environment variable is used."+
-			"\nIf specified, the repo will be checkout into the test-suite-base directory."+
-			"\nIf test-suite-revision is specified, that revision will be checkout." +
+		"deprecated. Use suite-repo-url",
+	)
+	fs.StringVar(
+		&suiteConfig.Repo,
+		"suite-repo-url",
+		"",
+		"url to the repository to get the test suite from. If not set SUITE_REPO_URL environment variable is used."+
+			"\nIf specified, the repo will be checkout into the --suite-base directory."+
+			"\nIf --suite-revision is specified, that revision will be checkout."+
 			"\nOtherwise the default branch will be checkout",
 	)
 	fs.StringVar(
 		&suiteConfig.RepoToken,
 		"test-suite-repo-token",
 		"",
-		"authentication token for the test suite repository. " +
-		"\nIf not set TEST_SUITE_REPO_TOKEN environment variable is used.",
+		"deprecated. Use suite-repo-token",
+		)
+	fs.StringVar(
+		&suiteConfig.RepoToken,
+		"suite-repo-token",
+		"",
+		"authentication token for the test suite repository. "+
+			"\nIf not set SUITE_REPO_TOKEN environment variable is used.",
 	)
 	fs.StringSliceVar(
 		&suiteConfig.RepoDirs,
 		"test-suite-repo-dirs",
+		nil,
+		"deprecated. Use suite-repo-dirs",
+	)
+	fs.StringSliceVar(
+		&suiteConfig.RepoDirs,
+		"suite-repo-dirs",
 		nil,
 		"Directories to checkout from test suite repo. If omitted, all folders will be checkout",
 	)
@@ -250,12 +357,18 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		&suiteConfig.Revision,
 		"test-suite-revision",
 		"",
-		"test suite revision. If not set TEST_SUITE_REVISION environment variable is used",
+		"deprecated. Use suite-revision",
+	)
+	fs.StringVar(
+		&suiteConfig.Revision,
+		"suite-revision",
+		"",
+		"test suite revision. If not set SUITE_REVISION environment variable is used",
 	)
 	fs.StringVar(
 		&config.BenchRevision,
 		"bench-revision",
-		"",
+		config.BenchRevision,
 		"grafana bench revision. If not set BENCH_REVISION environment variable is used.",
 	)
 	fs.StringVar(
@@ -263,6 +376,12 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		"k6-cloud-token",
 		"",
 		"K6 cloud access token. If not set K6_CLOUD_TOKEN environment variable is used",
+	)
+	fs.StringVar(
+		&config.K6.CloudProjectId,
+		"k6-cloud-project-id",
+		"",
+		"deprecated. Use k6-cloud-project",
 	)
 	fs.StringVar(
 		&config.K6.CloudProjectId,
@@ -289,28 +408,51 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		&suiteConfig.Path,
 		"test-suite",
 		"",
+		"deprecated. Use suite-path")
+	fs.StringVar(
+		&suiteConfig.Path,
+		"suite-path",
+		"",
 		"path to the tests to be executed."+
-		"\nThe path must be relative to the base dir (which defaults to the current directory)."+
-		"\nA single .js file or a directory can be specified."+
-		"\nIf a directory is specified, all files in the directory and its sub-directories will be executed.")
+			"\nThe path must be relative to the base dir (which defaults to the current directory)."+
+			"\nA single .js file or a directory can be specified."+
+			"\nIf a directory is specified, all files in the directory and its sub-directories will be executed.")
 	fs.StringVar(
 		&config.BaseDir,
 		"test-suite-base",
 		"",
+		"deprecated. Use suite-base",
+	)
+	fs.StringVar(
+		&config.BaseDir,
+		"suite-base",
+		"",
 		"base directory for searching test suites. Defaults to current directory"+
-			"\nIf specified, it is prefixed to the --test-suite.",
+			"\nIf specified, it is prefixed to the --suite-path.",
 	)
 	fs.StringVar(
 		&suiteConfig.Name,
 		"test-suite-name",
 		"",
-		"test suite name. If not specified, TEST_SUITE_NAME environment variable is used."+
-			"\nDefaults to the last component of --test-suite."+
-			"\nFor example --test-suite /path/to/testsuite will give a test suite name of 'testsuite'.",
+		"deprecated. Use suite-name",
+	)
+	fs.StringVar(
+		&suiteConfig.Name,
+		"suite-name",
+		"",
+		"test suite name. If not specified, SUITE_NAME environment variable is used."+
+			"\nDefaults to the last component of -suite-path."+
+			"\nFor example --suite--path path/to/testsuite will give a test suite name of 'testsuite'.",
 	)
 	fs.BoolVar(
 		&config.NotifyPassing,
 		"notify-passing",
+		false,
+		"deprecated. Use slack-notify-passing",
+	)
+	fs.BoolVar(
+		&config.NotifyPassing,
+		"slack-passing",
 		false,
 		"send notifications for passing test suites. By default only not passing test suites are notified",
 	)
@@ -331,8 +473,13 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		&config.Slack.CodeownersMap,
 		"codeowners-mapping",
 		"codeowners-mapping.yaml",
-		"path or url to the codeowner to slack channel id mapping." +
-		"\nRelative to test suite base dir.",
+		"deprecated. Use slack-codeowners-mapping")
+	fs.StringVar(
+		&config.Slack.CodeownersMap,
+		"slack-codeowners-mapping",
+		"codeowners-mapping.yaml",
+		"path or url to the codeowner to slack channel id mapping."+
+			"\nRelative to test suite base dir.",
 	)
 
 	return &cmd
