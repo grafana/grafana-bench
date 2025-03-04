@@ -27,7 +27,7 @@ test("payload-size", async ({ page, dashPath }) => {
 
   await page.goto(dashPath);
 
-  let el = await page.getByTestId("header-container");
+  let el = page.getByTestId("header-container");
   await el.waitFor();
 
   // weird but random expect() is required so this whole thing doesn't go tits up with
@@ -49,5 +49,8 @@ test("payload-size", async ({ page, dashPath }) => {
     usedJSHeapSize: +(usedJSHeapSize / 1000 / 1000).toFixed(1),
   });
 
+  // if we don't remove the listener the "test" will error.
+  page.removeListener("response", addSize);
+
   client.detach();
-});
+}).tag('@performance');
