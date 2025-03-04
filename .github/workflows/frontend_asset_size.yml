@@ -25,11 +25,5 @@ jobs:
             --network=host \
             --volume="./CI/:/home/bench/tests/CI/" \
             us-docker.pkg.dev/grafanalabs-dev/docker-grafana-bench-dev/grafana-bench:latest test \
-            --grafana-url "http://localhost:3000" \
-            --grafana-admin-user "admin" \
-            --grafana-admin-password "admin" \
-            --test-suite-base "/home/bench/tests/CI/plugin-e2e"  \
-            --test-runner "playwright" \
-            --pw-prepare-cmd "yarn install; yarn playwright install" \
-            --pw-execute-cmd "yarn run test" \
-            --log-level DEBUG
+            --config "/home/bench/tests/CI/playwright.yaml"
+            --pw-execute-cmd "yarn run test --grep @performance"
