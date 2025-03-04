@@ -11,17 +11,33 @@ import (
 	"github.com/grafana/grafana-bench/pkg/executor"
 )
 
+const (
+	TextLog = "text"
+	JSONLog = "json"
+)
+
 // LogReporter reports a test suite run using structured logs
 type LogReporter struct {
 	Log *slog.Logger
 }
 
-func NewLogReporter(attr []any) *LogReporter {
-	log := slog.New(slog.NewTextHandler(os.Stdout, nil))
+func NewLogReporter(format string, attr []any) (*LogReporter, error) {
+	var log *slog.Logger
+
+	switch format {
+	case "json":
+		log = slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	case "text":
+		log = slog.New(slog.NewTextHandler(os.Stdout, nil))
+	default:
+		return nil, fmt.Errorf("unsupported log format: %s", format)
+	}
+
 	log = log.With(attr...)
+
 	return &LogReporter{
 		Log: log,
-	}
+	}, nil
 }
 
 func (r *LogReporter) Report(

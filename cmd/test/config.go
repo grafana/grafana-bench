@@ -122,13 +122,17 @@ func (config BenchConfig) BuildTestRunner(log *slog.Logger, testExecutor string)
 
 	// create test reporter
 	var suiteReporter reporter.SuiteRunReporter
+
+	// FIXME: this is a quick fix for the missing service attribute
+	// There's no way to get the attributes set in the runner's logger to be used
+	// in the reporter logger.
+	reporterAttrs := append(logAttrs, "service", "bench")
 	switch config.ReportFormat {
 	case "log":
-		// FIXME: this is a quick fix for the missing service attribute
-		// There's no way to get the attributes set in the runner's logger to be used
-		// in the reporter logger.
-		reporterAttrs := append(logAttrs, "service", "bench")
-		suiteReporter = reporter.NewLogReporter(reporterAttrs)
+
+		suiteReporter, _ = reporter.NewLogReporter(reporter.TextLog, reporterAttrs)
+	case "json":
+		suiteReporter, _ = reporter.NewLogReporter(reporter.JSONLog, reporterAttrs)
 	case "text":
 		suiteReporter = reporter.NewTextReporter(os.Stdout)
 	default:
