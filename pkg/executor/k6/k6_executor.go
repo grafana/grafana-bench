@@ -43,6 +43,7 @@ type K6TestExecutor struct {
 }
 
 type K6ExecutorOptions struct {
+	RetryFailed    int
 	Verbose        bool
 	CloudOutput    bool
 	CloudToken     string
@@ -121,22 +122,39 @@ func (t *K6TestExecutor) ExecTestSuite(
 
 	// run the tests
 	for _, testFile := range tests {
-		testStartTime := time.Now()
-
 		scenarioName := getScenarioName(testFile)
-		// set the scenario name so it's accessible from the test
 		k6env["SCENARIO_NAME"] = scenarioName
 
-		// run command send output to cloud
-		k6Summary, err := t.execTest(
-			ctx,
-			testFile,
-			scenarioName,
-			k6env,
+		var (
+			testStartTime time.Time
+			retries int
+			k6Summary K6TestRun
 		)
-		if err != nil {
-			t.Log.Error("executing k6 test", "error", err.Error())
-			// TODO: maybe we should break the iteration here, as test result may not be relevant
+		
+		for {
+			// reset the start time for each test retry
+			testStartTime = time.Now()
+
+			// run command send output to cloud
+			k6Summary, err = t.execTest(
+				ctx,
+				testFile,
+				scenarioName,
+				k6env,
+			)
+			if err != nil {
+				t.Log.Error("executing k6 test", "error", err.Error())
+				// TODO: maybe we should break the iteration here, as test result may not be relevant
+			}
+
+			if k6Summary.Status != executor.TestFailed || retries == t.RetryFailed {
+				break
+			}
+			retries++
+		}
+
+		if k6Summary.Status == executor.TestPassed && retries > 0 {
+			k6Summary.Status = executor.TestFlaky
 		}
 
 		scenariosDuration += k6Summary.Durations.TotalDuration
@@ -164,6 +182,8 @@ func (t *K6TestExecutor) ExecTestSuite(
 		switch summary.Status {
 		case executor.TestPassed:
 			suiteSummary.TestsPassed += 1
+		case executor.TestFlaky:
+			suiteSummary.TestsFlaky += 1
 		case executor.TestFailed:
 			suiteSummary.TestsFailed += 1
 		case executor.TestError:
