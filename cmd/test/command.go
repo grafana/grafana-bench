@@ -13,35 +13,35 @@ import (
 
 const examples = `
 # run a k6 smoke test from the test suite directory
-bench test --test-suite-path /path/to/test/folder
+bench test --suite-path /path/to/test/folder
 
 # run a k6 load test using a single test
-bench test --test-type load --test-suite-path /path/to/test.js"
+bench test --test-type load --suite-path /path/to/test.js"
 
 # checkout a test from a repo and run tests from my-branch branch
 bench test \
-  --test-suite-repo-url https://url/to/test-repo.git \
-  --test-suite-base path/to/local/repo/directory \
-  --test-suite-revision my-branch \
-  --test-suite-path tests
+  --suite-repo-url https://url/to/test-repo.git \
+  --suite-base path/to/local/repo/directory \
+  --suite-revision my-branch \
+  --suite-path tests
 
 # run k6 test with cloud output
 bench test \
   --grafana-url "http://host.docker.internal:3000" \
-  --test-suite-path /home/bench/work/grafana-plugin-tests \
+  --suite-path /home/bench/work/grafana-plugin-tests \
   --test-runner k6
   --k6-cloud-output=true
 
 # run k6 test with custom environment variables
 bench test \
-  --test-suite-path /home/bench/work/grafana-plugin-tests \
+  --suite-path /home/bench/work/grafana-plugin-tests \
   --test-env VAR=value,ANOTHER_VAR=value        \
   --test-runner k6
 
 # run playwright test
 bench test  \
   --grafana-url "http://host.docker.internal:3000" \
-  --test-suite-path grafana-plugin-tests \
+  --suite-path grafana-plugin-tests \
   --test-runner playwright \
   --pw-prepare "yarn install" \
   --pw-execute "yarn test" \
@@ -51,7 +51,7 @@ const longDescription = `
 test subcommand is a wrapper for running a suite of k6 or playwright tests
 against a grafana instance.
 
-The tests to be executed are defined by the --test-suite option.
+The tests to be executed are defined by the --suite-path option.
 
 The --test-runner option defines the type of test to execute. The default is k6.
 
@@ -134,11 +134,12 @@ test:
   runner: "k6"
   report:
     format: "text"
-  suite:
-    name: "my-test-suite"
-    path: "/path/to/tests"
-    repo: "https://github.com/org/test-repo.git"
-    revision: "main"
+
+suite:
+  name: "my-test-suite"
+  path: "/path/to/tests"
+  repo: "https://github.com/org/test-repo.git"
+  revision: "main"
   
 grafana:
   url: "http://localhost:3000"
@@ -170,7 +171,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	)
 
 	cmd := cobra.Command{
-		// test-suite is a mandatory option. highlight in the help
 		Use:     "test",
 		Short:   "bench test runner",
 		Long:    longDescription,
@@ -210,13 +210,13 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		&config.EnvVars,
 		"test-env-vars",
 		nil,
-		"deprecated. use test-env",
+		"deprecated. Use test-env",
 	)
 	fs.StringToStringVar(
 		&config.EnvVars,
 		"test-env",
 		nil,
-		"custom test environment variables",
+		"environment variables passed to the test execution.",
 	)
 	fs.StringVar(
 		&config.Trigger,
@@ -240,7 +240,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		&config.PW.PrepareCmd,
 		"pw-prepare-cmd",
 		"",
-		"deprecated. use pw-prepare",
+		"deprecated. Use pw-prepare",
 	)
 	fs.StringVar(
 		&config.PW.PrepareCmd,
@@ -253,7 +253,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		&config.PW.ExecuteCmd,
 		"pw-execute-cmd",
 		"",
-		"deprecated. use pw-execute",
+		"deprecated. Use pw-execute",
 	)
 	fs.StringVar(
 		&config.PW.ExecuteCmd,
@@ -303,27 +303,39 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		&suiteConfig.Repo,
 		"test-suite-repo",
 		"",
-		"deprecated. use test-suite-repo-url",
+		"deprecated. Use suite-repo-url",
 	)
 	fs.StringVar(
 		&suiteConfig.Repo,
-		"test-suite-repo-url",
+		"suite-repo-url",
 		"",
-		"url to the repository to get the test suite from. If not set TEST_SUITE_REPO_URL environment variable is used."+
-			"\nIf specified, the repo will be checkout into the test-suite-base directory."+
-			"\nIf test-suite-revision is specified, that revision will be checkout."+
+		"url to the repository to get the test suite from. If not set SUITE_REPO_URL environment variable is used."+
+			"\nIf specified, the repo will be checkout into the --suite-base directory."+
+			"\nIf --suite-revision is specified, that revision will be checkout."+
 			"\nOtherwise the default branch will be checkout",
 	)
 	fs.StringVar(
 		&suiteConfig.RepoToken,
 		"test-suite-repo-token",
 		"",
+		"deprecated. Use suite-repo-token",
+		)
+	fs.StringVar(
+		&suiteConfig.RepoToken,
+		"suite-repo-token",
+		"",
 		"authentication token for the test suite repository. "+
-			"\nIf not set TEST_SUITE_REPO_TOKEN environment variable is used.",
+			"\nIf not set SUITE_REPO_TOKEN environment variable is used.",
 	)
 	fs.StringSliceVar(
 		&suiteConfig.RepoDirs,
 		"test-suite-repo-dirs",
+		nil,
+		"deprecated. Use suite-repo-dirs",
+	)
+	fs.StringSliceVar(
+		&suiteConfig.RepoDirs,
+		"suite-repo-dirs",
 		nil,
 		"Directories to checkout from test suite repo. If omitted, all folders will be checkout",
 	)
@@ -331,7 +343,13 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		&suiteConfig.Revision,
 		"test-suite-revision",
 		"",
-		"test suite revision. If not set TEST_SUITE_REVISION environment variable is used",
+		"deprecated. Use suite-revision",
+	)
+	fs.StringVar(
+		&suiteConfig.Revision,
+		"suite-revision",
+		"",
+		"test suite revision. If not set SUITE_REVISION environment variable is used",
 	)
 	fs.StringVar(
 		&config.BenchRevision,
@@ -376,10 +394,10 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		&suiteConfig.Path,
 		"test-suite",
 		"",
-		"deprecated. Use test-suite-path")
+		"deprecated. Use suite-path")
 	fs.StringVar(
 		&suiteConfig.Path,
-		"test-suite-path",
+		"suite-path",
 		"",
 		"path to the tests to be executed."+
 			"\nThe path must be relative to the base dir (which defaults to the current directory)."+
@@ -389,16 +407,28 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		&config.BaseDir,
 		"test-suite-base",
 		"",
+		"deprecated. Use suite-base",
+	)
+	fs.StringVar(
+		&config.BaseDir,
+		"suite-base",
+		"",
 		"base directory for searching test suites. Defaults to current directory"+
-			"\nIf specified, it is prefixed to the --test-suite.",
+			"\nIf specified, it is prefixed to the --suite-path.",
 	)
 	fs.StringVar(
 		&suiteConfig.Name,
 		"test-suite-name",
 		"",
-		"test suite name. If not specified, TEST_SUITE_NAME environment variable is used."+
-			"\nDefaults to the last component of --test-suite."+
-			"\nFor example --test-suite /path/to/testsuite will give a test suite name of 'testsuite'.",
+		"deprecated. Use suite-name",
+	)
+	fs.StringVar(
+		&suiteConfig.Name,
+		"suite-name",
+		"",
+		"test suite name. If not specified, SUITE_NAME environment variable is used."+
+			"\nDefaults to the last component of -suite-path."+
+			"\nFor example --suite--path path/to/testsuite will give a test suite name of 'testsuite'.",
 	)
 	fs.BoolVar(
 		&config.NotifyPassing,

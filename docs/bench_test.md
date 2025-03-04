@@ -8,7 +8,7 @@ bench test runner
 test subcommand is a wrapper for running a suite of k6 or playwright tests
 against a grafana instance.
 
-The tests to be executed are defined by the --test-suite option.
+The tests to be executed are defined by the --suite-path option.
 
 The --test-runner option defines the type of test to execute. The default is k6.
 
@@ -91,11 +91,12 @@ test:
   runner: "k6"
   report:
     format: "text"
-  suite:
-    name: "my-test-suite"
-    path: "/path/to/tests"
-    repo: "https://github.com/org/test-repo.git"
-    revision: "main"
+
+suite:
+  name: "my-test-suite"
+  path: "/path/to/tests"
+  repo: "https://github.com/org/test-repo.git"
+  revision: "main"
   
 grafana:
   url: "http://localhost:3000"
@@ -128,35 +129,35 @@ bench test [flags]
 ```
 
 # run a k6 smoke test from the test suite directory
-bench test --test-suite-path /path/to/test/folder
+bench test --suite-path /path/to/test/folder
 
 # run a k6 load test using a single test
-bench test --test-type load --test-suite-path /path/to/test.js"
+bench test --test-type load --suite-path /path/to/test.js"
 
 # checkout a test from a repo and run tests from my-branch branch
 bench test \
-  --test-suite-repo-url https://url/to/test-repo.git \
-  --test-suite-base path/to/local/repo/directory \
-  --test-suite-revision my-branch \
-  --test-suite-path tests
+  --suite-repo-url https://url/to/test-repo.git \
+  --suite-base path/to/local/repo/directory \
+  --suite-revision my-branch \
+  --suite-path tests
 
 # run k6 test with cloud output
 bench test \
   --grafana-url "http://host.docker.internal:3000" \
-  --test-suite-path /home/bench/work/grafana-plugin-tests \
+  --suite-path /home/bench/work/grafana-plugin-tests \
   --test-runner k6
   --k6-cloud-output=true
 
 # run k6 test with custom environment variables
 bench test \
-  --test-suite-path /home/bench/work/grafana-plugin-tests \
+  --suite-path /home/bench/work/grafana-plugin-tests \
   --test-env VAR=value,ANOTHER_VAR=value        \
   --test-runner k6
 
 # run playwright test
 bench test  \
   --grafana-url "http://host.docker.internal:3000" \
-  --test-suite-path grafana-plugin-tests \
+  --suite-path grafana-plugin-tests \
   --test-runner playwright \
   --pw-prepare "yarn install" \
   --pw-execute "yarn test" \
@@ -183,40 +184,45 @@ bench test  \
       --k6-cloud-token string             K6 cloud access token. If not set K6_CLOUD_TOKEN environment variable is used
       --notify-passing                    deprecated. Use slack-notify-passing
       --pw-execute string                 command used to execute the test suite eg: "npm run test"
-      --pw-execute-cmd string             deprecated. use pw-execute
+      --pw-execute-cmd string             deprecated. Use pw-execute
       --pw-prepare string                 commands used to install dependencies for the test suite eg: "npm install".
                                           Multiple commands can be specified by separating with ';'.
-      --pw-prepare-cmd string             deprecated. use pw-prepare
+      --pw-prepare-cmd string             deprecated. Use pw-prepare
       --slack-codeowners-mapping string   path or url to the codeowner to slack channel id mapping.
                                           Relative to test suite base dir. (default "codeowners-mapping.yaml")
       --slack-notifications               send notifications to slack. Requires setting the --slack-token option or the SLACK_TOKEN environment variable.
       --slack-passing                     send notifications for passing test suites. By default only not passing test suites are notified
       --slack-token string                slack token used for sending notifications. If not defined SLACK_TOKEN environment variable is used.
                                           The token requires chat:write and channels:read scopes
-      --test-env stringToString           custom test environment variables (default [])
-      --test-env-vars stringToString      deprecated. use test-env (default [])
-      --test-report-format string         format of the test execution report. Allowed values 'log' or 'text'.
-                                           'log' produced a structure log. 'text' produced an human readable output (default "text")
-      --test-runner string                test runner. Allowed values: 'k6', 'playwright' (default "k6")
-      --test-suite string                 deprecated. Use test-suite-path
-      --test-suite-base string            base directory for searching test suites. Defaults to current directory
-                                          If specified, it is prefixed to the --test-suite.
-      --test-suite-name string            test suite name. If not specified, TEST_SUITE_NAME environment variable is used.
-                                          Defaults to the last component of --test-suite.
-                                          For example --test-suite /path/to/testsuite will give a test suite name of 'testsuite'.
-      --test-suite-path string            path to the tests to be executed.
+      --suite-base string                 base directory for searching test suites. Defaults to current directory
+                                          If specified, it is prefixed to the --suite-path.
+      --suite-name string                 test suite name. If not specified, SUITE_NAME environment variable is used.
+                                          Defaults to the last component of -suite-path.
+                                          For example --suite--path path/to/testsuite will give a test suite name of 'testsuite'.
+      --suite-path string                 path to the tests to be executed.
                                           The path must be relative to the base dir (which defaults to the current directory).
                                           A single .js file or a directory can be specified.
                                           If a directory is specified, all files in the directory and its sub-directories will be executed.
-      --test-suite-repo string            deprecated. use test-suite-repo-url
-      --test-suite-repo-dirs strings      Directories to checkout from test suite repo. If omitted, all folders will be checkout
-      --test-suite-repo-token string      authentication token for the test suite repository. 
-                                          If not set TEST_SUITE_REPO_TOKEN environment variable is used.
-      --test-suite-repo-url string        url to the repository to get the test suite from. If not set TEST_SUITE_REPO_URL environment variable is used.
-                                          If specified, the repo will be checkout into the test-suite-base directory.
-                                          If test-suite-revision is specified, that revision will be checkout.
+      --suite-repo-dirs strings           Directories to checkout from test suite repo. If omitted, all folders will be checkout
+      --suite-repo-token string           authentication token for the test suite repository. 
+                                          If not set SUITE_REPO_TOKEN environment variable is used.
+      --suite-repo-url string             url to the repository to get the test suite from. If not set SUITE_REPO_URL environment variable is used.
+                                          If specified, the repo will be checkout into the --suite-base directory.
+                                          If --suite-revision is specified, that revision will be checkout.
                                           Otherwise the default branch will be checkout
-      --test-suite-revision string        test suite revision. If not set TEST_SUITE_REVISION environment variable is used
+      --suite-revision string             test suite revision. If not set SUITE_REVISION environment variable is used
+      --test-env stringToString           environment variables passed to the test execution. (default [])
+      --test-env-vars stringToString      deprecated. Use test-env (default [])
+      --test-report-format string         format of the test execution report. Allowed values 'log' or 'text'.
+                                           'log' produced a structure log. 'text' produced an human readable output (default "text")
+      --test-runner string                test runner. Allowed values: 'k6', 'playwright' (default "k6")
+      --test-suite string                 deprecated. Use suite-path
+      --test-suite-base string            deprecated. Use suite-base
+      --test-suite-name string            deprecated. Use suite-name
+      --test-suite-repo string            deprecated. Use suite-repo-url
+      --test-suite-repo-dirs strings      deprecated. Use suite-repo-dirs
+      --test-suite-repo-token string      deprecated. Use suite-repo-token
+      --test-suite-revision string        deprecated. Use suite-revision
       --test-trigger string               test trigger (default "local")
       --test-type string                  test type. Allowed values: 'smoke', 'load' (default "smoke")
       --verbose                           show test outputs
@@ -236,4 +242,4 @@ bench test  \
 
 * [bench](bench.md)	 - grafana bench
 
-###### Auto generated by spf13/cobra on 3-Mar-2025
+###### Auto generated by spf13/cobra on 4-Mar-2025
