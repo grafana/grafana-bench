@@ -115,12 +115,13 @@ represented in the configuration file as:
      bar: value
 
 Notice that some flag names have changed to accommodate the configuration file format.
-Deprecated flag names are not supported in the configuration file.
 
-The flags specified on the command line and the environment variables will take precedence over the
+** NOTE: Deprecated flag names are not supported in the configuration file. **
+
+Precedence: The flags specified on the command line and the environment variables will take precedence over the
 values in the configuration file.
 
-NOTE: we strongly discourage storing sensitive information such as tokens in the configuration file.
+** NOTE: we strongly discourage storing sensitive information such as tokens in the configuration file. **
 Consider using the environment variables or secrets manager for storing sensitive information.
 Also consider using .env files for storing this information in local development environments.
 
@@ -167,7 +168,7 @@ slack:
 
 // NewCmd creates a new test command
 func NewCmd(log *slog.Logger) *cobra.Command {
-	var (	
+	var (
 		config      = &BenchConfig{}
 		suiteConfig = &TestSuiteConfig{}
 	)
@@ -333,7 +334,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		"test-suite-repo-token",
 		"",
 		"deprecated. Use suite-repo-token",
-		)
+	)
 	fs.StringVar(
 		&suiteConfig.RepoToken,
 		"suite-repo-token",
