@@ -17,6 +17,7 @@ grafana:
 
 pw:
   prepare: "yarn install; yarn playwright install"
+  execute: "yarn playwright test"
 
 log:
   level: DEBUG

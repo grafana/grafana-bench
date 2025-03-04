@@ -7,8 +7,6 @@
   "license": "MIT",
   "scripts": {
     "test": "playwright test",
-    "playwright:install": "playwright install",
-    "test:ui": "playwright test --ui"
   },
   "dependencies": {
     "@playwright/test": "^1.42.1",
