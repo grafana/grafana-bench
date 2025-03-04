@@ -63,7 +63,7 @@ jobs:
           docker run --rm --entrypoint='k6' \
             --volume="./CI/:/CI/" \
             --volume="./screenshots:/home/bench/screenshots/" \
-            localhost:5000/grafana-bench-test:latest run --config CI/k6.yaml
+            localhost:5000/grafana-bench-test:latest run /CI/k6/verify_k6_browser_deps.js
       - name: check Grafana instance
         run: |
           curl http://localhost:3000
