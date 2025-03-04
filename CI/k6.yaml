@@ -1,0 +1,20 @@
+trigger: "ci"
+
+test:
+  type: "smoke"
+  runner: "k6"
+
+suite:
+  name: "CI"
+  path: "/home/bench/tests/CI/k6/browser_test.js"
+  revision: "main"
+
+grafana:
+  url: "http://localhost:3000"
+  admin:
+    user: "admin"
+    password: "admin"
+
+log:
+  level: DEBUG
+ 

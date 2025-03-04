@@ -63,7 +63,7 @@ jobs:
           docker run --rm --entrypoint='k6' \
             --volume="./CI/:/CI/" \
             --volume="./screenshots:/home/bench/screenshots/" \
-            localhost:5000/grafana-bench-test:latest run /CI/browser_test.js
+            localhost:5000/grafana-bench-test:latest run --config CI/k6.yaml
       - name: check Grafana instance
         run: |
           curl http://localhost:3000
@@ -77,18 +77,10 @@ jobs:
 
       - name: check playwright test
         run: |
-          docker run --rm \
-            --network=host \
-            --volume="./CI/:/home/bench/tests/CI/" \
-            localhost:5000/grafana-bench-test:latest test \
-            --grafana-url "http://localhost:3000" \
-            --grafana-admin-user "admin" \
-            --grafana-admin-password "admin" \
-            --suite-base "/home/bench/tests/CI/plugin-e2e"  \
-            --test-runner "playwright" \
-            --pw-prepare "yarn install; yarn playwright install" \
-            --pw-execute "yarn run test" \
-            --log-level DEBUG
+          docker run --rm --network=host --volume="./CI/:/home/bench/tests/CI/" \
+            localhost:5000/grafana-bench-test:latest \
+            test \
+            --config "/home/bench/tests/CI/playwright.yaml"
       - name: archive screenshots
         uses: actions/upload-artifact@v4
         with:
