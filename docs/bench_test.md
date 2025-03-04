@@ -90,8 +90,9 @@ test:
     VAR2: "value2"
   type: "smoke"
   runner: "k6"
-  report:
-    format: "text"
+
+report:
+  format: "text"
 
 suite:
   name: "my-test-suite"
@@ -189,6 +190,8 @@ bench test  \
       --pw-prepare string                 commands used to install dependencies for the test suite eg: "npm install".
                                           Multiple commands can be specified by separating with ';'.
       --pw-prepare-cmd string             deprecated. Use pw-prepare
+      --report-format string              format of the test execution report. Allowed values 'log' or 'text'.
+                                           'log' produced a structure log. 'text' produced an human readable output (default "text")
       --slack-codeowners-mapping string   path or url to the codeowner to slack channel id mapping.
                                           Relative to test suite base dir. (default "codeowners-mapping.yaml")
       --slack-notifications               send notifications to slack. Requires setting the --slack-token option or the SLACK_TOKEN environment variable.
@@ -214,8 +217,7 @@ bench test  \
       --suite-revision string             test suite revision. If not set SUITE_REVISION environment variable is used
       --test-env stringToString           environment variables passed to the test execution. (default [])
       --test-env-vars stringToString      deprecated. Use test-env (default [])
-      --test-report-format string         format of the test execution report. Allowed values 'log' or 'text'.
-                                           'log' produced a structure log. 'text' produced an human readable output (default "text")
+      --test-report-format string         deprecated. Use report-format
       --test-runner string                test runner. Allowed values: 'k6', 'playwright' (default "k6")
       --test-suite string                 deprecated. Use suite-path
       --test-suite-base string            deprecated. Use suite-base

@@ -133,8 +133,9 @@ test:
     VAR2: "value2"
   type: "smoke"
   runner: "k6"
-  report:
-    format: "text"
+
+report:
+  format: "text"
 
 suite:
   name: "my-test-suite"
@@ -271,6 +272,12 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	fs.StringVar(
 		&config.ReportFormat,
 		"test-report-format",
+		"",
+		"deprecated. Use report-format",
+	)
+	fs.StringVar(
+		&config.ReportFormat,
+		"report-format",
 		"text",
 		"format of the test execution report. Allowed values 'log' or 'text'."+
 			"\n 'log' produced a structure log. 'text' produced an human readable output",
