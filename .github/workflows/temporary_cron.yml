@@ -38,4 +38,3 @@ jobs:
             --volume="./CI/:/home/bench/tests/CI/" \
             us-docker.pkg.dev/grafanalabs-dev/docker-grafana-bench-dev/grafana-bench:latest test \
             --config "/home/bench/tests/CI/playwright.yaml"
-            #--log-level DEBUG
