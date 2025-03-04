@@ -17,6 +17,8 @@ func Load(cmd *cobra.Command, args []string) error {
 	v.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
 
 	// alias k6-cloud-project to k6-cloud-project-id to use K6's default environment variable name
+	// we do this because the yml file format is different from the environment variable but we want
+	// this gives us compatibility
 	v.RegisterAlias("k6-cloud-project-id", "k6-cloud-project")
 	
 	cfgFile, err := cmd.Flags().GetString("config")
