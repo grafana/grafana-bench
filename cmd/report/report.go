@@ -178,6 +178,13 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			// get playwright json report
 			filename := args[0]
 			fmt.Println(filename)
+
+			info, err := os.Stat(filename)
+			if err != nil {
+				return err
+			}
+			fmt.Printf("%#v", info)
+
 			input, err := os.Open(filename)
 			if err != nil {
 				return fmt.Errorf("failed to open report file: %s", err)
