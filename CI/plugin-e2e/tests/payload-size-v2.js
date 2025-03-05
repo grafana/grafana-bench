@@ -1,5 +1,7 @@
 import { expect } from "@playwright/test";
 import { test } from "../playwright.config";
+import * as fs from 'fs';
+import * as path from 'path';
 
 test("payload-size", { tag: '@performance' }, async ({ page, dashPath }) => {
   let inflatedSize = 0;
