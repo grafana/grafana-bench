@@ -8,7 +8,7 @@ require (
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
 	github.com/go-git/go-git/v5 v5.13.1
 	github.com/joho/godotenv v1.5.1
-	github.com/slack-go/slack v0.15.0
+	github.com/slack-go/slack v0.16.0
 	github.com/spf13/pflag v1.0.6
 	golang.org/x/text v0.22.0
 	gopkg.in/yaml.v3 v3.0.1
