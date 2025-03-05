@@ -22,9 +22,7 @@ jobs:
 
       - name: run playwright tests
         run: |
-          docker run --rm 
-            --network=host \
-            --volume="./CI/:/home/bench/tests/CI/" \
+          docker run --rm --network=host --volume="./CI/:/home/bench/tests/CI/" \
             us-docker.pkg.dev/grafanalabs-dev/docker-grafana-bench-dev/grafana-bench:latest test \
-              --config "/home/bench/tests/CI/playwright.yaml"
-              --pw-execute "yarn run test --grep @performance"
+            --config "/home/bench/tests/CI/playwright.yaml"
+            --pw-execute "yarn run test --grep @performance"
