@@ -27,6 +27,11 @@ jobs:
       - name: checkout code
         uses: actions/checkout@v4
 
+      - name: create empty file for asset sizes
+        run: |
+          # Create an empty file first
+          touch ./CI/asset-sizes.json
+
       - name: run playwright tests
         run: |
           docker run --network=host \
@@ -35,5 +40,6 @@ jobs:
             us-docker.pkg.dev/grafanalabs-dev/docker-grafana-bench-dev/grafana-bench:latest test \
             --config "/home/bench/tests/CI/playwright.yaml" \
             --pw-execute "yarn run test --grep @performance"
+
       - name: spew results
         run: cat ./CI/asset-sizes.json

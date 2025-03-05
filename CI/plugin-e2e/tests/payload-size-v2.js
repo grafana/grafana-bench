@@ -1,7 +1,6 @@
 import { expect } from "@playwright/test";
 import { test } from "../playwright.config";
 import * as fs from 'fs';
-import * as path from 'path';
 
 test("payload-size", { tag: '@performance' }, async ({ page, dashPath }) => {
   let inflatedSize = 0;
@@ -88,17 +87,8 @@ test("payload-size", { tag: '@performance' }, async ({ page, dashPath }) => {
     usedJSHeapSize: +(usedJSHeapSize / 1000 / 1000).toFixed(1),
   };
   
-  // Write to assets.json file
-  const assetsFilePath = path.join('tmp', 'assets.json');
-  
-  // Ensure the directory exists
-  const dirPath = path.dirname(assetsFilePath);
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-  
   // Write the data to file
-  fs.writeFileSync(assetsFilePath, JSON.stringify(performanceData, null, 2));
+  fs.writeFileSync("/tmp/asset-sizes.json", JSON.stringify(performanceData, null, 2));
   
   // Still log to console for debugging
   console.log(`Performance data written to ${assetsFilePath}`);
