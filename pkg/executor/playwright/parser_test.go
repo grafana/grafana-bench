@@ -24,7 +24,7 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 			title: "parse successful test correctly",
 			file:  "./testdata/success.json",
 			expected: executor.SuiteRunSummary{
-				TestRuns: []executor.TestRun{
+				TestRuns: []executor.TestRunSummary{
 					{
 						TestFile: "smoke.test.ts",
 						Status:   executor.TestPassed,
@@ -49,7 +49,7 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 			title: "parse failure test correctly",
 			file:  "./testdata/failures.json",
 			expected: executor.SuiteRunSummary{
-				TestRuns: []executor.TestRun{
+				TestRuns: []executor.TestRunSummary{
 					{
 						TestFile: "failures.test.ts",
 						Status:   executor.TestFailed,
@@ -74,7 +74,7 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 			title: "parse fully skipped tests correctly",
 			file:  "./testdata/skipped.json",
 			expected: executor.SuiteRunSummary{
-				TestRuns:      []executor.TestRun{},
+				TestRuns:      []executor.TestRunSummary{},
 				TotalDuration: float32(2327.512),
 				TestsExecuted: 0,
 				TestsPassed:   0,
@@ -86,7 +86,7 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 			title: "parse output with passed and failed tests",
 			file:  "./testdata/full-report.json",
 			expected: executor.SuiteRunSummary{
-				TestRuns: []executor.TestRun{
+				TestRuns: []executor.TestRunSummary{
 					{
 						TestFile:    "auth.setup.js",
 						Status:      executor.TestPassed,
@@ -183,7 +183,7 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 			title: "parse output with retries",
 			file:  "./testdata/report-retries.json",
 			expected: executor.SuiteRunSummary{
-				TestRuns: []executor.TestRun{
+				TestRuns: []executor.TestRunSummary{
 					{
 						TestFile:    "auth.setup.js",
 						Status:      executor.TestPassed,
@@ -280,7 +280,7 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 			title: "parse nested suites",
 			file:  "./testdata/nested-suites.json",
 			expected: executor.SuiteRunSummary{
-				TestRuns: []executor.TestRun{
+				TestRuns: []executor.TestRunSummary{
 					{
 						TestFile: "auth.setup.js",
 						Status:   executor.TestPassed,

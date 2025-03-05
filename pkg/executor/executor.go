@@ -30,16 +30,29 @@ const (
 	SuiteFailed SuiteStatus = "failed"
 )
 
-// TestRun summarizes the execution of a test
-type TestRun struct {
-	TestFolder  string
-	TestFile    string
-	StartTime   time.Time
-	Status      TestStatus
-	ExitMessage string
-	Iterations  string
-	Durations   TestDurations
-	Attributes  map[string]string
+type SuiteRun struct {
+	Name           string
+	Id             string
+	TestExecutor   string
+	Trigger        string
+	SuiteName      string
+	SuiteRevision  string
+	GrafanaVersion string
+	GrafanaURL     string
+	GrafanaSlug    string
+	BenchRevision  string
+}
+
+// TestRunSummary summarizes the execution of a test
+type TestRunSummary struct {
+	TestFolder  string            `json:"testFolder"`
+	TestFile    string            `json:"testFile"`
+	StartTime   time.Time         `json:"startTime"`
+	Status      TestStatus        `json:"status"`
+	ExitMessage string            `json:"exitMessage"`
+	Iterations  string            `json:"iterations"`
+	Durations   TestDurations     `json:"durations"`
+	Attributes  map[string]string `json:"attributes"`
 }
 
 // TestSuiteSummary summarizes the execution of  a test suite
@@ -53,7 +66,7 @@ type SuiteRunSummary struct {
 	TestsError        int32
 	TotalDuration     float32
 	ScenariosDuration float32
-	TestRuns          []TestRun
+	TestRuns          []TestRunSummary
 	Metrics           map[string]string
 }
 

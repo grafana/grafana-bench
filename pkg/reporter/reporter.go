@@ -10,10 +10,7 @@ import (
 type SuiteRunReporter interface {
 	Report(
 		ctx context.Context,
-		runId string,
-		suiteName string,
-		suiteRevision string,
-		suiteRunId string,
-		suiteRun executor.SuiteRunSummary,
+		suiteRun executor.SuiteRun,
+		suiteRunSummary executor.SuiteRunSummary,
 	) error
 }

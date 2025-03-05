@@ -5,9 +5,13 @@ import (
 	"log/slog"
 	"os"
 	"strings"
+	"time"
 
+	"github.com/grafana/grafana-bench/pkg/config"
+	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/grafana"
-	"github.com/grafana/grafana-bench/pkg/runner"
+	"github.com/grafana/grafana-bench/pkg/revision"
+	"github.com/grafana/grafana-bench/pkg/utils/id"
 	"github.com/spf13/cobra"
 )
 
@@ -168,10 +172,7 @@ slack:
 
 // NewCmd creates a new test command
 func NewCmd(log *slog.Logger) *cobra.Command {
-	var (
-		config      = &BenchConfig{}
-		suiteConfig = &TestSuiteConfig{}
-	)
+	var benchConfig = &config.BenchConfig{}
 
 	cmd := cobra.Command{
 		Use:     "test",
@@ -183,145 +184,196 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				return fmt.Errorf("invalid argument(s): '%s'", strings.Join(args, "', '"))
 			}
 
-			suite, err := suiteConfig.BuildTestSuite(log, config.BaseDir)
+			grafanaInstance, grafanaVersion, err := benchConfig.GetGrafanaInstance(log)
 			if err != nil {
 				return err
 			}
 
-			testRunner, err := config.BuildTestRunner(log, suiteConfig.TestExecutor)
+			testExecutor, err := benchConfig.BuildTestExecutor(
+				log,
+				benchConfig.Test.Executor,
+				grafanaInstance,
+				grafanaVersion,
+			)
 			if err != nil {
 				return err
 			}
 
-			// ensure environment variable values are expanded
-			testEnvVars := map[string]string{}
-			for k, v := range config.EnvVars {
+			reporter, err := benchConfig.BuildReporter()
+			if err != nil {
+				return err
+			}
+
+			suite, err := benchConfig.BuildTestSuite(log)
+			if err != nil {
+				return err
+			}
+
+			// set common test execution variables
+			testEnvVars := map[string]string{
+				"TEST_TYPE":              benchConfig.Test.Type,
+				"TEST_SUITE_REVISION":    suite.Revision,
+				"GRAFANA_URL":            grafanaInstance.Url(),
+				"GRAFANA_ADMIN_USER":     grafanaInstance.AdminUser(),
+				"GRAFANA_ADMIN_PASSWORD": grafanaInstance.AdminPassword(),
+			}
+
+			// add test specific environment variables
+			for k, v := range benchConfig.Test.Env {
 				testEnvVars[k] = os.ExpandEnv(v)
 			}
 
-			trt, err := runner.ParseTestType(config.Type)
+			suiteRunSummary, err := testExecutor.ExecTestSuite(
+				cmd.Context(),
+				*suite,
+				testEnvVars,
+			)
 			if err != nil {
-				return err
+				return fmt.Errorf("executing test suite run %w", err)
 			}
 
-			return testRunner.Exec(cmd.Context(), trt, *suite, testEnvVars)
+			runId := id.Run(benchConfig.SuiteRun.Trigger, time.Now())
+			suiteRunName := id.SuiteRunName(benchConfig.SuiteRun.Trigger, benchConfig.TestSuite.Name, benchConfig.Test.Type)
+			suiteRun := executor.SuiteRun{
+				Name:           suiteRunName,
+				Id:             runId,
+				Trigger:        benchConfig.SuiteRun.Trigger,
+				TestExecutor:   benchConfig.Test.Executor,
+				BenchRevision:  benchConfig.BenchRevision,
+				GrafanaURL:     grafanaInstance.Hostname(),
+				GrafanaSlug:    grafanaInstance.Slug(),
+				GrafanaVersion: grafanaVersion,
+			}
+
+			err = reporter.Report(cmd.Context(), suiteRun, suiteRunSummary)
+			if err != nil {
+				return fmt.Errorf("reporting test suite run %w", err)
+			}
+
+			return nil
 		},
 	}
 
 	fs := cmd.Flags()
 	fs.StringToStringVar(
-		&config.EnvVars,
+		&benchConfig.Test.Env,
 		"test-env-vars",
 		nil,
 		"deprecated. Use test-env",
 	)
 	fs.StringToStringVar(
-		&config.EnvVars,
+		&benchConfig.Test.Env,
 		"test-env",
 		nil,
 		"environment variables passed to the test execution.",
 	)
 	fs.StringVar(
-		&config.Trigger,
+		&benchConfig.SuiteRun.Trigger,
 		"test-trigger",
 		"local",
-		"deprecated. Use trigger",
+		"deprecated. Use run-trigger",
 	)
 	fs.StringVar(
-		&config.Trigger,
+		&benchConfig.SuiteRun.Trigger,
 		"trigger",
+		"local",
+		"deprecated. Use run-trigger",
+	)
+	fs.StringVar(
+		&benchConfig.SuiteRun.Trigger,
+		"run-trigger",
 		"local",
 		"trigger of bench execution. For example, 'ci' or 'local'.",
 	)
 	fs.StringVar(
-		&config.Type,
+		&benchConfig.Test.Type,
 		"test-type",
 		"smoke",
 		"test type. Allowed values: 'smoke', 'load'",
 	)
 	fs.StringVar(
-		&suiteConfig.TestExecutor,
+		&benchConfig.Test.Executor,
 		"test-runner",
 		"k6",
 		"test runner. Allowed values: 'k6', 'playwright'",
 	)
 	fs.StringVar(
-		&config.PW.PrepareCmd,
+		&benchConfig.PW.PrepareCmd,
 		"pw-prepare-cmd",
 		"",
 		"deprecated. Use pw-prepare",
 	)
 	fs.StringVar(
-		&config.PW.PrepareCmd,
+		&benchConfig.PW.PrepareCmd,
 		"pw-prepare",
 		"",
 		"commands used to install dependencies for the test suite eg: \"npm install\"."+
 			"\nMultiple commands can be specified by separating with ';'.",
 	)
 	fs.StringVar(
-		&config.PW.ExecuteCmd,
+		&benchConfig.PW.ExecuteCmd,
 		"pw-execute-cmd",
 		"",
 		"deprecated. Use pw-execute",
 	)
 	fs.StringVar(
-		&config.PW.ExecuteCmd,
+		&benchConfig.PW.ExecuteCmd,
 		"pw-execute",
 		"",
 		"command used to execute the test suite eg: \"npm run test\"",
 	)
 	fs.StringVar(
-		&config.ReportFormat,
+		&benchConfig.Report.Format,
 		"test-report-format",
 		"",
 		"deprecated. Use report-format",
 	)
 	fs.StringVar(
-		&config.ReportFormat,
+		&benchConfig.Report.Format,
 		"report-format",
 		"text",
 		"format of the test execution report. Allowed values 'log' or 'text'."+
 			"\n 'log' produced a structure log. 'text' produced an human readable output",
 	)
 	fs.BoolVar(
-		&config.Verbose,
+		&benchConfig.Verbose,
 		"verbose",
 		false,
 		"show test outputs",
 	)
 	fs.StringVar(
-		&config.Grafana.Url,
+		&benchConfig.Grafana.Url,
 		"grafana-url",
 		"http://localhost:3000",
 		"url to grafana instance. Overridden by the GRAFANA_URL environment variable",
 	)
 	fs.DurationVar(
-		&config.Grafana.Timeout,
+		&benchConfig.Grafana.Timeout,
 		"grafana-timeout",
 		grafana.DefaultGrafanaTimeout,
 		"timeout for waiting grafana to be live",
 	)
 	fs.StringVar(
-		&config.Grafana.AdminUser,
+		&benchConfig.Grafana.AdminUser,
 		"grafana-admin-user",
 		"admin",
 		"grafana admin user name. Overridden by the GRAFANA_ADMIN_USER environment variable",
 	)
 	fs.StringVar(
-		&config.Grafana.AdminPassword,
+		&benchConfig.Grafana.AdminPassword,
 		"grafana-admin-password",
 		"admin",
 		"grafana admin user's password. Overridden by the GRAFANA_ADMIN_PASSWORD environment variable",
 	)
 	// TODO: add default value as the revision is used to generate the run id
 	fs.StringVar(
-		&suiteConfig.Repo,
+		&benchConfig.TestSuite.Repo,
 		"test-suite-repo",
 		"",
 		"deprecated. Use suite-repo-url",
 	)
 	fs.StringVar(
-		&suiteConfig.Repo,
+		&benchConfig.TestSuite.Repo,
 		"suite-repo-url",
 		"",
 		"url to the repository to get the test suite from. If not set SUITE_REPO_URL environment variable is used."+
@@ -330,75 +382,81 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			"\nOtherwise the default branch will be checkout",
 	)
 	fs.StringVar(
-		&suiteConfig.RepoToken,
+		&benchConfig.TestSuite.RepoToken,
 		"test-suite-repo-token",
 		"",
 		"deprecated. Use suite-repo-token",
 	)
 	fs.StringVar(
-		&suiteConfig.RepoToken,
+		&benchConfig.TestSuite.RepoToken,
 		"suite-repo-token",
 		"",
 		"authentication token for the test suite repository. "+
 			"\nIf not set SUITE_REPO_TOKEN environment variable is used.",
 	)
 	fs.StringSliceVar(
-		&suiteConfig.RepoDirs,
+		&benchConfig.TestSuite.RepoDirs,
 		"test-suite-repo-dirs",
 		nil,
 		"deprecated. Use suite-repo-dirs",
 	)
 	fs.StringSliceVar(
-		&suiteConfig.RepoDirs,
+		&benchConfig.TestSuite.RepoDirs,
 		"suite-repo-dirs",
 		nil,
 		"Directories to checkout from test suite repo. If omitted, all folders will be checkout",
 	)
 	fs.StringVar(
-		&suiteConfig.Revision,
+		&benchConfig.TestSuite.Revision,
 		"test-suite-revision",
 		"",
 		"deprecated. Use suite-revision",
 	)
 	fs.StringVar(
-		&suiteConfig.Revision,
+		&benchConfig.TestSuite.Revision,
 		"suite-revision",
 		"",
 		"test suite revision. If not set SUITE_REVISION environment variable is used",
 	)
 	fs.StringVar(
-		&config.BenchRevision,
+		&benchConfig.BenchRevision,
 		"bench-revision",
-		config.BenchRevision,
+		revision.BenchRevision(),
 		"grafana bench revision. If not set BENCH_REVISION environment variable is used.",
 	)
 	fs.StringVar(
-		&config.K6.CloudToken,
+		&benchConfig.K6.CloudToken,
 		"k6-cloud-token",
 		"",
 		"K6 cloud access token. If not set K6_CLOUD_TOKEN environment variable is used",
 	)
 	fs.StringVar(
-		&config.K6.CloudProjectId,
+		&benchConfig.K6.CloudProjectId,
 		"k6-cloud-project-id",
 		"",
 		"deprecated. Use k6-cloud-project",
 	)
 	fs.StringVar(
-		&config.K6.CloudProjectId,
+		&benchConfig.K6.CloudProjectId,
 		"k6-cloud-project",
 		"",
 		"K6 cloud project ID. If not set K6_CLOUD_PROJECT_ID environment variable is used",
 	)
 	fs.BoolVar(
-		&config.K6.CloudOutput,
+		&benchConfig.K6.CloudOutput,
 		"k6-cloud-output",
 		false,
 		"send output to GCK6. Requires setting the GCK6 project ID and access token.",
 	)
 	fs.StringVar(
-		&config.DashboardURL,
+		&benchConfig.SuiteRun.DashboardURL,
 		"dashboard",
+		"",
+		"deprecated. Use run-dashboard",
+	)
+	fs.StringVar(
+		&benchConfig.SuiteRun.DashboardURL,
+		"run-dashboard",
 		"",
 		"Template for the smoke test suite execution dashboard URL."+
 			"\nSupports the substitution of the following variables:"+
@@ -406,12 +464,12 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			"\nExample: http://localhost/dashboards?run={{.SuiteRun}}",
 	)
 	fs.StringVar(
-		&suiteConfig.Path,
+		&benchConfig.TestSuite.Path,
 		"test-suite",
 		"",
 		"deprecated. Use suite-path")
 	fs.StringVar(
-		&suiteConfig.Path,
+		&benchConfig.TestSuite.Path,
 		"suite-path",
 		"",
 		"path to the tests to be executed."+
@@ -419,26 +477,26 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			"\nA single .js file or a directory can be specified."+
 			"\nIf a directory is specified, all files in the directory and its sub-directories will be executed.")
 	fs.StringVar(
-		&config.BaseDir,
+		&benchConfig.BaseDir,
 		"test-suite-base",
 		"",
 		"deprecated. Use suite-base",
 	)
 	fs.StringVar(
-		&config.BaseDir,
+		&benchConfig.BaseDir,
 		"suite-base",
 		"",
 		"base directory for searching test suites. Defaults to current directory"+
 			"\nIf specified, it is prefixed to the --suite-path.",
 	)
 	fs.StringVar(
-		&suiteConfig.Name,
+		&benchConfig.TestSuite.Name,
 		"test-suite-name",
 		"",
 		"deprecated. Use suite-name",
 	)
 	fs.StringVar(
-		&suiteConfig.Name,
+		&benchConfig.TestSuite.Name,
 		"suite-name",
 		"",
 		"test suite name. If not specified, SUITE_NAME environment variable is used."+
@@ -446,37 +504,37 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			"\nFor example --suite--path path/to/testsuite will give a test suite name of 'testsuite'.",
 	)
 	fs.BoolVar(
-		&config.NotifyPassing,
+		&benchConfig.Slack.NotifyPassing,
 		"notify-passing",
 		false,
 		"deprecated. Use slack-notify-passing",
 	)
 	fs.BoolVar(
-		&config.NotifyPassing,
+		&benchConfig.Slack.NotifyPassing,
 		"slack-passing",
 		false,
 		"send notifications for passing test suites. By default only not passing test suites are notified",
 	)
 	fs.BoolVar(
-		&config.SlackNotifications,
+		&benchConfig.Slack.Notifications,
 		"slack-notifications",
 		false,
 		"send notifications to slack. Requires setting the --slack-token option or the SLACK_TOKEN environment variable.",
 	)
 	fs.StringVar(
-		&config.Slack.Token,
+		&benchConfig.Slack.Token,
 		"slack-token",
 		"",
 		"slack token used for sending notifications. If not defined SLACK_TOKEN environment variable is used."+
 			"\nThe token requires chat:write and channels:read scopes",
 	)
 	fs.StringVar(
-		&config.Slack.CodeownersMap,
+		&benchConfig.Slack.CodeownersMap,
 		"codeowners-mapping",
 		"codeowners-mapping.yaml",
 		"deprecated. Use slack-codeowners-mapping")
 	fs.StringVar(
-		&config.Slack.CodeownersMap,
+		&benchConfig.Slack.CodeownersMap,
 		"slack-codeowners-mapping",
 		"codeowners-mapping.yaml",
 		"path or url to the codeowner to slack channel id mapping."+

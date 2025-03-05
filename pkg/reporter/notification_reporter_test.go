@@ -29,7 +29,7 @@ func (f *fakeNotifier) Notify(
 	ctx context.Context,
 	recipient string,
 	suiteRunId string,
-	testRuns []executor.TestRun,
+	testRuns []executor.TestRunSummary,
 ) error {
 	if f.err != nil {
 		return f.err
@@ -45,18 +45,18 @@ func TestNotificationReporter(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		title           string 
+		title           string
 		options         []NotificationOption
 		notificationErr error
-		suiteRun        executor.SuiteRunSummary
+		summary         executor.SuiteRunSummary
 		codeowners      string
 		expected        map[string][]string
 		expectedErr     error
 	}{
 		{
 			title: "notify failed test to global code owner",
-			suiteRun: executor.SuiteRunSummary{
-				TestRuns: []executor.TestRun{
+			summary: executor.SuiteRunSummary{
+				TestRuns: []executor.TestRunSummary{
 					{TestFolder: "test-suite", TestFile: "pass.js", Status: executor.TestPassed},
 					{TestFolder: "test-suite", TestFile: "failed.js", Status: executor.TestFailed},
 				},
@@ -69,8 +69,8 @@ func TestNotificationReporter(t *testing.T) {
 		{
 			title:   "notify all tests to global code owner",
 			options: []NotificationOption{NotifyPassing(true)},
-			suiteRun: executor.SuiteRunSummary{
-				TestRuns: []executor.TestRun{
+			summary: executor.SuiteRunSummary{
+				TestRuns: []executor.TestRunSummary{
 					{TestFolder: "test-suite", TestFile: "pass.js", Status: executor.TestPassed},
 					{TestFolder: "test-suite", TestFile: "failed.js", Status: executor.TestFailed},
 				},
@@ -82,8 +82,8 @@ func TestNotificationReporter(t *testing.T) {
 		},
 		{
 			title: "no code owner for failed test",
-			suiteRun: executor.SuiteRunSummary{
-				TestRuns: []executor.TestRun{
+			summary: executor.SuiteRunSummary{
+				TestRuns: []executor.TestRunSummary{
 					{TestFolder: "test-suite/test-folder", TestFile: "failed.js", Status: executor.TestFailed},
 				},
 			},
@@ -92,8 +92,8 @@ func TestNotificationReporter(t *testing.T) {
 		},
 		{
 			title: "notify only failed tests with code owner",
-			suiteRun: executor.SuiteRunSummary{
-				TestRuns: []executor.TestRun{
+			summary: executor.SuiteRunSummary{
+				TestRuns: []executor.TestRunSummary{
 					{TestFolder: "test-suite/folder", TestFile: "failed.js", Status: executor.TestFailed},
 					{TestFolder: "test-suite/another-folder", TestFile: "failed.js", Status: executor.TestFailed},
 				},
@@ -105,8 +105,8 @@ func TestNotificationReporter(t *testing.T) {
 		},
 		{
 			title: "no codeowners file",
-			suiteRun: executor.SuiteRunSummary{
-				TestRuns: []executor.TestRun{
+			summary: executor.SuiteRunSummary{
+				TestRuns: []executor.TestRunSummary{
 					{TestFolder: "test-suite", TestFile: "failed.js", Status: executor.TestFailed},
 				},
 			},
@@ -117,8 +117,8 @@ func TestNotificationReporter(t *testing.T) {
 		{
 			title:           "error sending notification",
 			notificationErr: errors.New("fake notification error"),
-			suiteRun: executor.SuiteRunSummary{
-				TestRuns: []executor.TestRun{
+			summary: executor.SuiteRunSummary{
+				TestRuns: []executor.TestRunSummary{
 					{TestFolder: "test-suite", TestFile: "failed.js", Status: executor.TestFailed},
 				},
 			},
@@ -129,8 +129,8 @@ func TestNotificationReporter(t *testing.T) {
 		{
 			title:           "Ignore No mapping for recipient error",
 			notificationErr: notifier.ErrNoMappingForCodeowner,
-			suiteRun: executor.SuiteRunSummary{
-				TestRuns: []executor.TestRun{
+			summary: executor.SuiteRunSummary{
+				TestRuns: []executor.TestRunSummary{
 					{TestFolder: "test-suite", TestFile: "failed.js", Status: executor.TestFailed},
 				},
 			},
@@ -163,7 +163,7 @@ func TestNotificationReporter(t *testing.T) {
 			}
 
 			// create test files
-			for _, testRun := range tc.suiteRun.TestRuns {
+			for _, testRun := range tc.summary.TestRuns {
 				testFolder := filepath.Join(testSuite.BaseDir, testRun.TestFolder)
 				if err := os.MkdirAll(testFolder, 0o755); err != nil {
 					t.Fatal(err)
@@ -180,13 +180,16 @@ func TestNotificationReporter(t *testing.T) {
 				t.Fatalf("failed to create notification reporter: %v", err)
 			}
 
+			suiteRun := executor.SuiteRun{
+				Name:          "test",
+				Id:            "123",
+				SuiteName:     testSuite.Name,
+				SuiteRevision: testSuite.Revision,
+			}
 			err = reporter.Report(
 				context.Background(),
-				testSuite.Name,
-				testSuite.Revision,
-				"123", // run id
-				"456", // test suite run id
-				tc.suiteRun,
+				suiteRun,
+				tc.summary,
 			)
 
 			if !errors.Is(err, tc.expectedErr) {

@@ -14,6 +14,6 @@ type Notifier interface {
 		ctx context.Context,
 		recipient string,
 		suiteRunId string,
-		testRuns []executor.TestRun,
+		testRuns []executor.TestRunSummary,
 	) error
 }
