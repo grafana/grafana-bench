@@ -74,14 +74,14 @@ func TestNotify(t *testing.T) {
 	testCases := []struct {
 		title        string
 		recipient    string
-		testRuns     []executor.TestRun
+		testRuns     []executor.TestRunSummary
 		expectedMsgs map[string][]string
 		expectedErr  error
 	}{
 		{
 			title:     "notify code owner",
 			recipient: "codeowner-team",
-			testRuns: []executor.TestRun{
+			testRuns: []executor.TestRunSummary{
 				{TestFolder: "test-suite", TestFile: "failed.js", Status: executor.TestFailed},
 			},
 			expectedMsgs: map[string][]string{"CHANNEL_ID": {"failed.js"}},
@@ -90,19 +90,18 @@ func TestNotify(t *testing.T) {
 		{
 			title:        "nothing to notify",
 			recipient:    "codeowner-team",
-			testRuns:     []executor.TestRun{},
+			testRuns:     []executor.TestRunSummary{},
 			expectedMsgs: map[string][]string{},
 			expectedErr:  nil,
 		},
 		{
 			title:        "recipient's channel not found in mapping",
 			recipient:    "another-codeowner-team",
-			testRuns:     []executor.TestRun{},
+			testRuns:     []executor.TestRunSummary{},
 			expectedMsgs: map[string][]string{},
 			expectedErr:  ErrNoMappingForCodeowner,
 		},
 	}
-
 
 	mapping := CodeownersMapping{
 		"codeowner-team": "CHANNEL_ID",

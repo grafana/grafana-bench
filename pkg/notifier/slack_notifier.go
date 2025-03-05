@@ -19,10 +19,9 @@ var (
 	ErrPostingMessage      = errors.New("posting message")
 )
 
-
 type data struct {
 	TestSuiteRunId string
-	TestRuns       []executor.TestRun
+	TestRuns       []executor.TestRunSummary
 	TestSuite      executor.TestSuite
 	DashboardURL   string
 }
@@ -31,7 +30,7 @@ func FormatTestResults(
 	dashboardURL string,
 	suiteRunId string,
 	suite executor.TestSuite,
-	testRuns []executor.TestRun,
+	testRuns []executor.TestRunSummary,
 ) ([]slack.Block, error) {
 	blocks := []slack.Block{}
 
@@ -46,12 +45,12 @@ func FormatTestResults(
 		testRunHeader = fmt.Sprintf("<%s|%s>", dashboardLink, suiteRunId)
 	}
 	headerText := slack.NewTextBlockObject(
-		"mrkdwn", 
+		"mrkdwn",
 		fmt.Sprintf("*Suite Run:* %s", testRunHeader),
 		false,
 		false,
 	)
-	blocks =  append(blocks, slack.NewSectionBlock(headerText, nil, nil))
+	blocks = append(blocks, slack.NewSectionBlock(headerText, nil, nil))
 
 	// creates a section for each test run with two fields to emulate a table
 	for _, testRun := range testRuns {
@@ -137,7 +136,7 @@ func (s *slackNotifier) Notify(
 	ctx context.Context,
 	recipient string,
 	suiteRunId string,
-	testRuns []executor.TestRun,
+	testRuns []executor.TestRunSummary,
 ) error {
 	channelID, err := s.mapping.GetChannel(recipient)
 	if err != nil {
@@ -157,4 +156,3 @@ func (s *slackNotifier) Notify(
 
 	return nil
 }
-

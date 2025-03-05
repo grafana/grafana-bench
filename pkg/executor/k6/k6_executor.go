@@ -38,7 +38,7 @@ var (
 
 // K6TestExecutor implements TestExecutor interface for running k6 test suites
 type K6TestExecutor struct {
-	Log               *slog.Logger
+	Log *slog.Logger
 	K6ExecutorOptions
 }
 
@@ -49,13 +49,14 @@ type K6ExecutorOptions struct {
 	CloudToken     string
 	CloudProjectID string
 }
+
 // NewK6TestExecutor creates a new instance of K6TestExecutor
 func NewK6TestExecutor(
 	log *slog.Logger,
 	opts K6ExecutorOptions,
 ) *K6TestExecutor {
 	return &K6TestExecutor{
-		Log:            log.With("executor", "k6"),
+		Log:               log.With("executor", "k6"),
 		K6ExecutorOptions: opts,
 	}
 }
@@ -127,10 +128,10 @@ func (t *K6TestExecutor) ExecTestSuite(
 
 		var (
 			testStartTime time.Time
-			retries int
-			k6Summary K6TestRun
+			retries       int
+			k6Summary     K6TestRun
 		)
-		
+
 		for {
 			// reset the start time for each test retry
 			testStartTime = time.Now()
@@ -164,7 +165,7 @@ func (t *K6TestExecutor) ExecTestSuite(
 		rootDir, _ := filepath.Abs(suite.BaseDir)
 		testFolder, _ := filepath.Rel(rootDir, filepath.Dir(testFile))
 
-		summary := executor.TestRun{
+		summary := executor.TestRunSummary{
 			TestFolder:  testFolder,
 			TestFile:    path.Base(testFile),
 			StartTime:   testStartTime,
