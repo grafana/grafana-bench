@@ -181,7 +181,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 
 			info, err := os.Stat(filename)
 			if err != nil {
-				return err
+				return fmt.Errorf("file not found: %s, err: %v", args[0], err)
 			}
 			fmt.Printf("%#v", info)
 
