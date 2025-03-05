@@ -14,7 +14,7 @@ on:
   # Optional: Also allow manual triggering
   workflow_dispatch:
 jobs:
-  generate-logs:
+  measure-frontend-assets:
     runs-on: ubuntu-latest
 
     services:
