@@ -77,13 +77,30 @@ test("payload-size", { tag: '@performance' }, async ({ page, dashPath }) => {
   await client.send('HeapProfiler.collectGarbage');
   let usedJSHeapSize = (await client.send("Runtime.getHeapUsage")).usedSize;
 
-  console.log({
+  // Create performance data object
+  const performanceData = {
     boot: Math.round(end - start),
     inflatedSizeMB: +(inflatedSize / 1000 / 1000).toFixed(1),
     transferSizeMB: +(transferSize / 1000 / 1000).toFixed(1),
     requests: requests,
     usedJSHeapSize: +(usedJSHeapSize / 1000 / 1000).toFixed(1),
-  });
-
+  };
+  
+  // Write to assets.json file
+  const assetsFilePath = path.join('tmp', 'assets.json');
+  
+  // Ensure the directory exists
+  const dirPath = path.dirname(assetsFilePath);
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true });
+  }
+  
+  // Write the data to file
+  fs.writeFileSync(assetsFilePath, JSON.stringify(performanceData, null, 2));
+  
+  // Still log to console for debugging
+  console.log(`Performance data written to ${assetsFilePath}`);
+  console.log(performanceData);
+  
   client.detach();
 });
