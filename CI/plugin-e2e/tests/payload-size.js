@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test";
 import { test } from "../playwright.config";
 
-test("payload-size", async ({ page, dashPath }) => {
+test("payload-size",{ tag: '@performance' }, async ({ page, dashPath }) => {
   let inflatedSize = 0;
   let transferSize = 0;
   let requests = 0;
@@ -53,4 +53,4 @@ test("payload-size", async ({ page, dashPath }) => {
   page.removeListener("response", addSize);
 
   client.detach();
-}).tag('@performance');
+});
