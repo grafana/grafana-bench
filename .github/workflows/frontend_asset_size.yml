@@ -27,19 +27,45 @@ jobs:
       - name: checkout code
         uses: actions/checkout@v4
 
-      - name: create empty file for asset sizes
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+
+      - name: install bench
+        run: go install
+
+      - name: setup playwright
         run: |
-          # Create an empty file first
-          touch ./CI/asset-sizes.json
+          yarn install && yarn playwright install
 
       - name: run playwright tests
-        run: |
-          docker run --network=host \
-            --volume="./CI/:/home/bench/tests/CI/" \
-            --volume="./CI/asset-sizes.json:/tmp/asset-sizes.json" \
-            us-docker.pkg.dev/grafanalabs-dev/docker-grafana-bench-dev/grafana-bench:latest test \
-            --config "/home/bench/tests/CI/playwright.yaml" \
-            --pw-execute "yarn run test --grep @performance"
+        run: cd CI/ && yarn run test --grep @performance
 
-      - name: spew results
-        run: cat ./CI/asset-sizes.json
+      #- name: create empty file for asset sizes
+      #  run: |
+      #    # Create an empty file first
+      #    touch ./CI/asset-sizes.json
+      #- name: run playwright tests
+      #  run: |
+      #    docker run --network=host \
+      #      --volume="./CI/:/home/bench/tests/CI/" \
+      #      --volume="./CI/asset-sizes.json:/tmp/asset-sizes.json" \
+      #      us-docker.pkg.dev/grafanalabs-dev/docker-grafana-bench-dev/grafana-bench:latest test \
+      #      --config "/home/bench/tests/CI/playwright.yaml" \
+      #      --pw-execute "yarn run test --grep @performance"
+
+      - name: cat results
+        run: cat ./CI/asset-metrics.json
+
+      - name: report result
+        run: |
+          grafana-bench report \
+            --grafana-url "http://localhost:3000" \ # this is a bad grafana url because we are forcing a login
+            --suite-run-metrics-prefix "Assets" \
+            /tmp/asset-metrics.json
+

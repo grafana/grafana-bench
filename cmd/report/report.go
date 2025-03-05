@@ -1,11 +1,15 @@
 package report
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
+	"strings"
 	"time"
 
+	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/executor/playwright"
 	"github.com/grafana/grafana-bench/pkg/grafana"
 	"github.com/grafana/grafana-bench/pkg/reporter"
@@ -17,7 +21,7 @@ const (
 	long = `
 report subcommand reports test suite execution results.
 
-Presently if supports only playwright test results in json format.
+Presently it supports only playwright test results in json format.
 
 It produces a human readable output or a structured log output based on the format flag.
 
@@ -82,6 +86,39 @@ grafana:
 `
 )
 
+func readMetrics(file *os.File, metricsPrefix string) (executor.SuiteRunSummary, error) {
+
+	data, err := io.ReadAll(file)
+	if err != nil {
+		return executor.SuiteRunSummary{}, fmt.Errorf("failed reading metrics file: %s", err)
+	}
+
+	var rawMap map[string]any
+	if err := json.Unmarshal(data, &rawMap); err != nil {
+		return executor.SuiteRunSummary{}, fmt.Errorf("error parsing JSON on custom metrics file: %v", err)
+	}
+
+	// Convert to map[string]string
+	metrics := make(map[string]string)
+	for key, value := range rawMap {
+
+		// uppercase
+		key = strings.ToUpper(key[:1]) + key[1:]
+		metrics[metricsPrefix+key] = fmt.Sprintf("%v", value)
+	}
+
+	return executor.SuiteRunSummary{
+		StartTime:     time.Now(),
+		Status:        executor.SuitePassed,
+		TestsExecuted: 1,
+		TestsPassed:   1,
+		TestsFailed:   0,
+		TestsError:    0,
+		Metrics:       metrics,
+	}, nil
+
+}
+
 // NewCmd returns a new bench report command
 func NewCmd(log *slog.Logger) *cobra.Command {
 	var (
@@ -139,7 +176,8 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			}
 
 			// get playwright json report
-			input, err := os.Open(args[0])
+			filename := args[0]
+			input, err := os.Open(filename)
 			if err != nil {
 				return fmt.Errorf("failed to open report file: %s", err)
 			}
@@ -164,9 +202,22 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				return fmt.Errorf("invalid report format %q", format)
 			}
 
-			suiteRun, err := playwright.ParseJsonOutput(input)
-			if err != nil {
-				return fmt.Errorf("parsing playwright json input %w", err)
+			// THIS IS A HACK, FOR THE HACKATHON. REMOVE !!!
+			// if metrics.json. assume we have key value metrics
+			// and ignore playwright.
+			// we took this approach because current logic expects a file to be available
+			// another good approach could be to pass a report type, and a file
+			var suiteRun executor.SuiteRunSummary
+			if strings.Contains(filename, "metrics.json") {
+				suiteRun, err = readMetrics(input, metricsPrefix)
+				if err != nil {
+					return err
+				}
+			} else {
+				suiteRun, err = playwright.ParseJsonOutput(input)
+				if err != nil {
+					return fmt.Errorf("parsing playwright json input %w", err)
+				}
 			}
 
 			// add custom metrics adding the prefix to the name
