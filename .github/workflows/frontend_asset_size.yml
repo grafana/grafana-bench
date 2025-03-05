@@ -56,7 +56,7 @@ jobs:
       - name: report result
         run: |
           grafana-bench report \
-            --grafana-version "rrc-instant" # this is a proxy until we can get this in RRC with auth
+            --grafana-version "rrc-instant" \ # this is a proxy until we can get this in RRC with auth
             --suite-run-metrics-prefix "FrontendAssets" \
             /tmp/asset-metrics.json
 
