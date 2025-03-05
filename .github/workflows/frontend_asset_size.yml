@@ -31,7 +31,7 @@ jobs:
         run: |
           docker run --network=host \
             --volume="./CI/:/home/bench/tests/CI/" \
-            --volume="./CI/:/tmp/asset-sizes.json" \
+            --volume="./CI/asset-sizes.json:/tmp/asset-sizes.json" \
             us-docker.pkg.dev/grafanalabs-dev/docker-grafana-bench-dev/grafana-bench:latest test \
             --config "/home/bench/tests/CI/playwright.yaml" \
             --pw-execute "yarn run test --grep @performance"
