@@ -33,7 +33,7 @@ jobs:
           cache: true
 
       - name: install bench
-        run: go install ./...
+        run: go install
 
       - uses: actions/setup-node@v4
         with:
