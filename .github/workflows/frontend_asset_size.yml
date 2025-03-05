@@ -50,14 +50,13 @@ jobs:
         working-directory: ./CI/plugin-e2e
         run: yarn run test --grep @performance
 
-      ## START HERE - figure out where asset metrics file is being written
       - name: cat results
         run: cat /tmp/asset-metrics.json
 
       - name: report result
         run: |
           grafana-bench report \
-            --grafana-url "http://localhost:3000" \ # this is a bad grafana url because we are forcing a login
-            --suite-run-metrics-prefix "Assets" \
+            --grafana-version "rrc-instant" # this is a proxy until we can get this in RRC with auth
+            --suite-run-metrics-prefix "FrontendAssets" \
             /tmp/asset-metrics.json
 
