@@ -50,16 +50,12 @@ jobs:
         working-directory: ./CI/plugin-e2e
         run: yarn run test --grep @performance
 
-      - name: Check for asset metrics file
-        run: |
-          ls -la /tmp/
-          find /tmp -name "*.json" -type f
-
       - name: cat results
         run: cat /tmp/asset-metrics.json
 
       - name: report result
         run: |
+          cat /tmp/asset-metrics.json
           grafana-bench report \
             --grafana-url "https://leeoniya.grafana.net" \
             --grafana-version "rrc-instant" \ # this is a proxy until we can get this in RRC with auth
