@@ -57,7 +57,7 @@ jobs:
         run: |
           cat /tmp/asset-metrics.json
           grafana-bench report \
-            --grafana-url "https://leeoniya.grafana.net" \
+            --grafana-url "http://localhost:3000" \
             --grafana-version "rrc-instant" \ # this is a proxy until we can get this in RRC with auth
             --suite-run-metrics-prefix "FrontendAssets" \
             --log-level DEBUG \
