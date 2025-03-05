@@ -54,7 +54,6 @@ jobs:
         run: |
           ls -la /tmp/
           find /tmp -name "*.json" -type f
-          find ./CI -name "*.json" -type f
 
       - name: cat results
         run: cat /tmp/asset-metrics.json
