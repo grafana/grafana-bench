@@ -32,7 +32,7 @@ export default defineConfig({
     },
     // npx playwright test --project=payload-size --ui
     {
-      name: 'payload-size',
+      name: 'payload-size-v2',
 
       testMatch: [/.*\.js/],
       use: {
