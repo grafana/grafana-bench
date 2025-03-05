@@ -69,11 +69,13 @@ jobs:
           #  echo "Grafana is not accessible"
           #  exit 1
           #fi
+          
       - name: check playwright test
         run: |
           docker run --rm --network=host --volume="./CI/:/home/bench/tests/CI/" \
             localhost:5000/grafana-bench-test:latest test \
               --config "/home/bench/tests/CI/playwright.yaml"
+
       - name: archive screenshots
         uses: actions/upload-artifact@v4
         with:
