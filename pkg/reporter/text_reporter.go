@@ -38,6 +38,7 @@ func (r *TextReporter) Report(
 	}
 	fmt.Fprintf(r.report, "\nTests executed %d\n", suiteRun.TestsExecuted)
 	fmt.Fprintf(r.report, "Tests passed %d\n", suiteRun.TestsPassed)
+	fmt.Fprintf(r.report, "Tests flaky %d\n", suiteRun.TestsFlaky)
 	fmt.Fprintf(r.report, "Tests failed %d\n", suiteRun.TestsFailed)
 	fmt.Fprintf(r.report, "Tests error %d\n", suiteRun.TestsError)
 	fmt.Fprintf(r.report, "\nTests suite %s\n", suiteRun.Status)

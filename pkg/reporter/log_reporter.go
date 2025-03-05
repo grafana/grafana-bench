@@ -23,7 +23,7 @@ func NewLogReporter(attr []any) *LogReporter {
 		Log: log,
 	}
 }
- 
+
 func (r *LogReporter) Report(
 	_ context.Context,
 	suiteName string,
@@ -68,6 +68,7 @@ func suiteRunLogAttrs(suiteRun executor.SuiteRunSummary) []any {
 		"duration", suiteRun.TotalDuration,
 		"testsExecuted", suiteRun.TestsExecuted,
 		"testsPassed", suiteRun.TestsPassed,
+		"testsFlaky", suiteRun.TestsFlaky,
 		"testsFailed", suiteRun.TestsFailed,
 		"testsError", suiteRun.TestsError,
 	}
