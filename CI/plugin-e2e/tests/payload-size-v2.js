@@ -86,12 +86,14 @@ test("payload-size", { tag: '@performance' }, async ({ page, dashPath }) => {
     requests: requests,
     usedJSHeapSize: +(usedJSHeapSize / 1000 / 1000).toFixed(1),
   };
+
+  filename = "/tmp/asset-metrics.json"
   
   // Write the data to file
-  fs.writeFileSync("/tmp/asset-sizes.json", JSON.stringify(performanceData, null, 2));
+  fs.writeFileSync(filename, JSON.stringify(performanceData, null, 2));
   
   // Still log to console for debugging
-  console.log(`Performance data written to /tmp/asset-metrics.json`);
+  console.log(`Performance data written to ${filename}`);
   console.log(performanceData);
   
   client.detach();

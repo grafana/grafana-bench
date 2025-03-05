@@ -27,18 +27,20 @@ jobs:
       - name: checkout code
         uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          #cache: 'yarn'
-          #cache-dependency-path: './CI/plugin-e2e/yarn.lock'
-
       - uses: actions/setup-go@v5
         with:
           go-version: 'stable'
 
       - name: install bench
         run: go install ./...
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          #cache: 'yarn'
+          #cache-dependency-path: './CI/plugin-e2e/yarn.lock'
+      - name: Setup Playwright
+        uses: microsoft/playwright-github-action@v1
 
       - name: setup playwright
         working-directory: ./CI/plugin-e2e
@@ -49,19 +51,7 @@ jobs:
         working-directory: ./CI/plugin-e2e
         run: yarn run test --grep @performance
 
-      #- name: create empty file for asset sizes
-      #  run: |
-      #    # Create an empty file first
-      #    touch ./CI/asset-sizes.json
-      #- name: run playwright tests
-      #  run: |
-      #    docker run --network=host \
-      #      --volume="./CI/:/home/bench/tests/CI/" \
-      #      --volume="./CI/asset-sizes.json:/tmp/asset-sizes.json" \
-      #      us-docker.pkg.dev/grafanalabs-dev/docker-grafana-bench-dev/grafana-bench:latest test \
-      #      --config "/home/bench/tests/CI/playwright.yaml" \
-      #      --pw-execute "yarn run test --grep @performance"
-
+      ## START HERE - figure out where asset metrics file is being written
       - name: cat results
         run: cat /tmp/asset-metrics.json
 
