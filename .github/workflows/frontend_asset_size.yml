@@ -41,12 +41,12 @@ jobs:
         run: go install ./...
 
       - name: setup playwright
-        working-directory: ./CI
+        working-directory: ./CI/plugin-e2e
         run: |
           yarn install && yarn playwright install
 
       - name: run playwright tests
-        working-directory: ./CI
+        working-directory: ./CI/plugin-e2e
         run: yarn run test --grep @performance
 
       #- name: create empty file for asset sizes
