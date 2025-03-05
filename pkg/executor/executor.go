@@ -10,6 +10,7 @@ type TestStatus string
 const (
 	Unknown     TestStatus = ""
 	TestPassed  TestStatus = "passed"
+	TestFlaky   TestStatus = "flaky"
 	TestFailed  TestStatus = "failed"
 	TestError   TestStatus = "error"
 	TestSkipped TestStatus = "skipped"
@@ -47,6 +48,7 @@ type SuiteRunSummary struct {
 	Status            SuiteStatus
 	TestsExecuted     int32
 	TestsFailed       int32
+	TestsFlaky        int32
 	TestsPassed       int32
 	TestsError        int32
 	TotalDuration     float32

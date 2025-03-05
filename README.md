@@ -28,3 +28,5 @@ To get more details of the available options for an specific subcommand, use the
 ```sh
 go run bench.go <subcommand> --help
 ```
+
+See [documentation online](https://github.com/grafana/grafana-bench/blob/main/docs/index.md)

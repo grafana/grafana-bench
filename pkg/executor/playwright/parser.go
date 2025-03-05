@@ -79,35 +79,36 @@ func parseSuites(suites []Suite, testDirs map[string]string, testRuns []executor
 }
 
 func parseTestRun(spec Specs, folder string) executor.TestRun {
-	exitMessage := "success"
-	testStatus := executor.TestPassed
-
-	if spec.Tests[0].Status == "skipped" {
-		return executor.TestRun{
-			TestFolder: folder,
-			TestFile:   path.Base(spec.File),
-
-			Status:      executor.TestSkipped,
-			ExitMessage: "skipped",
-			Iterations:  "0",
-
-			Attributes: map[string]string{
-				"title":  spec.Title,
-				"line":   fmt.Sprint(spec.Line),
-				"column": fmt.Sprint(spec.Column),
-			},
-		}
+	run := executor.TestRun{
+		TestFolder: folder,
+		TestFile:   path.Base(spec.File),
+		Iterations:  "0",
+		Attributes: map[string]string{
+			"title":  spec.Title,
+			"line":   fmt.Sprint(spec.Line),
+			"column": fmt.Sprint(spec.Column),
+		},
 	}
 
-	if !spec.Ok {
+	switch spec.Tests[0].Status {
+	case "skipped":
+		run.Status = executor.TestSkipped
+		run.ExitMessage = "skipped"
+	case "expected":
+		run.Status = executor.TestPassed
+		run.ExitMessage = "success"
+	case "unexpected":
+		run.Status = executor.TestFailed
 		msg := stripansi.Strip(spec.Tests[0].Results[0].Error.Message)
 		// only take the first line of the error message incase it is a call stack message
 		msg = strings.Split(msg, "\n")[0]
-		exitMessage = fmt.Sprintf("%s:%d:%d => %s", spec.File, spec.Line, spec.Column, msg)
-		testStatus = executor.TestFailed
+		run.ExitMessage = fmt.Sprintf("%s:%d:%d => %s", spec.File, spec.Line, spec.Column, msg)
+	case "flaky":
+		run.Status = executor.TestFlaky
 	}
 
-	// tests can be executed more than once due to retries so we need to average the duration
+	// FIXME: tests can be executed more than once due to retries so we average the duration.
+	// maybe we should take the duration of the last execution (either failed or passed)
 	scenarioTotal := 0
 	executions := 0
 	for _, test := range spec.Tests {
@@ -122,26 +123,14 @@ func parseTestRun(spec Specs, folder string) executor.TestRun {
 		averageScenarioDuration = float32(math.Round(float64(scenarioTotal) / float64(executions)))
 	}
 
-	run := executor.TestRun{
-		TestFolder: folder,
-		TestFile:   path.Base(spec.File),
-
-		StartTime: spec.Tests[0].Results[0].StartTime,
-
-		Status:      testStatus,
-		ExitMessage: exitMessage,
-		Iterations:  fmt.Sprintf("%d", len(spec.Tests[0].Results)),
-
-		Durations: executor.TestDurations{
-			ScenarioDuration: float32(averageScenarioDuration),
-			TotalDuration:    float32(scenarioTotal),
-		},
-
-		Attributes: map[string]string{
-			"title":  spec.Title,
-			"line":   fmt.Sprint(spec.Line),
-			"column": fmt.Sprint(spec.Column),
-		},
+	run.Iterations =  fmt.Sprintf("%d", len(spec.Tests[0].Results))
+	// the test was not skipped and has results
+	if len(spec.Tests[0].Results) > 0 {
+		run.StartTime = spec.Tests[0].Results[0].StartTime
+	}
+	run.Durations = executor.TestDurations{
+		ScenarioDuration: float32(averageScenarioDuration),
+		TotalDuration:    float32(scenarioTotal),
 	}
 
 	return run

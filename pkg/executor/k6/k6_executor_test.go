@@ -14,6 +14,15 @@ import (
 
 type k6TestExecutorOption func(*K6TestExecutor) error
 
+
+// configure TestRunner with retries
+func WithRetries(retries int) k6TestExecutorOption {
+	return func(t *K6TestExecutor) error {
+		t.RetryFailed = retries
+		return nil
+	}
+}
+
 // configure TestRunner with cloud output
 func WithCloudOutput() k6TestExecutorOption {
 	return func(t *K6TestExecutor) error {
@@ -138,6 +147,20 @@ func TestK6Executor(t *testing.T) {
 		{
 			testCase:  "failing test",
 			testSuite: "k6tests/fail.js",
+			expectSummary: &executor.SuiteRunSummary{
+				TestsExecuted: 1,
+				TestsFailed:   1,
+				TestRuns: []executor.TestRun{
+					{TestFile: "fail.js", Status: executor.TestFailed},
+				},
+			},
+		},
+		{
+			testCase:  "retry failing test",
+			testSuite: "k6tests/fail.js",
+			k6options: []k6TestExecutorOption{
+				WithRetries(3),
+			},
 			expectSummary: &executor.SuiteRunSummary{
 				TestsExecuted: 1,
 				TestsFailed:   1,
