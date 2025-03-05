@@ -87,7 +87,7 @@ test("payload-size", { tag: '@performance' }, async ({ page, dashPath }) => {
     usedJSHeapSize: +(usedJSHeapSize / 1000 / 1000).toFixed(1),
   };
 
-  filename = "/tmp/asset-metrics.json"
+  let filename = "/tmp/asset-metrics.json"
   
   // Write the data to file
   fs.writeFileSync(filename, JSON.stringify(performanceData, null, 2));
