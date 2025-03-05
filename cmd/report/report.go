@@ -177,6 +177,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 
 			// get playwright json report
 			filename := args[0]
+
 			_, err = os.Stat(filename)
 			if err != nil {
 				return fmt.Errorf("file not found: %#v, err: %v", args, err)
@@ -186,6 +187,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to open report file: %s", err)
 			}
+
 			defer input.Close()
 
 			logAttrs := []any{
