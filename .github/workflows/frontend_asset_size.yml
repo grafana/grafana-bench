@@ -30,6 +30,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: 'stable'
+          cache: true
 
       - name: install bench
         run: go install ./...
@@ -39,8 +40,6 @@ jobs:
           node-version: '20'
           #cache: 'yarn'
           #cache-dependency-path: './CI/plugin-e2e/yarn.lock'
-      - name: Setup Playwright
-        uses: microsoft/playwright-github-action@v1
 
       - name: setup playwright
         working-directory: ./CI/plugin-e2e
