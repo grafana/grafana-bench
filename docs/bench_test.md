@@ -93,7 +93,7 @@ test:
   runner: "k6"
 
 report:
-  format: "text"
+  output: "text"
 
 suite:
   name: "my-test-suite"
@@ -188,7 +188,8 @@ bench test  \
       --pw-prepare string                 commands used to install dependencies for the test suite eg: "npm install".
                                           Multiple commands can be specified by separating with ';'.
       --pw-prepare-cmd string             deprecated. Use pw-prepare
-      --report-format string              format of the test execution report. Allowed values 'log' or 'text'.
+      --report-format string              deprecated. Use report-output (default "text")
+      --report-output string              format of the test execution report. Allowed values 'log' or 'text'.
                                            'log' produced a structure log. 'text' produced an human readable output (default "text")
       --run-dashboard string              Template for the smoke test suite execution dashboard URL.
                                           Supports the substitution of the following variables:
@@ -220,7 +221,7 @@ bench test  \
       --suite-revision string             test suite revision. If not set SUITE_REVISION environment variable is used
       --test-env stringToString           environment variables passed to the test execution. (default [])
       --test-env-vars stringToString      deprecated. Use test-env (default [])
-      --test-report-format string         deprecated. Use report-format
+      --test-report-format string         deprecated. Use report-output
       --test-runner string                test runner. Allowed values: 'k6', 'playwright' (default "k6")
       --test-suite string                 deprecated. Use suite-path
       --test-suite-base string            deprecated. Use suite-base

@@ -66,7 +66,8 @@ type SuiteRunConfig struct {
 }
 
 type ReportConfig struct {
-	Format string
+	Output string
+	Input  string
 }
 
 type TestConfig struct {
@@ -179,7 +180,7 @@ func (config *BenchConfig) BuildReporter() (reporter.SuiteRunReporter, error) {
 	// There's no way to get the attributes set in the runner's logger to be used
 	// in the reporter logger.
 	logAttrs := []any{"service", "bench"}
-	switch config.Report.Format {
+	switch config.Report.Output {
 	case "log":
 		suiteReporter, _ = reporter.NewLogReporter(reporter.TextLog, logAttrs)
 	case "json":
@@ -187,7 +188,7 @@ func (config *BenchConfig) BuildReporter() (reporter.SuiteRunReporter, error) {
 	case "text":
 		suiteReporter = reporter.NewTextReporter(os.Stdout)
 	default:
-		return nil, fmt.Errorf("invalid report format %q", config.Report.Format)
+		return nil, fmt.Errorf("invalid report format %q", config.Report.Output)
 	}
 	reporters = append(reporters, suiteReporter)
 

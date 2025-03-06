@@ -140,7 +140,7 @@ test:
   runner: "k6"
 
 report:
-  format: "text"
+  output: "text"
 
 suite:
   name: "my-test-suite"
@@ -323,14 +323,20 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		"command used to execute the test suite eg: \"npm run test\"",
 	)
 	fs.StringVar(
-		&benchConfig.Report.Format,
+		&benchConfig.Report.Output,
 		"test-report-format",
 		"",
-		"deprecated. Use report-format",
+		"deprecated. Use report-output",
 	)
 	fs.StringVar(
-		&benchConfig.Report.Format,
+		&benchConfig.Report.Output,
 		"report-format",
+		"text",
+		"deprecated. Use report-output",
+	)
+	fs.StringVar(
+		&benchConfig.Report.Output,
+		"report-output",
 		"text",
 		"format of the test execution report. Allowed values 'log' or 'text'."+
 			"\n 'log' produced a structure log. 'text' produced an human readable output",

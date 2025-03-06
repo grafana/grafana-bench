@@ -36,7 +36,8 @@ grafana-bench report \
   --trigger local \
   --test-type smoke \
   --suite-name smoke-test \
-  --report-format log /path/to/playwright/report.json
+  --report-input playwright \
+  --report-output log /path/to/playwright/report.json
 
 
 Configuration File
@@ -53,11 +54,15 @@ represented in the configuration file as:
      bar: value
 
 Notice that some flag names have changed to accommodate the configuration file format.
-Deprecated flag names are not supported in the configuration file.
 
-The flags specified on the command line and the environment variables will take precedence over the
+** NOTE: Deprecated flag names are not supported in the configuration file. **
+
+Precedence: The flags specified on the command line and the environment variables will take precedence over the
 values in the configuration file.
 
+** NOTE: we strongly discourage storing sensitive information such as tokens in the configuration file. **
+Consider using the environment variables or secrets manager for storing sensitive information.
+Also consider using .env files for storing this information in local development environments.
 
 # bench.yaml example
 trigger: "ci"
@@ -66,7 +71,8 @@ test:
   type: "smoke"
 
 report:
-    format: "text"
+    input: "playwright"
+    output: "text"
 
 suite:
   name: "my-test-suite"
@@ -74,9 +80,7 @@ suite:
   
 grafana:
   url: "http://localhost:3000"
-  admin
-    user: "admin"
-    password: "secret"
+  version: "v10.0.0"
 
 ```
 
@@ -85,13 +89,15 @@ grafana:
 ```
       --bench-revision string              bench revision. If not provided BENCH_REVISION env var is used. 
                                            If not set, the current git revision is used (default "(devel)")
-      --format string                      deprecated. Use --report-format instead
+      --format string                      deprecated. Use --report-output instead
       --grafana-admin-password string      grafana admin user's password. Overridden by the GRAFANA_ADMIN_PASSWORD environment variable (default "admin")
       --grafana-admin-user string          grafana admin user name. Overridden by the GRAFANA_ADMIN_USER environment variable (default "admin")
       --grafana-url string                 grafana url. If not provided GRAFANA_URL env var is used
-      --grafana-version string             grafana version. If not provided GRAFANA_VERSION env var is used
+      --grafana-version string             grafana version. If not provided GRAFANA_VERSION env var is used.
+                                           If not set, the version is retrieved from the grafana instance, if provided.
   -h, --help                               help for report
-      --report-format string               format of the test execution report. Allowed values 'log', 'json' and 'text'.
+      --report-input string                report input format. Valid values are 'playwright' and 'go'
+      --report-output string               format of the test execution report. Allowed values 'log', 'json' and 'text'.
                                             log' produced a structure log. 'json' produce a json object for each log line.
                                            'text' produced an human readable output (default "log")
       --run-id string                      test suite run id. If not specified, RUN_ID environment variable is used.

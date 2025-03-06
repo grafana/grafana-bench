@@ -1,0 +1,106 @@
+package gotest
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"time"
+
+	"github.com/grafana/grafana-bench/pkg/executor"
+)
+
+var (
+	ErrInvalidFormat = errors.New("invalid format")
+)
+
+type line struct {
+	Time    string  `json:"Time"`
+	Action  string  `json:"Action"`
+	Package string  `json:"Package"`
+	Test    string  `json:"Test"`
+	Output  string  `json:"Output"`
+	Elapsed float32 `json:"Elapsed"`
+}
+
+type testkey struct {
+	pkg  string
+	test string
+}
+
+// ParseJsonOutput parses output from https://pkg.go.dev/cmd/test2json
+func ParseJsonOutput(report io.Reader) (executor.SuiteRunSummary, error) {
+	summary := executor.SuiteRunSummary{
+		StartTime: time.Now(),
+	}
+
+	testRuns := map[testkey]*executor.TestRunSummary{}
+
+	decoder := json.NewDecoder(report)
+	for {
+		var line line
+		err := decoder.Decode(&line)
+		if errors.Is(err, io.EOF) {
+			break
+		}
+
+		if err != nil {
+			return executor.SuiteRunSummary{}, err
+		}
+
+		// we are only processing tests for now
+		if line.Test == "" {
+			continue
+		}
+
+
+		testkey := testkey{pkg: line.Package, test: line.Test}
+
+		if line.Action == "start" || line.Action == "run" { // found a new stream, initialize
+			time, err := time.Parse(time.RFC3339, line.Time)
+			if err != nil {
+				return executor.SuiteRunSummary{}, err
+			}
+			testRuns[testkey] = &executor.TestRunSummary{
+				StartTime:  time,
+				TestFolder: line.Package,
+				TestFile:   line.Test,
+			}
+
+			// set the summary time to the first test that started don't relay on ordering of tests
+			if time.Before(summary.StartTime) {
+				summary.StartTime =  time
+			}
+			continue
+		}
+
+		testRun, ok := testRuns[testkey]
+		if !ok {
+			return executor.SuiteRunSummary{}, fmt.Errorf("%w missing start for test %q", ErrInvalidFormat, line.Package)
+		}
+
+		switch line.Action {
+		case "output":
+			testRun.ExitMessage = testRun.ExitMessage + line.Output
+			continue
+		case "pass":
+			testRun.Status = executor.TestPassed
+			summary.TestsPassed += 1
+			testRun.ExitMessage = "" // delete message for passed tests to reduce noise
+		case "fail":
+			testRun.Status = executor.TestFailed
+			summary.TestsFailed += 1
+		default:
+			continue
+		}
+
+		testRun.Durations.TotalDuration = line.Elapsed
+
+		summary.TotalDuration += line.Elapsed
+		summary.TestsExecuted += 1
+
+		summary.TestRuns = append(summary.TestRuns, *testRun)
+	}
+
+	return summary, nil
+}

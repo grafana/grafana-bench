@@ -8,6 +8,7 @@ import (
 
 	"github.com/grafana/grafana-bench/pkg/config"
 	"github.com/grafana/grafana-bench/pkg/executor"
+	"github.com/grafana/grafana-bench/pkg/executor/gotest"
 	"github.com/grafana/grafana-bench/pkg/executor/playwright"
 	"github.com/grafana/grafana-bench/pkg/grafana"
 	"github.com/grafana/grafana-bench/pkg/revision"
@@ -40,7 +41,8 @@ grafana-bench report \
   --trigger local \
   --test-type smoke \
   --suite-name smoke-test \
-  --report-format log /path/to/playwright/report.json
+  --report-input playwright \
+  --report-output log /path/to/playwright/report.json
 
 
 Configuration File
@@ -57,11 +59,15 @@ represented in the configuration file as:
      bar: value
 
 Notice that some flag names have changed to accommodate the configuration file format.
-Deprecated flag names are not supported in the configuration file.
 
-The flags specified on the command line and the environment variables will take precedence over the
+** NOTE: Deprecated flag names are not supported in the configuration file. **
+
+Precedence: The flags specified on the command line and the environment variables will take precedence over the
 values in the configuration file.
 
+** NOTE: we strongly discourage storing sensitive information such as tokens in the configuration file. **
+Consider using the environment variables or secrets manager for storing sensitive information.
+Also consider using .env files for storing this information in local development environments.
 
 # bench.yaml example
 trigger: "ci"
@@ -70,7 +76,8 @@ test:
   type: "smoke"
 
 report:
-    format: "text"
+    input: "playwright"
+    output: "text"
 
 suite:
   name: "my-test-suite"
@@ -78,9 +85,7 @@ suite:
   
 grafana:
   url: "http://localhost:3000"
-  admin
-    user: "admin"
-    password: "secret"
+  version: "v10.0.0"
 `
 )
 
@@ -119,6 +124,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				if benchConfig.Grafana.Url == "" || benchConfig.Grafana.AdminUser == "" || benchConfig.Grafana.AdminPassword == "" {
 					return fmt.Errorf("grafana admin user and password are needed to get grafana version")
 				}
+
 				grafanaInstance, err := grafana.NewInstance(
 					benchConfig.Grafana.Url,
 					benchConfig.Grafana.AdminUser,
@@ -145,7 +151,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				Name:           suiteRunName,
 				Id:             runId,
 				Trigger:        benchConfig.SuiteRun.Trigger,
-				TestExecutor:   "playwright",
+				TestExecutor:   benchConfig.Report.Input,
 				SuiteName:      benchConfig.TestSuite.Name,
 				SuiteRevision:  benchConfig.TestSuite.Revision,
 				BenchRevision:  benchConfig.BenchRevision,
@@ -166,9 +172,20 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			}
 			defer input.Close()
 
-			suiteRunSummary, err := playwright.ParseJsonOutput(input)
-			if err != nil {
-				return fmt.Errorf("parsing playwright json input %w", err)
+			var suiteRunSummary executor.SuiteRunSummary
+			switch benchConfig.Report.Input {
+			case "playwright":
+				suiteRunSummary, err = playwright.ParseJsonOutput(input)
+				if err != nil {
+					return fmt.Errorf("parsing playwright json input %w", err)
+				}
+			case "go":
+				suiteRunSummary, err = gotest.ParseJsonOutput(input)
+				if err != nil {
+					return fmt.Errorf("parsing go-json input %w", err)
+				}
+			default:
+				return fmt.Errorf("invalid input format %q", benchConfig.Report.Input)
 			}
 
 			err = reporter.Report(
@@ -186,14 +203,14 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 
 	fs := cmd.Flags()
 	fs.StringVar(
-		&benchConfig.Report.Format,
+		&benchConfig.Report.Output,
 		"format",
 		"",
-		"deprecated. Use --report-format instead",
+		"deprecated. Use --report-output instead",
 	)
 	fs.StringVar(
-		&benchConfig.Report.Format,
-		"report-format",
+		&benchConfig.Report.Output,
+		"report-output",
 		"log",
 		"format of the test execution report. Allowed values 'log', 'json' and 'text'."+
 			"\n log' produced a structure log. 'json' produce a json object for each log line."+
@@ -240,7 +257,8 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		&benchConfig.Grafana.Version,
 		"grafana-version",
 		"",
-		"grafana version. If not provided GRAFANA_VERSION env var is used",
+		"grafana version. If not provided GRAFANA_VERSION env var is used." +
+		"\nIf not set, the version is retrieved from the grafana instance, if provided.",
 	)
 	fs.StringVar(
 		&benchConfig.Grafana.AdminUser,
@@ -302,6 +320,12 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		"run-metrics-prefix",
 		"",
 		"prefix to append to the suite run metric names",
+	)
+	fs.StringVar(
+		&benchConfig.Report.Input,
+		"report-input",
+		"",
+		"report input format. Valid values are 'playwright' and 'go'",
 	)
 
 	return &cmd
