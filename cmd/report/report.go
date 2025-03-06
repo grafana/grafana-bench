@@ -157,7 +157,9 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			var suiteReporter reporter.SuiteRunReporter
 			switch format {
 			case "log":
-				suiteReporter = reporter.NewLogReporter(logAttrs)
+				suiteReporter, _ = reporter.NewLogReporter(reporter.TextLog, logAttrs)
+			case "json":
+				suiteReporter, _ = reporter.NewLogReporter(reporter.JSONLog, logAttrs)
 			case "text":
 				suiteReporter = reporter.NewTextReporter(os.Stdout)
 			default:
@@ -208,8 +210,9 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		&format,
 		"report-format",
 		"log",
-		"format of the test execution report. Allowed values 'log' or 'text'."+
-			"\n 'log' produced a structure log. 'text' produced an human readable output",
+		"format of the test execution report. Allowed values 'log', 'json' and 'text'."+
+			"\n log' produced a structure log. 'json' produce a json object for each log line." +
+			"\n'text' produced an human readable output",
 	)
 	fs.StringVar(
 		&testType,

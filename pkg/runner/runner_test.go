@@ -115,6 +115,8 @@ func testRunnerForTesting(
 	executor executor.TestExecutor,
 	opts ...testRunnerOption,
 ) (*TestRunner, error) {
+	reporter, _ := reporter.NewLogReporter(reporter.TextLog, nil)
+
 	tr := NewTestRunner(
 		log,
 		"test", // trigger
@@ -123,7 +125,7 @@ func testRunnerForTesting(
 		"devel", // bench revision
 		"",      // dashboard URL
 		executor,
-		reporter.NewLogReporter(nil),
+		reporter,
 	)
 
 	// apply options
