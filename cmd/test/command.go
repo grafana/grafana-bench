@@ -232,6 +232,14 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				return fmt.Errorf("executing test suite run %w", err)
 			}
 
+			// add custom metrics adding the prefix to the name
+			if suiteRunSummary.Metrics == nil {
+				suiteRunSummary.Metrics = map[string]string{}
+			}
+			for k, v := range benchConfig.SuiteRun.Metrics {
+				suiteRunSummary.Metrics[benchConfig.SuiteRun.MetricsPrefix+k] = v
+			}
+
 			runId := id.Run(benchConfig.SuiteRun.Trigger, time.Now())
 			suiteRunName := id.SuiteRunName(benchConfig.SuiteRun.Trigger, benchConfig.TestSuite.Name, benchConfig.Test.Type)
 			suiteRun := executor.SuiteRun{
@@ -545,6 +553,30 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		"codeowners-mapping.yaml",
 		"path or url to the codeowner to slack channel id mapping."+
 			"\nRelative to test suite base dir.",
+	)
+	fs.StringToStringVar(
+		&benchConfig.SuiteRun.Metrics,
+		"suite-run-metrics",
+		nil,
+		"deprecated use --run-metrics",
+	)
+	fs.StringToStringVar(
+		&benchConfig.SuiteRun.Metrics,
+		"run-metrics",
+		nil,
+		"test suite run custom metrics",
+	)
+	fs.StringVar(
+		&benchConfig.SuiteRun.MetricsPrefix,
+		"suite-run-metrics-prefix",
+		"",
+		"deprecated. Use --run-metrics-prefix",
+	)
+	fs.StringVar(
+		&benchConfig.SuiteRun.MetricsPrefix,
+		"run-metrics-prefix",
+		"",
+		"prefix to append to the suite run metric names",
 	)
 
 	return &cmd

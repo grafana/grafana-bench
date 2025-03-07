@@ -61,7 +61,7 @@ func (r *LogReporter) Report(
 	for order, testRun := range summary.TestRuns {
 		testRunId := fmt.Sprintf("%s-%d", suiteRun.Id, order)
 
-		attrs := []any{
+		testRunAttrs := []any{
 			"folder", testRun.TestFolder,
 			"testFile", testRun.TestFile,
 			"iterations", testRun.Iterations,
@@ -74,15 +74,15 @@ func (r *LogReporter) Report(
 			"order", strconv.Itoa(order),
 		}
 		for k, v := range testRun.Attributes {
-			attrs = append(attrs, k, v)
+			testRunAttrs = append(testRunAttrs, k, v)
 		}
 		
-		log.With(attrs...).Info("testRun", "testRun", testRunId)
+		log.With(testRunAttrs...).Info("testRun", "testRun", testRunId)
 	}
 
 	var anyFailures = (summary.TestsFailed + summary.TestsError) > 0
 
-	log.With(
+	suiteRunAttrs := []any{
 		"startTime", summary.StartTime.Format(time.RFC3339),
 		"totalScenarioDurations", summary.ScenariosDuration,
 		"duration", summary.TotalDuration,
@@ -91,7 +91,12 @@ func (r *LogReporter) Report(
 		"testsFlaky", summary.TestsFlaky,
 		"testsFailed", summary.TestsFailed,
 		"testsError", summary.TestsError,
-	).Info("suiteRun", "anyFailures", anyFailures)
+	}
+	for k, v := range summary.Metrics {
+		suiteRunAttrs = append(suiteRunAttrs, k, v)
+	}
+
+	log.With(suiteRunAttrs...).Info("suiteRun", "anyFailures", anyFailures)
 
 	return nil
 }
