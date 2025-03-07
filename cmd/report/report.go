@@ -158,6 +158,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				GrafanaURL:     benchConfig.Grafana.Url,
 				GrafanaSlug:    grafanaSlug,
 				GrafanaVersion: grafanaVersion,
+
 			}
 
 			reporter, err := benchConfig.BuildReporter()
@@ -186,6 +187,14 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				}
 			default:
 				return fmt.Errorf("invalid input format %q", benchConfig.Report.Input)
+			}
+
+			// add custom metrics adding the prefix to the name
+			if suiteRunSummary.Metrics == nil {
+				suiteRunSummary.Metrics = map[string]string{}
+			}
+			for k, v := range benchConfig.SuiteRun.Metrics {
+				suiteRunSummary.Metrics[benchConfig.SuiteRun.MetricsPrefix+k] = v
 			}
 
 			err = reporter.Report(
