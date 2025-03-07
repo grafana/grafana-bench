@@ -3,6 +3,7 @@ package test
 import (
 	"fmt"
 	"log/slog"
+	"maps"
 	"os"
 	"strings"
 	"time"
@@ -234,11 +235,14 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 
 			// add custom metrics adding the prefix to the name
 			if suiteRunSummary.Metrics == nil {
-				suiteRunSummary.Metrics = map[string]string{}
+				suiteRunSummary.Metrics = map[string]float64{}
 			}
-			for k, v := range benchConfig.SuiteRun.Metrics {
-				suiteRunSummary.Metrics[benchConfig.SuiteRun.MetricsPrefix+k] = v
+
+			runMetrics, err := benchConfig.GetRunMetrics()
+			if err != nil {
+				return err
 			}
+			maps.Copy(suiteRunSummary.Metrics, runMetrics)
 
 			runId := id.Run(benchConfig.SuiteRun.Trigger, time.Now())
 			suiteRunName := id.SuiteRunName(benchConfig.SuiteRun.Trigger, benchConfig.TestSuite.Name, benchConfig.Test.Type)
@@ -273,6 +277,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	config.AddPlaywrightFlags(fs, &benchConfig.Playwright)
 	config.AddSlackFlags(fs, &benchConfig.Slack)
 	config.AddReportOutputFlags(fs, &benchConfig.Report)
+	config.AddPrometheusFlags(fs, &benchConfig.Prometheus)
 
 	return &cmd
 }

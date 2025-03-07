@@ -67,7 +67,7 @@ type SuiteRunSummary struct {
 	TotalDuration     float32
 	ScenariosDuration float32
 	TestRuns          []TestRunSummary
-	Metrics           map[string]string
+	Metrics           map[string]float64
 }
 
 // TestSuite defines the test suite

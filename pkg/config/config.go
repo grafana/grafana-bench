@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -35,6 +36,7 @@ type BenchConfig struct {
 	K6            K6Config
 	Playwright    PWConfig
 	Slack         SlackNotifierConfig
+	Prometheus    Prometheus
 }
 
 func AddBenchFlags(fs *pflag.FlagSet, config *BenchConfig) {
@@ -207,7 +209,7 @@ func AddSuiteRunFlags(fs *pflag.FlagSet, config *SuiteRunConfig) {
 	        &config.Metrics,
 	        "run-metrics",
 	        nil,
-	        "test suite run custom metrics",
+	        "test suite run custom metrics. Format: name=value. The value must be a valid float number.",
 	)
 	fs.StringVar(
 	        &config.MetricsPrefix,
@@ -507,7 +509,7 @@ type Prometheus struct {
 
 func AddPrometheusFlags(fs *pflag.FlagSet, prometheus *Prometheus) {
 	fs.StringVar(
-		&prometheus.Password,
+		&prometheus.URL,
 		"prometheus-url",
 		"",
 		"prometheus remote write URL. If not set PROMETHEUS_URL environment variable is used.",
@@ -626,10 +628,18 @@ func (config *BenchConfig) BuildReporter() (reporter.SuiteRunReporter, error) {
 	// in the reporter logger.
 	logAttrs := []any{"service", "bench"}
 	switch config.Report.Output {
-	case "log":
-		suiteReporter, _ = reporter.NewLogReporter(reporter.TextLog, logAttrs)
 	case "json":
 		suiteReporter, _ = reporter.NewLogReporter(reporter.JSONLog, logAttrs)
+	case "log":
+		suiteReporter, _ = reporter.NewLogReporter(reporter.TextLog, logAttrs)
+	case "prometheus":
+		suiteReporter = reporter.NewPrometheusReporter(reporter.PrometheusConfig{
+			URL:     config.Prometheus.URL,
+			User:    config.Prometheus.User,
+			Password: config.Prometheus.Password,
+			Timeout: config.Prometheus.Timeout,
+			Prefix:  config.Prometheus.Prefix,
+		})
 	case "text":
 		suiteReporter = reporter.NewTextReporter(os.Stdout)
 	default:
@@ -695,4 +705,17 @@ func (config *BenchConfig) GetGrafanaInstance(log *slog.Logger) (grafana.Grafana
 	}
 
 	return grafanaInstance, grafanaVersion, nil
+}
+
+
+func (config *BenchConfig) GetRunMetrics() (map[string]float64, error) {
+	metrics := map[string]float64{}
+	for k, sv := range config.SuiteRun.Metrics {
+		value, err := strconv.ParseFloat(sv, 64)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse metric value %s: %w", sv, err)
+		}
+		metrics[k] = value
+	}
+	return metrics, nil
 }

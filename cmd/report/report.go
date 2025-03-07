@@ -3,6 +3,7 @@ package report
 import (
 	"fmt"
 	"log/slog"
+	"maps"
 	"os"
 	"time"
 
@@ -191,11 +192,14 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 
 			// add custom metrics adding the prefix to the name
 			if suiteRunSummary.Metrics == nil {
-				suiteRunSummary.Metrics = map[string]string{}
+				suiteRunSummary.Metrics = map[string]float64{}
 			}
-			for k, v := range benchConfig.SuiteRun.Metrics {
-				suiteRunSummary.Metrics[benchConfig.SuiteRun.MetricsPrefix+k] = v
+
+			runMetrics, err := benchConfig.GetRunMetrics()
+			if err != nil {
+				return err
 			}
+			maps.Copy(suiteRunSummary.Metrics, runMetrics)
 
 			err = reporter.Report(
 				cmd.Context(),

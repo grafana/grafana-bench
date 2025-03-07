@@ -106,7 +106,7 @@ grafana:
                                            Supports the substitution of the following variables:
                                                Id: identifier of the suite run
                                            Example: http://localhost/dashboards?run={{.Id}}
-      --run-metrics stringToString         test suite run custom metrics (default [])
+      --run-metrics stringToString         test suite run custom metrics. Format: name=value. The value must be a valid float number. (default [])
       --run-metrics-prefix string          prefix to append to the suite run metric names
       --run-trigger string                 trigger of bench execution. For example, 'ci' or 'local'. (default "local")
       --suite-name string                  test suite name. If not specified, SUITE_NAME environment variable is used.

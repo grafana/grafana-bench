@@ -189,6 +189,11 @@ bench test  \
       --k6-cloud-project-id string         deprecated. Use k6-cloud-project
       --k6-cloud-token string              K6 cloud access token. If not set K6_CLOUD_TOKEN environment variable is used
       --notify-passing                     deprecated. Use slack-notify-passing
+      --prometheus-password string         prometheus remote write password. If not set PROMETHEUS_PASSWORD environment variable is used.
+      --prometheus-prefix string           prometheus metric prefix. If not set PROMETHEUS_PREFIX environment variable is used.
+      --prometheus-timeout duration        prometheus remote write timeout. If not set PROMETHEUS_TIMEOUT environment variable is used.
+      --prometheus-url string              prometheus remote write URL. If not set PROMETHEUS_URL environment variable is used.
+      --prometheus-user string             prometheus remote write user. If not set PROMETHEUS_USER environment variable is used.
       --pw-execute string                  command used to execute the test suite eg: "npm run test"
       --pw-execute-cmd string              deprecated. Use pw-execute
       --pw-prepare string                  commands used to install dependencies for the test suite eg: "npm install".
@@ -201,7 +206,7 @@ bench test  \
                                            Supports the substitution of the following variables:
                                                Id: identifier of the suite run
                                            Example: http://localhost/dashboards?run={{.Id}}
-      --run-metrics stringToString         test suite run custom metrics (default [])
+      --run-metrics stringToString         test suite run custom metrics. Format: name=value. The value must be a valid float number. (default [])
       --run-metrics-prefix string          prefix to append to the suite run metric names
       --run-trigger string                 trigger of bench execution. For example, 'ci' or 'local'. (default "local")
       --slack-codeowners-mapping string    path or url to the codeowner to slack channel id mapping.
