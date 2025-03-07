@@ -19,23 +19,32 @@ import (
 	"github.com/grafana/grafana-bench/pkg/grafana"
 	"github.com/grafana/grafana-bench/pkg/notifier"
 	"github.com/grafana/grafana-bench/pkg/reporter"
+	"github.com/grafana/grafana-bench/pkg/revision"
+	"github.com/spf13/pflag"
 )
 
 type BenchConfig struct {
 	// FIXME: moved there because is needed by the slack notifications
 	// for the codeowners mapping.
-	BaseDir       string
-	BenchRevision string
+	Revision      string
 	TestSuite     TestSuiteConfig
 	Test          TestConfig
 	Report        ReportConfig
 	SuiteRun      SuiteRunConfig
-	LogLevel      string
-	Verbose       bool
 	Grafana       GrafanaConfig
 	K6            K6Config
-	PW            PWConfig
+	Playwright    PWConfig
 	Slack         SlackNotifierConfig
+}
+
+func AddBenchFlags(fs *pflag.FlagSet, config *BenchConfig) {
+	fs.StringVar(
+		&config.Revision,
+		"bench-revision",
+		revision.BenchRevision(),
+		"grafana bench revision. If not set BENCH_REVISION environment variable is used." + 
+		"\nIf not set, the current git revision is used (default (devel) ",
+	)
 }
 
 type GrafanaConfig struct {
@@ -46,15 +55,104 @@ type GrafanaConfig struct {
 	Timeout       time.Duration
 }
 
+func AddGrafanaFlags(fs *pflag.FlagSet, config *GrafanaConfig) {
+	fs.StringVar(
+		&config.Url,
+		"grafana-url",
+		"http://localhost:3000",
+		"url to grafana instance. Overridden by the GRAFANA_URL environment variable (default http://localhost:3000)",
+	)
+	fs.DurationVar(
+		&config.Timeout,
+		"grafana-timeout",
+		grafana.DefaultGrafanaTimeout,
+		"timeout for waiting grafana to be live",
+	)
+	fs.StringVar(
+		&config.AdminUser,
+		"grafana-admin-user",
+		"admin",
+		"grafana admin user name. Overridden by the GRAFANA_ADMIN_USER environment variable",
+	)
+	fs.StringVar(
+		&config.AdminPassword,
+		"grafana-admin-password",
+		"admin",
+		"grafana admin user's password. Overridden by the GRAFANA_ADMIN_PASSWORD environment variable",
+	)
+	fs.StringVar(
+		&config.Version,
+		"grafana-version",
+		"",
+		"grafana version. If not provided GRAFANA_VERSION env var is used." +
+		"\nIf not set, the version is retrieved from the grafana instance.",
+	)
+}
+
 type K6Config struct {
 	CloudToken     string
 	CloudProjectId string
 	CloudOutput    bool
 }
 
+func AddK6Flags(fs *pflag.FlagSet, config *K6Config) {
+	fs.StringVar(
+		&config.CloudToken,
+		"k6-cloud-token",
+		"",
+		"K6 cloud access token. If not set K6_CLOUD_TOKEN environment variable is used",
+	)
+	fs.StringVar(
+		&config.CloudProjectId,
+		"k6-cloud-project-id",
+		"",
+		"deprecated. Use k6-cloud-project",
+	)
+	fs.StringVar(
+		&config.CloudProjectId,
+		"k6-cloud-project",
+		"",
+		"K6 cloud project ID. If not set K6_CLOUD_PROJECT_ID environment variable is used",
+	)
+	fs.BoolVar(
+		&config.CloudOutput,
+		"k6-cloud-output",
+		false,
+		"send output to GCK6. Requires setting the GCK6 project ID and access token.",
+	)
+}
+
 type PWConfig struct {
 	PrepareCmd string
 	ExecuteCmd string
+}
+
+func AddPlaywrightFlags(fs *pflag.FlagSet, config *PWConfig) {
+	fs.StringVar(
+		&config.PrepareCmd,
+		"pw-prepare-cmd",
+		"",
+		"deprecated. Use pw-prepare",
+	)
+	fs.StringVar(
+		&config.PrepareCmd,
+		"pw-prepare",
+		"",
+		"commands used to install dependencies for the test suite eg: \"npm install\"."+
+			"\nMultiple commands can be specified by separating with ';'.",
+	)
+	fs.StringVar(
+		&config.ExecuteCmd,
+		"pw-execute-cmd",
+		"",
+		"deprecated. Use pw-execute",
+	)
+	fs.StringVar(
+		&config.ExecuteCmd,
+		"pw-execute",
+		"",
+		"command used to execute the test suite eg: \"npm run test\"",
+	)
 }
 
 type SuiteRunConfig struct {
@@ -65,16 +163,169 @@ type SuiteRunConfig struct {
 	MetricsPrefix string
 }
 
+func AddSuiteRunFlags(fs *pflag.FlagSet, config *SuiteRunConfig) {
+	fs.StringVar(
+		&config.DashboardURL,
+		"dashboard",
+		"",
+		"deprecated. Use run-dashboard",
+	)
+	fs.StringVar(
+		&config.DashboardURL,
+		"run-dashboard",
+		"",
+		"Template for the suite run dashboard URL."+
+			"\nSupports the substitution of the following variables:"+
+			"\n    Id: identifier of the suite run"+
+			"\nExample: http://localhost/dashboards?run={{.Id}}",
+	)
+	fs.StringVar(
+		&config.Trigger,
+		"test-trigger",
+		"local",
+		"deprecated. Use run-trigger",
+	)
+	fs.StringVar(
+		&config.Trigger,
+		"trigger",
+		"local",
+		"deprecated. Use run-trigger",
+	)
+	fs.StringVar(
+		&config.Trigger,
+		"run-trigger",
+		"local",
+		"trigger of bench execution. For example, 'ci' or 'local'.",
+	)
+	fs.StringToStringVar(
+	        &config.Metrics,
+	        "suite-run-metrics",
+	        nil,
+	        "deprecated use --run-metrics",
+	)
+	fs.StringToStringVar(
+	        &config.Metrics,
+	        "run-metrics",
+	        nil,
+	        "test suite run custom metrics",
+	)
+	fs.StringVar(
+	        &config.MetricsPrefix,
+	        "suite-run-metrics-prefix",
+	        "",
+	        "deprecated. Use --run-metrics-prefix",
+	)
+	fs.StringVar(
+	        &config.MetricsPrefix,
+	        "run-metrics-prefix",
+	        "",
+	        "prefix to append to the suite run metric names",
+	)
+}
+
 type ReportConfig struct {
 	Output string
 	Input  string
 }
 
+func AddReportOutputFlags(fs *pflag.FlagSet, report *ReportConfig) {
+	fs.StringVar(
+		&report.Output,
+		"format",
+		"",
+		"deprecated. Use report-output",
+	)
+	fs.StringVar(
+		&report.Output,
+		"test-report-format",
+		"",
+		"deprecated. Use report-output",
+	)
+	fs.StringVar(
+		&report.Output,
+		"report-format",
+		"text",
+		"deprecated. Use report-output",
+	)
+	fs.StringVar(
+		&report.Output,
+		"report-output",
+		"text",
+		"format of the test execution report. Allowed values 'log' or 'text'."+
+			"\n 'log' produced a structure log. 'text' produced an human readable output",
+	)
+}
+
+func AddReportInputFlags(fs *pflag.FlagSet, config *ReportConfig) {
+	fs.StringVar(
+		&config.Input,
+		"report-input",
+		"",
+		"report input format. Valid values are 'playwright' and 'go'",
+	)
+}
+
 type TestConfig struct {
+	Verbose  bool
 	Type     string
 	Executor string
 	Env      map[string]string
 }
+
+func AddTestFlags(fs *pflag.FlagSet, test *TestConfig) {
+	AddTestEnvFlags(fs, test)
+	AddTestTypeFlag(fs, test)
+	AddTestRunnerFlag(fs, test)
+}
+
+func AddTestEnvFlags(fs *pflag.FlagSet, test *TestConfig) {
+	fs.StringToStringVar(
+		&test.Env,
+		"test-env-vars",
+		nil,
+		"deprecated. Use test-env",
+	)
+	fs.StringToStringVar(
+		&test.Env,
+		"test-env",
+		nil,
+		"environment variables passed to the test execution.",
+	)
+}
+
+func AddTestTypeFlag(fs *pflag.FlagSet, test *TestConfig) {
+	fs.StringVar(
+		&test.Type,
+		"test-type",
+		"smoke",
+		"test type. Allowed values: 'smoke', 'load'",
+	)
+}
+
+func AddTestRunnerFlag(fs *pflag.FlagSet, test *TestConfig) {
+	fs.StringVar(
+		&test.Executor,
+		"test-runner",
+		"k6",
+		"test runner. Allowed values: 'k6', 'playwright'",
+	)
+}
+
+func AddTestVeboseFlag(fs *pflag.FlagSet, test *TestConfig) {
+	fs.BoolVar(
+		&test.Verbose,
+		"test-verbose",
+		false,
+		"show test output",
+	)
+	fs.BoolVar(
+		&test.Verbose,
+		"verbose",
+		false,
+		"deprecated. Use verbose",
+	)
+}
+
 
 type TestSuiteConfig struct {
 	GitToken  string
@@ -82,8 +333,121 @@ type TestSuiteConfig struct {
 	Repo      string
 	RepoToken string
 	RepoDirs  []string
+	BaseDir   string
 	Path      string
 	Revision  string
+}
+
+func AddTestSuiteFlags(fs *pflag.FlagSet, config *TestSuiteConfig) {
+	AddSuiteNameFlag(fs, config)
+	AddSuitePathFlags(fs, config)
+	AddSuiteRepoFlags(fs, config)
+	AddSuiteRevisionFlag(fs, config)
+}
+
+func AddSuiteNameFlag(fs *pflag.FlagSet, config *TestSuiteConfig) {
+	fs.StringVar(
+		&config.Name,
+		"test-suite-name",
+		"",
+		"deprecated. Use suite-name",
+	)
+	fs.StringVar(
+		&config.Name,
+		"suite-name",
+		"",
+		"test suite name. If not specified, SUITE_NAME environment variable is used."+
+			"\nDefaults to the last component of -suite-path."+
+			"\nFor example --suite--path path/to/testsuite will give a test suite name of 'testsuite'.",
+	)
+}
+
+func AddSuitePathFlags(fs *pflag.FlagSet, config *TestSuiteConfig) {
+	fs.StringVar(
+		&config.BaseDir,
+		"test-suite-base",
+		"",
+		"deprecated. Use suite-base",
+	)
+	fs.StringVar(
+		&config.BaseDir,
+		"suite-base",
+		"",
+		"base directory for searching test suites. Defaults to current directory"+
+			"\nIf specified, it is prefixed to the --suite-path.",
+	)
+	fs.StringVar(
+		&config.Path,
+		"test-suite",
+		"",
+		"deprecated. Use suite-path")
+	fs.StringVar(
+		&config.Path,
+		"suite-path",
+		"",
+		"path to the tests to be executed."+
+			"\nThe path must be relative to the base dir (which defaults to the current directory)."+
+			"\nA single .js file or a directory can be specified."+
+			"\nIf a directory is specified, all files in the directory and its sub-directories will be executed.",
+	)
+}
+
+func AddSuiteRepoFlags(fs *pflag.FlagSet, config *TestSuiteConfig) {
+	fs.StringVar(
+		&config.Repo,
+		"test-suite-repo",
+		"",
+		"deprecated. Use suite-repo-url",
+	)
+	fs.StringVar(
+		&config.Repo,
+		"suite-repo-url",
+		"",
+		"url to the repository to get the test suite from. If not set SUITE_REPO_URL environment variable is used."+
+			"\nIf specified, the repo will be checkout into the --suite-base directory."+
+			"\nIf --suite-revision is specified, that revision will be checkout."+
+			"\nOtherwise the default branch will be checkout",
+	)
+	fs.StringVar(
+		&config.RepoToken,
+		"test-suite-repo-token",
+		"",
+		"deprecated. Use suite-repo-token",
+	)
+	fs.StringVar(
+		&config.RepoToken,
+		"suite-repo-token",
+		"",
+		"authentication token for the test suite repository. "+
+			"\nIf not set SUITE_REPO_TOKEN environment variable is used.",
+	)
+	fs.StringSliceVar(
+		&config.RepoDirs,
+		"test-suite-repo-dirs",
+		nil,
+		"deprecated. Use suite-repo-dirs",
+	)
+	fs.StringSliceVar(
+		&config.RepoDirs,
+		"suite-repo-dirs",
+		nil,
+		"Directories to checkout from test suite repo. If omitted, all folders will be checkout",
+	)
+}
+
+func AddSuiteRevisionFlag(fs *pflag.FlagSet, config *TestSuiteConfig) {
+	fs.StringVar(
+		&config.Revision,
+		"test-suite-revision",
+		"",
+		"deprecated. Use suite-revision",
+	)
+	fs.StringVar(
+		&config.Revision,
+		"suite-revision",
+		"",
+		"test suite revision. If not set SUITE_REVISION environment variable is used",
+	)
 }
 
 type SlackNotifierConfig struct {
@@ -91,6 +455,87 @@ type SlackNotifierConfig struct {
 	Token         string
 	Notifications bool
 	NotifyPassing bool
+}
+
+func AddSlackFlags(fs *pflag.FlagSet, config *SlackNotifierConfig) {
+	fs.BoolVar(
+		&config.NotifyPassing,
+		"notify-passing",
+		false,
+		"deprecated. Use slack-notify-passing",
+	)
+	fs.BoolVar(
+		&config.NotifyPassing,
+		"slack-passing",
+		false,
+		"send notifications for passing test suites. By default only not passing test suites are notified",
+	)
+	fs.BoolVar(
+		&config.Notifications,
+		"slack-notifications",
+		false,
+		"send notifications to slack. Requires setting the --slack-token option or the SLACK_TOKEN environment variable.",
+	)
+	fs.StringVar(
+		&config.Token,
+		"slack-token",
+		"",
+		"slack token used for sending notifications. If not defined SLACK_TOKEN environment variable is used."+
+			"\nThe token requires chat:write and channels:read scopes",
+	)
+	fs.StringVar(
+		&config.CodeownersMap,
+		"codeowners-mapping",
+		"codeowners-mapping.yaml",
+		"deprecated. Use slack-codeowners-mapping")
+	fs.StringVar(
+		&config.CodeownersMap,
+		"slack-codeowners-mapping",
+		"codeowners-mapping.yaml",
+		"path or url to the codeowner to slack channel id mapping."+
+			"\nRelative to test suite base dir.",
+	)
+}
+
+type Prometheus struct {
+	URL      string
+	User     string
+	Password string
+	Timeout  time.Duration
+	Prefix   string
+}
+
+func AddPrometheusFlags(fs *pflag.FlagSet, prometheus *Prometheus) {
+	fs.StringVar(
+		&prometheus.Password,
+		"prometheus-url",
+		"",
+		"prometheus remote write URL. If not set PROMETHEUS_URL environment variable is used.",
+	)
+	fs.StringVar(
+		&prometheus.User,
+		"prometheus-user",
+		"",
+		"prometheus remote write user. If not set PROMETHEUS_USER environment variable is used.",
+	)
+	fs.StringVar(
+		&prometheus.Password,
+		"prometheus-password",
+		"",
+		"prometheus remote write password. If not set PROMETHEUS_PASSWORD environment variable is used.",
+	)
+	fs.StringVar(
+		&prometheus.Prefix,
+		"prometheus-prefix",
+		"",
+		"prometheus metric prefix. If not set PROMETHEUS_PREFIX environment variable is used.",
+	)
+	fs.DurationVar(
+		&prometheus.Timeout,
+		"prometheus-timeout",
+		0,
+		"prometheus remote write timeout. If not set PROMETHEUS_TIMEOUT environment variable is used.",
+	)
 }
 
 func (config BenchConfig) BuildTestExecutor(
@@ -106,7 +551,7 @@ func (config BenchConfig) BuildTestExecutor(
 		executor = k6.NewK6TestExecutor(
 			log,
 			k6.K6ExecutorOptions{
-				Verbose:        config.Verbose,
+				Verbose:        config.Test.Verbose,
 				CloudOutput:    config.K6.CloudOutput,
 				CloudToken:     config.K6.CloudToken,
 				CloudProjectID: config.K6.CloudProjectId,
@@ -115,9 +560,9 @@ func (config BenchConfig) BuildTestExecutor(
 	case "playwright":
 		executor = playwright.NewPlaywrightTestExecutor(
 			log,
-			config.Verbose,
-			config.PW.PrepareCmd,
-			config.PW.ExecuteCmd,
+			config.Test.Verbose,
+			config.Playwright.PrepareCmd,
+			config.Playwright.ExecuteCmd,
 		)
 	default:
 		return nil, fmt.Errorf("invalid test executor %q", testExecutor)
@@ -133,7 +578,7 @@ func (config *BenchConfig) BuildTestSuite(log *slog.Logger) (*executor.TestSuite
 
 		compiler := compile.NewTestCompiler(
 			log,
-			config.BaseDir,
+			config.TestSuite.BaseDir,
 			config.TestSuite.Repo,
 			config.TestSuite.RepoDirs,
 			config.TestSuite.RepoToken,
@@ -163,7 +608,7 @@ func (config *BenchConfig) BuildTestSuite(log *slog.Logger) (*executor.TestSuite
 
 	return &executor.TestSuite{
 		Name:     config.TestSuite.Name,
-		BaseDir:  config.BaseDir,
+		BaseDir:  config.TestSuite.BaseDir,
 		Path:     config.TestSuite.Path,
 		Revision: testSuiteRevision,
 	}, nil
@@ -199,7 +644,7 @@ func (config *BenchConfig) BuildReporter() (reporter.SuiteRunReporter, error) {
 
 		codeownersMap := config.Slack.CodeownersMap
 		if !filepath.IsAbs(codeownersMap) {
-			codeownersMap = filepath.Join(config.BaseDir, codeownersMap)
+			codeownersMap = filepath.Join(config.TestSuite.BaseDir, codeownersMap)
 		}
 		notifier, err := notifier.NewSlackNotifier(notifier.SlackNotifierOptions{
 			Token:        config.Slack.Token,
@@ -211,7 +656,7 @@ func (config *BenchConfig) BuildReporter() (reporter.SuiteRunReporter, error) {
 		}
 
 		notificationReporter, err := reporter.NewNotificationReporter(
-			config.BaseDir,
+			config.TestSuite.BaseDir,
 			notifier,
 			reporter.NotifyPassing(config.Slack.NotifyPassing),
 		)

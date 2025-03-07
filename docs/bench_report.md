@@ -87,32 +87,40 @@ grafana:
 ### Options
 
 ```
-      --bench-revision string              bench revision. If not provided BENCH_REVISION env var is used. 
-                                           If not set, the current git revision is used (default "(devel)")
-      --format string                      deprecated. Use --report-output instead
+      --bench-revision string              grafana bench revision. If not set BENCH_REVISION environment variable is used.
+                                           If not set, the current git revision is used (default (devel)  (default "(devel)")
+      --dashboard string                   deprecated. Use run-dashboard
+      --format string                      deprecated. Use report-output
       --grafana-admin-password string      grafana admin user's password. Overridden by the GRAFANA_ADMIN_PASSWORD environment variable (default "admin")
       --grafana-admin-user string          grafana admin user name. Overridden by the GRAFANA_ADMIN_USER environment variable (default "admin")
-      --grafana-url string                 grafana url. If not provided GRAFANA_URL env var is used
+      --grafana-timeout duration           timeout for waiting grafana to be live (default 1m0s)
+      --grafana-url string                 url to grafana instance. Overridden by the GRAFANA_URL environment variable (default http://localhost:3000) (default "http://localhost:3000")
       --grafana-version string             grafana version. If not provided GRAFANA_VERSION env var is used.
-                                           If not set, the version is retrieved from the grafana instance, if provided.
+                                           If not set, the version is retrieved from the grafana instance.
   -h, --help                               help for report
+      --report-format string               deprecated. Use report-output (default "text")
       --report-input string                report input format. Valid values are 'playwright' and 'go'
-      --report-output string               format of the test execution report. Allowed values 'log', 'json' and 'text'.
-                                            log' produced a structure log. 'json' produce a json object for each log line.
-                                           'text' produced an human readable output (default "log")
-      --run-id string                      test suite run id. If not specified, RUN_ID environment variable is used.
-                                           If not set, an id is generated from the execution timestamp
+      --report-output string               format of the test execution report. Allowed values 'log' or 'text'.
+                                            'log' produced a structure log. 'text' produced an human readable output (default "text")
+      --run-dashboard string               Template for the suite run dashboard URL.
+                                           Supports the substitution of the following variables:
+                                               Id: identifier of the suite run
+                                           Example: http://localhost/dashboards?run={{.Id}}
       --run-metrics stringToString         test suite run custom metrics (default [])
       --run-metrics-prefix string          prefix to append to the suite run metric names
-      --run-trigger string                 bench execution trigger (default "local")
+      --run-trigger string                 trigger of bench execution. For example, 'ci' or 'local'. (default "local")
       --suite-name string                  test suite name. If not specified, SUITE_NAME environment variable is used.
+                                           Defaults to the last component of -suite-path.
+                                           For example --suite--path path/to/testsuite will give a test suite name of 'testsuite'.
+      --suite-revision string              test suite revision. If not set SUITE_REVISION environment variable is used
       --suite-run-metrics stringToString   deprecated use --run-metrics (default [])
       --suite-run-metrics-prefix string    deprecated. Use --run-metrics-prefix
-      --test-suite-name string             deprecated. Use --suite-name instead
-      --test-suite-run string              deprecated. Use --run-id
-      --test-trigger string                deprecated. Use --run-trigger instead
+      --test-report-format string          deprecated. Use report-output
+      --test-suite-name string             deprecated. Use suite-name
+      --test-suite-revision string         deprecated. Use suite-revision
+      --test-trigger string                deprecated. Use run-trigger (default "local")
       --test-type string                   test type. Allowed values: 'smoke', 'load' (default "smoke")
-      --trigger string                     deprecated. Use --run-trigger instead
+      --trigger string                     deprecated. Use run-trigger (default "local")
 ```
 
 ### Options inherited from parent commands
