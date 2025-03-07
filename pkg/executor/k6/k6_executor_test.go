@@ -14,7 +14,6 @@ import (
 
 type k6TestExecutorOption func(*K6TestExecutor) error
 
-
 // configure TestRunner with retries
 func WithRetries(retries int) k6TestExecutorOption {
 	return func(t *K6TestExecutor) error {
@@ -60,7 +59,7 @@ func k6TestRunnerForTesting(
 	return te, nil
 }
 
-func sortTestRunByFilename(tr []executor.TestRun) {
+func sortTestRunByFilename(tr []executor.TestRunSummary) {
 	sort.Slice(tr, func(i, j int) bool {
 		return tr[i].TestFile < tr[j].TestFile
 	})
@@ -70,7 +69,7 @@ func newAssertionError(message string, expected, actual any) error {
 	return fmt.Errorf("%s: expected: %v got: %v", message, expected, actual)
 }
 
-func assertTestRun(expected *executor.TestRun, actual executor.TestRun) error {
+func assertTestRun(expected *executor.TestRunSummary, actual executor.TestRunSummary) error {
 	if expected == nil {
 		return nil
 	}
@@ -139,7 +138,7 @@ func TestK6Executor(t *testing.T) {
 			expectSummary: &executor.SuiteRunSummary{
 				TestsExecuted: 1,
 				TestsPassed:   1,
-				TestRuns: []executor.TestRun{
+				TestRuns: []executor.TestRunSummary{
 					{TestFile: "pass.js", Status: executor.TestPassed},
 				},
 			},
@@ -150,7 +149,7 @@ func TestK6Executor(t *testing.T) {
 			expectSummary: &executor.SuiteRunSummary{
 				TestsExecuted: 1,
 				TestsFailed:   1,
-				TestRuns: []executor.TestRun{
+				TestRuns: []executor.TestRunSummary{
 					{TestFile: "fail.js", Status: executor.TestFailed},
 				},
 			},
@@ -164,7 +163,7 @@ func TestK6Executor(t *testing.T) {
 			expectSummary: &executor.SuiteRunSummary{
 				TestsExecuted: 1,
 				TestsFailed:   1,
-				TestRuns: []executor.TestRun{
+				TestRuns: []executor.TestRunSummary{
 					{TestFile: "fail.js", Status: executor.TestFailed},
 				},
 			},
@@ -175,7 +174,7 @@ func TestK6Executor(t *testing.T) {
 			expectSummary: &executor.SuiteRunSummary{
 				TestsExecuted: 1,
 				TestsError:    1,
-				TestRuns: []executor.TestRun{
+				TestRuns: []executor.TestRunSummary{
 					{TestFile: "abort.js", Status: executor.TestError},
 				},
 			},
@@ -193,7 +192,7 @@ func TestK6Executor(t *testing.T) {
 				TestsError:    1,
 				TestsFailed:   1,
 				TestsPassed:   1,
-				TestRuns: []executor.TestRun{
+				TestRuns: []executor.TestRunSummary{
 					{TestFile: "abort.js", Status: executor.TestError},
 					{TestFile: "fail.js", Status: executor.TestFailed},
 					{TestFile: "pass.js", Status: executor.TestPassed},

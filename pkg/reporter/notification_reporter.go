@@ -15,6 +15,7 @@ import (
 var (
 	ErrSendingNotification = errors.New("sending notification")
 )
+
 type NotificationOption func(r *notificationReporter)
 
 // NotifyAll notifies all codeowners of the test results, not just owners of failed tests.
@@ -27,7 +28,7 @@ func NotifyPassing(notifyPassing bool) NotificationOption {
 type notificationReporter struct {
 	notifier      notifier.Notifier
 	notifyPassing bool
-	codeowners    *codeowners.Codeowners 
+	codeowners    *codeowners.Codeowners
 }
 
 // NewNotificationReporter returns a Reporter that notifies codeowners of test results using a Notifier
@@ -54,7 +55,7 @@ func NewNotificationReporter(
 	}
 
 	reporter := &notificationReporter{
-		notifier: notifier,
+		notifier:   notifier,
 		codeowners: c,
 	}
 
@@ -67,20 +68,17 @@ func NewNotificationReporter(
 
 func (r *notificationReporter) Report(
 	ctx context.Context,
-	suiteName string,
-	suiteRevision string,
-	runId string,
-	suiteRunId string,
-	suiteRun executor.SuiteRunSummary,
+	suiteRun executor.SuiteRun,
+	suiteRunSummary executor.SuiteRunSummary,
 ) error {
 	// skip if codeowners wasn't found
 	if r.codeowners == nil {
 		return nil
 	}
 	// collects the test runs to be notified to each code owner
-	recipients := map[string][]executor.TestRun{}
+	recipients := map[string][]executor.TestRunSummary{}
 
-	for _, testRun := range suiteRun.TestRuns {
+	for _, testRun := range suiteRunSummary.TestRuns {
 		owners := r.codeowners.Owners(filepath.Join(testRun.TestFolder, testRun.TestFile))
 		for _, o := range owners {
 			if r.notifyPassing || testRun.Status != executor.TestPassed {
@@ -91,7 +89,7 @@ func (r *notificationReporter) Report(
 
 	errs := []error{}
 	for recipient, testRuns := range recipients {
-		err := r.notifier.Notify(ctx, recipient, suiteRunId, testRuns)
+		err := r.notifier.Notify(ctx, recipient, suiteRun.Name, testRuns)
 		// it's ok not to have a notifications mapping for a codeowner
 		if err != nil && !errors.Is(err, notifier.ErrNoMappingForCodeowner) {
 			errs = append(errs, fmt.Errorf("recipient %q %w", recipient, err))

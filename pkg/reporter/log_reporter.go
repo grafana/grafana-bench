@@ -42,78 +42,58 @@ func NewLogReporter(format string, attr []any) (*LogReporter, error) {
 
 func (r *LogReporter) Report(
 	_ context.Context,
-	suiteName string,
-	suiteRevision string,
-	runId string,
-	suiteRunId string,
-	suiteRun executor.SuiteRunSummary,
+	suiteRun executor.SuiteRun,
+	summary executor.SuiteRunSummary,
 ) error {
-	log := r.Log.With("runId", runId, "suiteRun", suiteRunId)
+	
+	log := r.Log.With(
+		"runId", suiteRun.Id, 
+		// TODO: deprecate
+		"suiteRun", suiteRun.Name,
+		"testTrigger", suiteRun.Trigger,
+		"testExecutor", suiteRun.TestExecutor,
+		"benchRevision", suiteRun.BenchRevision,
+		"grafanaUrl", suiteRun.GrafanaURL,
+		"grafanaSlug", suiteRun.GrafanaSlug,
+		"grafanaVersion", suiteRun.GrafanaVersion,
+	)
 
-	for order, testRun := range suiteRun.TestRuns {
-		testRunId := fmt.Sprintf("%s-%d", runId, order)
-		log.With(suiteLogAttrs(suiteName, suiteRevision)...).
-			// TODO: deprecate order attribute
-			With("order", strconv.Itoa(order)).
-			With(testRunLogAttrs(testRun)...).
-			Info("testRun", "testRun", testRunId)
+	for order, testRun := range summary.TestRuns {
+		testRunId := fmt.Sprintf("%s-%d", suiteRun.Id, order)
+
+		attrs := []any{
+			"folder", testRun.TestFolder,
+			"testFile", testRun.TestFile,
+			"iterations", testRun.Iterations,
+			"setupDuration", prettyMS(testRun.Durations.SetupDuration),
+			"scenarioDuration", prettyMS(testRun.Durations.ScenarioDuration),
+			"teardownDuration", prettyMS(testRun.Durations.TeardownDuration),
+			"totalDuration", prettyMS(testRun.Durations.TotalDuration),
+			"status", testRun.Status,
+			"exitMessage", testRun.ExitMessage,
+			"order", strconv.Itoa(order),
+		}
+		for k, v := range testRun.Attributes {
+			attrs = append(attrs, k, v)
+		}
+		
+		log.With(attrs...).Info("testRun", "testRun", testRunId)
 	}
 
-	var anyFailures = (suiteRun.TestsFailed + suiteRun.TestsError) > 0
+	var anyFailures = (summary.TestsFailed + summary.TestsError) > 0
 
-	log.With(suiteLogAttrs(suiteName, suiteRevision)...).
-		With(suiteRunLogAttrs(suiteRun)...).
-		Info("suiteRun", "anyFailures", anyFailures)
+	log.With(
+		"startTime", summary.StartTime.Format(time.RFC3339),
+		"totalScenarioDurations", summary.ScenariosDuration,
+		"duration", summary.TotalDuration,
+		"testsExecuted", summary.TestsExecuted,
+		"testsPassed", summary.TestsPassed,
+		"testsFlaky", summary.TestsFlaky,
+		"testsFailed", summary.TestsFailed,
+		"testsError", summary.TestsError,
+	).Info("suiteRun", "anyFailures", anyFailures)
 
 	return nil
-}
-
-// suiteLogAttrs formats suite's attributes as log attributes
-func suiteLogAttrs(suiteName string, suiteRevision string) []any {
-	return []any{
-		"suiteName", suiteName,
-		"suiteRevision", suiteRevision,
-	}
-}
-
-// suiteRunLogAttrs formats suite run's attributes as log attributes
-func suiteRunLogAttrs(suiteRun executor.SuiteRunSummary) []any {
-	attrs := []any{
-		"startTime", suiteRun.StartTime.Format(time.RFC3339),
-		"totalScenarioDurations", suiteRun.ScenariosDuration,
-		"duration", suiteRun.TotalDuration,
-		"testsExecuted", suiteRun.TestsExecuted,
-		"testsPassed", suiteRun.TestsPassed,
-		"testsFlaky", suiteRun.TestsFlaky,
-		"testsFailed", suiteRun.TestsFailed,
-		"testsError", suiteRun.TestsError,
-	}
-
-	for k, v := range suiteRun.Metrics {
-		attrs = append(attrs, k, v)
-	}
-
-	return attrs
-}
-
-// testRunLogAttrs returns the k6RunSummary attributes formatted as log attributes
-func testRunLogAttrs(testRun executor.TestRun) []any {
-	attrs := []any{
-		"folder", testRun.TestFolder,
-		"testFile", testRun.TestFile,
-		"iterations", testRun.Iterations,
-		"setupDuration", prettyMS(testRun.Durations.SetupDuration),
-		"scenarioDuration", prettyMS(testRun.Durations.ScenarioDuration),
-		"teardownDuration", prettyMS(testRun.Durations.TeardownDuration),
-		"totalDuration", prettyMS(testRun.Durations.TotalDuration),
-		"status", testRun.Status,
-		"exitMessage", testRun.ExitMessage,
-	}
-
-	for k, v := range testRun.Attributes {
-		attrs = append(attrs, k, v)
-	}
-	return attrs
 }
 
 // prettyMS adds ms suffix to ms float

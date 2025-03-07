@@ -21,13 +21,10 @@ func NewTextReporter(report io.Writer) *TextReporter {
 
 func (r *TextReporter) Report(
 	_ context.Context,
-	suiteName string,
-	suiteRevision string,
-	runId string,
-	suiteRunId string,
-	suiteRun executor.SuiteRunSummary,
+	_ executor.SuiteRun,
+	suiteRunSummary executor.SuiteRunSummary,
 ) error {
-	for _, testRun := range suiteRun.TestRuns {
+	for _, testRun := range suiteRunSummary.TestRuns {
 		fmt.Fprintf(
 			r.report,
 			"%s/%s ... %s\n",
@@ -36,12 +33,12 @@ func (r *TextReporter) Report(
 			testRun.Status,
 		)
 	}
-	fmt.Fprintf(r.report, "\nTests executed %d\n", suiteRun.TestsExecuted)
-	fmt.Fprintf(r.report, "Tests passed %d\n", suiteRun.TestsPassed)
-	fmt.Fprintf(r.report, "Tests flaky %d\n", suiteRun.TestsFlaky)
-	fmt.Fprintf(r.report, "Tests failed %d\n", suiteRun.TestsFailed)
-	fmt.Fprintf(r.report, "Tests error %d\n", suiteRun.TestsError)
-	fmt.Fprintf(r.report, "\nTests suite %s\n", suiteRun.Status)
+	fmt.Fprintf(r.report, "\nTests executed %d\n", suiteRunSummary.TestsExecuted)
+	fmt.Fprintf(r.report, "Tests passed %d\n", suiteRunSummary.TestsPassed)
+	fmt.Fprintf(r.report, "Tests flaky %d\n", suiteRunSummary.TestsFlaky)
+	fmt.Fprintf(r.report, "Tests failed %d\n", suiteRunSummary.TestsFailed)
+	fmt.Fprintf(r.report, "Tests error %d\n", suiteRunSummary.TestsError)
+	fmt.Fprintf(r.report, "\nTests suite %s\n", suiteRunSummary.Status)
 
 	return nil
 }

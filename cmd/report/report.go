@@ -6,9 +6,11 @@ import (
 	"os"
 	"time"
 
+	"github.com/grafana/grafana-bench/pkg/config"
+	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/executor/playwright"
 	"github.com/grafana/grafana-bench/pkg/grafana"
-	"github.com/grafana/grafana-bench/pkg/reporter"
+	"github.com/grafana/grafana-bench/pkg/revision"
 	"github.com/grafana/grafana-bench/pkg/utils/id"
 	"github.com/spf13/cobra"
 )
@@ -84,50 +86,43 @@ grafana:
 
 // NewCmd returns a new bench report command
 func NewCmd(log *slog.Logger) *cobra.Command {
-	var (
-		benchRevision        string
-		grafanaURL           string
-		grafanaAdminPassword string
-		grafanaAdminUser     string
-		grafanaVersion       string
-		format               string
-		testType             string
-		trigger              string
-		runId                string
-		testSuiteName        string
-		testSuiteRevision    string
-		suiteRun             string
-		metrics              map[string]string
-		metricsPrefix        string
-	)
+	var benchConfig = &config.BenchConfig{}
+
 	cmd := cobra.Command{
 		Use:     "report",
 		Short:   "report test suite execution results",
 		Long:    long,
 		Example: examples,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			var err error
+
 			if len(args) == 0 {
 				return fmt.Errorf("missing report file path")
 			}
 
-			if grafanaURL == "" {
-				return fmt.Errorf("grafana url is required")
+			if benchConfig.TestSuite.Name == "" {
+				return fmt.Errorf("missing test suite name")
 			}
 
-			grafanaSlug, err := grafana.Slug(grafanaURL)
-			if err != nil {
-				return fmt.Errorf("failed to get grafana slug: %w", err)
+			grafanaSlug := ""
+			if benchConfig.Grafana.Url != "" {
+				// in case of error, slug it will be empty
+				grafanaSlug, _ = grafana.Slug(benchConfig.Grafana.Url)
+				if err != nil {
+					return fmt.Errorf("failed to get grafana slug: %w", err)
+				}
 			}
 
 			// get grafana version if not provided
+			grafanaVersion := benchConfig.Grafana.Version
 			if grafanaVersion == "" {
-				if grafanaAdminUser == "" || grafanaAdminPassword == "" {
+				if benchConfig.Grafana.Url == "" || benchConfig.Grafana.AdminUser == "" || benchConfig.Grafana.AdminPassword == "" {
 					return fmt.Errorf("grafana admin user and password are needed to get grafana version")
 				}
 				grafanaInstance, err := grafana.NewInstance(
-					grafanaURL,
-					grafanaAdminUser,
-					grafanaAdminPassword,
+					benchConfig.Grafana.Url,
+					benchConfig.Grafana.AdminUser,
+					benchConfig.Grafana.AdminUser,
 				)
 				if err != nil {
 					return fmt.Errorf("failed to create grafana instance: %w", err)
@@ -138,58 +133,48 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				}
 			}
 
+			// get attributes of this test suite run using the test suite information from the config
+			runId := benchConfig.SuiteRun.Id
+			if runId == "" {
+				runId = id.Run(benchConfig.SuiteRun.Trigger, time.Now())
+			}
+
+			suiteRunName := id.SuiteRunName(benchConfig.SuiteRun.Trigger, benchConfig.TestSuite.Name, benchConfig.Test.Type)
+
+			suiteRun := executor.SuiteRun{
+				Name:           suiteRunName,
+				Id:             runId,
+				Trigger:        benchConfig.SuiteRun.Trigger,
+				TestExecutor:   "playwright",
+				SuiteName:      benchConfig.TestSuite.Name,
+				SuiteRevision:  benchConfig.TestSuite.Revision,
+				BenchRevision:  benchConfig.BenchRevision,
+				GrafanaURL:     benchConfig.Grafana.Url,
+				GrafanaSlug:    grafanaSlug,
+				GrafanaVersion: grafanaVersion,
+			}
+
+			reporter, err := benchConfig.BuildReporter()
+			if err != nil {
+				return err
+			}
+
 			// get playwright json report
 			input, err := os.Open(args[0])
 			if err != nil {
-				return fmt.Errorf("failed to open report file: %s", err)
+				return fmt.Errorf("failed to open report file: %w", err)
 			}
 			defer input.Close()
 
-			logAttrs := []any{
-				"testTrigger", trigger,
-				"testExecutor", playwright.ExecutorName,
-				"benchRevision", benchRevision,
-				"grafanaUrl", grafanaURL,
-				"grafanaSlug", grafanaSlug,
-				"grafanaVersion", grafanaVersion,
-			}
-
-			var suiteReporter reporter.SuiteRunReporter
-			switch format {
-			case "log":
-				suiteReporter, _ = reporter.NewLogReporter(reporter.TextLog, logAttrs)
-			case "json":
-				suiteReporter, _ = reporter.NewLogReporter(reporter.JSONLog, logAttrs)
-			case "text":
-				suiteReporter = reporter.NewTextReporter(os.Stdout)
-			default:
-				return fmt.Errorf("invalid report format %q", format)
-			}
-
-			suiteRun, err := playwright.ParseJsonOutput(input)
+			suiteRunSummary, err := playwright.ParseJsonOutput(input)
 			if err != nil {
 				return fmt.Errorf("parsing playwright json input %w", err)
 			}
 
-			// add custom metrics adding the prefix to the name
-			if suiteRun.Metrics == nil {
-				suiteRun.Metrics = map[string]string{}
-			}
-			for k, v := range metrics {
-				suiteRun.Metrics[metricsPrefix+k] = v
-			}
-
-			if runId == "" {
-				runId = id.Run(trigger, time.Now())
-			}
-
-			err = suiteReporter.Report(
+			err = reporter.Report(
 				cmd.Context(),
-				testSuiteName,
-				testSuiteRevision,
-				runId,
-				id.SuiteRunName(trigger, testSuiteName, testType),
 				suiteRun,
+				suiteRunSummary,
 			)
 			if err != nil {
 				return fmt.Errorf("reporting test suite run %w", err)
@@ -201,102 +186,120 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 
 	fs := cmd.Flags()
 	fs.StringVar(
-		&format,
+		&benchConfig.Report.Format,
 		"format",
 		"",
 		"deprecated. Use --report-format instead",
 	)
 	fs.StringVar(
-		&format,
+		&benchConfig.Report.Format,
 		"report-format",
 		"log",
 		"format of the test execution report. Allowed values 'log', 'json' and 'text'."+
-			"\n log' produced a structure log. 'json' produce a json object for each log line." +
+			"\n log' produced a structure log. 'json' produce a json object for each log line."+
 			"\n'text' produced an human readable output",
 	)
 	fs.StringVar(
-		&testType,
+		&benchConfig.Test.Type,
 		"test-type",
 		"smoke",
 		"test type. Allowed values: 'smoke', 'load'",
 	)
 	fs.StringVar(
-		&trigger,
+		&benchConfig.SuiteRun.Trigger,
 		"test-trigger",
 		"",
-		"deprecated. Use --trigger instead",
+		"deprecated. Use --run-trigger instead",
 	)
 	fs.StringVar(
-		&trigger,
+		&benchConfig.SuiteRun.Trigger,
 		"trigger",
+		"",
+		"deprecated. Use --run-trigger instead",
+	)
+	fs.StringVar(
+		&benchConfig.SuiteRun.Trigger,
+		"run-trigger",
 		"local",
 		"bench execution trigger",
 	)
 	fs.StringVar(
-		&benchRevision,
+		&benchConfig.BenchRevision,
 		"bench-revision",
-		"",
+		revision.BenchRevision(),
 		"bench revision. If not provided BENCH_REVISION env var is used. "+
 			"\nIf not set, the current git revision is used",
 	)
 	fs.StringVar(
-		&grafanaURL,
+		&benchConfig.Grafana.Url,
 		"grafana-url",
 		"",
 		"grafana url. If not provided GRAFANA_URL env var is used",
 	)
 	fs.StringVar(
-		&grafanaVersion,
+		&benchConfig.Grafana.Version,
 		"grafana-version",
 		"",
 		"grafana version. If not provided GRAFANA_VERSION env var is used",
 	)
 	fs.StringVar(
-		&grafanaAdminUser,
+		&benchConfig.Grafana.AdminUser,
 		"grafana-admin-user",
 		"admin",
 		"grafana admin user name. Overridden by the GRAFANA_ADMIN_USER environment variable",
 	)
 	fs.StringVar(
-		&grafanaAdminPassword,
+		&benchConfig.Grafana.AdminPassword,
 		"grafana-admin-password",
 		"admin",
 		"grafana admin user's password. Overridden by the GRAFANA_ADMIN_PASSWORD environment variable",
 	)
 	fs.StringVar(
-		&testSuiteName,
+		&benchConfig.TestSuite.Name,
 		"test-suite-name",
 		"",
 		"deprecated. Use --suite-name instead",
 	)
 	fs.StringVar(
-		&testSuiteName,
+		&benchConfig.TestSuite.Name,
 		"suite-name",
 		"",
 		"test suite name. If not specified, SUITE_NAME environment variable is used.",
 	)
 	fs.StringVar(
-		&suiteRun,
+		&benchConfig.SuiteRun.Id,
 		"test-suite-run",
 		"",
-		"deprecated. Use --suite-run-id instead",
+		"deprecated. Use --run-id",
 	)
 	fs.StringVar(
-		&suiteRun,
-		"suite-run-id",
+		&benchConfig.SuiteRun.Id,
+		"run-id",
 		"",
-		"test suite run id. If not specified, SUITE_RUN_ID environment variable is used."+
+		"test suite run id. If not specified, RUN_ID environment variable is used."+
 			"\nIf not set, an id is generated from the execution timestamp",
 	)
 	fs.StringToStringVar(
-		&metrics,
+		&benchConfig.SuiteRun.Metrics,
 		"suite-run-metrics",
+		nil,
+		"deprecated use --run-metrics",
+	)
+	fs.StringToStringVar(
+		&benchConfig.SuiteRun.Metrics,
+		"run-metrics",
 		nil,
 		"test suite run custom metrics",
 	)
 	fs.StringVar(
-		&metricsPrefix,
+		&benchConfig.SuiteRun.MetricsPrefix,
 		"suite-run-metrics-prefix",
+		"",
+		"deprecated. Use --run-metrics-prefix",
+	)
+	fs.StringVar(
+		&benchConfig.SuiteRun.MetricsPrefix,
+		"run-metrics-prefix",
 		"",
 		"prefix to append to the suite run metric names",
 	)

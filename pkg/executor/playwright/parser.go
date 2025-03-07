@@ -58,7 +58,7 @@ func ParseJsonOutput(report io.Reader) (executor.SuiteRunSummary, error) {
 
 }
 
-func parseSuites(suites []Suite, testDirs map[string]string, testRuns []executor.TestRun) []executor.TestRun {
+func parseSuites(suites []Suite, testDirs map[string]string, testRuns []executor.TestRunSummary) []executor.TestRunSummary {
 	for _, suite := range suites {
 		for _, spec := range suite.Specs {
 			folder := "unknown"
@@ -78,11 +78,11 @@ func parseSuites(suites []Suite, testDirs map[string]string, testRuns []executor
 	return testRuns
 }
 
-func parseTestRun(spec Specs, folder string) executor.TestRun {
-	run := executor.TestRun{
+func parseTestRun(spec Specs, folder string) executor.TestRunSummary {
+	run := executor.TestRunSummary{
 		TestFolder: folder,
 		TestFile:   path.Base(spec.File),
-		Iterations:  "0",
+		Iterations: "0",
 		Attributes: map[string]string{
 			"title":  spec.Title,
 			"line":   fmt.Sprint(spec.Line),
@@ -123,7 +123,7 @@ func parseTestRun(spec Specs, folder string) executor.TestRun {
 		averageScenarioDuration = float32(math.Round(float64(scenarioTotal) / float64(executions)))
 	}
 
-	run.Iterations =  fmt.Sprintf("%d", len(spec.Tests[0].Results))
+	run.Iterations = fmt.Sprintf("%d", len(spec.Tests[0].Results))
 	// the test was not skipped and has results
 	if len(spec.Tests[0].Results) > 0 {
 		run.StartTime = spec.Tests[0].Results[0].StartTime
