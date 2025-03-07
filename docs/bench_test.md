@@ -83,7 +83,6 @@ Consider using the environment variables or secrets manager for storing sensitiv
 Also consider using .env files for storing this information in local development environments.
 
 # bench.yaml example
-trigger: "ci"
 
 test:
   env:
@@ -121,6 +120,9 @@ slack:
   notifications: true
   passing: false
   token: "xoxb-your-token"
+
+run:
+  trigger: "ci"
 
 
 ```
@@ -170,13 +172,17 @@ bench test  \
 ### Options
 
 ```
-      --bench-revision string              grafana bench revision. If not set BENCH_REVISION environment variable is used. (default "(devel)")
+      --bench-revision string              grafana bench revision. If not set BENCH_REVISION environment variable is used.
+                                           If not set, the current git revision is used (default (devel)  (default "(devel)")
       --codeowners-mapping string          deprecated. Use slack-codeowners-mapping (default "codeowners-mapping.yaml")
       --dashboard string                   deprecated. Use run-dashboard
+      --format string                      deprecated. Use report-output
       --grafana-admin-password string      grafana admin user's password. Overridden by the GRAFANA_ADMIN_PASSWORD environment variable (default "admin")
       --grafana-admin-user string          grafana admin user name. Overridden by the GRAFANA_ADMIN_USER environment variable (default "admin")
       --grafana-timeout duration           timeout for waiting grafana to be live (default 1m0s)
-      --grafana-url string                 url to grafana instance. Overridden by the GRAFANA_URL environment variable (default "http://localhost:3000")
+      --grafana-url string                 url to grafana instance. Overridden by the GRAFANA_URL environment variable (default http://localhost:3000) (default "http://localhost:3000")
+      --grafana-version string             grafana version. If not provided GRAFANA_VERSION env var is used.
+                                           If not set, the version is retrieved from the grafana instance.
   -h, --help                               help for test
       --k6-cloud-output                    send output to GCK6. Requires setting the GCK6 project ID and access token.
       --k6-cloud-project string            K6 cloud project ID. If not set K6_CLOUD_PROJECT_ID environment variable is used
@@ -191,10 +197,10 @@ bench test  \
       --report-format string               deprecated. Use report-output (default "text")
       --report-output string               format of the test execution report. Allowed values 'log' or 'text'.
                                             'log' produced a structure log. 'text' produced an human readable output (default "text")
-      --run-dashboard string               Template for the smoke test suite execution dashboard URL.
+      --run-dashboard string               Template for the suite run dashboard URL.
                                            Supports the substitution of the following variables:
-                                               SuiteRun: identifier of the suite run
-                                           Example: http://localhost/dashboards?run={{.SuiteRun}}
+                                               Id: identifier of the suite run
+                                           Example: http://localhost/dashboards?run={{.Id}}
       --run-metrics stringToString         test suite run custom metrics (default [])
       --run-metrics-prefix string          prefix to append to the suite run metric names
       --run-trigger string                 trigger of bench execution. For example, 'ci' or 'local'. (default "local")
@@ -237,7 +243,6 @@ bench test  \
       --test-trigger string                deprecated. Use run-trigger (default "local")
       --test-type string                   test type. Allowed values: 'smoke', 'load' (default "smoke")
       --trigger string                     deprecated. Use run-trigger (default "local")
-      --verbose                            show test outputs
 ```
 
 ### Options inherited from parent commands
