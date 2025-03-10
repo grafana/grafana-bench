@@ -3,6 +3,8 @@ package executor
 import (
 	"context"
 	"time"
+
+	"github.com/grafana/grafana-bench/pkg/metrics"
 )
 
 type TestStatus string
@@ -55,6 +57,7 @@ type TestRunSummary struct {
 	Attributes  map[string]string `json:"attributes"`
 }
 
+
 // TestSuiteSummary summarizes the execution of  a test suite
 type SuiteRunSummary struct {
 	StartTime         time.Time
@@ -67,7 +70,7 @@ type SuiteRunSummary struct {
 	TotalDuration     float32
 	ScenariosDuration float32
 	TestRuns          []TestRunSummary
-	Metrics           map[string]float64
+	Metrics           []metrics.Metric
 }
 
 // TestSuite defines the test suite

@@ -3,7 +3,6 @@ package test
 import (
 	"fmt"
 	"log/slog"
-	"maps"
 	"os"
 	"strings"
 	"time"
@@ -233,16 +232,11 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				return fmt.Errorf("executing test suite run %w", err)
 			}
 
-			// add custom metrics adding the prefix to the name
-			if suiteRunSummary.Metrics == nil {
-				suiteRunSummary.Metrics = map[string]float64{}
-			}
-
 			runMetrics, err := benchConfig.GetRunMetrics()
 			if err != nil {
 				return err
 			}
-			maps.Copy(suiteRunSummary.Metrics, runMetrics)
+			suiteRunSummary.Metrics = append(suiteRunSummary.Metrics, runMetrics...)
 
 			runId := id.Run(benchConfig.SuiteRun.Trigger, time.Now())
 			suiteRunName := id.SuiteRunName(benchConfig.SuiteRun.Trigger, benchConfig.TestSuite.Name, benchConfig.Test.Type)

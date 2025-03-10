@@ -3,7 +3,6 @@ package report
 import (
 	"fmt"
 	"log/slog"
-	"maps"
 	"os"
 	"time"
 
@@ -190,16 +189,11 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				return fmt.Errorf("invalid input format %q", benchConfig.Report.Input)
 			}
 
-			// add custom metrics adding the prefix to the name
-			if suiteRunSummary.Metrics == nil {
-				suiteRunSummary.Metrics = map[string]float64{}
-			}
-
 			runMetrics, err := benchConfig.GetRunMetrics()
 			if err != nil {
 				return err
 			}
-			maps.Copy(suiteRunSummary.Metrics, runMetrics)
+			suiteRunSummary.Metrics = append(suiteRunSummary.Metrics, runMetrics...)
 
 			err = reporter.Report(
 				cmd.Context(),

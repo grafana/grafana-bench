@@ -18,6 +18,7 @@ import (
 	"github.com/grafana/grafana-bench/pkg/executor/k6"
 	"github.com/grafana/grafana-bench/pkg/executor/playwright"
 	"github.com/grafana/grafana-bench/pkg/grafana"
+	"github.com/grafana/grafana-bench/pkg/metrics"
 	"github.com/grafana/grafana-bench/pkg/notifier"
 	"github.com/grafana/grafana-bench/pkg/reporter"
 	"github.com/grafana/grafana-bench/pkg/revision"
@@ -708,14 +709,17 @@ func (config *BenchConfig) GetGrafanaInstance(log *slog.Logger) (grafana.Grafana
 }
 
 
-func (config *BenchConfig) GetRunMetrics() (map[string]float64, error) {
-	metrics := map[string]float64{}
+func (config *BenchConfig) GetRunMetrics() ([]metrics.Metric, error) {
+	runMetrics := []metrics.Metric{}
 	for k, sv := range config.SuiteRun.Metrics {
 		value, err := strconv.ParseFloat(sv, 64)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse metric value %s: %w", sv, err)
 		}
-		metrics[k] = value
+		runMetrics = append(runMetrics, metrics.Metric{
+			Name:  k,
+			Value: value,
+		})
 	}
-	return metrics, nil
+	return runMetrics, nil
 }

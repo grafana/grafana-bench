@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/grafana/grafana-bench/pkg/executor"
+	"github.com/grafana/grafana-bench/pkg/metrics"
 	"github.com/grafana/grafana-bench/pkg/prometheus"
 
 	prompb "buf.build/gen/go/prometheus/prometheus/protocolbuffers/go"
@@ -43,7 +44,7 @@ func toPrometheusLabel(prefix string, label string) string {
 	if prefix != "" {
 		prefix = fmt.Sprintf("%s_", prefix)
 	}
-	return strings.ReplaceAll(fmt.Sprintf("%s%s", prefix, label), "-", "_",)
+	return strings.ReplaceAll(fmt.Sprintf("%s%s", prefix, label), "-", "_")
 }
 
 func makeTimeSeries(labels map[string]string, name string, timestamp time.Time, value float64) *prompb.TimeSeries {
@@ -81,29 +82,33 @@ func (p *PrometheusReporter) Report(
 		"status":          string(summary.Status),
 	}
 
-	metrics := map[string]float64{
-		"tests_executed": float64(summary.TestsExecuted),
-		"tests_passed":   float64(summary.TestsPassed),
-		"tests_failed":   float64(summary.TestsFailed),
-		"tests_error":    float64(summary.TestsError),
-		"tests_flaky":    float64(summary.TestsPassed),
-		"total_duration_seconds": float64(summary.TotalDuration/1000.0),
+	metrics := []metrics.Metric{
+		{Name: "tests_executed", Value: float64(summary.TestsExecuted), Labels: labels},
+		{Name: "tests_passed", Value: float64(summary.TestsPassed), Labels: labels},
+		{Name: "tests_failed", Value: float64(summary.TestsFailed), Labels: labels},
+		{Name: "tests_error", Value: float64(summary.TestsError), Labels: labels},
+		{Name: "tests_flaky", Value: float64(summary.TestsPassed), Labels: labels},
+		{Name: "total_duration_seconds", Value: float64(summary.TotalDuration / 1000.0), Labels: labels},
 	}
 
-	if summary.Metrics != nil {
-		maps.Copy(metrics, summary.Metrics)
+	for _, m := range summary.Metrics {
+		if m.Labels == nil {
+			m.Labels = make(map[string]string)
+		}
+		maps.Copy(m.Labels, labels)
+		metrics = append(metrics, m)
 	}
 
 	prefix := fmt.Sprintf("%s%s", p.prefix, suiteRun.Name)
 
-	for metric, value := range metrics {
+	for _, metric := range metrics {
 		ts = append(
 			ts,
 			makeTimeSeries(
-				labels,
-				toPrometheusLabel(prefix, metric),
+				metric.Labels,
+				toPrometheusLabel(prefix, metric.Name),
 				summary.StartTime,
-				value,
+				metric.Value,
 			),
 		)
 	}
