@@ -87,6 +87,7 @@ func (p *PrometheusReporter) Report(
 		"tests_failed":   float64(summary.TestsFailed),
 		"tests_error":    float64(summary.TestsError),
 		"tests_flaky":    float64(summary.TestsPassed),
+		"total_duration_seconds": float64(summary.TotalDuration/1000.0),
 	}
 
 	if summary.Metrics != nil {
