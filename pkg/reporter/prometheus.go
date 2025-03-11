@@ -40,13 +40,6 @@ func NewPrometheusReporter(config PrometheusConfig) *PrometheusReporter {
 	}
 }
 
-func toPrometheusLabel(prefix string, label string) string {
-	if prefix != "" {
-		prefix = fmt.Sprintf("%s_", prefix)
-	}
-	return strings.ReplaceAll(fmt.Sprintf("%s%s", prefix, label), "-", "_")
-}
-
 func makeTimeSeries(labels map[string]string, name string, timestamp time.Time, value float64) *prompb.TimeSeries {
 	tsLabels := []*prompb.Label{
 		{
@@ -80,6 +73,7 @@ func (p *PrometheusReporter) Report(
 	labels := map[string]string{
 		"grafana_version": suiteRun.GrafanaVersion,
 		"status":          string(summary.Status),
+		"suite_run":       suiteRun.Name,
 	}
 
 	metrics := []metrics.Metric{
@@ -99,14 +93,18 @@ func (p *PrometheusReporter) Report(
 		metrics = append(metrics, m)
 	}
 
-	prefix := fmt.Sprintf("%s%s", p.prefix, suiteRun.Name)
+	prefix := "bench_suite_run" 
+	if p.prefix != "" {
+		prefix = fmt.Sprintf("%s_%s", prefix, p.prefix)	
+	}
 
 	for _, metric := range metrics {
+		name := fmt.Sprintf("%s_%s", prefix, strings.ReplaceAll(metric.Name, "-", "_"))
 		ts = append(
 			ts,
 			makeTimeSeries(
 				metric.Labels,
-				toPrometheusLabel(prefix, metric.Name),
+				name,
 				summary.StartTime,
 				metric.Value,
 			),
