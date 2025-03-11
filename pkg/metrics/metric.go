@@ -1,19 +1,29 @@
 package metrics
 
 import (
+	"bufio"
+	"errors"
 	"fmt"
+	"io"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
 )
 
 var (
-	ErrInvalidMetricFormat = fmt.Errorf("invalid metric format")
+	ErrInvalidMetricFormat  = fmt.Errorf("invalid metric format")
+	ErrInvalidHeadersFormat = fmt.Errorf("invalid headers format")
+	ErrInvalidMetricsFile   = fmt.Errorf("invalid metrics file")
+	ErrAccessingFile        = fmt.Errorf("error accessing file")
 
-	re          = regexp.MustCompile(`^(?P<name>\w+)(\{(?P<labels>[^}]*)\})?=(?P<value>\d+(\.\d+)?)$`)
-	nameIndex   = re.SubexpIndex("name")
-	labelsIndex = re.SubexpIndex("labels")
-	valueIndex  = re.SubexpIndex("value")
+	reMetric    = regexp.MustCompile(`^(?P<name>\w+)(\{(?P<labels>[^}]*)\})?=(?P<value>\d+(\.\d+)?)$`)
+	nameIndex   = reMetric.SubexpIndex("name")
+	labelsIndex = reMetric.SubexpIndex("labels")
+	valueIndex  = reMetric.SubexpIndex("value")
+
+	//FIXME: this reges is capturing the comma at the end of the header
+	reHeaders   = regexp.MustCompile(`(\w+(\{[^}]*\})?)(:?,|$)?`)
 )
 
 // Metric represents a single metric with a name, value and optional labels
@@ -33,10 +43,10 @@ type Metric struct {
 //	     Value: 25.0,
 //	     Labels: map[string]string{"endpoint": "/api/search", "method": "GET", "status": "200"},
 //	}
-func ParseMetric(metricStr string) (*Metric, error) {
-	matches := re.FindStringSubmatch(metricStr)
+func ParseMetric(metricStr string) (Metric, error) {
+	matches := reMetric.FindStringSubmatch(metricStr)
 	if matches == nil {
-		return nil, fmt.Errorf("%w %q", ErrInvalidMetricFormat, metricStr)
+		return Metric{}, fmt.Errorf("%w %q", ErrInvalidMetricFormat, metricStr)
 	}
 
 	name := matches[nameIndex]
@@ -45,7 +55,7 @@ func ParseMetric(metricStr string) (*Metric, error) {
 
 	value, err := strconv.ParseFloat(valueStr, 64)
 	if err != nil {
-		return nil, fmt.Errorf("%w invalid value %q", ErrInvalidMetricFormat, valueStr)
+		return Metric{}, fmt.Errorf("%w invalid value %q", ErrInvalidMetricFormat, valueStr)
 	}
 
 	labels := make(map[string]string)
@@ -54,15 +64,72 @@ func ParseMetric(metricStr string) (*Metric, error) {
 		for _, pair := range labelPairs {
 			k, v, sep := strings.Cut(pair, "=")
 			if !sep || k == "" || v == "" {
-				return nil, fmt.Errorf("%w invalid label %q", ErrInvalidMetricFormat, labelsStr)
+				return Metric{}, fmt.Errorf("%w invalid label %q", ErrInvalidMetricFormat, labelsStr)
 			}
 			labels[strings.Trim(k, " ")] = strings.Trim(v, " ")
 		}
 	}
 
-	return &Metric{
+	return Metric{
 		Name:   name,
 		Value:  value,
 		Labels: labels,
 	}, nil
+}
+
+// ParseHeader parses a string containing a list of headers in the format 
+// "name{label1=value1,label2=value2,...},name{label1=value1,label2=value2,...},..."
+func ParseHeaders(headers string) ([]string, error) {
+	headerList := reHeaders.FindAllString(headers, -1)
+	if headerList == nil {
+		return nil, fmt.Errorf("%w %q", ErrInvalidHeadersFormat, headers)
+	}
+
+	// TODO: remove this when the regex is fixed
+	cleanHeaders := make([]string, 0, len(headerList))
+	for _, header := range headerList {
+		cleanHeaders = append(cleanHeaders, strings.Trim(header, ","))
+	}
+	return cleanHeaders, nil
+}
+
+
+func ParseMetricsFile(path string) ([]Metric, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("%w %w", ErrAccessingFile, err)
+	}
+	defer file.Close()
+
+	reader := bufio.NewReader(file)
+	headersLine, _, err := reader.ReadLine()
+	if err != nil {
+		return nil, fmt.Errorf("%w %w", ErrAccessingFile, err)
+	}
+
+	headers, err := ParseHeaders(string(headersLine))
+	if err != nil {
+		return nil, fmt.Errorf("%w %w", ErrInvalidMetricsFile, err)
+	}
+
+	valuesLine, _, err := reader.ReadLine()
+	if err != nil && !errors.Is(err, io.EOF) {
+		return nil, fmt.Errorf("%w %w", ErrAccessingFile, err)
+	}
+
+	values := strings.Split(string(valuesLine), ",")
+	if len(headers) != len(values) {
+		return nil, fmt.Errorf("%w mismatched headers and values", ErrInvalidMetricsFile)
+	}
+
+	metrics := make([]Metric, 0, len(headers))
+	for i, header := range headers {
+		metric, err := ParseMetric(header + "=" + values[i])
+		if err != nil {
+			return nil, fmt.Errorf("%w %w", ErrInvalidMetricsFile, err)
+		}
+		metrics = append(metrics, metric)
+	}
+
+	return metrics, nil
 }

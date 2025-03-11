@@ -164,6 +164,7 @@ type SuiteRunConfig struct {
 	DashboardURL  string
 	Metrics       map[string]string
 	MetricsPrefix string
+	MetricsFile   string
 }
 
 func AddSuiteRunFlags(fs *pflag.FlagSet, config *SuiteRunConfig) {
@@ -223,6 +224,12 @@ func AddSuiteRunFlags(fs *pflag.FlagSet, config *SuiteRunConfig) {
 	        "run-metrics-prefix",
 	        "",
 	        "prefix to append to the suite run metric names",
+	)
+	fs.StringVar(
+	        &config.MetricsFile,
+	        "run-metrics-file",
+	        "",
+	        "path to file containing a list of metrics to be added to the suite run",
 	)
 }
 
@@ -710,16 +717,25 @@ func (config *BenchConfig) GetGrafanaInstance(log *slog.Logger) (grafana.Grafana
 
 
 func (config *BenchConfig) GetRunMetrics() ([]metrics.Metric, error) {
-	runMetrics := []metrics.Metric{}
+	metricList := []metrics.Metric{}
 	for k, sv := range config.SuiteRun.Metrics {
 		value, err := strconv.ParseFloat(sv, 64)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse metric value %s: %w", sv, err)
 		}
-		runMetrics = append(runMetrics, metrics.Metric{
+		metricList = append(metricList, metrics.Metric{
 			Name:  k,
 			Value: value,
 		})
 	}
-	return runMetrics, nil
+
+	if config.SuiteRun.MetricsFile != "" {
+		metricsFromFile, err := metrics.ParseMetricsFile(config.SuiteRun.MetricsFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse metrics from file %s: %w", config.SuiteRun.MetricsFile, err)
+		}
+		metricList = append(metricList, metricsFromFile...)
+	}
+
+	return metricList, nil
 }
