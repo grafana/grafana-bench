@@ -87,14 +87,64 @@ test("payload-size", { tag: '@performance' }, async ({ page, dashPath }) => {
     usedJSHeapSize: +(usedJSHeapSize / 1000 / 1000).toFixed(1),
   };
 
-  let filename = "/tmp/asset-metrics.json"
-  
-  // Write the data to file
-  fs.writeFileSync(filename, JSON.stringify(performanceData, null, 2));
-  
-  // Still log to console for debugging
-  console.log(`Performance data written to ${filename}`);
   console.log(performanceData);
-  
+
+  // Write json data to file
+  let filename = "/tmp/asset-metrics.json"
+  fs.writeFileSync(filename, JSON.stringify(performanceData, null, 2));
+  console.log(`Performance data written to ${filename}`);
+
+  // Write csv
+  // Define labels for each metric
+  const labelsConfig = {
+    boot: { env: "production", browser: "chrome" },
+    inflatedSizeMB: { type: "static", compressed: "no" },
+    transferSizeMB: { type: "network", compressed: "yes" },
+    requests: {},
+    usedJSHeapSize: { stage: "initial", idx: "$seriesIndex" }
+  };
+  const csv = convertPerformanceDataToCSV(performanceData, labelsConfig);
+  console.log(csv);
+  fs.writeFileSync('/tmp/asset-metrics.csv', csv);
+
   client.detach();
 });
+
+
+// DISCLAIMER. I had claude write all of this so it's probably terrible.
+
+
+/**
+ * Converts performance data to a CSV format with metric names and labels
+ * @param {Object} performanceData - Object containing performance metrics
+ * @param {Object} labelsConfig - Configuration defining labels for each metric
+ * @returns {string} - Formatted CSV string
+ */
+function convertPerformanceDataToCSV(performanceData, labelsConfig) {
+  // Extract metric names and their values
+  const metricNames = Object.keys(performanceData);
+  const metricValues = Object.values(performanceData);
+
+  // Generate headers with metric names and their labels
+  const headers = metricNames.map((metricName, index) => {
+    const labels = labelsConfig[metricName] || {};
+
+    // Format labels as "key=value" pairs
+    const labelStrings = Object.entries(labels).map(([key, value]) => `${key}=${value}`);
+
+    // If labels exist, add them in curly braces, otherwise just return the metric name
+    if (labelStrings.length > 0) {
+      return `"${metricName}{${labelStrings.join(',')}}"`;
+    }
+    return `${metricName}`;
+  });
+
+  // Create the CSV content
+  const csvContent = [
+    headers.join(','),
+    metricValues.join(',')
+  ].join('\n');
+
+  return csvContent;
+}
+

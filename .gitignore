@@ -52,4 +52,5 @@ site/
 
 # playwright output from tests
 CI/plugin-e2e/playwright
+CI/plugin-e2e/node_modules
 CI/plugin-e2e/test-results
