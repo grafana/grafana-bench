@@ -103,7 +103,7 @@ func ParseMetricsFile(path string) ([]Metric, error) {
 
 	reader := bufio.NewReader(file)
 	headersLine, _, err := reader.ReadLine()
-	if err != nil {
+	if err != nil && !errors.Is(err, io.EOF) {
 		return nil, fmt.Errorf("%w %w", ErrAccessingFile, err)
 	}
 
@@ -114,7 +114,7 @@ func ParseMetricsFile(path string) ([]Metric, error) {
 
 	valuesLine, _, err := reader.ReadLine()
 	if err != nil && !errors.Is(err, io.EOF) {
-		return nil, fmt.Errorf("%w %w", ErrAccessingFile, err)
+		return nil, fmt.Errorf("%w %w", ErrInvalidMetricsFile, err)
 	}
 
 	values := strings.Split(string(valuesLine), ",")
