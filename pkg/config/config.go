@@ -229,7 +229,8 @@ func AddSuiteRunFlags(fs *pflag.FlagSet, config *SuiteRunConfig) {
 	        &config.MetricsFile,
 	        "run-metrics-file",
 	        "",
-	        "path to file containing a list of metrics to be added to the suite run",
+	        "path to csv file containing a list of metrics to be added to the suite run." + 
+		"\nThe headers line has the format name{label1=value1,label2=value2,...},name{label1=value1,label2=value2,...},...",
 	)
 }
 
