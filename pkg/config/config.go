@@ -9,7 +9,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -162,7 +161,7 @@ type SuiteRunConfig struct {
 	Trigger       string
 	Id            string
 	DashboardURL  string
-	Metrics       map[string]string
+	Metrics       []string
 	MetricsPrefix string
 	MetricsFile   string
 }
@@ -201,17 +200,17 @@ func AddSuiteRunFlags(fs *pflag.FlagSet, config *SuiteRunConfig) {
 		"local",
 		"trigger of bench execution. For example, 'ci' or 'local'.",
 	)
-	fs.StringToStringVar(
+	fs.StringSliceVar(
 	        &config.Metrics,
 	        "suite-run-metrics",
 	        nil,
 	        "deprecated use --run-metrics",
 	)
-	fs.StringToStringVar(
+	fs.StringArrayVar(
 	        &config.Metrics,
-	        "run-metrics",
+	        "run-metric",
 	        nil,
-	        "test suite run custom metrics. Format: name=value. The value must be a valid float number.",
+	        "test suite run custom metrics. Format: name{label=label-value,..}=value. The value must be a valid float number.",
 	)
 	fs.StringVar(
 	        &config.MetricsPrefix,
@@ -719,15 +718,12 @@ func (config *BenchConfig) GetGrafanaInstance(log *slog.Logger) (grafana.Grafana
 
 func (config *BenchConfig) GetRunMetrics() ([]metrics.Metric, error) {
 	metricList := []metrics.Metric{}
-	for k, sv := range config.SuiteRun.Metrics {
-		value, err := strconv.ParseFloat(sv, 64)
+	for _, metricString := range config.SuiteRun.Metrics {
+		metric, err := metrics.ParseMetric(metricString)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse metric value %s: %w", sv, err)
+			return nil, err
 		}
-		metricList = append(metricList, metrics.Metric{
-			Name:  k,
-			Value: value,
-		})
+		metricList = append(metricList, metric)
 	}
 
 	if config.SuiteRun.MetricsFile != "" {
