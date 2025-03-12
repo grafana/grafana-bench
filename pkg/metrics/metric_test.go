@@ -180,13 +180,12 @@ func TestParseHeaders(t *testing.T) {
 			want:    []string{"requests{endpoint=/api/search}", "errors"},
 			wantErr: nil,
 		},
-		// FIXME: This test is failing because the regex is not checking the closing bracket
-		// {
-		// 	name:    "invalid headers format",
-		// 	input:   "requests{endpoint=/api/search",
-		// 	want:    nil,
-		// 	wantErr: ErrInvalidHeadersFormat,
-		// },
+		{
+			name:    "invalid headers format",
+			input:   "requests{endpoint=/api/search",
+			want:    nil,
+			wantErr: ErrInvalidHeadersFormat,
+		},
 		{
 			name:    "empty input",
 			input:   "",
