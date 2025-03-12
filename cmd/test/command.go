@@ -232,13 +232,11 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				return fmt.Errorf("executing test suite run %w", err)
 			}
 
-			// add custom metrics adding the prefix to the name
-			if suiteRunSummary.Metrics == nil {
-				suiteRunSummary.Metrics = map[string]string{}
+			runMetrics, err := benchConfig.GetRunMetrics()
+			if err != nil {
+				return err
 			}
-			for k, v := range benchConfig.SuiteRun.Metrics {
-				suiteRunSummary.Metrics[benchConfig.SuiteRun.MetricsPrefix+k] = v
-			}
+			suiteRunSummary.Metrics = append(suiteRunSummary.Metrics, runMetrics...)
 
 			runId := id.Run(benchConfig.SuiteRun.Trigger, time.Now())
 			suiteRunName := id.SuiteRunName(benchConfig.SuiteRun.Trigger, benchConfig.TestSuite.Name, benchConfig.Test.Type)
@@ -273,6 +271,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	config.AddPlaywrightFlags(fs, &benchConfig.Playwright)
 	config.AddSlackFlags(fs, &benchConfig.Slack)
 	config.AddReportOutputFlags(fs, &benchConfig.Report)
+	config.AddPrometheusFlags(fs, &benchConfig.Prometheus)
 
 	return &cmd
 }

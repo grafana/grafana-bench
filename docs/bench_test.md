@@ -172,77 +172,84 @@ bench test  \
 ### Options
 
 ```
-      --bench-revision string              grafana bench revision. If not set BENCH_REVISION environment variable is used.
-                                           If not set, the current git revision is used (default (devel)  (default "(devel)")
-      --codeowners-mapping string          deprecated. Use slack-codeowners-mapping (default "codeowners-mapping.yaml")
-      --dashboard string                   deprecated. Use run-dashboard
-      --format string                      deprecated. Use report-output
-      --grafana-admin-password string      grafana admin user's password. Overridden by the GRAFANA_ADMIN_PASSWORD environment variable (default "admin")
-      --grafana-admin-user string          grafana admin user name. Overridden by the GRAFANA_ADMIN_USER environment variable (default "admin")
-      --grafana-timeout duration           timeout for waiting grafana to be live (default 1m0s)
-      --grafana-url string                 url to grafana instance. Overridden by the GRAFANA_URL environment variable (default http://localhost:3000) (default "http://localhost:3000")
-      --grafana-version string             grafana version. If not provided GRAFANA_VERSION env var is used.
-                                           If not set, the version is retrieved from the grafana instance.
-  -h, --help                               help for test
-      --k6-cloud-output                    send output to GCK6. Requires setting the GCK6 project ID and access token.
-      --k6-cloud-project string            K6 cloud project ID. If not set K6_CLOUD_PROJECT_ID environment variable is used
-      --k6-cloud-project-id string         deprecated. Use k6-cloud-project
-      --k6-cloud-token string              K6 cloud access token. If not set K6_CLOUD_TOKEN environment variable is used
-      --notify-passing                     deprecated. Use slack-notify-passing
-      --pw-execute string                  command used to execute the test suite eg: "npm run test"
-      --pw-execute-cmd string              deprecated. Use pw-execute
-      --pw-prepare string                  commands used to install dependencies for the test suite eg: "npm install".
-                                           Multiple commands can be specified by separating with ';'.
-      --pw-prepare-cmd string              deprecated. Use pw-prepare
-      --report-format string               deprecated. Use report-output (default "text")
-      --report-output string               format of the test execution report. Allowed values 'log' or 'text'.
-                                            'log' produced a structure log. 'text' produced an human readable output (default "text")
-      --run-dashboard string               Template for the suite run dashboard URL.
-                                           Supports the substitution of the following variables:
-                                               Id: identifier of the suite run
-                                           Example: http://localhost/dashboards?run={{.Id}}
-      --run-metrics stringToString         test suite run custom metrics (default [])
-      --run-metrics-prefix string          prefix to append to the suite run metric names
-      --run-trigger string                 trigger of bench execution. For example, 'ci' or 'local'. (default "local")
-      --slack-codeowners-mapping string    path or url to the codeowner to slack channel id mapping.
-                                           Relative to test suite base dir. (default "codeowners-mapping.yaml")
-      --slack-notifications                send notifications to slack. Requires setting the --slack-token option or the SLACK_TOKEN environment variable.
-      --slack-passing                      send notifications for passing test suites. By default only not passing test suites are notified
-      --slack-token string                 slack token used for sending notifications. If not defined SLACK_TOKEN environment variable is used.
-                                           The token requires chat:write and channels:read scopes
-      --suite-base string                  base directory for searching test suites. Defaults to current directory
-                                           If specified, it is prefixed to the --suite-path.
-      --suite-name string                  test suite name. If not specified, SUITE_NAME environment variable is used.
-                                           Defaults to the last component of -suite-path.
-                                           For example --suite--path path/to/testsuite will give a test suite name of 'testsuite'.
-      --suite-path string                  path to the tests to be executed.
-                                           The path must be relative to the base dir (which defaults to the current directory).
-                                           A single .js file or a directory can be specified.
-                                           If a directory is specified, all files in the directory and its sub-directories will be executed.
-      --suite-repo-dirs strings            Directories to checkout from test suite repo. If omitted, all folders will be checkout
-      --suite-repo-token string            authentication token for the test suite repository. 
-                                           If not set SUITE_REPO_TOKEN environment variable is used.
-      --suite-repo-url string              url to the repository to get the test suite from. If not set SUITE_REPO_URL environment variable is used.
-                                           If specified, the repo will be checkout into the --suite-base directory.
-                                           If --suite-revision is specified, that revision will be checkout.
-                                           Otherwise the default branch will be checkout
-      --suite-revision string              test suite revision. If not set SUITE_REVISION environment variable is used
-      --suite-run-metrics stringToString   deprecated use --run-metrics (default [])
-      --suite-run-metrics-prefix string    deprecated. Use --run-metrics-prefix
-      --test-env stringToString            environment variables passed to the test execution. (default [])
-      --test-env-vars stringToString       deprecated. Use test-env (default [])
-      --test-report-format string          deprecated. Use report-output
-      --test-runner string                 test runner. Allowed values: 'k6', 'playwright' (default "k6")
-      --test-suite string                  deprecated. Use suite-path
-      --test-suite-base string             deprecated. Use suite-base
-      --test-suite-name string             deprecated. Use suite-name
-      --test-suite-repo string             deprecated. Use suite-repo-url
-      --test-suite-repo-dirs strings       deprecated. Use suite-repo-dirs
-      --test-suite-repo-token string       deprecated. Use suite-repo-token
-      --test-suite-revision string         deprecated. Use suite-revision
-      --test-trigger string                deprecated. Use run-trigger (default "local")
-      --test-type string                   test type. Allowed values: 'smoke', 'load' (default "smoke")
-      --trigger string                     deprecated. Use run-trigger (default "local")
+      --bench-revision string             grafana bench revision. If not set BENCH_REVISION environment variable is used.
+                                          If not set, the current git revision is used (default (devel)  (default "(devel)")
+      --codeowners-mapping string         deprecated. Use slack-codeowners-mapping (default "codeowners-mapping.yaml")
+      --dashboard string                  deprecated. Use run-dashboard
+      --format string                     deprecated. Use report-output
+      --grafana-admin-password string     grafana admin user's password. Overridden by the GRAFANA_ADMIN_PASSWORD environment variable (default "admin")
+      --grafana-admin-user string         grafana admin user name. Overridden by the GRAFANA_ADMIN_USER environment variable (default "admin")
+      --grafana-timeout duration          timeout for waiting grafana to be live (default 1m0s)
+      --grafana-url string                url to grafana instance. Overridden by the GRAFANA_URL environment variable (default http://localhost:3000) (default "http://localhost:3000")
+      --grafana-version string            grafana version. If not provided GRAFANA_VERSION env var is used.
+                                          If not set, the version is retrieved from the grafana instance.
+  -h, --help                              help for test
+      --k6-cloud-output                   send output to GCK6. Requires setting the GCK6 project ID and access token.
+      --k6-cloud-project string           K6 cloud project ID. If not set K6_CLOUD_PROJECT_ID environment variable is used
+      --k6-cloud-project-id string        deprecated. Use k6-cloud-project
+      --k6-cloud-token string             K6 cloud access token. If not set K6_CLOUD_TOKEN environment variable is used
+      --notify-passing                    deprecated. Use slack-notify-passing
+      --prometheus-password string        prometheus remote write password. If not set PROMETHEUS_PASSWORD environment variable is used.
+      --prometheus-prefix string          prometheus metric prefix. If not set PROMETHEUS_PREFIX environment variable is used.
+      --prometheus-timeout duration       prometheus remote write timeout. If not set PROMETHEUS_TIMEOUT environment variable is used.
+      --prometheus-url string             prometheus remote write URL. If not set PROMETHEUS_URL environment variable is used.
+      --prometheus-user string            prometheus remote write user. If not set PROMETHEUS_USER environment variable is used.
+      --pw-execute string                 command used to execute the test suite eg: "npm run test"
+      --pw-execute-cmd string             deprecated. Use pw-execute
+      --pw-prepare string                 commands used to install dependencies for the test suite eg: "npm install".
+                                          Multiple commands can be specified by separating with ';'.
+      --pw-prepare-cmd string             deprecated. Use pw-prepare
+      --report-format string              deprecated. Use report-output (default "text")
+      --report-output string              format of the test execution report. Allowed values 'log' or 'text'.
+                                           'log' produced a structure log. 'text' produced an human readable output (default "text")
+      --run-dashboard string              Template for the suite run dashboard URL.
+                                          Supports the substitution of the following variables:
+                                              Id: identifier of the suite run
+                                          Example: http://localhost/dashboards?run={{.Id}}
+      --run-metric stringArray            test suite run custom metrics. Format: name{label=label-value,..}=value. The value must be a valid float number.
+      --run-metrics-file string           path to csv file containing a list of metrics to be added to the suite run.
+                                          The headers line has the format name{label1=value1,label2=value2,...},name{label1=value1,label2=value2,...},...
+      --run-metrics-prefix string         prefix to append to the suite run metric names
+      --run-trigger string                trigger of bench execution. For example, 'ci' or 'local'. (default "local")
+      --slack-codeowners-mapping string   path or url to the codeowner to slack channel id mapping.
+                                          Relative to test suite base dir. (default "codeowners-mapping.yaml")
+      --slack-notifications               send notifications to slack. Requires setting the --slack-token option or the SLACK_TOKEN environment variable.
+      --slack-passing                     send notifications for passing test suites. By default only not passing test suites are notified
+      --slack-token string                slack token used for sending notifications. If not defined SLACK_TOKEN environment variable is used.
+                                          The token requires chat:write and channels:read scopes
+      --suite-base string                 base directory for searching test suites. Defaults to current directory
+                                          If specified, it is prefixed to the --suite-path.
+      --suite-name string                 test suite name. If not specified, SUITE_NAME environment variable is used.
+                                          Defaults to the last component of -suite-path.
+                                          For example --suite--path path/to/testsuite will give a test suite name of 'testsuite'.
+      --suite-path string                 path to the tests to be executed.
+                                          The path must be relative to the base dir (which defaults to the current directory).
+                                          A single .js file or a directory can be specified.
+                                          If a directory is specified, all files in the directory and its sub-directories will be executed.
+      --suite-repo-dirs strings           Directories to checkout from test suite repo. If omitted, all folders will be checkout
+      --suite-repo-token string           authentication token for the test suite repository. 
+                                          If not set SUITE_REPO_TOKEN environment variable is used.
+      --suite-repo-url string             url to the repository to get the test suite from. If not set SUITE_REPO_URL environment variable is used.
+                                          If specified, the repo will be checkout into the --suite-base directory.
+                                          If --suite-revision is specified, that revision will be checkout.
+                                          Otherwise the default branch will be checkout
+      --suite-revision string             test suite revision. If not set SUITE_REVISION environment variable is used
+      --suite-run-metrics strings         deprecated use --run-metrics
+      --suite-run-metrics-prefix string   deprecated. Use --run-metrics-prefix
+      --test-env stringToString           environment variables passed to the test execution. (default [])
+      --test-env-vars stringToString      deprecated. Use test-env (default [])
+      --test-report-format string         deprecated. Use report-output
+      --test-runner string                test runner. Allowed values: 'k6', 'playwright' (default "k6")
+      --test-suite string                 deprecated. Use suite-path
+      --test-suite-base string            deprecated. Use suite-base
+      --test-suite-name string            deprecated. Use suite-name
+      --test-suite-repo string            deprecated. Use suite-repo-url
+      --test-suite-repo-dirs strings      deprecated. Use suite-repo-dirs
+      --test-suite-repo-token string      deprecated. Use suite-repo-token
+      --test-suite-revision string        deprecated. Use suite-revision
+      --test-trigger string               deprecated. Use run-trigger (default "local")
+      --test-type string                  test type. Allowed values: 'smoke', 'load' (default "smoke")
+      --trigger string                    deprecated. Use run-trigger (default "local")
 ```
 
 ### Options inherited from parent commands
@@ -259,4 +266,4 @@ bench test  \
 
 * [bench](bench.md)	 - grafana bench
 
-###### Auto generated by spf13/cobra on 7-Mar-2025
+###### Auto generated by spf13/cobra on 11-Mar-2025

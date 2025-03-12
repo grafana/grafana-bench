@@ -17,6 +17,7 @@ import (
 	"github.com/grafana/grafana-bench/pkg/executor/k6"
 	"github.com/grafana/grafana-bench/pkg/executor/playwright"
 	"github.com/grafana/grafana-bench/pkg/grafana"
+	"github.com/grafana/grafana-bench/pkg/metrics"
 	"github.com/grafana/grafana-bench/pkg/notifier"
 	"github.com/grafana/grafana-bench/pkg/reporter"
 	"github.com/grafana/grafana-bench/pkg/revision"
@@ -35,6 +36,7 @@ type BenchConfig struct {
 	K6            K6Config
 	Playwright    PWConfig
 	Slack         SlackNotifierConfig
+	Prometheus    Prometheus
 }
 
 func AddBenchFlags(fs *pflag.FlagSet, config *BenchConfig) {
@@ -159,8 +161,9 @@ type SuiteRunConfig struct {
 	Trigger       string
 	Id            string
 	DashboardURL  string
-	Metrics       map[string]string
+	Metrics       []string
 	MetricsPrefix string
+	MetricsFile   string
 }
 
 func AddSuiteRunFlags(fs *pflag.FlagSet, config *SuiteRunConfig) {
@@ -197,17 +200,17 @@ func AddSuiteRunFlags(fs *pflag.FlagSet, config *SuiteRunConfig) {
 		"local",
 		"trigger of bench execution. For example, 'ci' or 'local'.",
 	)
-	fs.StringToStringVar(
+	fs.StringSliceVar(
 	        &config.Metrics,
 	        "suite-run-metrics",
 	        nil,
 	        "deprecated use --run-metrics",
 	)
-	fs.StringToStringVar(
+	fs.StringArrayVar(
 	        &config.Metrics,
-	        "run-metrics",
+	        "run-metric",
 	        nil,
-	        "test suite run custom metrics",
+	        "test suite run custom metrics. Format: name{label=label-value,..}=value. The value must be a valid float number.",
 	)
 	fs.StringVar(
 	        &config.MetricsPrefix,
@@ -220,6 +223,13 @@ func AddSuiteRunFlags(fs *pflag.FlagSet, config *SuiteRunConfig) {
 	        "run-metrics-prefix",
 	        "",
 	        "prefix to append to the suite run metric names",
+	)
+	fs.StringVar(
+	        &config.MetricsFile,
+	        "run-metrics-file",
+	        "",
+	        "path to csv file containing a list of metrics to be added to the suite run." + 
+		"\nThe headers line has the format name{label1=value1,label2=value2,...},name{label1=value1,label2=value2,...},...",
 	)
 }
 
@@ -507,7 +517,7 @@ type Prometheus struct {
 
 func AddPrometheusFlags(fs *pflag.FlagSet, prometheus *Prometheus) {
 	fs.StringVar(
-		&prometheus.Password,
+		&prometheus.URL,
 		"prometheus-url",
 		"",
 		"prometheus remote write URL. If not set PROMETHEUS_URL environment variable is used.",
@@ -626,10 +636,18 @@ func (config *BenchConfig) BuildReporter() (reporter.SuiteRunReporter, error) {
 	// in the reporter logger.
 	logAttrs := []any{"service", "bench"}
 	switch config.Report.Output {
-	case "log":
-		suiteReporter, _ = reporter.NewLogReporter(reporter.TextLog, logAttrs)
 	case "json":
 		suiteReporter, _ = reporter.NewLogReporter(reporter.JSONLog, logAttrs)
+	case "log":
+		suiteReporter, _ = reporter.NewLogReporter(reporter.TextLog, logAttrs)
+	case "prometheus":
+		suiteReporter = reporter.NewPrometheusReporter(reporter.PrometheusConfig{
+			URL:     config.Prometheus.URL,
+			User:    config.Prometheus.User,
+			Password: config.Prometheus.Password,
+			Timeout: config.Prometheus.Timeout,
+			Prefix:  config.Prometheus.Prefix,
+		})
 	case "text":
 		suiteReporter = reporter.NewTextReporter(os.Stdout)
 	default:
@@ -695,4 +713,26 @@ func (config *BenchConfig) GetGrafanaInstance(log *slog.Logger) (grafana.Grafana
 	}
 
 	return grafanaInstance, grafanaVersion, nil
+}
+
+
+func (config *BenchConfig) GetRunMetrics() ([]metrics.Metric, error) {
+	metricList := []metrics.Metric{}
+	for _, metricString := range config.SuiteRun.Metrics {
+		metric, err := metrics.ParseMetric(metricString)
+		if err != nil {
+			return nil, err
+		}
+		metricList = append(metricList, metric)
+	}
+
+	if config.SuiteRun.MetricsFile != "" {
+		metricsFromFile, err := metrics.ParseMetricsFile(config.SuiteRun.MetricsFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse metrics from file %s: %w", config.SuiteRun.MetricsFile, err)
+		}
+		metricList = append(metricList, metricsFromFile...)
+	}
+
+	return metricList, nil
 }

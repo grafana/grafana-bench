@@ -87,40 +87,42 @@ grafana:
 ### Options
 
 ```
-      --bench-revision string              grafana bench revision. If not set BENCH_REVISION environment variable is used.
-                                           If not set, the current git revision is used (default (devel)  (default "(devel)")
-      --dashboard string                   deprecated. Use run-dashboard
-      --format string                      deprecated. Use report-output
-      --grafana-admin-password string      grafana admin user's password. Overridden by the GRAFANA_ADMIN_PASSWORD environment variable (default "admin")
-      --grafana-admin-user string          grafana admin user name. Overridden by the GRAFANA_ADMIN_USER environment variable (default "admin")
-      --grafana-timeout duration           timeout for waiting grafana to be live (default 1m0s)
-      --grafana-url string                 url to grafana instance. Overridden by the GRAFANA_URL environment variable (default http://localhost:3000) (default "http://localhost:3000")
-      --grafana-version string             grafana version. If not provided GRAFANA_VERSION env var is used.
-                                           If not set, the version is retrieved from the grafana instance.
-  -h, --help                               help for report
-      --report-format string               deprecated. Use report-output (default "text")
-      --report-input string                report input format. Valid values are 'playwright' and 'go'
-      --report-output string               format of the test execution report. Allowed values 'log' or 'text'.
-                                            'log' produced a structure log. 'text' produced an human readable output (default "text")
-      --run-dashboard string               Template for the suite run dashboard URL.
-                                           Supports the substitution of the following variables:
-                                               Id: identifier of the suite run
-                                           Example: http://localhost/dashboards?run={{.Id}}
-      --run-metrics stringToString         test suite run custom metrics (default [])
-      --run-metrics-prefix string          prefix to append to the suite run metric names
-      --run-trigger string                 trigger of bench execution. For example, 'ci' or 'local'. (default "local")
-      --suite-name string                  test suite name. If not specified, SUITE_NAME environment variable is used.
-                                           Defaults to the last component of -suite-path.
-                                           For example --suite--path path/to/testsuite will give a test suite name of 'testsuite'.
-      --suite-revision string              test suite revision. If not set SUITE_REVISION environment variable is used
-      --suite-run-metrics stringToString   deprecated use --run-metrics (default [])
-      --suite-run-metrics-prefix string    deprecated. Use --run-metrics-prefix
-      --test-report-format string          deprecated. Use report-output
-      --test-suite-name string             deprecated. Use suite-name
-      --test-suite-revision string         deprecated. Use suite-revision
-      --test-trigger string                deprecated. Use run-trigger (default "local")
-      --test-type string                   test type. Allowed values: 'smoke', 'load' (default "smoke")
-      --trigger string                     deprecated. Use run-trigger (default "local")
+      --bench-revision string             grafana bench revision. If not set BENCH_REVISION environment variable is used.
+                                          If not set, the current git revision is used (default (devel)  (default "(devel)")
+      --dashboard string                  deprecated. Use run-dashboard
+      --format string                     deprecated. Use report-output
+      --grafana-admin-password string     grafana admin user's password. Overridden by the GRAFANA_ADMIN_PASSWORD environment variable (default "admin")
+      --grafana-admin-user string         grafana admin user name. Overridden by the GRAFANA_ADMIN_USER environment variable (default "admin")
+      --grafana-timeout duration          timeout for waiting grafana to be live (default 1m0s)
+      --grafana-url string                url to grafana instance. Overridden by the GRAFANA_URL environment variable (default http://localhost:3000) (default "http://localhost:3000")
+      --grafana-version string            grafana version. If not provided GRAFANA_VERSION env var is used.
+                                          If not set, the version is retrieved from the grafana instance.
+  -h, --help                              help for report
+      --report-format string              deprecated. Use report-output (default "text")
+      --report-input string               report input format. Valid values are 'playwright' and 'go'
+      --report-output string              format of the test execution report. Allowed values 'log' or 'text'.
+                                           'log' produced a structure log. 'text' produced an human readable output (default "text")
+      --run-dashboard string              Template for the suite run dashboard URL.
+                                          Supports the substitution of the following variables:
+                                              Id: identifier of the suite run
+                                          Example: http://localhost/dashboards?run={{.Id}}
+      --run-metric stringArray            test suite run custom metrics. Format: name{label=label-value,..}=value. The value must be a valid float number.
+      --run-metrics-file string           path to csv file containing a list of metrics to be added to the suite run.
+                                          The headers line has the format name{label1=value1,label2=value2,...},name{label1=value1,label2=value2,...},...
+      --run-metrics-prefix string         prefix to append to the suite run metric names
+      --run-trigger string                trigger of bench execution. For example, 'ci' or 'local'. (default "local")
+      --suite-name string                 test suite name. If not specified, SUITE_NAME environment variable is used.
+                                          Defaults to the last component of -suite-path.
+                                          For example --suite--path path/to/testsuite will give a test suite name of 'testsuite'.
+      --suite-revision string             test suite revision. If not set SUITE_REVISION environment variable is used
+      --suite-run-metrics strings         deprecated use --run-metrics
+      --suite-run-metrics-prefix string   deprecated. Use --run-metrics-prefix
+      --test-report-format string         deprecated. Use report-output
+      --test-suite-name string            deprecated. Use suite-name
+      --test-suite-revision string        deprecated. Use suite-revision
+      --test-trigger string               deprecated. Use run-trigger (default "local")
+      --test-type string                  test type. Allowed values: 'smoke', 'load' (default "smoke")
+      --trigger string                    deprecated. Use run-trigger (default "local")
 ```
 
 ### Options inherited from parent commands
@@ -137,4 +139,4 @@ grafana:
 
 * [bench](bench.md)	 - grafana bench
 
-###### Auto generated by spf13/cobra on 7-Mar-2025
+###### Auto generated by spf13/cobra on 11-Mar-2025

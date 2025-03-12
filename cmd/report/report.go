@@ -189,13 +189,11 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				return fmt.Errorf("invalid input format %q", benchConfig.Report.Input)
 			}
 
-			// add custom metrics adding the prefix to the name
-			if suiteRunSummary.Metrics == nil {
-				suiteRunSummary.Metrics = map[string]string{}
+			runMetrics, err := benchConfig.GetRunMetrics()
+			if err != nil {
+				return err
 			}
-			for k, v := range benchConfig.SuiteRun.Metrics {
-				suiteRunSummary.Metrics[benchConfig.SuiteRun.MetricsPrefix+k] = v
-			}
+			suiteRunSummary.Metrics = append(suiteRunSummary.Metrics, runMetrics...)
 
 			err = reporter.Report(
 				cmd.Context(),
