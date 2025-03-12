@@ -23,7 +23,8 @@ var (
 	valueIndex  = reMetric.SubexpIndex("value")
 
 	//FIXME: this reges is capturing the comma at the end of the header
-	reHeaders   = regexp.MustCompile(`(\w+(\{[^}]*\})?)(:?,|$)?`)
+	reHeadersLine   = regexp.MustCompile(`^(\w+(\{[^}]*\})?)((?:,)(\w+(\{[^}]*\})?))*$`)
+	reHeader 	= regexp.MustCompile(`(\w+(\{[^}]*\})?)`)
 )
 
 // Metric represents a single metric with a name, value and optional labels
@@ -79,10 +80,14 @@ func ParseMetric(metricStr string) (Metric, error) {
 
 // ParseHeader parses a string containing a list of headers in the format 
 // "name{label1=value1,label2=value2,...},name{label1=value1,label2=value2,...},..."
-func ParseHeaders(headers string) ([]string, error) {
-	headerList := reHeaders.FindAllString(headers, -1)
+func ParseHeaders(headersLine string) ([]string, error) {
+	if !reHeadersLine.MatchString(headersLine) {
+		return nil, fmt.Errorf("%w %q", ErrInvalidHeadersFormat, headersLine)
+	}
+
+	headerList := reHeader.FindAllString(headersLine, -1)
 	if headerList == nil {
-		return nil, fmt.Errorf("%w %q", ErrInvalidHeadersFormat, headers)
+		return nil, fmt.Errorf("%w %q", ErrInvalidHeadersFormat, headersLine)
 	}
 
 	// TODO: remove this when the regex is fixed
