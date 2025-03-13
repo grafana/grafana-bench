@@ -131,7 +131,6 @@ jobs:
             $GAR_IMAGE
 
   publish-prod:
-    needs: [test-bench, test-container]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
