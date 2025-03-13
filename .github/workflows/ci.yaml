@@ -146,3 +146,4 @@ jobs:
             BENCH_REVISION=${{ github.ref_name }}
           tags: |-
             test
+          push: true
