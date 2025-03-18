@@ -53,7 +53,6 @@ func ParseJsonOutput(report io.Reader) (executor.SuiteRunSummary, error) {
 			continue
 		}
 
-
 		testkey := testkey{pkg: line.Package, test: line.Test}
 
 		if line.Action == "start" || line.Action == "run" { // found a new stream, initialize
@@ -69,14 +68,14 @@ func ParseJsonOutput(report io.Reader) (executor.SuiteRunSummary, error) {
 
 			// set the summary time to the first test that started don't relay on ordering of tests
 			if time.Before(summary.StartTime) {
-				summary.StartTime =  time
+				summary.StartTime = time
 			}
 			continue
 		}
 
 		testRun, ok := testRuns[testkey]
 		if !ok {
-			return executor.SuiteRunSummary{}, fmt.Errorf("%w missing start for test %q", ErrInvalidFormat, line.Package)
+			return executor.SuiteRunSummary{}, fmt.Errorf("%w missing start/run for test %q %v", ErrInvalidFormat, line.Package, line.Test)
 		}
 
 		switch line.Action {
