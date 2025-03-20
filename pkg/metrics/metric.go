@@ -17,21 +17,23 @@ var (
 	ErrInvalidMetricsFile   = fmt.Errorf("invalid metrics file")
 	ErrAccessingFile        = fmt.Errorf("error accessing file")
 
-	reMetric    = regexp.MustCompile(`^(?P<name>\w+)(\{(?P<labels>[^}]*)\})?=(?P<value>\d+(\.\d+)?)$`)
-	nameIndex   = reMetric.SubexpIndex("name")
-	labelsIndex = reMetric.SubexpIndex("labels")
-	valueIndex  = reMetric.SubexpIndex("value")
+	reMetric       = regexp.MustCompile(`^(?P<name>\w+)(\{(?P<labels>[^}]*)\})?(=|\s+)(?P<value>\d+(\.\d+)?(e[+|-]\d+)?)((\s+)(?P<timestamp>\d+))?`)
+	nameIndex      = reMetric.SubexpIndex("name")
+	labelsIndex    = reMetric.SubexpIndex("labels")
+	valueIndex     = reMetric.SubexpIndex("value")
+	timestampIndex = reMetric.SubexpIndex("timestamp")
 
 	//FIXME: this reges is capturing the comma at the end of the header
-	reHeadersLine   = regexp.MustCompile(`^(\w+(\{[^}]*\})?)((?:,)(\w+(\{[^}]*\})?))*$`)
-	reHeader 	= regexp.MustCompile(`(\w+(\{[^}]*\})?)`)
+	reHeadersLine = regexp.MustCompile(`^(\w+(\{[^}]*\})?)((?:,)(\w+(\{[^}]*\})?))*$`)
+	reHeader      = regexp.MustCompile(`(\w+(\{[^}]*\})?)`)
 )
 
 // Metric represents a single metric with a name, value and optional labels
 type Metric struct {
-	Name   string
-	Value  float64
-	Labels map[string]string
+	Name      string
+	Value     float64
+	Labels    map[string]string
+	Timestamp int64
 }
 
 // parseMetric parses a metric string in the format "name{label1=value1,label2=value2,...}=value"
@@ -53,11 +55,14 @@ func ParseMetric(metricStr string) (Metric, error) {
 	name := matches[nameIndex]
 	labelsStr := matches[labelsIndex]
 	valueStr := matches[valueIndex]
+	timestampStr := matches[timestampIndex]
 
 	value, err := strconv.ParseFloat(valueStr, 64)
 	if err != nil {
 		return Metric{}, fmt.Errorf("%w invalid value %q", ErrInvalidMetricFormat, valueStr)
 	}
+
+	timestamp, _ := strconv.Atoi(timestampStr)
 
 	labels := make(map[string]string)
 	if labelsStr != "" {
@@ -72,13 +77,14 @@ func ParseMetric(metricStr string) (Metric, error) {
 	}
 
 	return Metric{
-		Name:   name,
-		Value:  value,
-		Labels: labels,
+		Name:      name,
+		Value:     value,
+		Labels:    labels,
+		Timestamp: int64(timestamp),
 	}, nil
 }
 
-// ParseHeader parses a string containing a list of headers in the format 
+// ParseHeader parses a string containing a list of headers in the format
 // "name{label1=value1,label2=value2,...},name{label1=value1,label2=value2,...},..."
 func ParseHeaders(headersLine string) ([]string, error) {
 	if !reHeadersLine.MatchString(headersLine) {
@@ -98,8 +104,35 @@ func ParseHeaders(headersLine string) ([]string, error) {
 	return cleanHeaders, nil
 }
 
-
 func ParseMetricsFile(path string) ([]Metric, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("%w %w", ErrAccessingFile, err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+
+	metrics := []Metric{}
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		if strings.HasPrefix(line, "#") || len(line) == 0 {
+			continue
+		}
+
+		metric, err := ParseMetric(line)
+		if err != nil {
+			return nil, fmt.Errorf("%w %w", ErrInvalidMetricsFile, err)
+		}
+		metrics = append(metrics, metric)
+
+	}
+	return metrics, nil
+}
+
+func ParseMetricsCSVFile(path string) ([]Metric, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("%w %w", ErrAccessingFile, err)
@@ -121,7 +154,6 @@ func ParseMetricsFile(path string) ([]Metric, error) {
 	if err != nil && !errors.Is(err, io.EOF) {
 		return nil, fmt.Errorf("%w %w", ErrInvalidMetricsFile, err)
 	}
-
 	values := strings.Split(string(valuesLine), ",")
 	if len(headers) != len(values) {
 		return nil, fmt.Errorf("%w mismatched headers and values", ErrInvalidMetricsFile)
