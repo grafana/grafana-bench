@@ -72,7 +72,7 @@ func ParseMetric(metricStr string) (Metric, error) {
 			if !sep || k == "" || v == "" {
 				return Metric{}, fmt.Errorf("%w invalid label %q", ErrInvalidMetricFormat, labelsStr)
 			}
-			labels[strings.Trim(k, " ")] = strings.Trim(v, " ")
+			labels[strings.Trim(k, " ")] = strings.Trim(v, " \"")
 		}
 	}
 

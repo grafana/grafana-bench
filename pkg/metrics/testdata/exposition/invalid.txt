@@ -1,0 +1,3 @@
+something_weird{problem="missing value"}
+
+something_weird{problem="invalid value"} +Inf 
