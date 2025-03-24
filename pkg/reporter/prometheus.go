@@ -71,7 +71,7 @@ func (p *PrometheusReporter) Report(
 	var ts []*prompb.TimeSeries
 
 	labels := map[string]string{
-		"service":         "grafana-bench",
+		"service":         "bench",
 		"grafana_version": suiteRun.GrafanaVersion,
 		"status":          string(summary.Status),
 		"suite_run":       suiteRun.Name,
