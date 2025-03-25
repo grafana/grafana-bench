@@ -228,8 +228,11 @@ func AddSuiteRunFlags(fs *pflag.FlagSet, config *SuiteRunConfig) {
 	        &config.MetricsFile,
 	        "run-metrics-file",
 	        "",
-	        "path to csv file containing a list of metrics to be added to the suite run." + 
-		"\nThe headers line has the format name{label1=value1,label2=value2,...},name{label1=value1,label2=value2,...},...",
+	        "path to a file containing a list of metrics to be added to the suite run." +
+		"\nThe file must follow prometheus exposition format. [1]" +
+		"\nEach non commented line should follow the pattern metric{label1=value1,label2=value2,...} value." +
+		"\nThe timestamp, if present, is omitted and all metrics are reported using the suite run's execution time." +
+		"\n[1] https://github.com/Showmax/prometheus-docs/blob/master/content/docs/instrumenting/exposition_formats.md",
 	)
 }
 

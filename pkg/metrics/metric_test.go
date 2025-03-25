@@ -216,7 +216,7 @@ func TestParseHeaders(t *testing.T) {
 	}
 }
 
-func TestParseMetricsFile(t *testing.T) {
+func TestParseCSVMetricsFile(t *testing.T) {
 	tests := []struct {
 		name        string
 		file        string
@@ -225,8 +225,8 @@ func TestParseMetricsFile(t *testing.T) {
 		errContains string
 	}{
 		{
-			name:     "valid metrics file",
-			file: filepath.Join("testdata", "valid.csv"),
+			name: "valid metrics file",
+			file: "valid.csv",
 			want: []Metric{
 				{
 					Name:  "requests",
@@ -245,34 +245,169 @@ func TestParseMetricsFile(t *testing.T) {
 		},
 		{
 			name:        "mismatched headers and values",
-			file:       filepath.Join("testdata", "mismatched.csv"),
+			file:        "mismatched.csv",
 			want:        nil,
 			wantErr:     ErrInvalidMetricsFile,
 			errContains: "mismatched headers and values",
 		},
 		{
-			name:        "missing headers",
-			file:       filepath.Join("testdata", "noheaders.csv"),
-			want:        nil,
-			wantErr:     ErrInvalidMetricsFile,
+			name:    "missing headers",
+			file:    "noheaders.csv",
+			want:    nil,
+			wantErr: ErrInvalidMetricsFile,
 		},
 		{
-			name:        "missing values",
-			file:       filepath.Join("testdata", "novalues.csv"),
-			want:        nil,
-			wantErr:     ErrInvalidMetricsFile,
+			name:    "missing values",
+			file:    "novalues.csv",
+			want:    nil,
+			wantErr: ErrInvalidMetricsFile,
 		},
 		{
-			name:        "empty file",
-			file:       filepath.Join("testdata", "empty.csv"),
-			want:        nil,
-			wantErr:     ErrInvalidMetricsFile,
+			name:    "empty file",
+			file:    "empty.csv",
+			want:    nil,
+			wantErr: ErrInvalidMetricsFile,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ParseMetricsFile(tt.file)
+			got, err := ParseMetricsCSVFile(filepath.Join("testdata", "csv", tt.file))
+
+			// Check error condition
+			if !errors.Is(err, tt.wantErr) {
+				t.Fatalf("wantErr %v got %v", tt.wantErr, err)
+				return
+			}
+
+			// If expecting error, check error message contains expected text
+			if tt.wantErr != nil && tt.errContains != "" {
+				if !strings.Contains(err.Error(), tt.errContains) {
+					t.Fatalf("error %v should contain %s", err, tt.errContains)
+					return
+				}
+			}
+
+			// Check returned value
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Fatalf("want %v got %v", tt.want, got)
+			}
+		})
+	}
+}
+
+func TestParseMetricsFile(t *testing.T) {
+	tests := []struct {
+		name        string
+		file        string
+		want        []Metric
+		wantErr     error
+		errContains string
+	}{
+		{
+			name: "valid metrics file",
+			file: "valid.txt",
+			want: []Metric{
+				{
+					Name:  "http_requests_total",
+					Value: 1027,
+					Labels: map[string]string{
+						"method": "post",
+						"code": "200",
+					},
+					Timestamp: 1395066363000,
+				},
+				{
+					Name:   "http_requests_total",
+					Labels: map[string]string{
+						"method": "post",
+						"code": "400",
+					},
+					Value:  3,
+					Timestamp: 1395066363000,
+				},
+				{
+					Name:   "metric_without_timestamp_and_labels",
+					Labels: map[string]string{},
+					Value:  12.47,
+					Timestamp: 0,
+				},
+			},
+			wantErr: nil,
+		},
+		{
+			name:    "invalid metrics",
+			file:    "invalid.txt",
+			want:    nil,
+			wantErr: ErrInvalidMetricsFile,
+		},
+		{
+			name:    "empty file",
+			file:    "empty.txt",
+			want:    []Metric{},
+			wantErr: nil,
+		},
+		{
+			name:    "histogram",
+			file:    "histogram.txt",
+			want:    []Metric{
+				{
+					Name:   "http_request_duration_seconds_bucket",
+					Labels: map[string]string{"le": "0.05"},
+					Value:  24054,
+					Timestamp: 0,
+				},
+				{
+					Name:   "http_request_duration_seconds_bucket",
+					Labels: map[string]string{"le": "0.1"},
+					Value:  33444,
+					Timestamp: 0,
+				},
+				{
+					Name:   "http_request_duration_seconds_bucket",
+					Labels: map[string]string{"le": "0.2"},
+					Value:  100392,
+					Timestamp: 0,
+				},
+				{
+					Name:   "http_request_duration_seconds_bucket",
+					Labels: map[string]string{"le": "0.5"},
+					Value:  129389,
+					Timestamp: 0,
+				},
+	
+				{
+					Name:   "http_request_duration_seconds_bucket",
+					Labels: map[string]string{"le": "1"},
+					Value:  133988,
+					Timestamp: 0,
+				},
+				{
+					Name:   "http_request_duration_seconds_bucket",
+					Labels: map[string]string{"le": "+Inf"},
+					Value:  144320,
+					Timestamp: 0,
+				},
+				{
+					Name:   "http_request_duration_seconds_sum",
+					Labels: map[string]string{},
+					Value:  53423,
+					Timestamp: 0,
+				},
+				{
+					Name:   "http_request_duration_seconds_count",
+					Labels: map[string]string{},
+					Value:  144320,
+					Timestamp: 0,
+				},
+			},
+			wantErr: nil,
+		},	
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParseMetricsFile(filepath.Join("testdata", "exposition", tt.file))
 
 			// Check error condition
 			if !errors.Is(err, tt.wantErr) {
