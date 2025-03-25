@@ -79,33 +79,30 @@ test("payload-size", { tag: '@performance' }, async ({ page, dashPath }) => {
   let usedJSHeapSize = (await client.send("Runtime.getHeapUsage")).usedSize;
 
   // Create performance data object
-  const performanceData = {
-    boot: Math.round(end - start),
-    inflatedSizeMB: +(inflatedSize / 1000 / 1000).toFixed(1),
-    transferSizeMB: +(transferSize / 1000 / 1000).toFixed(1),
-    requests: requests,
-    usedJSHeapSize: +(usedJSHeapSize / 1000 / 1000).toFixed(1),
+  const metricsWithLabels = {
+    boot: {
+      value: Math.round(end - start),
+    },
+    inflatedSizeMB: {
+      value: +(inflatedSize / 1000 / 1000).toFixed(1),
+    },
+    transferSizeMB: {
+      value: +(transferSize / 1000 / 1000).toFixed(1),
+    },
+    requests: {
+      value: requests,
+    },
+    usedJSHeapSize: {
+      value: +(usedJSHeapSize / 1000 / 1000).toFixed(1),
+    }
   };
 
   console.log(performanceData);
 
   // Write json data to file
-  let filename = "/tmp/asset-metrics.json"
-  fs.writeFileSync(filename, JSON.stringify(performanceData, null, 2));
-  console.log(`Performance data written to ${filename}`);
-
-  // Write csv
-  // Define labels for each metric
-  const labelsConfig = {
-    boot: { env: "production", browser: "chrome" },
-    inflatedSizeMB: { type: "static", compressed: "no" },
-    transferSizeMB: { type: "network", compressed: "yes" },
-    requests: {},
-    usedJSHeapSize: { stage: "initial", idx: "$seriesIndex" }
-  };
-  const csv = convertPerformanceDataToCSV(performanceData, labelsConfig);
-  console.log(csv);
-  fs.writeFileSync('/tmp/asset-metrics.csv', csv);
+  const textExpositionData = convertToPrometheusFormat(metricsWithLabels);
+  console.log(textExpositionData);
+  fs.writeFileSync('/tmp/asset-metrics.txt', textExpositionData);
 
   client.detach();
 });
@@ -113,38 +110,33 @@ test("payload-size", { tag: '@performance' }, async ({ page, dashPath }) => {
 
 // DISCLAIMER. I had claude write all of this so it's probably terrible.
 
-
 /**
- * Converts performance data to a CSV format with metric names and labels
- * @param {Object} performanceData - Object containing performance metrics
- * @param {Object} labelsConfig - Configuration defining labels for each metric
- * @returns {string} - Formatted CSV string
+ * Converts performance data with integrated labels to Prometheus exposition text format
+ * https://github.com/prometheus/docs/blob/main/content/docs/instrumenting/exposition_formats.md#text-format-example
+ * @param {Object} metrics - Object containing metrics with their values and labels
+ * @returns {string} - Formatted Prometheus exposition text
  */
-function convertPerformanceDataToCSV(performanceData, labelsConfig) {
-  // Extract metric names and their values
-  const metricNames = Object.keys(performanceData);
-  const metricValues = Object.values(performanceData);
-
-  // Generate headers with metric names and their labels
-  const headers = metricNames.map((metricName, index) => {
-    const labels = labelsConfig[metricName] || {};
-
-    // Format labels as "key=value" pairs
-    const labelStrings = Object.entries(labels).map(([key, value]) => `${key}=${value}`);
-
-    // If labels exist, add them in curly braces, otherwise just return the metric name
-    if (labelStrings.length > 0) {
-      return `"${metricName}{${labelStrings.join(',')}}"`;
+function convertToPrometheusFormat(metrics) {
+  const lines = [];
+  const timestamp = Date.now();
+  
+  // Process each metric
+  for (const [metricName, metricData] of Object.entries(metrics)) {
+    // Extract value and labels
+    const { value, ...labels } = metricData;
+    
+    // Format labels as key="value" pairs
+    let labelString = '';
+    const formattedLabels = Object.entries(labels).map(([key, val]) => `${key}="${val}"`);
+    
+    if (formattedLabels.length > 0) {
+      labelString = `{${formattedLabels.join(',')}}`;
     }
-    return `${metricName}`;
-  });
-
-  // Create the CSV content
-  const csvContent = [
-    headers.join(','),
-    metricValues.join(',')
-  ].join('\n');
-
-  return csvContent;
+    
+    // Add metric line - format: metric_name{label="value",...} value timestamp
+    lines.push(`${metricName}${labelString} ${value} ${timestamp}`);
+  }
+  
+  return lines.join('\n');
 }
 

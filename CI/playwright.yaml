@@ -18,5 +18,10 @@ pw:
   prepare: "yarn install; yarn playwright install"
   execute: "yarn run test --grep-invert @performance"
 
+prometheus:
+  url: "https://prometheus-ops-03-ops-eu-south-0.grafana-ops.net/api/prom/push"
+  user: 10428
+# password provided as github action secret
+
 log:
   level: DEBUG
