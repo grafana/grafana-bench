@@ -72,4 +72,5 @@ jobs:
             --grafana-version "rrc-instant" \
             --run-metrics-file "/tmp/asset-metrics.txt"
             --run-metrics-prefix "FrontendAssets" \
-            --log-level DEBUG
+            --log-level DEBUG \
+            /tmp/asset-metrics.txt
