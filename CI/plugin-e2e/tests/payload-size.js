@@ -1,12 +1,13 @@
 import { expect } from "@playwright/test";
 import { test } from "../playwright.config";
+import  fs from "fs";
 
 test("payload-size",{ tag: '@performance' }, async ({ page, dashPath }) => {
   let inflatedSize = 0;
   let transferSize = 0;
   let requests = 0;
 
-  page.on('console', msg => console.log(msg.text()));
+  //page.on('console', msg => console.log(msg.text()));
 
   const addSize = async (response) => {
     if (response.status() === 200) {
@@ -41,17 +42,41 @@ test("payload-size",{ tag: '@performance' }, async ({ page, dashPath }) => {
   await client.send('HeapProfiler.collectGarbage');
   let usedJSHeapSize = (await client.send("Runtime.getHeapUsage")).usedSize;
 
-  console.log({
-    boot: Math.round(end - start),
-    inflatedSizeMB: +(inflatedSize / 1000 / 1000).toFixed(1),
-    transferSizeMB: +(transferSize / 1000 / 1000).toFixed(1),
-    requests: requests,
-    usedJSHeapSize: +(usedJSHeapSize / 1000 / 1000).toFixed(1),
-  });
+  //console.log({
+  //  boot: Math.round(end - start),
+  //  inflatedSizeMB: +(inflatedSize / 1000 / 1000).toFixed(1),
+  //  transferSizeMB: +(transferSize / 1000 / 1000).toFixed(1),
+  //  requests: requests,
+  //  usedJSHeapSize: +(usedJSHeapSize / 1000 / 1000).toFixed(1),
+  //});
+
+  // Create performance data object
+  const metricsWithLabels = {
+    boot: {
+      value: Math.round(end - start),
+    },
+    inflatedSizeMB: {
+      value: +(inflatedSize / 1000 / 1000).toFixed(1),
+    },
+    transferSizeMB: {
+      value: +(transferSize / 1000 / 1000).toFixed(1),
+    },
+    requests: {
+      value: requests,
+    },
+    usedJSHeapSize: {
+      value: +(usedJSHeapSize / 1000 / 1000).toFixed(1),
+    }
+  };
+
+  // Write json data to file
+  const textExpositionData = convertToPrometheusFormat(metricsWithLabels);
+  console.log(textExpositionData);
+  fs.writeFileSync('/tmp/asset-metrics.txt', textExpositionData);
 
   // if we don't remove the listener the "test" will error.
   page.removeListener("response", addSize);
-
+  page.close()
   client.detach();
 });
 
