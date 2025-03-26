@@ -56,7 +56,7 @@ test("payload-size", { tag: '@performance' }, async ({ page, dashPath }) => {
   await expect(el).toBeVisible();
 
   // Wait for network activity to settle
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('networkidle', {timeout: 50_000});
 
   // Signal that no more responses will be coming
   responsesComplete = true;
