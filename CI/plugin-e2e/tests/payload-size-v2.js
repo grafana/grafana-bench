@@ -2,7 +2,7 @@ import { expect } from "@playwright/test";
 import { test } from "../playwright.config";
 import * as fs from 'fs';
 
-test("payload-size", { tag: '@performance' }, async ({ page, dashPath }) => {
+test("payload-size", { tag: '@performance', timeout: 60000 }, async ({ page, dashPath }) => {
   let inflatedSize = 0;
   let transferSize = 0;
   let requests = 0;
@@ -105,7 +105,7 @@ test("payload-size", { tag: '@performance' }, async ({ page, dashPath }) => {
   fs.writeFileSync('/tmp/asset-metrics.txt', textExpositionData);
 
   client.detach();
-}, { timeout: 60000 });
+});
 
 
 // DISCLAIMER. I had claude write all of this so it's probably terrible.
