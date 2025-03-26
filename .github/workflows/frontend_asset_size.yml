@@ -63,12 +63,13 @@ jobs:
           cat /tmp/asset-metrics.txt
 
       - name: report result
+        env:
+          PROMETHEUS_PASSWORD: ${{ secrets.OPS_PROMETHEUS_PUSH_TOKEN }}
         run: |
           cat /tmp/asset-metrics.txt
           grafana-bench report \
             --grafana-url "http://localhost:3000" \
             --grafana-version "rrc-instant" \
-            --prometheus-password ${{ secrets.OPS_PROMETHEUS_PUSH_TOKEN }} \
             --run-metrics-file "/tmp/asset-metrics.txt"
             --run-metrics-prefix "FrontendAssets" \
             --log-level DEBUG
