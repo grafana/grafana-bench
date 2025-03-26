@@ -48,7 +48,7 @@ jobs:
 
       - name: run playwright tests
         working-directory: ./CI/plugin-e2e
-        run: yarn run test --grep @performance || true
+        run: yarn run test --grep @performance
 
       - name: cat results
         run: |
