@@ -61,6 +61,7 @@ jobs:
 
       - name: cat results
         run: |
+          cat /tmp/results.json
           cat /tmp/asset-metrics.txt
 
       - name: report result
@@ -73,4 +74,5 @@ jobs:
             --grafana-version "rrc-instant" \
             --run-metrics-file "/tmp/asset-metrics.txt"
             --run-metrics-prefix "FrontendAssets" \
-            --log-level DEBUG /tmp/results.json
+            --log-level DEBUG \
+            /tmp/results.json
