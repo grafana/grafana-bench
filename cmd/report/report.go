@@ -158,7 +158,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				GrafanaURL:     benchConfig.Grafana.Url,
 				GrafanaSlug:    grafanaSlug,
 				GrafanaVersion: grafanaVersion,
-
 			}
 
 			reporter, err := benchConfig.BuildReporter()
@@ -218,6 +217,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	config.AddSuiteRunFlags(fs, &benchConfig.SuiteRun)
 	config.AddReportOutputFlags(fs, &benchConfig.Report)
 	config.AddReportInputFlags(fs, &benchConfig.Report)
+	config.AddPrometheusFlags(fs, &benchConfig.Prometheus)
 
 	return &cmd
 }
