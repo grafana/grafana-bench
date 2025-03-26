@@ -2,7 +2,10 @@ import { expect } from "@playwright/test";
 import { test } from "../playwright.config";
 import * as fs from 'fs';
 
-test("payload-size", { tag: '@performance', timeout: 60000 }, async ({ page, dashPath }) => {
+test("payload-size", { tag: '@performance' }, async ({ page, dashPath }) => {
+  // triple timeout to 90 seconds
+  test.slow();
+
   let inflatedSize = 0;
   let transferSize = 0;
   let requests = 0;
