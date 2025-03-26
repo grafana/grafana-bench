@@ -99,7 +99,7 @@ test("payload-size", { tag: '@performance' }, async ({ page, dashPath }) => {
     }
   };
 
-  console.log(performanceData);
+  console.log(metricsWithLabels);
 
   // Write json data to file
   const textExpositionData = convertToPrometheusFormat(metricsWithLabels);
