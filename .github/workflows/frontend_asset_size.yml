@@ -66,6 +66,8 @@ jobs:
 
       - name: report result
         env:
+          PROMETHEUS_URL: "https://prometheus-ops-03-ops-eu-south-0.grafana-ops.net/api/prom/push"
+          PROMETHEUS_USER: 10428
           PROMETHEUS_PASSWORD: ${{ secrets.OPS_PROMETHEUS_PUSH_TOKEN }}
         run: |
           cat /tmp/asset-metrics.txt
