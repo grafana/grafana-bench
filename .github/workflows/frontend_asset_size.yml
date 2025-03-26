@@ -17,11 +17,11 @@ jobs:
   measure-frontend-assets:
     runs-on: ubuntu-latest
 
-    services:
-      grafana:
-        image: grafana/grafana:latest
-        ports:
-          - 3000:3000
+    #services:
+    #  grafana:
+    #    image: grafana/grafana:latest
+    #    ports:
+    #      - 3000:3000
 
     steps:
       - name: checkout code
@@ -70,9 +70,10 @@ jobs:
         run: |
           cat /tmp/asset-metrics.txt
           grafana-bench report \
-            --grafana-url "http://localhost:3000" \
+            --grafana-url "https://leeoniya.grafana.net" \
             --grafana-version "rrc-instant" \
-            --run-metrics-file "/tmp/asset-metrics.txt"
-            --run-metrics-prefix "FrontendAssets" \
+            --test-suite-name "FrontendAssetSize" \
+            --run-metrics-prefix "FrontendAssetSize" \
+            --run-metrics-file "/tmp/asset-metrics.txt" \
             --log-level DEBUG \
             /tmp/results.json
