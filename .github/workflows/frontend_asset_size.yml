@@ -51,7 +51,9 @@ jobs:
         run: yarn run test --grep @performance || true
 
       - name: cat results
-        run: cat /tmp/asset-metrics.txt
+        run: |
+          ls /tmp/
+          cat /tmp/asset-metrics.txt
 
       - name: report result
         run: |
