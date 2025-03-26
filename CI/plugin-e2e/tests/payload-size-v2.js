@@ -56,7 +56,7 @@ test("payload-size", { tag: '@performance' }, async ({ page, dashPath }) => {
   await expect(el).toBeVisible();
 
   // Wait for network activity to settle
-  await page.waitForLoadState('networkidle', {timeout: 50_000});
+  await page.waitForLoadState('networkidle');
 
   // Signal that no more responses will be coming
   responsesComplete = true;
@@ -105,7 +105,7 @@ test("payload-size", { tag: '@performance' }, async ({ page, dashPath }) => {
   fs.writeFileSync('/tmp/asset-metrics.txt', textExpositionData);
 
   client.detach();
-});
+}, { timeout: 60000 });
 
 
 // DISCLAIMER. I had claude write all of this so it's probably terrible.
