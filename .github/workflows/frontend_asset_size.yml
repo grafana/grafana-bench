@@ -56,7 +56,7 @@ jobs:
       - name: run playwright tests
         working-directory: ./CI/plugin-e2e
         env:
-          PLAYWRIGHT_JSON_OUTPUT_NAME=/tmp/results.json
+          PLAYWRIGHT_JSON_OUTPUT_NAME: /tmp/results.json
         run: yarn run test --grep @performance --reporter json || true
 
       - name: cat results
