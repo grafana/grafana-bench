@@ -55,7 +55,9 @@ jobs:
 
       - name: run playwright tests
         working-directory: ./CI/plugin-e2e
-        run: yarn run test --grep @performance || true
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME=/tmp/results.json
+        run: yarn run test --grep @performance --reporter json || true
 
       - name: cat results
         run: |
@@ -71,4 +73,4 @@ jobs:
             --grafana-version "rrc-instant" \
             --run-metrics-file "/tmp/asset-metrics.txt"
             --run-metrics-prefix "FrontendAssets" \
-            --log-level DEBUG /tmp/asset-metrics.txt
+            --log-level DEBUG /tmp/results.json
