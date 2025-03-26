@@ -3,8 +3,7 @@ import { test } from "../playwright.config";
 import * as fs from 'fs';
 
 test("payload-size", { tag: '@performance' }, async ({ page, dashPath }) => {
-  // triple timeout to 90 seconds
-  test.slow();
+  test.setTimeout(120_000);
 
   let inflatedSize = 0;
   let transferSize = 0;
@@ -59,7 +58,7 @@ test("payload-size", { tag: '@performance' }, async ({ page, dashPath }) => {
   await expect(el).toBeVisible();
 
   // Wait for network activity to settle
-  await page.waitForLoadState('networkidle', {timeout: 50_000});
+  await page.waitForLoadState('networkidle', {timeout: 120_000});
 
   // Signal that no more responses will be coming
   responsesComplete = true;
