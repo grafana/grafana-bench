@@ -73,7 +73,8 @@ jobs:
             --grafana-url "https://leeoniya.grafana.net" \
             --grafana-version "rrc-instant" \
             --test-suite-name "FrontendAssetSize" \
-            --run-metrics-prefix "FrontendAssetSize" \
+            --report-input playwright \
             --run-metrics-file "/tmp/asset-metrics.txt" \
+            --run-metrics-prefix "FrontendAssetSize" \
             --log-level DEBUG \
             /tmp/results.json
