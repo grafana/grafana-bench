@@ -76,7 +76,7 @@ test("payload-size",{ tag: '@performance' }, async ({ page, dashPath }) => {
 
   // if we don't remove the listener the "test" will error.
   page.removeListener("response", addSize);
-  client.detach();
+  //client.detach();
   page.close()
 });
 
