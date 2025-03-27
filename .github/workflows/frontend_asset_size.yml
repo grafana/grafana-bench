@@ -39,7 +39,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'yarn'
-          cache-dependency-path: 'CI/plugin-e2e/yarn.lock'
+          cache-dependency-path: './CI/plugin-e2e/yarn.lock'
 
       - name: setup playwright
         working-directory: ./CI/plugin-e2e
