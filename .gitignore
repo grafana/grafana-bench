@@ -46,8 +46,6 @@ plugin/node_modules/
 # don't add stuff related to enghub testing
 node_modules/
 package-lock.json
-yarn.lock
-package.json
 site/
 
 # playwright output from tests
