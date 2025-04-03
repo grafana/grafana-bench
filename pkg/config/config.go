@@ -515,7 +515,6 @@ type Prometheus struct {
 	User     string
 	Password string
 	Timeout  time.Duration
-	Prefix   string
 }
 
 func AddPrometheusFlags(fs *pflag.FlagSet, prometheus *Prometheus) {
@@ -536,12 +535,6 @@ func AddPrometheusFlags(fs *pflag.FlagSet, prometheus *Prometheus) {
 		"prometheus-password",
 		"",
 		"prometheus remote write password. If not set PROMETHEUS_PASSWORD environment variable is used.",
-	)
-	fs.StringVar(
-		&prometheus.Prefix,
-		"prometheus-prefix",
-		"",
-		"prometheus metric prefix. If not set PROMETHEUS_PREFIX environment variable is used.",
 	)
 	fs.DurationVar(
 		&prometheus.Timeout,
@@ -649,7 +642,7 @@ func (config *BenchConfig) BuildReporter() (reporter.SuiteRunReporter, error) {
 			User:    config.Prometheus.User,
 			Password: config.Prometheus.Password,
 			Timeout: config.Prometheus.Timeout,
-			Prefix:  config.Prometheus.Prefix,
+			Prefix:  config.SuiteRun.MetricsPrefix,
 		})
 	case "text":
 		suiteReporter = reporter.NewTextReporter(os.Stdout)
