@@ -42,30 +42,22 @@ test("payload-size",{ tag: '@performance' }, async ({ page, dashPath }) => {
   await client.send('HeapProfiler.collectGarbage');
   let usedJSHeapSize = (await client.send("Runtime.getHeapUsage")).usedSize;
 
-  //console.log({
-  //  boot: Math.round(end - start),
-  //  inflatedSizeMB: +(inflatedSize / 1000 / 1000).toFixed(1),
-  //  transferSizeMB: +(transferSize / 1000 / 1000).toFixed(1),
-  //  requests: requests,
-  //  usedJSHeapSize: +(usedJSHeapSize / 1000 / 1000).toFixed(1),
-  //});
-
   // Create performance data object
   const metricsWithLabels = {
-    boot: {
-      value: Math.round(end - start),
+    boot_time_seconds: {
+      value: (Math.round(end - start) / 1000),
     },
-    inflatedSizeMB: {
-      value: +(inflatedSize / 1000 / 1000).toFixed(1),
-    },
-    transferSizeMB: {
-      value: +(transferSize / 1000 / 1000).toFixed(1),
-    },
-    requests: {
+    requests_total: {
       value: requests,
     },
-    usedJSHeapSize: {
-      value: +(usedJSHeapSize / 1000 / 1000).toFixed(1),
+    inflated_size_bytes: {
+      value: +(inflatedSize).toFixed(1),
+    },
+    transfer_size_bytes: {
+      value: +(transferSize).toFixed(1),
+    },
+    used_js_heap_size_bytes: {
+      value: +(usedJSHeapSize).toFixed(1),
     }
   };
 
@@ -108,6 +100,9 @@ function convertToPrometheusFormat(metrics) {
     
     // Add metric line - format: metric_name{label="value",...} value timestamp
     lines.push(`${metricName}${labelString} ${value} ${timestamp}`);
+    
+    // Add blank line. discovered the promlint parser needs this by accident.
+    lines.push();
   }
   
   return lines.join('\n');
