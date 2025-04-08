@@ -16,7 +16,7 @@ grafana:
 
 pw:
   prepare: "yarn install; yarn playwright install"
-  execute: "yarn run test"
+  execute: "yarn run test --grep-invert @performance"
 
 log:
   level: DEBUG

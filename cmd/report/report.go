@@ -158,7 +158,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				GrafanaURL:     benchConfig.Grafana.Url,
 				GrafanaSlug:    grafanaSlug,
 				GrafanaVersion: grafanaVersion,
-
 			}
 
 			reporter, err := benchConfig.BuildReporter()
@@ -186,7 +185,11 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 					return fmt.Errorf("parsing go-json input %w", err)
 				}
 			default:
-				return fmt.Errorf("invalid input format %q", benchConfig.Report.Input)
+				if benchConfig.Report.Input == "" {
+					return fmt.Errorf("invalid input format - no input type specified: %q", benchConfig.Report.Input)
+				} else {
+					return fmt.Errorf("invalid input format %q", benchConfig.Report.Input)
+				}
 			}
 
 			runMetrics, err := benchConfig.GetRunMetrics()
