@@ -745,7 +745,7 @@ func (config *BenchConfig) GetRunMetrics(log *slog.Logger) ([]metrics.Metric, er
 		}
 		metricList = append(metricList, metricsFromFile...)
 
-		err = metrics.LintMetrics(metricList, config.Prometheus.StrictLint)
+		err = metrics.LintMetrics(log, metricList, config.Prometheus.StrictLint)
 		if err != nil {
 			return []metrics.Metric{}, err
 		}
