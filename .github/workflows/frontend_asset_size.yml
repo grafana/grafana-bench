@@ -79,6 +79,7 @@ jobs:
             --grafana-version "rrc-instant" \
             --test-suite-name "FrontendAssetSize" \
             --report-input playwright \
+            --report-output log \
             --prometheus-metrics \
             --run-metrics-file "/tmp/asset-metrics.txt" \
             --log-level DEBUG \
