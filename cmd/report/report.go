@@ -192,7 +192,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				}
 			}
 
-			runMetrics, err := benchConfig.GetRunMetrics()
+			runMetrics, err := benchConfig.GetRunMetrics(log)
 			if err != nil {
 				return err
 			}
