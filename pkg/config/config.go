@@ -21,22 +21,23 @@ import (
 	"github.com/grafana/grafana-bench/pkg/notifier"
 	"github.com/grafana/grafana-bench/pkg/reporter"
 	"github.com/grafana/grafana-bench/pkg/revision"
+	"github.com/prometheus/client_golang/prometheus/testutil/promlint"
 	"github.com/spf13/pflag"
 )
 
 type BenchConfig struct {
 	// FIXME: moved there because is needed by the slack notifications
 	// for the codeowners mapping.
-	Revision      string
-	TestSuite     TestSuiteConfig
-	Test          TestConfig
-	Report        ReportConfig
-	SuiteRun      SuiteRunConfig
-	Grafana       GrafanaConfig
-	K6            K6Config
-	Playwright    PWConfig
-	Slack         SlackNotifierConfig
-	Prometheus    Prometheus
+	Revision   string
+	TestSuite  TestSuiteConfig
+	Test       TestConfig
+	Report     ReportConfig
+	SuiteRun   SuiteRunConfig
+	Grafana    GrafanaConfig
+	K6         K6Config
+	Playwright PWConfig
+	Slack      SlackNotifierConfig
+	Prometheus Prometheus
 }
 
 func AddBenchFlags(fs *pflag.FlagSet, config *BenchConfig) {
@@ -44,8 +45,8 @@ func AddBenchFlags(fs *pflag.FlagSet, config *BenchConfig) {
 		&config.Revision,
 		"bench-revision",
 		revision.BenchRevision(),
-		"grafana bench revision. If not set BENCH_REVISION environment variable is used." + 
-		"\nIf not set, the current git revision is used (default (devel) ",
+		"grafana bench revision. If not set BENCH_REVISION environment variable is used."+
+			"\nIf not set, the current git revision is used (default (devel) ",
 	)
 }
 
@@ -86,8 +87,8 @@ func AddGrafanaFlags(fs *pflag.FlagSet, config *GrafanaConfig) {
 		&config.Version,
 		"grafana-version",
 		"",
-		"grafana version. If not provided GRAFANA_VERSION env var is used." +
-		"\nIf not set, the version is retrieved from the grafana instance.",
+		"grafana version. If not provided GRAFANA_VERSION env var is used."+
+			"\nIf not set, the version is retrieved from the grafana instance.",
 	)
 }
 
@@ -201,38 +202,38 @@ func AddSuiteRunFlags(fs *pflag.FlagSet, config *SuiteRunConfig) {
 		"trigger of bench execution. For example, 'ci' or 'local'.",
 	)
 	fs.StringSliceVar(
-	        &config.Metrics,
-	        "suite-run-metrics",
-	        nil,
-	        "deprecated use --run-metrics",
+		&config.Metrics,
+		"suite-run-metrics",
+		nil,
+		"deprecated use --run-metrics",
 	)
 	fs.StringArrayVar(
-	        &config.Metrics,
-	        "run-metric",
-	        nil,
-	        "test suite run custom metrics. Format: name{label=label-value,..}=value. The value must be a valid float number.",
+		&config.Metrics,
+		"run-metric",
+		nil,
+		"test suite run custom metrics. Format: name{label=label-value,..}=value. The value must be a valid float number.",
 	)
 	fs.StringVar(
-	        &config.MetricsPrefix,
-	        "suite-run-metrics-prefix",
-	        "",
-	        "deprecated. Use --run-metrics-prefix",
+		&config.MetricsPrefix,
+		"suite-run-metrics-prefix",
+		"",
+		"deprecated. Use --run-metrics-prefix",
 	)
 	fs.StringVar(
-	        &config.MetricsPrefix,
-	        "run-metrics-prefix",
-	        "",
-	        "prefix to append to the suite run metric names",
+		&config.MetricsPrefix,
+		"run-metrics-prefix",
+		"",
+		"prefix to append to the suite run metric names",
 	)
 	fs.StringVar(
-	        &config.MetricsFile,
-	        "run-metrics-file",
-	        "",
-	        "path to a file containing a list of metrics to be added to the suite run." +
-		"\nThe file must follow prometheus exposition format. [1]" +
-		"\nEach non commented line should follow the pattern metric{label1=value1,label2=value2,...} value." +
-		"\nThe timestamp, if present, is omitted and all metrics are reported using the suite run's execution time." +
-		"\n[1] https://github.com/Showmax/prometheus-docs/blob/master/content/docs/instrumenting/exposition_formats.md",
+		&config.MetricsFile,
+		"run-metrics-file",
+		"",
+		"path to a file containing a list of metrics to be added to the suite run."+
+			"\nThe file must follow prometheus exposition format. [1]"+
+			"\nEach non commented line should follow the pattern metric{label1=value1,label2=value2,...} value."+
+			"\nThe timestamp, if present, is omitted and all metrics are reported using the suite run's execution time."+
+			"\n[1] https://github.com/Showmax/prometheus-docs/blob/master/content/docs/instrumenting/exposition_formats.md",
 	)
 }
 
@@ -338,7 +339,6 @@ func AddTestVeboseFlag(fs *pflag.FlagSet, test *TestConfig) {
 		"deprecated. Use verbose",
 	)
 }
-
 
 type TestSuiteConfig struct {
 	GitToken  string
@@ -511,11 +511,12 @@ func AddSlackFlags(fs *pflag.FlagSet, config *SlackNotifierConfig) {
 }
 
 type Prometheus struct {
-	Metrics  bool
-	URL      string
-	User     string
-	Password string
-	Timeout  time.Duration
+	Metrics    bool
+	URL        string
+	User       string
+	Password   string
+	Timeout    time.Duration
+	StrictLint bool
 }
 
 func AddPrometheusFlags(fs *pflag.FlagSet, prometheus *Prometheus) {
@@ -548,6 +549,12 @@ func AddPrometheusFlags(fs *pflag.FlagSet, prometheus *Prometheus) {
 		"prometheus-timeout",
 		0,
 		"prometheus remote write timeout. If not set PROMETHEUS_TIMEOUT environment variable is used.",
+	)
+	fs.BoolVar(
+		&prometheus.StrictLint,
+		"prometheus-strict-lint",
+		false,
+		"strict lint prometheus metrics. If set to true, will fail if metric does not pass linting",
 	)
 }
 
@@ -679,14 +686,14 @@ func (config *BenchConfig) BuildReporter() (reporter.SuiteRunReporter, error) {
 
 		reporters = append(reporters, notificationReporter)
 	}
-	
+
 	if config.Prometheus.Metrics {
 		prometheusReporter := reporter.NewPrometheusReporter(reporter.PrometheusConfig{
-			URL:     config.Prometheus.URL,
-			User:    config.Prometheus.User,
+			URL:      config.Prometheus.URL,
+			User:     config.Prometheus.User,
 			Password: config.Prometheus.Password,
-			Timeout: config.Prometheus.Timeout,
-			Prefix:  config.SuiteRun.MetricsPrefix,
+			Timeout:  config.Prometheus.Timeout,
+			Prefix:   config.SuiteRun.MetricsPrefix,
 		})
 
 		reporters = append(reporters, prometheusReporter)
@@ -722,7 +729,6 @@ func (config *BenchConfig) GetGrafanaInstance(log *slog.Logger) (grafana.Grafana
 	return grafanaInstance, grafanaVersion, nil
 }
 
-
 func (config *BenchConfig) GetRunMetrics() ([]metrics.Metric, error) {
 	metricList := []metrics.Metric{}
 	for _, metricString := range config.SuiteRun.Metrics {
@@ -739,6 +745,29 @@ func (config *BenchConfig) GetRunMetrics() ([]metrics.Metric, error) {
 			return nil, fmt.Errorf("failed to parse metrics from file %s: %w", config.SuiteRun.MetricsFile, err)
 		}
 		metricList = append(metricList, metricsFromFile...)
+
+		// Lint the metrics file.
+		// promlint only has support for linting a text exposition format which is why we read the file again.
+		// It's possible to write some wrappers to lint names, but we very quickly run into
+		// cases where we need to create a "metric family" which relies on internal structures or have to hand
+		// pick linters that only rely on name
+		f, err := os.Open(config.SuiteRun.MetricsFile)
+		linter := promlint.New(f)
+		problems, err := linter.Lint()
+		if err != nil {
+			return metricList, err
+		}
+
+		if len(problems) > 0 {
+			for _, v := range problems {
+				fmt.Printf("\n WARN: prometheus linter - %s - %s", v.Metric, v.Text)
+			}
+
+			if config.Prometheus.StrictLint {
+				return metricList, fmt.Errorf("prometheus metrics too many linter errors")
+			}
+		}
+
 	}
 
 	return metricList, nil
