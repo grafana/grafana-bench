@@ -51,7 +51,7 @@ jobs:
             ${{ runner.os }}-playwright-
 
       - name: setup playwright
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        #if: steps.playwright-cache.outputs.cache-hit != 'true'
         working-directory: ./CI/plugin-e2e
         run: |
           yarn install && yarn playwright install
