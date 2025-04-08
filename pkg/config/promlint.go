@@ -17,6 +17,9 @@ import (
 // pick linters that only rely on name
 func LintFile(metricFile string, strictLint bool) error {
 	f, err := os.Open(metricFile)
+	if err != nil {
+		return err
+	}
 	linter := promlint.New(f)
 	problems, err := linter.Lint()
 	if err != nil {

@@ -750,7 +750,7 @@ func (config *BenchConfig) GetRunMetrics() ([]metrics.Metric, error) {
 		// metric. It scares me a bit how strict the parser is "invalid character on line 5: unexpected EOF"
 		err = LintFile(config.SuiteRun.MetricsFile, config.Prometheus.StrictLint)
 		if err != nil {
-			return metricList, nil
+			return metricList, err
 		}
 
 		// Option B
@@ -758,7 +758,7 @@ func (config *BenchConfig) GetRunMetrics() ([]metrics.Metric, error) {
 		// limited in what we can support so I've disabled all linters that require things other than Name
 		err = LintMetrics(metricList, config.Prometheus.StrictLint)
 		if err != nil {
-			return metricList, nil
+			return metricList, err
 		}
 
 	}
