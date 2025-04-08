@@ -71,41 +71,45 @@ func (p *PrometheusReporter) Report(
 	var ts []*prompb.TimeSeries
 
 	labels := map[string]string{
-		"service":         "bench",
+		"job":             "bench",
 		"grafana_version": suiteRun.GrafanaVersion,
 		"status":          string(summary.Status),
 		"suite_run":       suiteRun.Name,
 	}
 
-	metrics := []metrics.Metric{
-		{Name: "tests_executed", Value: float64(summary.TestsExecuted), Labels: labels},
-		{Name: "tests_passed", Value: float64(summary.TestsPassed), Labels: labels},
-		{Name: "tests_failed", Value: float64(summary.TestsFailed), Labels: labels},
-		{Name: "tests_error", Value: float64(summary.TestsError), Labels: labels},
-		{Name: "tests_flaky", Value: float64(summary.TestsPassed), Labels: labels},
-		{Name: "total_duration_seconds", Value: float64(summary.TotalDuration / 1000.0), Labels: labels},
+	reportMetrics := []metrics.Metric{
+		{Name: "bench_tests_executed", Value: float64(summary.TestsExecuted), Labels: labels},
+		{Name: "bench_tests_passed", Value: float64(summary.TestsPassed), Labels: labels},
+		{Name: "bench_tests_failed", Value: float64(summary.TestsFailed), Labels: labels},
+		{Name: "bench_tests_error", Value: float64(summary.TestsError), Labels: labels},
+		{Name: "bench_tests_flaky", Value: float64(summary.TestsFlaky), Labels: labels},
+		{Name: "bench_total_duration_seconds", Value: float64(summary.TotalDuration / 1000.0), Labels: labels},
+	}
+
+	// add prefix to custom metrics
+	prefix := ""
+	if p.prefix != "" {
+		prefix = fmt.Sprintf("%s_", p.prefix)
 	}
 
 	for _, m := range summary.Metrics {
-		if m.Labels == nil {
-			m.Labels = make(map[string]string)
+		metric := metrics.Metric{
+			Name:      strings.ReplaceAll(fmt.Sprintf("%s%s", prefix, m.Name), "-", "_"),
+			Value:     m.Value,
+			Timestamp: m.Timestamp,
+			Labels:    make(map[string]string),
 		}
-		maps.Copy(m.Labels, labels)
-		metrics = append(metrics, m)
+		maps.Copy(metric.Labels, labels)
+		maps.Copy(metric.Labels, m.Labels)
+		reportMetrics = append(reportMetrics, metric)
 	}
 
-	prefix := "bench_suite_run" 
-	if p.prefix != "" {
-		prefix = fmt.Sprintf("%s_%s", prefix, p.prefix)	
-	}
-
-	for _, metric := range metrics {
-		name := fmt.Sprintf("%s_%s", prefix, strings.ReplaceAll(metric.Name, "-", "_"))
+	for _, metric := range reportMetrics {
 		ts = append(
 			ts,
 			makeTimeSeries(
 				metric.Labels,
-				name,
+				metric.Name,
 				summary.StartTime,
 				metric.Value,
 			),

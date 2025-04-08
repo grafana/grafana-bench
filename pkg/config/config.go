@@ -511,14 +511,20 @@ func AddSlackFlags(fs *pflag.FlagSet, config *SlackNotifierConfig) {
 }
 
 type Prometheus struct {
+	Metrics  bool
 	URL      string
 	User     string
 	Password string
 	Timeout  time.Duration
-	Prefix   string
 }
 
 func AddPrometheusFlags(fs *pflag.FlagSet, prometheus *Prometheus) {
+	fs.BoolVar(
+		&prometheus.Metrics,
+		"prometheus-metrics",
+		false,
+		"send test suite run results to a prometheus remote write endpoint.",
+	)
 	fs.StringVar(
 		&prometheus.URL,
 		"prometheus-url",
@@ -536,12 +542,6 @@ func AddPrometheusFlags(fs *pflag.FlagSet, prometheus *Prometheus) {
 		"prometheus-password",
 		"",
 		"prometheus remote write password. If not set PROMETHEUS_PASSWORD environment variable is used.",
-	)
-	fs.StringVar(
-		&prometheus.Prefix,
-		"prometheus-prefix",
-		"",
-		"prometheus metric prefix. If not set PROMETHEUS_PREFIX environment variable is used.",
 	)
 	fs.DurationVar(
 		&prometheus.Timeout,
@@ -643,14 +643,6 @@ func (config *BenchConfig) BuildReporter() (reporter.SuiteRunReporter, error) {
 		suiteReporter, _ = reporter.NewLogReporter(reporter.JSONLog, logAttrs)
 	case "log":
 		suiteReporter, _ = reporter.NewLogReporter(reporter.TextLog, logAttrs)
-	case "prometheus":
-		suiteReporter = reporter.NewPrometheusReporter(reporter.PrometheusConfig{
-			URL:     config.Prometheus.URL,
-			User:    config.Prometheus.User,
-			Password: config.Prometheus.Password,
-			Timeout: config.Prometheus.Timeout,
-			Prefix:  config.Prometheus.Prefix,
-		})
 	case "text":
 		suiteReporter = reporter.NewTextReporter(os.Stdout)
 	default:
@@ -686,6 +678,18 @@ func (config *BenchConfig) BuildReporter() (reporter.SuiteRunReporter, error) {
 		}
 
 		reporters = append(reporters, notificationReporter)
+	}
+	
+	if config.Prometheus.Metrics {
+		prometheusReporter := reporter.NewPrometheusReporter(reporter.PrometheusConfig{
+			URL:     config.Prometheus.URL,
+			User:    config.Prometheus.User,
+			Password: config.Prometheus.Password,
+			Timeout: config.Prometheus.Timeout,
+			Prefix:  config.SuiteRun.MetricsPrefix,
+		})
+
+		reporters = append(reporters, prometheusReporter)
 	}
 
 	return reporter.NewChainReporter(reporters...), nil
