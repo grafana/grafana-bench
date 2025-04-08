@@ -21,7 +21,6 @@ import (
 	"github.com/grafana/grafana-bench/pkg/notifier"
 	"github.com/grafana/grafana-bench/pkg/reporter"
 	"github.com/grafana/grafana-bench/pkg/revision"
-	"github.com/prometheus/client_golang/prometheus/testutil/promlint"
 	"github.com/spf13/pflag"
 )
 
@@ -746,26 +745,20 @@ func (config *BenchConfig) GetRunMetrics() ([]metrics.Metric, error) {
 		}
 		metricList = append(metricList, metricsFromFile...)
 
-		// Lint the metrics file.
-		// promlint only has support for linting a text exposition format which is why we read the file again.
-		// It's possible to write some wrappers to lint names, but we very quickly run into
-		// cases where we need to create a "metric family" which relies on internal structures or have to hand
-		// pick linters that only rely on name
-		f, err := os.Open(config.SuiteRun.MetricsFile)
-		linter := promlint.New(f)
-		problems, err := linter.Lint()
+		// Option A
+		// This approach initially failed because the metric file written by playwright didn't have a return after the last
+		// metric. It scares me a bit how strict the parser is "invalid character on line 5: unexpected EOF"
+		err = LintFile(config.SuiteRun.MetricsFile, config.Prometheus.StrictLint)
 		if err != nil {
-			return metricList, err
+			return metricList, nil
 		}
 
-		if len(problems) > 0 {
-			for _, v := range problems {
-				fmt.Printf("\n WARN: prometheus linter - %s - %s", v.Metric, v.Text)
-			}
-
-			if config.Prometheus.StrictLint {
-				return metricList, fmt.Errorf("prometheus metrics too many linter errors")
-			}
+		// Option B
+		// This approach is .. ok, but unless we do some sluething and figure out how to determine the metric type we're
+		// limited in what we can support so I've disabled all linters that require things other than Name
+		err = LintMetrics(metricList, config.Prometheus.StrictLint)
+		if err != nil {
+			return metricList, nil
 		}
 
 	}
