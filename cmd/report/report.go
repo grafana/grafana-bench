@@ -158,7 +158,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				GrafanaURL:     benchConfig.Grafana.Url,
 				GrafanaSlug:    grafanaSlug,
 				GrafanaVersion: grafanaVersion,
-
 			}
 
 			reporter, err := benchConfig.BuildReporter()
@@ -189,7 +188,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				return fmt.Errorf("invalid input format %q", benchConfig.Report.Input)
 			}
 
-			runMetrics, err := benchConfig.GetRunMetrics()
+			runMetrics, err := benchConfig.GetRunMetrics(log)
 			if err != nil {
 				return err
 			}
