@@ -728,7 +728,7 @@ func (config *BenchConfig) GetGrafanaInstance(log *slog.Logger) (grafana.Grafana
 	return grafanaInstance, grafanaVersion, nil
 }
 
-func (config *BenchConfig) GetRunMetrics() ([]metrics.Metric, error) {
+func (config *BenchConfig) GetRunMetrics(log *slog.Logger) ([]metrics.Metric, error) {
 	metricList := []metrics.Metric{}
 	for _, metricString := range config.SuiteRun.Metrics {
 		metric, err := metrics.ParseMetric(metricString)
@@ -745,20 +745,9 @@ func (config *BenchConfig) GetRunMetrics() ([]metrics.Metric, error) {
 		}
 		metricList = append(metricList, metricsFromFile...)
 
-		// Option A
-		// This approach initially failed because the metric file written by playwright didn't have a return after the last
-		// metric. It scares me a bit how strict the parser is "invalid character on line 5: unexpected EOF"
-		err = LintFile(config.SuiteRun.MetricsFile, config.Prometheus.StrictLint)
+		err = metrics.LintMetrics(metricList, config.Prometheus.StrictLint)
 		if err != nil {
-			return metricList, err
-		}
-
-		// Option B
-		// This approach is .. ok, but unless we do some sluething and figure out how to determine the metric type we're
-		// limited in what we can support so I've disabled all linters that require things other than Name
-		err = LintMetrics(metricList, config.Prometheus.StrictLint)
-		if err != nil {
-			return metricList, err
+			return []metrics.Metric{}, err
 		}
 
 	}
