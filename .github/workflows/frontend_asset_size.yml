@@ -62,10 +62,10 @@ jobs:
           PLAYWRIGHT_JSON_OUTPUT_NAME: /tmp/results.json
         run: yarn run test --grep @performance --reporter json || true
 
-      - name: cat results
-        run: |
-          cat /tmp/results.json
-          cat /tmp/asset-metrics.txt
+      #- name: cat results
+      #  run: |
+      #    cat /tmp/results.json
+      #    cat /tmp/asset-metrics.txt
 
       - name: report result
         env:
@@ -73,12 +73,12 @@ jobs:
           PROMETHEUS_USER: 10428
           PROMETHEUS_PASSWORD: ${{ secrets.OPS_PROMETHEUS_PUSH_TOKEN }}
         run: |
-          cat /tmp/asset-metrics.txt
           grafana-bench report \
             --grafana-url "https://leeoniya.grafana.net" \
             --grafana-version "rrc-instant" \
             --test-suite-name "FrontendAssetSize" \
             --report-input playwright \
+            --report-output log \
             --prometheus-metrics \
             --run-metrics-file "/tmp/asset-metrics.txt" \
             --log-level DEBUG \
