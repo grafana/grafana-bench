@@ -202,7 +202,7 @@ Bench assumes the following defaults for specifying the grafana instance, so we 
 docker run --rm \
   --network=host \
   --volume="./:/home/bench/tests/" \
-  us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.3.0 test \
+  us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.4.0 test \
   --test-runner "playwright" \
   --test-suite-base "/home/bench/tests/" \
   --grafana-url "http://localhost:3000" \
@@ -217,7 +217,7 @@ docker run --rm \
 1. `docker run --rm` invokes docker. `--rm` tells docker to remove the container when we're done
 2. `--network=host` connects the docker container to the same network that the host is on. This is important as the the docker-compose file in the previous step mounts the grafana container to port 3000. So to make grafana accessible from the bench container, we need to connect the bench container to the same network.
 3. `--volume="./:/home/bench/tests/"` mounts the current directory of the host machine inside the bench container. In this case, the checkout command from step 1 in the workflow grabs all of the plugin code and puts it in the current directory. So we're mounting everything inside the container in the `/home/bench/tests` directory
-4. `us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.3.0 test` says use the bench container tagged with `v0.3.0`. The container specificies the bench binary as the default execution script, so `test` the subcommand and effectively runs `grafana-bench test`
+4. `us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.4.0 test` says use the bench container tagged with `v0.3.0`. The container specificies the bench binary as the default execution script, so `test` the subcommand and effectively runs `grafana-bench test`
 5. `--test-runner "playwright"` tells the test command to use the playwright executor
 6. `--test-suite-base "/home/bench/tests/"` specifies the directory we mounted the code in as the directory to execute the test runner from
 7. `--pw-prepare-cmd "yarn install --frozen-lockfile; yarn playwright install"` specifies the two commands necessary to configure the e2e tests separated by a `;`. We do not currently support the `&&` operator, so you must use `;`. The first command installs yarn dependencies. The second installs playwright and dependencies
