@@ -1,0 +1,207 @@
+package main
+
+import (
+	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"regexp"
+	"sort"
+	"strings"
+	"time"
+
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
+)
+
+// updateMarkdownDocs updates the bench version to latest
+// bench tag across all the docs via pattern
+// grafana-bench:vXXXXX
+func updateMarkdownDocs(dir string) error {
+	repoPath, err := findGitRoot()
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Git root:", repoPath)
+
+	version, err := getLatestBenchTag(repoPath)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Latest tag:", version)
+
+	return updateSemverInMarkdown(dir, version)
+}
+
+// findGitRoot finds the root directory of the git repository
+// that contains the current working directory
+func findGitRoot() (string, error) {
+	// Start with the current working directory
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	// Keep going up until we find .git
+	for {
+		// Check if this directory is a git repository
+		_, err := os.Stat(filepath.Join(dir, ".git"))
+		if err == nil {
+			// Found the .git directory
+			return dir, nil
+		}
+		if !os.IsNotExist(err) {
+			// Some error other than non-existence
+			return "", err
+		}
+
+		// Go up one directory
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			// We've reached the filesystem root without finding .git
+			return "", fmt.Errorf("not in a git repository")
+		}
+		dir = parent
+	}
+}
+
+// GetLatestTag gets the latest tag from the repo. This is used for getting the latest tag for bench when updated docs
+func getLatestBenchTag(repoPath string) (string, error) {
+	// Open the repository
+	repo, err := git.PlainOpen(repoPath)
+	if err != nil {
+		return "", err
+	}
+
+	// Get all tags
+	tagsIter, err := repo.Tags()
+	if err != nil {
+		return "", err
+	}
+
+	// Create a slice to store tag information
+	type tagInfo struct {
+		Name string
+		Time time.Time
+	}
+	var tags []tagInfo
+
+	// Collect all tags with their commit time
+	err = tagsIter.ForEach(func(ref *plumbing.Reference) error {
+		// Get the tag object
+		tagObj, err := repo.TagObject(ref.Hash())
+		if err == nil {
+			// If it's an annotated tag, use its timestamp
+			tags = append(tags, tagInfo{
+				Name: ref.Name().Short(),
+				Time: tagObj.Tagger.When,
+			})
+			return nil
+		}
+
+		// For lightweight tags, get the commit it points to
+		commit, err := repo.CommitObject(ref.Hash())
+		if err != nil {
+			// If we can't get the commit, just use the current time as a fallback
+			tags = append(tags, tagInfo{
+				Name: ref.Name().Short(),
+				Time: time.Now(),
+			})
+			return nil
+		}
+
+		tags = append(tags, tagInfo{
+			Name: ref.Name().Short(),
+			Time: commit.Committer.When,
+		})
+		return nil
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	if len(tags) == 0 {
+		return "", fmt.Errorf("no tags found in repository")
+	}
+
+	// Sort tags by time, newest first
+	sort.Slice(tags, func(i, j int) bool {
+		return tags[i].Time.After(tags[j].Time)
+	})
+
+	// Return the latest tag name
+	return tags[0].Name, nil
+}
+
+// updateSemverInMarkdown walks through the given directory path,
+// finds all .md files not prefixed with "bench_",
+// and replaces all instances of "grafana-bench:vxxx" with the provided version.
+// NOT recursive
+func updateSemverInMarkdown(dirPath string, newVersion string) error {
+	versionReplacements := []struct {
+		Pattern     *regexp.Regexp
+		Replacement string
+	}{
+		{
+			Pattern:     regexp.MustCompile(`Latest Version: v[0-9.]+`),
+			Replacement: "Latest Version: " + newVersion,
+		},
+		// bench image reference
+		{
+			Pattern:     regexp.MustCompile(`grafana-bench:v[^\s\n\r\t,'"]*`),
+			Replacement: "grafana-bench:" + newVersion,
+		},
+		// libsonnet version reference
+		{
+			Pattern:     regexp.MustCompile(`benchRevision: ['"]v[^'"]*['"],`),
+			Replacement: "benchRevision: '" + newVersion + "',",
+		},
+	}
+
+	return filepath.WalkDir(dirPath, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// NOTE we're skipping directories.
+		// if we decide to do something fancy with paths we'll need to make recursive
+		if d.IsDir() {
+			return nil
+		}
+
+		// file has .md extension and no bench_ prefix
+		fileName := filepath.Base(path)
+		if !strings.HasSuffix(fileName, ".md") || strings.HasPrefix(fileName, "bench_") {
+			return nil
+		}
+
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("failed to read file %s: %w", path, err)
+		}
+
+		contentStr := string(content)
+
+		anyReplacements := false
+		for _, vr := range versionReplacements {
+			if vr.Pattern.MatchString(contentStr) {
+				anyReplacements = true
+				contentStr = vr.Pattern.ReplaceAllString(contentStr, vr.Replacement)
+			}
+		}
+
+		if anyReplacements {
+			err = os.WriteFile(path, []byte(contentStr), 0644)
+			if err != nil {
+				return fmt.Errorf("failed to write updated content to file %s: %w", path, err)
+			}
+
+			fmt.Printf("Updated versions in file: %s\n", path)
+		}
+
+		return nil
+	})
+}
