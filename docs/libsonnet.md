@@ -3,6 +3,10 @@
 `grafana-bench` offers a [libsonnet library](https://github.com/grafana/deployment_tools/blob/master/ksonnet/lib/argo-workflows-util/common-steps/bench.libsonnet) that facilitates the execution of a bench test suite in ArgoCD workflows.
 
 This library is under regular development and while we don't often deprecate, new things are added regularly.
+Refer to [latest
+version](https://github.com/grafana/deployment_tools/blob/master/ksonnet/lib/argo-workflows-util/common-steps/bench.libsonnet) of the library.
+
+You can see the RRC implementation [here](https://github.com/grafana/deployment_tools/blob/master/ksonnet/environments/hosted-grafana-cd/rrc-bench-suites.libsonnet).
 
 ## Suite definition
 
