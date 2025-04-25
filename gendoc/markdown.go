@@ -145,7 +145,7 @@ func updateSemverInMarkdown(dirPath string, newVersion string) error {
 		Pattern     *regexp.Regexp
 		Replacement string
 	}{
-		// index refference
+		// index reference
 		{
 			Pattern:     regexp.MustCompile(`Latest Version: v[0-9.]+`),
 			Replacement: "Latest Version: " + newVersion,
