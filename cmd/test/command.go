@@ -47,10 +47,15 @@ bench test  \
   --test-runner playwright \
   --pw-prepare "yarn install" \
   --pw-execute "yarn test" \
+
+# run go test
+bench test  \
+  --suite-path ./path/to/test/... \
+  --test-runner go
 `
 
 const longDescription = `
-test subcommand is a wrapper for running a suite of k6 or playwright tests
+test subcommand is a wrapper for running a suite of tests
 against a grafana instance.
 
 The tests to be executed are defined by the --suite-path option.
@@ -88,6 +93,20 @@ The url to the grafana instance defined in the --grafana-url cli arguments will
 be passed to the test in the PLAYWRIGHT_BASE_URL environment variable.
 See [1] for details on how to develop playwright tests compatible with the bench
 test runner.
+
+Go
+--
+
+Execute go test suites. The '--suite-path' is used as a pattern for selecting the
+packages to test. It must start with './' to test local packages. To ensure sub-
+packages are also included, add '/...' at the end. For example:
+
+    grafana-bench test --test-runner go --suite-path ./path/to/package/...
+
+Additional arguments such as build tags can be passed using the --go-args flag.
+    grafana-bench test --test-runner go \
+       --go-args -tags=slow \
+       --suite-path ./path/to/package/...
 
 
 [1] https://github.com/grafana/grafana-bench/blob/main/docs/writing_pw_tests.md
