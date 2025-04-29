@@ -671,7 +671,7 @@ func (benchConfig *BenchConfig) BuildSuiteRun() (executor.SuiteRun, error) {
 		grafanaInstance, err := grafana.NewInstance(
 			benchConfig.Grafana.Url,
 			benchConfig.Grafana.AdminUser,
-			benchConfig.Grafana.AdminUser,
+			benchConfig.Grafana.AdminPassword,
 		)
 		if err != nil {
 			return executor.SuiteRun{}, fmt.Errorf("failed to create grafana instance: %w", err)
