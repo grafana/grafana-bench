@@ -5,11 +5,8 @@ import (
 	"log/slog"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/grafana/grafana-bench/pkg/config"
-	"github.com/grafana/grafana-bench/pkg/executor"
-	"github.com/grafana/grafana-bench/pkg/utils/id"
 	"github.com/spf13/cobra"
 )
 
@@ -203,7 +200,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				return fmt.Errorf("invalid argument(s): '%s'", strings.Join(args, "', '"))
 			}
 
-			grafanaInstance, grafanaVersion, err := benchConfig.GetGrafanaInstance(log)
+			suiteRun, err := benchConfig.BuildSuiteRun()
 			if err != nil {
 				return err
 			}
@@ -211,8 +208,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			testExecutor, err := benchConfig.BuildTestExecutor(
 				log,
 				benchConfig.Test.Executor,
-				grafanaInstance,
-				grafanaVersion,
 			)
 			if err != nil {
 				return err
@@ -232,9 +227,9 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			testEnvVars := map[string]string{
 				"TEST_TYPE":              benchConfig.Test.Type,
 				"TEST_SUITE_REVISION":    suite.Revision,
-				"GRAFANA_URL":            grafanaInstance.Url(),
-				"GRAFANA_ADMIN_USER":     grafanaInstance.AdminUser(),
-				"GRAFANA_ADMIN_PASSWORD": grafanaInstance.AdminPassword(),
+				"GRAFANA_URL":            benchConfig.Grafana.Url,
+				"GRAFANA_ADMIN_USER":     benchConfig.Grafana.AdminUser,
+				"GRAFANA_ADMIN_PASSWORD": benchConfig.Grafana.AdminPassword,
 			}
 
 			// add test specific environment variables
@@ -256,19 +251,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				return err
 			}
 			suiteRunSummary.Metrics = append(suiteRunSummary.Metrics, runMetrics...)
-
-			runId := id.Run(benchConfig.SuiteRun.Trigger, time.Now())
-			suiteRunName := id.SuiteRunName(benchConfig.SuiteRun.Trigger, benchConfig.TestSuite.Name, benchConfig.Test.Type)
-			suiteRun := executor.SuiteRun{
-				Name:           suiteRunName,
-				Id:             runId,
-				Trigger:        benchConfig.SuiteRun.Trigger,
-				TestExecutor:   benchConfig.Test.Executor,
-				BenchRevision:  benchConfig.Revision,
-				GrafanaURL:     grafanaInstance.Hostname(),
-				GrafanaSlug:    grafanaInstance.Slug(),
-				GrafanaVersion: grafanaVersion,
-			}
 
 			err = reporter.Report(cmd.Context(), suiteRun, suiteRunSummary)
 			if err != nil {

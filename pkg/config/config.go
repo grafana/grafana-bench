@@ -22,6 +22,7 @@ import (
 	"github.com/grafana/grafana-bench/pkg/notifier"
 	"github.com/grafana/grafana-bench/pkg/reporter"
 	"github.com/grafana/grafana-bench/pkg/revision"
+	"github.com/grafana/grafana-bench/pkg/utils/id"
 	"github.com/spf13/pflag"
 )
 
@@ -575,8 +576,6 @@ func AddPrometheusFlags(fs *pflag.FlagSet, prometheus *Prometheus) {
 func (config BenchConfig) BuildTestExecutor(
 	log *slog.Logger,
 	testExecutor string,
-	grafanaInstance grafana.GrafanaInstance,
-	grafanaVersion string,
 ) (executor.TestExecutor, error) {
 	var executor executor.TestExecutor
 
@@ -652,6 +651,60 @@ func (config *BenchConfig) BuildTestSuite(log *slog.Logger) (*executor.TestSuite
 		BaseDir:  config.TestSuite.BaseDir,
 		Path:     config.TestSuite.Path,
 		Revision: testSuiteRevision,
+	}, nil
+}
+
+func (benchConfig *BenchConfig) BuildSuiteRun() (executor.SuiteRun, error) {
+	grafanaSlug := ""
+	if benchConfig.Grafana.Url != "" {
+		// in case of error, slug it will be empty
+		grafanaSlug, _ = grafana.Slug(benchConfig.Grafana.Url)
+	}
+
+	// get grafana version if not provided
+	grafanaVersion := benchConfig.Grafana.Version
+	if grafanaVersion == "" {
+		if benchConfig.Grafana.Url == "" || benchConfig.Grafana.AdminUser == "" || benchConfig.Grafana.AdminPassword == "" {
+			return executor.SuiteRun{}, fmt.Errorf("grafana admin user and password are needed to get grafana version")
+		}
+
+		grafanaInstance, err := grafana.NewInstance(
+			benchConfig.Grafana.Url,
+			benchConfig.Grafana.AdminUser,
+			benchConfig.Grafana.AdminUser,
+		)
+		if err != nil {
+			return executor.SuiteRun{}, fmt.Errorf("failed to create grafana instance: %w", err)
+		}
+		grafanaVersion, err = grafanaInstance.GetGrafanaBuildVersion()
+		if err != nil {
+			return executor.SuiteRun{}, fmt.Errorf("failed to get grafana version: %w", err)
+		}
+	}
+
+	// get attributes of this test suite run using the test suite information from the config
+	runId := benchConfig.SuiteRun.Id
+	if runId == "" {
+		runId = id.Run(benchConfig.SuiteRun.Trigger, time.Now())
+	}
+
+	suiteRunName := id.SuiteRunName(
+		benchConfig.SuiteRun.Trigger,
+		benchConfig.TestSuite.Name,
+		benchConfig.Test.Type,
+	)
+
+	return executor.SuiteRun{
+		Name:           suiteRunName,
+		Id:             runId,
+		Trigger:        benchConfig.SuiteRun.Trigger,
+		TestExecutor:   benchConfig.Report.Input,
+		SuiteName:      benchConfig.TestSuite.Name,
+		SuiteRevision:  benchConfig.TestSuite.Revision,
+		BenchRevision:  benchConfig.Revision,
+		GrafanaURL:     benchConfig.Grafana.Url,
+		GrafanaSlug:    grafanaSlug,
+		GrafanaVersion: grafanaVersion,
 	}, nil
 }
 
