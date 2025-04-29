@@ -14,6 +14,7 @@ import (
 
 	"github.com/grafana/grafana-bench/pkg/compile"
 	"github.com/grafana/grafana-bench/pkg/executor"
+	"github.com/grafana/grafana-bench/pkg/executor/gotest"
 	"github.com/grafana/grafana-bench/pkg/executor/k6"
 	"github.com/grafana/grafana-bench/pkg/executor/playwright"
 	"github.com/grafana/grafana-bench/pkg/grafana"
@@ -33,6 +34,7 @@ type BenchConfig struct {
 	Report     ReportConfig
 	SuiteRun   SuiteRunConfig
 	Grafana    GrafanaConfig
+	Go         GoTestConfig
 	K6         K6Config
 	Playwright PWConfig
 	Slack      SlackNotifierConfig
@@ -154,6 +156,19 @@ func AddPlaywrightFlags(fs *pflag.FlagSet, config *PWConfig) {
 		"pw-execute",
 		"",
 		"command used to execute the test suite eg: \"npm run test\"",
+	)
+}
+
+type GoTestConfig struct {
+	TestArgs []string
+}
+
+func AddGoExecutorFlags(fs *pflag.FlagSet, config *GoTestConfig) {
+	fs.StringArrayVar(
+		&config.TestArgs,
+		"go-args",
+		nil,
+		"arguments to be passed to go test  (e.g '-tag slow -race')",
 	)
 }
 
@@ -320,7 +335,7 @@ func AddTestRunnerFlag(fs *pflag.FlagSet, test *TestConfig) {
 		&test.Executor,
 		"test-runner",
 		"k6",
-		"test runner. Allowed values: 'k6', 'playwright'",
+		"test runner. Allowed values: 'k6', 'playwright', 'go'",
 	)
 }
 
@@ -566,6 +581,13 @@ func (config BenchConfig) BuildTestExecutor(
 	var executor executor.TestExecutor
 
 	switch config.Test.Executor {
+	case "go":
+		executor = gotest.NewGoExecutor(
+			log,
+			gotest.GoExecutorOptions{
+				TestArgs: config.Go.TestArgs,
+			},
+		)
 	case "k6":
 		executor = k6.NewK6TestExecutor(
 			log,
