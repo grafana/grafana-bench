@@ -102,7 +102,7 @@ packages are also included, add '/...' at the end. For example:
 
 Additional arguments such as build tags can be passed using the --go-args flag.
     grafana-bench test --test-runner go \
-       --go-args -tags=slow \
+       --go-args "-tags=slow -race -timeout=30m" \
        --suite-path ./path/to/package/...
 
 
