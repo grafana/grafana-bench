@@ -145,21 +145,28 @@ func updateSemverInMarkdown(dirPath string, newVersion string) error {
 		Pattern     *regexp.Regexp
 		Replacement string
 	}{
+
+		// find all semantic versions referenced in the docs
+		{
+			Pattern:     regexp.MustCompile(`v?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?`),
+			Replacement: newVersion,
+		},
+
 		// index reference
-		{
-			Pattern:     regexp.MustCompile(`Latest Version: v[0-9.]+`),
-			Replacement: "Latest Version: " + newVersion,
-		},
+		//{
+		//  Pattern:     regexp.MustCompile(`Latest Version: v[0-9.]+`),
+		//  Replacement: "Latest Version: " + newVersion,
+		//},
 		// bench image reference
-		{
-			Pattern:     regexp.MustCompile(`grafana-bench:v[^\s\n\r\t,'"]*`),
-			Replacement: "grafana-bench:" + newVersion,
-		},
+		//{
+		//  Pattern:     regexp.MustCompile(`grafana-bench:v[^\s\n\r\t,'"]*`),
+		//  Replacement: "grafana-bench:" + newVersion,
+		//},
 		// libsonnet version reference
-		{
-			Pattern:     regexp.MustCompile(`benchRevision: ['"]v[^'"]*['"],`),
-			Replacement: "benchRevision: '" + newVersion + "',",
-		},
+		//{
+		//  Pattern:     regexp.MustCompile(`benchRevision: ['"]v[^'"]*['"],`),
+		//  Replacement: "benchRevision: '" + newVersion + "',",
+		//},
 	}
 
 	return filepath.WalkDir(dirPath, func(path string, d fs.DirEntry, err error) error {
