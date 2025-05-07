@@ -3,8 +3,6 @@ name: Create some bench logs for testing
 # These permissions are needed to assume roles from Github's OIDC.
 permissions:
   contents: read
-  id-token: write
-  packages: write
 
 on:
   push:
@@ -29,8 +27,8 @@ jobs:
     steps:
       - name: checkout code
         uses: actions/checkout@v4
-
-
+        with:
+          persist-credentials: false
       - name: run playwright tests with config
         run: |
           docker run --rm \

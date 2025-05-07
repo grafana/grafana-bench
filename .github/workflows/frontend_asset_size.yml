@@ -2,8 +2,8 @@ name: Measure frontend asset size
 # These permissions are needed to assume roles from Github's OIDC.
 permissions:
   contents: read
-  id-token: write
   packages: write
+
 on:
   push:
     branches: ["main"]
@@ -26,11 +26,12 @@ jobs:
     steps:
       - name: checkout code
         uses: actions/checkout@v4
-
+        with:
+          persist-credentials: false
       - uses: actions/setup-go@v5
         with:
           go-version: 'stable'
-          cache: true
+          cache: false
 
       - name: install bench
         run: go install
