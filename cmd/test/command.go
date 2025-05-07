@@ -5,11 +5,8 @@ import (
 	"log/slog"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/grafana/grafana-bench/pkg/config"
-	"github.com/grafana/grafana-bench/pkg/executor"
-	"github.com/grafana/grafana-bench/pkg/utils/id"
 	"github.com/spf13/cobra"
 )
 
@@ -47,10 +44,15 @@ bench test  \
   --test-runner playwright \
   --pw-prepare "yarn install" \
   --pw-execute "yarn test" \
+
+# run go test
+bench test  \
+  --suite-path ./path/to/test/... \
+  --test-runner go
 `
 
 const longDescription = `
-test subcommand is a wrapper for running a suite of k6 or playwright tests
+test subcommand is a wrapper for running a suite of tests
 against a grafana instance.
 
 The tests to be executed are defined by the --suite-path option.
@@ -88,6 +90,20 @@ The url to the grafana instance defined in the --grafana-url cli arguments will
 be passed to the test in the PLAYWRIGHT_BASE_URL environment variable.
 See [1] for details on how to develop playwright tests compatible with the bench
 test runner.
+
+Go
+--
+
+Execute go test suites. The '--suite-path' is used as a pattern for selecting the
+packages to test. It must start with './' to test local packages. To ensure sub-
+packages are also included, add '/...' at the end. For example:
+
+    grafana-bench test --test-runner go --suite-path ./path/to/package/...
+
+Additional arguments such as build tags can be passed using the --go-args flag.
+    grafana-bench test --test-runner go \
+       --go-args "-tags=slow -race -timeout=30m" \
+       --suite-path ./path/to/package/...
 
 
 [1] https://github.com/grafana/grafana-bench/blob/main/docs/writing_pw_tests.md
@@ -184,7 +200,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				return fmt.Errorf("invalid argument(s): '%s'", strings.Join(args, "', '"))
 			}
 
-			grafanaInstance, grafanaVersion, err := benchConfig.GetGrafanaInstance(log)
+			suiteRun, err := benchConfig.BuildSuiteRun()
 			if err != nil {
 				return err
 			}
@@ -192,8 +208,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			testExecutor, err := benchConfig.BuildTestExecutor(
 				log,
 				benchConfig.Test.Executor,
-				grafanaInstance,
-				grafanaVersion,
 			)
 			if err != nil {
 				return err
@@ -213,9 +227,9 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			testEnvVars := map[string]string{
 				"TEST_TYPE":              benchConfig.Test.Type,
 				"TEST_SUITE_REVISION":    suite.Revision,
-				"GRAFANA_URL":            grafanaInstance.Url(),
-				"GRAFANA_ADMIN_USER":     grafanaInstance.AdminUser(),
-				"GRAFANA_ADMIN_PASSWORD": grafanaInstance.AdminPassword(),
+				"GRAFANA_URL":            benchConfig.Grafana.Url,
+				"GRAFANA_ADMIN_USER":     benchConfig.Grafana.AdminUser,
+				"GRAFANA_ADMIN_PASSWORD": benchConfig.Grafana.AdminPassword,
 			}
 
 			// add test specific environment variables
@@ -237,19 +251,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				return err
 			}
 			suiteRunSummary.Metrics = append(suiteRunSummary.Metrics, runMetrics...)
-
-			runId := id.Run(benchConfig.SuiteRun.Trigger, time.Now())
-			suiteRunName := id.SuiteRunName(benchConfig.SuiteRun.Trigger, benchConfig.TestSuite.Name, benchConfig.Test.Type)
-			suiteRun := executor.SuiteRun{
-				Name:           suiteRunName,
-				Id:             runId,
-				Trigger:        benchConfig.SuiteRun.Trigger,
-				TestExecutor:   benchConfig.Test.Executor,
-				BenchRevision:  benchConfig.Revision,
-				GrafanaURL:     grafanaInstance.Hostname(),
-				GrafanaSlug:    grafanaInstance.Slug(),
-				GrafanaVersion: grafanaVersion,
-			}
 
 			err = reporter.Report(cmd.Context(), suiteRun, suiteRunSummary)
 			if err != nil {
