@@ -14,6 +14,7 @@ import (
 
 	"github.com/grafana/grafana-bench/pkg/compile"
 	"github.com/grafana/grafana-bench/pkg/executor"
+	"github.com/grafana/grafana-bench/pkg/executor/gotest"
 	"github.com/grafana/grafana-bench/pkg/executor/k6"
 	"github.com/grafana/grafana-bench/pkg/executor/playwright"
 	"github.com/grafana/grafana-bench/pkg/grafana"
@@ -21,6 +22,7 @@ import (
 	"github.com/grafana/grafana-bench/pkg/notifier"
 	"github.com/grafana/grafana-bench/pkg/reporter"
 	"github.com/grafana/grafana-bench/pkg/revision"
+	"github.com/grafana/grafana-bench/pkg/utils/id"
 	"github.com/spf13/pflag"
 )
 
@@ -33,6 +35,7 @@ type BenchConfig struct {
 	Report     ReportConfig
 	SuiteRun   SuiteRunConfig
 	Grafana    GrafanaConfig
+	Go         GoTestConfig
 	K6         K6Config
 	Playwright PWConfig
 	Slack      SlackNotifierConfig
@@ -154,6 +157,19 @@ func AddPlaywrightFlags(fs *pflag.FlagSet, config *PWConfig) {
 		"pw-execute",
 		"",
 		"command used to execute the test suite eg: \"npm run test\"",
+	)
+}
+
+type GoTestConfig struct {
+	TestArgs []string
+}
+
+func AddGoExecutorFlags(fs *pflag.FlagSet, config *GoTestConfig) {
+	fs.StringArrayVar(
+		&config.TestArgs,
+		"go-args",
+		nil,
+		"arguments to be passed to go test  (e.g '-tag slow -race')",
 	)
 }
 
@@ -320,7 +336,7 @@ func AddTestRunnerFlag(fs *pflag.FlagSet, test *TestConfig) {
 		&test.Executor,
 		"test-runner",
 		"k6",
-		"test runner. Allowed values: 'k6', 'playwright'",
+		"test runner. Allowed values: 'k6', 'playwright', 'go'",
 	)
 }
 
@@ -560,12 +576,17 @@ func AddPrometheusFlags(fs *pflag.FlagSet, prometheus *Prometheus) {
 func (config BenchConfig) BuildTestExecutor(
 	log *slog.Logger,
 	testExecutor string,
-	grafanaInstance grafana.GrafanaInstance,
-	grafanaVersion string,
 ) (executor.TestExecutor, error) {
 	var executor executor.TestExecutor
 
 	switch config.Test.Executor {
+	case "go":
+		executor = gotest.NewGoExecutor(
+			log,
+			gotest.GoExecutorOptions{
+				TestArgs: config.Go.TestArgs,
+			},
+		)
 	case "k6":
 		executor = k6.NewK6TestExecutor(
 			log,
@@ -630,6 +651,60 @@ func (config *BenchConfig) BuildTestSuite(log *slog.Logger) (*executor.TestSuite
 		BaseDir:  config.TestSuite.BaseDir,
 		Path:     config.TestSuite.Path,
 		Revision: testSuiteRevision,
+	}, nil
+}
+
+func (benchConfig *BenchConfig) BuildSuiteRun() (executor.SuiteRun, error) {
+	grafanaSlug := ""
+	if benchConfig.Grafana.Url != "" {
+		// in case of error, slug it will be empty
+		grafanaSlug, _ = grafana.Slug(benchConfig.Grafana.Url)
+	}
+
+	// get grafana version if not provided
+	grafanaVersion := benchConfig.Grafana.Version
+	if grafanaVersion == "" {
+		if benchConfig.Grafana.Url == "" || benchConfig.Grafana.AdminUser == "" || benchConfig.Grafana.AdminPassword == "" {
+			return executor.SuiteRun{}, fmt.Errorf("grafana admin user and password are needed to get grafana version")
+		}
+
+		grafanaInstance, err := grafana.NewInstance(
+			benchConfig.Grafana.Url,
+			benchConfig.Grafana.AdminUser,
+			benchConfig.Grafana.AdminPassword,
+		)
+		if err != nil {
+			return executor.SuiteRun{}, fmt.Errorf("failed to create grafana instance: %w", err)
+		}
+		grafanaVersion, err = grafanaInstance.GetGrafanaBuildVersion()
+		if err != nil {
+			return executor.SuiteRun{}, fmt.Errorf("failed to get grafana version: %w", err)
+		}
+	}
+
+	// get attributes of this test suite run using the test suite information from the config
+	runId := benchConfig.SuiteRun.Id
+	if runId == "" {
+		runId = id.Run(benchConfig.SuiteRun.Trigger, time.Now())
+	}
+
+	suiteRunName := id.SuiteRunName(
+		benchConfig.SuiteRun.Trigger,
+		benchConfig.TestSuite.Name,
+		benchConfig.Test.Type,
+	)
+
+	return executor.SuiteRun{
+		Name:           suiteRunName,
+		Id:             runId,
+		Trigger:        benchConfig.SuiteRun.Trigger,
+		TestExecutor:   benchConfig.Report.Input,
+		SuiteName:      benchConfig.TestSuite.Name,
+		SuiteRevision:  benchConfig.TestSuite.Revision,
+		BenchRevision:  benchConfig.Revision,
+		GrafanaURL:     benchConfig.Grafana.Url,
+		GrafanaSlug:    grafanaSlug,
+		GrafanaVersion: grafanaVersion,
 	}, nil
 }
 
