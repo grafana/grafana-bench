@@ -18,14 +18,19 @@ import (
 // bench tag across all the docs via pattern
 // grafana-bench:vXXXXX
 func updateMarkdownDocs(dir string) error {
-	repoPath, err := findGitRoot()
+	//repoPath, err := findGitRoot()
+	//if err != nil {
+	//  return err
+	//}
+	//fmt.Println("Git root:", repoPath)
+
+	workDir, err := os.Getwd()
 	if err != nil {
 		return err
 	}
+	fmt.Println("Working dir:", workDir)
 
-	fmt.Println("Git root:", repoPath)
-
-	version, err := getLatestBenchTag(repoPath)
+	version, err := getLatestBenchTag(workDir)
 	if err != nil {
 		return err
 	}
@@ -35,42 +40,45 @@ func updateMarkdownDocs(dir string) error {
 	return updateSemverInMarkdown(dir, version)
 }
 
-// findGitRoot finds the root directory of the git repository
-// that contains the current working directory
-func findGitRoot() (string, error) {
-	// Start with the current working directory
-	dir, err := os.Getwd()
-	if err != nil {
-		return "", err
-	}
+//// findGitRoot finds the root directory of the git repository
+//// that contains the current working directory
+//func findGitRoot() (string, error) {
+//  // Start with the current working directory
+//  dir, err := os.Getwd()
+//  if err != nil {
+//    return "", err
+//  }
 
-	// Keep going up until we find .git
-	for {
-		// Check if this directory is a git repository
-		_, err := os.Stat(filepath.Join(dir, ".git"))
-		if err == nil {
-			// Found the .git directory
-			return dir, nil
-		}
-		if !os.IsNotExist(err) {
-			// Some error other than non-existence
-			return "", err
-		}
+//  // Keep going up until we find .git
+//  for {
+//    // Check if this directory is a git repository
+//    _, err := os.Stat(filepath.Join(dir, ".git"))
+//    if err == nil {
+//      // Found the .git directory
+//      return dir, nil
+//    }
+//    if !os.IsNotExist(err) {
+//      // Some error other than non-existence
+//      return "", err
+//    }
 
-		// Go up one directory
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			// We've reached the filesystem root without finding .git
-			return "", fmt.Errorf("not in a git repository")
-		}
-		dir = parent
-	}
-}
+//    // Go up one directory
+//    parent := filepath.Dir(dir)
+//    if parent == dir {
+//      // We've reached the filesystem root without finding .git
+//      return "", fmt.Errorf("not in a git repository")
+//    }
+//    dir = parent
+//  }
+//}
 
 // GetLatestTag gets the latest tag from the repo. This is used for getting the latest tag for bench when updated docs
 func getLatestBenchTag(repoPath string) (string, error) {
 	// Open the repository
-	repo, err := git.PlainOpen(repoPath)
+	repo, err := git.PlainOpenWithOptions(
+		repoPath,
+		&git.PlainOpenOptions{DetectDotGit: true},
+	)
 	if err != nil {
 		return "", err
 	}
