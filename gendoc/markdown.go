@@ -14,6 +14,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 )
 
+// semVerRegex matches semantic version with optional v prefix. eg: v1.1.1
 var semVerRegex = regexp.MustCompile(`v?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?`)
 
 // updateMarkdownDocs updates the bench version to latest
@@ -115,24 +116,42 @@ func getLatestBenchTag(repoPath string) (string, error) {
 	return "", fmt.Errorf("no tags that meet semantic versioning standards found in repo")
 }
 
+func buildDocVersionRegex() *regexp.Regexp {
+	// add prefix
+	regexStr := `(Latest Version: |grafana-bench:|benchRevision: |bench:)\s*`
+	// add optional quotes
+	regexStr += "('|\"|`)?"
+	// add semver
+	regexStr += `v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?`
+	// add optional quote match
+	regexStr += "('|\"|`)?"
+	return regexp.MustCompile(regexStr)
+}
+
 // updateSemverInMarkdown walks through the given directory path,
 // finds all .md files not prefixed with "bench_",
 // and replaces all instances of "grafana-bench:vxxx" with the provided version.
 // NOT recursive
 func updateSemverInMarkdown(dirPath string, newVersion string) error {
+
 	versionReplacements := []struct {
 		Pattern     *regexp.Regexp
 		ReplaceFunc func(string) string
 	}{
 
-		// find all semantic versions referenced in the docs
+		// Find all semantic versions referenced in the docs
+		// Latest Version: v1.1.1
+		// grafana-bench:v1.1.1
+		// benchRevision: 'v1.1.1'
+		// bench:v1.1.1
 		{
-			Pattern: regexp.MustCompile(`(Latest Version:|grafana-bench:|benchRrevision:|bench:)\s*v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?`),
+			Pattern: buildDocVersionRegex(),
 			ReplaceFunc: func(matched string) string {
 				// Find the index where the prefix ends (after the colon and whitespace)
 				prefixEnd := strings.Index(matched, ":")
+				// Should never happen since regex matches :
 				if prefixEnd == -1 {
-					return matched // Should never happen with our regex
+					return matched
 				}
 
 				// Include any whitespace after the colon in the prefix
@@ -143,26 +162,18 @@ func updateSemverInMarkdown(dirPath string, newVersion string) error {
 					}
 				}
 
+				// If we have a quote add that back
+				for i := prefixEnd + 2; i < len(matched); i++ {
+					if matched[i] == '\'' || matched[i] == '"' || matched[i] == '`' {
+						// returns `prefix: "v1.1.1"` with proper surrounding quote
+						return prefix + string(matched[i]) + newVersion + string(matched[i])
+					}
+				}
+
 				// Return the original prefix plus the new version
 				return prefix + newVersion
 			},
 		},
-
-		// index reference
-		//{
-		//  Pattern:     regexp.MustCompile(`Latest Version: v[0-9.]+`),
-		//  Replacement: "Latest Version: " + newVersion,
-		//},
-		// bench image reference
-		//{
-		//  Pattern:     regexp.MustCompile(`grafana-bench:v[^\s\n\r\t,'"]*`),
-		//  Replacement: "grafana-bench:" + newVersion,
-		//},
-		// libsonnet version reference
-		//{
-		//  Pattern:     regexp.MustCompile(`benchRevision: ['"]v[^'"]*['"],`),
-		//  Replacement: "benchRevision: '" + newVersion + "',",
-		//},
 	}
 
 	return filepath.WalkDir(dirPath, func(path string, d fs.DirEntry, err error) error {
