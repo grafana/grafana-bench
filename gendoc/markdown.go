@@ -143,13 +143,30 @@ func getLatestBenchTag(repoPath string) (string, error) {
 func updateSemverInMarkdown(dirPath string, newVersion string) error {
 	versionReplacements := []struct {
 		Pattern     *regexp.Regexp
-		Replacement string
+		ReplaceFunc func(string) string
 	}{
 
 		// find all semantic versions referenced in the docs
 		{
-			Pattern:     regexp.MustCompile(`v?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?`),
-			Replacement: newVersion,
+			Pattern: regexp.MustCompile(`(Latest Version:|grafana-bench:|benchRrevision:|bench:)\s*v?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?`),
+			ReplaceFunc: func(matched string) string {
+				// Find the index where the prefix ends (after the colon and whitespace)
+				prefixEnd := strings.Index(matched, ":")
+				if prefixEnd == -1 {
+					return matched // Should never happen with our regex
+				}
+
+				// Include any whitespace after the colon in the prefix
+				prefix := matched[:prefixEnd+1]
+				for i := prefixEnd + 1; i < len(matched); i++ {
+					if matched[i] == ' ' || matched[i] == '\t' {
+						prefix += string(matched[i])
+					}
+				}
+
+				// Return the original prefix plus the new version
+				return prefix + newVersion
+			},
 		},
 
 		// index reference
@@ -197,7 +214,7 @@ func updateSemverInMarkdown(dirPath string, newVersion string) error {
 		for _, vr := range versionReplacements {
 			if vr.Pattern.MatchString(contentStr) {
 				anyReplacements = true
-				contentStr = vr.Pattern.ReplaceAllString(contentStr, vr.Replacement)
+				contentStr = vr.Pattern.ReplaceAllStringFunc(contentStr, vr.ReplaceFunc)
 			}
 		}
 
