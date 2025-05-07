@@ -14,16 +14,12 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 )
 
+var semVerRegex = regexp.MustCompile(`v?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?`)
+
 // updateMarkdownDocs updates the bench version to latest
 // bench tag across all the docs via pattern
 // grafana-bench:vXXXXX
 func updateMarkdownDocs(dir string) error {
-	//repoPath, err := findGitRoot()
-	//if err != nil {
-	//  return err
-	//}
-	//fmt.Println("Git root:", repoPath)
-
 	workDir, err := os.Getwd()
 	if err != nil {
 		return err
@@ -39,38 +35,6 @@ func updateMarkdownDocs(dir string) error {
 
 	return updateSemverInMarkdown(dir, version)
 }
-
-//// findGitRoot finds the root directory of the git repository
-//// that contains the current working directory
-//func findGitRoot() (string, error) {
-//  // Start with the current working directory
-//  dir, err := os.Getwd()
-//  if err != nil {
-//    return "", err
-//  }
-
-//  // Keep going up until we find .git
-//  for {
-//    // Check if this directory is a git repository
-//    _, err := os.Stat(filepath.Join(dir, ".git"))
-//    if err == nil {
-//      // Found the .git directory
-//      return dir, nil
-//    }
-//    if !os.IsNotExist(err) {
-//      // Some error other than non-existence
-//      return "", err
-//    }
-
-//    // Go up one directory
-//    parent := filepath.Dir(dir)
-//    if parent == dir {
-//      // We've reached the filesystem root without finding .git
-//      return "", fmt.Errorf("not in a git repository")
-//    }
-//    dir = parent
-//  }
-//}
 
 // GetLatestTag gets the latest tag from the repo. This is used for getting the latest tag for bench when updated docs
 func getLatestBenchTag(repoPath string) (string, error) {
@@ -140,8 +104,15 @@ func getLatestBenchTag(repoPath string) (string, error) {
 		return tags[i].Time.After(tags[j].Time)
 	})
 
+	// get the latest tag that matches semver
+	for _, t := range tags {
+		if semVerRegex.MatchString(t.Name) {
+			return t.Name, nil
+		}
+	}
+
 	// Return the latest tag name
-	return tags[0].Name, nil
+	return "", fmt.Errorf("no tags that meet semantic versioning standards found in repo")
 }
 
 // updateSemverInMarkdown walks through the given directory path,
