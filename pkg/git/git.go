@@ -16,7 +16,7 @@ import (
 )
 
 type GitRepo struct {
-	Lg       *slog.Logger
+	Lg        *slog.Logger
 	Repo      string
 	RepoToken string
 }
