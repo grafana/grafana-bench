@@ -148,7 +148,7 @@ func updateSemverInMarkdown(dirPath string, newVersion string) error {
 
 		// find all semantic versions referenced in the docs
 		{
-			Pattern: regexp.MustCompile(`(Latest Version:|grafana-bench:|benchRrevision:|bench:)\s*v?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?`),
+			Pattern: regexp.MustCompile(`(Latest Version:|grafana-bench:|benchRrevision:|bench:)\s*v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?`),
 			ReplaceFunc: func(matched string) string {
 				// Find the index where the prefix ends (after the colon and whitespace)
 				prefixEnd := strings.Index(matched, ":")
