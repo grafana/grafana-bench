@@ -2,7 +2,7 @@
 
 Bench is a tool to provide test observability across the Grafana ecosystem.
 
-Latest Version: v0.4.0
+Latest Version: v0.4.1
 
 ## Background
 
@@ -81,7 +81,7 @@ We currently publish the docker image to both GAR and github packages. Some user
 
 Fetch the container from Google Artifact registry.
 
-    docker pull us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.4.0
+    docker pull us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.4.1
 
 #### Github
 
@@ -89,10 +89,10 @@ Fetch the container from Google Artifact registry.
     `gh auth token | docker login ghcr.io -u {YOUR_USERNAME} --password-stdin`
 
 2. Pull the github container
-    `docker pull ghcr.io/grafana/grafana-bench:v0.4.0
+    `docker pull ghcr.io/grafana/grafana-bench:v0.4.1
 
 3. Verify installation
-`docker run --rm us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.4.0 --help`
+`docker run --rm us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.4.1 --help`
 
 ### Binary / Go Package
 
