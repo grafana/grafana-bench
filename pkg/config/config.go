@@ -584,7 +584,7 @@ func (config BenchConfig) BuildTestExecutor(
 		executor = gotest.NewGoExecutor(
 			log,
 			gotest.GoExecutorOptions{
-				TestArgs: config.Go.TestArgs,
+				GoArgs: config.Go.TestArgs,
 			},
 		)
 	case "k6":

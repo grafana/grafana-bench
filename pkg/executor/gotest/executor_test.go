@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"os"
 	"testing"
 
 	"github.com/grafana/grafana-bench/pkg/executor"
@@ -24,8 +25,8 @@ func TestExecutor(t *testing.T) {
 
 		{
 			title: "run all tests",
-			opts:  GoExecutorOptions{
-				TestArgs: []string{"-tags", "goexecutor"},
+			opts: GoExecutorOptions{
+				GoArgs: []string{"-tags", "goexecutor"},
 			},
 			suite: executor.TestSuite{
 				Path: "./tests",
@@ -33,14 +34,40 @@ func TestExecutor(t *testing.T) {
 			expectErr: nil,
 			expect: executor.SuiteRunSummary{
 				Status:        executor.SuiteFailed,
-				TestsExecuted: 4,
+				TestsExecuted: 5,
 				TestsPassed:   3,
-				TestsFailed:   1,
+				TestsFailed:   2,
 				TestRuns: []executor.TestRunSummary{
 					{TestFile: "TestFailing", Status: executor.TestFailed},
 					{TestFile: "TestPassing1", Status: executor.TestPassed},
 					{TestFile: "TestPassing2", Status: executor.TestPassed},
 					{TestFile: "TestPassing3", Status: executor.TestPassed},
+					{TestFile: "TestFlaky", Status: executor.TestFailed},
+				},
+			},
+		},
+		{
+			title: "retry failed tests",
+			opts: GoExecutorOptions{
+				GoArgs:  []string{"-tags", "goexecutor"},
+				Retries: 1,
+			},
+			suite: executor.TestSuite{
+				Path: "./tests",
+			},
+			expectErr: nil,
+			expect: executor.SuiteRunSummary{
+				Status:        executor.SuiteFailed,
+				TestsExecuted: 5,
+				TestsPassed:   3,
+				TestsFailed:   1,
+				TestsFlaky:    1,
+				TestRuns: []executor.TestRunSummary{
+					{TestFile: "TestFailing", Status: executor.TestFailed},
+					{TestFile: "TestPassing1", Status: executor.TestPassed},
+					{TestFile: "TestPassing2", Status: executor.TestPassed},
+					{TestFile: "TestPassing3", Status: executor.TestPassed},
+					{TestFile: "TestFlaky", Status: executor.TestFlaky},
 				},
 			},
 		},
@@ -49,6 +76,14 @@ func TestExecutor(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.title, func(t *testing.T) {
 			t.Parallel()
+
+			// creates tmp file used by TestFlaky
+			flakyMark, err := os.CreateTemp(t.TempDir(), "flaky-mark-*")
+			if err != nil {
+				t.Fatalf("setting up flaky test mark file %v", err)
+			}
+			tc.opts.TestArgs = append(tc.opts.TestArgs, "-flaky-mark-file", flakyMark.Name())
+
 			log := slog.New(slog.NewTextHandler(io.Discard, nil))
 			goExec := NewGoExecutor(log, tc.opts)
 			summary, err := goExec.ExecTestSuite(context.TODO(), tc.suite, map[string]string{})
