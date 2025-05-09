@@ -28,13 +28,52 @@ type testkey struct {
 	test string
 }
 
+type testRuns map[testkey]*executor.TestRunSummary
+
 // ParseJsonOutput parses output from https://pkg.go.dev/cmd/test2json
 func ParseJsonOutput(report io.Reader) (executor.SuiteRunSummary, error) {
 	summary := executor.SuiteRunSummary{
 		StartTime: time.Now(),
 	}
 
-	testRuns := map[testkey]*executor.TestRunSummary{}
+	testRuns, err := parseTestRuns(report)
+	if err != nil {
+		return executor.SuiteRunSummary{}, err
+	}
+
+	for _, test := range testRuns {
+		// set the summary time to the first test that started don't relay on ordering of tests
+		if test.StartTime.Before(summary.StartTime) {
+			summary.StartTime = test.StartTime
+		}
+
+		if test.Status == executor.TestSkipped {
+			continue
+		}
+
+		switch test.Status {
+		case executor.TestError:
+			summary.TestsError += 1
+		case executor.TestPassed:
+			summary.TestsPassed += 1
+		case executor.TestFailed:
+			summary.TestsFailed += 1
+		case executor.TestFlaky:
+			summary.TestsFlaky += 1
+		}
+
+		summary.TotalDuration += test.Durations.TotalDuration
+
+		summary.TestRuns = append(summary.TestRuns, *test)
+	}
+
+	summary.TestsExecuted = int32(len(summary.TestRuns))
+
+	return summary, nil
+}
+
+func parseTestRuns(report io.Reader) (testRuns, error) {
+	testRuns := testRuns{}
 
 	decoder := json.NewDecoder(report)
 	for {
@@ -45,7 +84,7 @@ func ParseJsonOutput(report io.Reader) (executor.SuiteRunSummary, error) {
 		}
 
 		if err != nil {
-			return executor.SuiteRunSummary{}, err
+			return nil, err
 		}
 
 		// we are only processing tests for now
@@ -58,7 +97,7 @@ func ParseJsonOutput(report io.Reader) (executor.SuiteRunSummary, error) {
 		if line.Action == "start" || line.Action == "run" { // found a new stream, initialize
 			time, err := time.Parse(time.RFC3339, line.Time)
 			if err != nil {
-				return executor.SuiteRunSummary{}, err
+				return nil, err
 			}
 			testRuns[testkey] = &executor.TestRunSummary{
 				StartTime:  time,
@@ -66,16 +105,12 @@ func ParseJsonOutput(report io.Reader) (executor.SuiteRunSummary, error) {
 				TestFile:   line.Test,
 			}
 
-			// set the summary time to the first test that started don't relay on ordering of tests
-			if time.Before(summary.StartTime) {
-				summary.StartTime = time
-			}
 			continue
 		}
 
 		testRun, ok := testRuns[testkey]
 		if !ok {
-			return executor.SuiteRunSummary{}, fmt.Errorf("%w missing start/run for test %q %v", ErrInvalidFormat, line.Package, line.Test)
+			return nil, fmt.Errorf("%w missing start/run for test %q %v", ErrInvalidFormat, line.Package, line.Test)
 		}
 
 		switch line.Action {
@@ -84,22 +119,17 @@ func ParseJsonOutput(report io.Reader) (executor.SuiteRunSummary, error) {
 			continue
 		case "pass":
 			testRun.Status = executor.TestPassed
-			summary.TestsPassed += 1
 			testRun.ExitMessage = "" // delete message for passed tests to reduce noise
 		case "fail":
 			testRun.Status = executor.TestFailed
-			summary.TestsFailed += 1
+		case "skip":
+			testRun.Status = executor.TestSkipped
 		default:
 			continue
 		}
 
 		testRun.Durations.TotalDuration = line.Elapsed
-
-		summary.TotalDuration += line.Elapsed
-		summary.TestsExecuted += 1
-
-		summary.TestRuns = append(summary.TestRuns, *testRun)
 	}
 
-	return summary, nil
+	return testRuns, nil
 }
