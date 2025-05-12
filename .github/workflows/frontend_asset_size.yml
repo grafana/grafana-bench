@@ -5,10 +5,6 @@ permissions:
   packages: write
 
 on:
-  push:
-    branches: ["main"]
-  pull_request:
-    branches: ["main"]
   schedule:
     - cron: '0 * * * *'
   # Optional: Also allow manual triggering
@@ -61,7 +57,7 @@ jobs:
         working-directory: ./CI/plugin-e2e
         env:
           PLAYWRIGHT_JSON_OUTPUT_NAME: /tmp/results.json
-        run: yarn run test --grep @performance --reporter json || true
+        run: yarn run test --grep @performance --reporter json
 
       #- name: cat results
       #  run: |
