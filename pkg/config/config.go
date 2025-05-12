@@ -161,15 +161,29 @@ func AddPlaywrightFlags(fs *pflag.FlagSet, config *PWConfig) {
 }
 
 type GoTestConfig struct {
+	GoArgs   []string
 	TestArgs []string
+	Retries  int
 }
 
 func AddGoExecutorFlags(fs *pflag.FlagSet, config *GoTestConfig) {
 	fs.StringArrayVar(
-		&config.TestArgs,
+		&config.GoArgs,
 		"go-args",
 		nil,
-		"arguments to be passed to go test  (e.g '-tag slow -race')",
+		"arguments to be passed to go test command (e.g '-tag slow -race')",
+	)
+	fs.IntVar(
+		&config.Retries,
+		"go-retries",
+		0,
+		"number of retries for failed tests. Retried tests that pass are reported as flaky",
+	)
+	fs.StringArrayVar(
+		&config.TestArgs,
+		"go-test-args",
+		nil,
+		"arguments to be passed to the test using the arg flag (e.g '-args -slow 1')",
 	)
 }
 
@@ -584,7 +598,7 @@ func (config BenchConfig) BuildTestExecutor(
 		executor = gotest.NewGoExecutor(
 			log,
 			gotest.GoExecutorOptions{
-				GoArgs: config.Go.TestArgs,
+				GoArgs: config.Go.GoArgs,
 			},
 		)
 	case "k6":
