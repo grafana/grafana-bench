@@ -41,10 +41,17 @@ func ParseJsonOutput(report io.Reader) (executor.SuiteRunSummary, error) {
 		return executor.SuiteRunSummary{}, err
 	}
 
+	endTime := time.Time{}
 	for _, test := range testRuns {
 		// set the summary time to the first test that started don't relay on ordering of tests
 		if test.StartTime.Before(summary.StartTime) {
 			summary.StartTime = test.StartTime
+		}
+
+		// calculate the latest end time among all tests
+		testDuration := time.Duration(float32(time.Second) * test.Durations.TotalDuration)
+		if test.StartTime.Add(testDuration).After(endTime) {
+			endTime = test.StartTime.Add(testDuration)
 		}
 
 		if test.Status == executor.TestSkipped {
@@ -62,11 +69,10 @@ func ParseJsonOutput(report io.Reader) (executor.SuiteRunSummary, error) {
 			summary.TestsFlaky += 1
 		}
 
-		summary.TotalDuration += test.Durations.TotalDuration
-
 		summary.TestRuns = append(summary.TestRuns, *test)
 	}
 
+	summary.TotalDuration += float32(endTime.Sub(summary.StartTime).Seconds())
 	summary.TestsExecuted = int32(len(summary.TestRuns))
 
 	return summary, nil
