@@ -105,6 +105,10 @@ Additional arguments such as build tags can be passed using the --go-args flag.
        --go-args "-tags=slow -race -timeout=30m" \
        --suite-path ./path/to/package/...
 
+For passing flags to configure the test, use the --go-test-args flag
+    grafana-bench test --test-runner go \
+       --go-test-args "-slow 1" \
+       --suite-path ./path/to/package/...
 
 [1] https://github.com/grafana/grafana-bench/blob/main/docs/writing_pw_tests.md
 
@@ -270,9 +274,11 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	config.AddGrafanaFlags(fs, &benchConfig.Grafana)
 	config.AddK6Flags(fs, &benchConfig.K6)
 	config.AddPlaywrightFlags(fs, &benchConfig.Playwright)
+	config.AddGoExecutorFlags(fs, &benchConfig.Go)
 	config.AddSlackFlags(fs, &benchConfig.Slack)
 	config.AddReportOutputFlags(fs, &benchConfig.Report)
 	config.AddPrometheusFlags(fs, &benchConfig.Prometheus)
+
 
 	return &cmd
 }
