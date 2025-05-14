@@ -28,7 +28,7 @@ test("payload-size",{ tag: '@performance' }, async ({ page, dashPath }) => {
 
   await page.goto(dashPath);
 
-  let el = page.getByTestId("header-container");
+  let el = page.getByTestId("data-testid header-container");
   await el.waitFor();
 
   // weird but random expect() is required so this whole thing doesn't go tits up with
