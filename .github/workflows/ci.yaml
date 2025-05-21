@@ -3,7 +3,6 @@ name: publish-bench-image
 # These permissions are needed to assume roles from Github's OIDC.
 permissions:
   contents: read
-  id-token: write
 
 on:
   push:
@@ -15,6 +14,9 @@ on:
 jobs:
   test-bench:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+
     services:
       grafana:
         image: grafana/grafana:latest

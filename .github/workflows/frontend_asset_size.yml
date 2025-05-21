@@ -3,7 +3,6 @@ name: Measure frontend asset size
 permissions:
   contents: read
   packages: write
-  id-token: write
 
 on:
   schedule:
@@ -13,6 +12,8 @@ on:
 jobs:
   measure-frontend-assets:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
 
     #services:
     #  grafana:
