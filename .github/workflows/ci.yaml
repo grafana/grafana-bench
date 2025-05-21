@@ -51,13 +51,13 @@ jobs:
             --grafana-url http://localhost:3000 \
             --test-suite CI/k6 \
             --log-level info \
+            --test-suite-revision a31893b \
             --test-report-format log \
             --test-suite-name grafana-bench/ci \
             --test-suite-repo https://github.com/grafana/grafana-bench.git \
-            --test-suite-base /tmp/grafana-bench-tests \
+            --test-suite-base /tmp/grafana-bench \
             --test-trigger grafana-bench-ci \
             --slack-notifications
-
 
   test-container:
     runs-on: ubuntu-latest
