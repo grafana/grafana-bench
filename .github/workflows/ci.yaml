@@ -1,9 +1,5 @@
 name: publish-bench-image
 
-# These permissions are needed to assume roles from Github's OIDC.
-permissions:
-  contents: read
-
 on:
   push:
     branches: ["main"]
@@ -11,30 +7,70 @@ on:
   pull_request:
     branches: ["main"]
 
+permissions:
+  contents: read
+
 jobs:
   test-bench:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    services:
+      grafana:
+        image: grafana/grafana:latest
+        ports:
+          - 3000:3000
     steps:
-    - uses: actions/checkout@v4
-      with:
-        persist-credentials: false
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '>=1.21.x'
-        cache: false
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
-    - name: Set up k6
-      run: go install go.k6.io/k6@latest
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '>=1.21.x'
+          cache: false
 
-    - name: Test
-      run: go test -v ./...
+      - name: Set up k6
+        run: go install go.k6.io/k6@latest
 
-    - name: Build
-      run: go build -v ./...
+      - name: Test
+        run: go test -v ./...
+
+      - name: Build
+        run: go build -v ./...
+
+      - name: Install
+        run: go install
+
+      - id: get-secrets
+        uses: grafana/shared-workflows/actions/get-vault-secrets@get-vault-secrets-v1.2.0
+        with:
+          # Secrets placed in the ci/repo/grafana/<repo>/<path> path in Vault
+          repo_secrets: |
+            SLACK_TOKEN=slack_token:slack_token
+
+      - name: Test Slack Notifications
+        env:
+          TEST_SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          grafana-bench test \
+            --test-type smoke \
+            --grafana-url http://localhost:3000 \
+            --test-suite CI/k6 \
+            --log-level info \
+            --test-suite-revision ${{ github.sha }} \
+            --test-report-format log \
+            --test-suite-name grafana-bench/ci \
+            --test-suite-repo https://github.com/grafana/grafana-bench.git \
+            --test-suite-base /tmp/grafana-bench \
+            --test-trigger grafana-bench-ci \
+            --slack-notifications
 
   test-container:
     runs-on: ubuntu-latest
+
     # run local registry that buildx can push to
     services:
       registry:

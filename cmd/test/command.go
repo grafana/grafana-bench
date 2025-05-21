@@ -204,6 +204,11 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				return fmt.Errorf("invalid argument(s): '%s'", strings.Join(args, "', '"))
 			}
 
+			suite, err := benchConfig.BuildTestSuite(log)
+			if err != nil {
+				return err
+			}
+
 			suiteRun, err := benchConfig.BuildSuiteRun()
 			if err != nil {
 				return err
@@ -218,11 +223,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			}
 
 			reporter, err := benchConfig.BuildReporter()
-			if err != nil {
-				return err
-			}
-
-			suite, err := benchConfig.BuildTestSuite(log)
 			if err != nil {
 				return err
 			}
@@ -278,7 +278,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	config.AddSlackFlags(fs, &benchConfig.Slack)
 	config.AddReportOutputFlags(fs, &benchConfig.Report)
 	config.AddPrometheusFlags(fs, &benchConfig.Prometheus)
-
 
 	return &cmd
 }

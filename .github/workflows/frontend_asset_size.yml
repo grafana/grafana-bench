@@ -1,17 +1,17 @@
 name: Measure frontend asset size
-# These permissions are needed to assume roles from Github's OIDC.
-permissions:
-  contents: read
-  packages: write
 
 on:
   schedule:
     - cron: '0 * * * *'
   # Optional: Also allow manual triggering
   workflow_dispatch:
+
 jobs:
   measure-frontend-assets:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
 
     #services:
     #  grafana:
@@ -34,7 +34,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '23'
           cache: 'yarn'
           cache-dependency-path: './CI/plugin-e2e/yarn.lock'
 
@@ -64,11 +64,17 @@ jobs:
       #    cat /tmp/results.json
       #    cat /tmp/asset-metrics.txt
 
+      - id: get-secrets
+        uses: grafana/shared-workflows/actions/get-vault-secrets@get-vault-secrets-v1.2.0
+        with:
+          # Secrets placed in ci/repo/grafana/grafana-bench vault
+          repo_secrets: |
+            PROMETHEUS_PASSWORD=prometheus_token:prometheus_token
+
       - name: report result
         env:
           PROMETHEUS_URL: "https://prometheus-ops-03-ops-eu-south-0.grafana-ops.net/api/prom/push"
           PROMETHEUS_USER: 10428
-          PROMETHEUS_PASSWORD: ${{ secrets.OPS_PROMETHEUS_PUSH_TOKEN }}
         run: |
           grafana-bench report \
             --grafana-url "https://leeoniya.grafana.net" \

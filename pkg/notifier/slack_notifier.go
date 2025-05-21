@@ -57,7 +57,7 @@ func FormatTestResults(
 		testRunFields := []*slack.TextBlockObject{
 			slack.NewTextBlockObject(
 				"mrkdwn",
-				fmt.Sprintf("%s", filepath.Join(testRun.TestFolder, testRun.TestFile)),
+				filepath.Join(testRun.TestFolder, testRun.TestFile),
 				false,
 				false,
 			),
