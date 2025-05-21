@@ -46,12 +46,11 @@ jobs:
         with:
           # Secrets placed in the ci/repo/grafana/<repo>/<path> path in Vault
           repo_secrets: |
-            SLACK_TOKEN=github-actions:slack_token
+            SLACK_TOKEN=slack_token-actions:slack_token
 
       - name: Test Slack Notifications
         env:
           TEST_SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          #SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
         run: |
           grafana-bench test \
             --test-type smoke \

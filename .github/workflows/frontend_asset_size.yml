@@ -67,17 +67,14 @@ jobs:
       - id: get-secrets
         uses: grafana/shared-workflows/actions/get-vault-secrets@get-vault-secrets-v1.2.0
         with:
-          # Secrets placed in the ci/repo/grafana/<repo>/<path> path in Vault
+          # Secrets placed in ci/repo/grafana/grafana-bench vault
           repo_secrets: |
-            PROMETHEUS_URL=github-actions:prometheus_url
-            PROMETHEUS_USER=github-actions:prometheus_user
-            PROMETHEUS_PASSWORD=github-actions:prometheus_token
+            PROMETHEUS_PASSWORD=prometheus_token:prometheus_token
 
       - name: report result
         env:
-          #PROMETHEUS_URL: "https://prometheus-ops-03-ops-eu-south-0.grafana-ops.net/api/prom/push"
-          #PROMETHEUS_USER: 10428
-          #PROMETHEUS_PASSWORD: ${{ secrets.OPS_PROMETHEUS_PUSH_TOKEN }}
+          PROMETHEUS_URL: "https://prometheus-ops-03-ops-eu-south-0.grafana-ops.net/api/prom/push"
+          PROMETHEUS_USER: 10428
         run: |
           grafana-bench report \
             --grafana-url "https://leeoniya.grafana.net" \
