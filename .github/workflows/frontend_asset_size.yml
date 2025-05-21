@@ -1,18 +1,16 @@
 name: Measure frontend asset size
-# These permissions are needed to assume roles from Github's OIDC.
-permissions:
-  contents: read
-  packages: write
 
 on:
   schedule:
     - cron: '0 * * * *'
   # Optional: Also allow manual triggering
   workflow_dispatch:
+
 jobs:
   measure-frontend-assets:
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       id-token: write
 
     #services:
