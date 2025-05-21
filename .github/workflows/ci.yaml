@@ -51,7 +51,7 @@ jobs:
             --grafana-url http://localhost:3000 \
             --test-suite CI/k6 \
             --log-level info \
-            --test-suite-revision a31893b \
+            --test-suite-revision ${{ github.sha }} \
             --test-report-format log \
             --test-suite-name grafana-bench/ci \
             --test-suite-repo https://github.com/grafana/grafana-bench.git \
