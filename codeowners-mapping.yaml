@@ -1,5 +1,5 @@
 # BENCH - make sure you invite your the grafana-bench app to your channel!
 # from the channel you want alerts in: `/invite @grafana-bench`
 mapping:
-  - slack_channel: "C03KS498VGV" # ID of #grafana-bench-ops
-    github_team: "@grafana/grafana-developer-enablement-squad
+  - slack_channel: "C08THJTL552"
+    github_team: "@grafana/grafana-developer-enablement-squad"
