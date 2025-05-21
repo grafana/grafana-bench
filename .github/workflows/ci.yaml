@@ -49,7 +49,7 @@ jobs:
         with:
           # Secrets placed in the ci/repo/grafana/<repo>/<path> path in Vault
           repo_secrets: |
-            SLACK_TOKEN=slack_token-actions:slack_token
+            SLACK_TOKEN=slack_token:slack_token
 
       - name: Test Slack Notifications
         env:
