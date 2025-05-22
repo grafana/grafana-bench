@@ -2,44 +2,95 @@ package validate
 
 import (
 	"fmt"
+	"log/slog"
+	"os"
+	"path/filepath"
 
 	"github.com/grafana/grafana-bench/pkg/config"
+	"github.com/grafana/grafana-bench/pkg/notifier"
+	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
 
+var (
+	validateSlackNotifierPermissions bool
+)
+
 // NewCmd returns a new bench version command
-func NewCmd() *cobra.Command {
+func NewCmd(log *slog.Logger) *cobra.Command {
+	benchConfig := &config.BenchConfig{}
 
 	cmd := cobra.Command{
-		Use:     "validate-codeowners",
-		Short:   "validate codeowners has associated slack mapping",
-		Long:    "validates there is a channel mapping for squads in the codeowners file",
-		Example: "bench validate-codeowners",
+		Use:     "validate",
+		Short:   "validate --<validation>",
+		Long:    "validate provides validations for the current bench configuration. currently only codeowners is supported",
+		Example: "bench validate --slack-notifier-permissions",
 		RunE: func(cmd *cobra.Command, args []string) error {
-
-			benchConfig := &config.BenchConfig{}
-			reporter, err := benchConfig.BuildReporter()
-			if err != nil {
-				return err
+			if validateSlackNotifierPermissions {
+				err := ValidateSlackNotiferPermissions(benchConfig)
+				if err != nil {
+					log.Error(err.Error())
+				}
 			}
-
-			ok, mappings, err := reporter.has_all_mappings()
-			if err != nil {
-				return err
-			}
-
-			if ok {
-				fmt.Println("all codeowners have slack channel mappings")
-			}
-
-			strict := false
-			if strict {
-				return fmt.Errorf("Too many Codeowners are missing slack channel mappings")
-			}
-
 			return nil
 		},
 	}
 
+	fs := cmd.Flags()
+	fs.BoolVar(
+		&validateSlackNotifierPermissions,
+		"slack-notifier-permissions",
+		false,
+		"validate slack notifier permissions based on the current codeowner-mapping file",
+	)
+
+	config.AddSlackFlags(fs, &benchConfig.Slack)
+
 	return &cmd
+}
+
+func ValidateSlackNotiferPermissions(config *config.BenchConfig) error {
+
+	if config.Slack.Token == "" {
+		return fmt.Errorf("no slack token provided")
+	}
+
+	codeownersMap := config.Slack.CodeownersMap
+	if !filepath.IsAbs(codeownersMap) {
+		codeownersMap = filepath.Join(config.TestSuite.BaseDir, codeownersMap)
+	}
+
+	n, err := notifier.NewSlackNotifier(notifier.SlackNotifierOptions{
+		Token:        config.Slack.Token,
+		MappingFile:  codeownersMap,
+		DashboardURL: config.SuiteRun.DashboardURL,
+	})
+	if err != nil {
+		return fmt.Errorf("creating slack notifier: %w", err)
+	}
+
+	// NewSlackNotifer returns a notifer interface. cast back so we can call check permissions
+	slackNotifier := n.(*notifier.SlackNotifier)
+
+	channelStatuses := slackNotifier.CheckPermissions()
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.Header([]string{"Channel ID", "Channel Name", "Status", "Error"})
+
+	for _, status := range channelStatuses {
+		s := "ok!"
+		if status.Err != nil {
+			s = "error"
+		}
+		table.Append([]string{
+			status.ID,
+			status.Name,
+			s,
+			status.Err.Error(),
+		})
+	}
+
+	table.Render()
+
+	return nil
 }

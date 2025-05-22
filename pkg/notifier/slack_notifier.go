@@ -19,13 +19,6 @@ var (
 	ErrPostingMessage      = errors.New("posting message")
 )
 
-type data struct {
-	TestSuiteRunId string
-	TestRuns       []executor.TestRunSummary
-	TestSuite      executor.TestSuite
-	DashboardURL   string
-}
-
 func FormatTestResults(
 	dashboardURL string,
 	suiteRunId string,
@@ -80,7 +73,7 @@ func FormatTestResults(
 	return blocks, nil
 }
 
-type slackNotifier struct {
+type SlackNotifier struct {
 	client       *slack.Client
 	mapping      CodeownersMapping
 	channels     map[string]string
@@ -124,7 +117,7 @@ func NewSlackNotifier(options SlackNotifierOptions) (Notifier, error) {
 			return nil, err
 		}
 	}
-	return &slackNotifier{
+	return &SlackNotifier{
 		client:       client,
 		mapping:      mapping,
 		channels:     make(map[string]string),
@@ -132,7 +125,7 @@ func NewSlackNotifier(options SlackNotifierOptions) (Notifier, error) {
 	}, nil
 }
 
-func (s *slackNotifier) Notify(
+func (s *SlackNotifier) Notify(
 	ctx context.Context,
 	recipient string,
 	suiteRunId string,
@@ -155,4 +148,56 @@ func (s *slackNotifier) Notify(
 	}
 
 	return nil
+}
+
+type ChannelStatus struct {
+	ID   string
+	Name string
+	Err  error
+}
+
+// Checks whether grafana-bench bot has permissions to post in the channel that
+// the mapping is pointing to
+func (s *SlackNotifier) CheckPermissions() []ChannelStatus {
+	// for each item in the map check whether the slack bot is a member of that channel
+	channelStatuses := make([]ChannelStatus, len(s.channels))
+	for _, c := range s.channels {
+		channelStatuses = append(channelStatuses, isMember(s.client, c))
+	}
+
+	return channelStatuses
+}
+
+// Checks if slack client has permission to post to a given channel
+func isMember(client *slack.Client, channelID string) ChannelStatus {
+	// Get conversation
+	channel, err := client.GetConversationInfo(&slack.GetConversationInfoInput{
+		ChannelID: channelID,
+	})
+
+	channelStatus := ChannelStatus{
+		ID:   channelID,
+		Name: channel.Name,
+	}
+
+	if err != nil {
+		if slackErr, ok := err.(*slack.SlackErrorResponse); ok {
+			switch slackErr.Err {
+			case "channel_not_found":
+				channelStatus.Err = fmt.Errorf("channel not found or bot doesn't have access")
+			case "not_in_channel":
+				channelStatus.Err = fmt.Errorf("bot is not a member of this channel")
+			default:
+				channelStatus.Err = fmt.Errorf("error accessing channel: %s", slackErr.Err)
+			}
+		}
+		channelStatus.Err = err
+	}
+
+	// Check if bot is a member
+	if !channel.IsMember {
+		channelStatus.Err = fmt.Errorf("bot is not a member of channel")
+	}
+
+	return channelStatus
 }
