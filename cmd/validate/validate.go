@@ -30,6 +30,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				err := ValidateSlackNotiferPermissions(benchConfig)
 				if err != nil {
 					log.Error(err.Error())
+					return err
 				}
 			}
 			return nil
