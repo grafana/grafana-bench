@@ -68,6 +68,70 @@ jobs:
             --test-trigger grafana-bench-ci \
             --slack-notifications
 
+  test-bench-validate-slack-permission:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    services:
+      grafana:
+        image: grafana/grafana:latest
+        ports:
+          - 3000:3000
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '>=1.21.x'
+          cache: false
+
+      - name: Install
+        run: go install
+
+      - name: Should fail with no slack token
+        run: |
+          if ! grafana-bench validate --slack-notifier-permissions; then
+            echo "Command failed as expected"
+          else
+            echo "Command unexpectedly succeeded"
+            exit 1
+          fi
+
+      - id: get-secrets
+        uses: grafana/shared-workflows/actions/get-vault-secrets@get-vault-secrets-v1.2.0
+        with:
+          # Secrets placed in the ci/repo/grafana/<repo>/<path> path in Vault
+          repo_secrets: |
+            SLACK_TOKEN=slack_token:slack_token
+
+      - name: CMD should fail if we don't have permissions on a channel
+        run: |
+          mv codeowner-mapping.yaml codeowner-mapping.yaml.tmp
+          cat > codeowner-mapping.yaml << 'EOF'
+          mapping:
+            - slack_channel: "grafana-bench-private"
+              github_team: "@grafana/grafana-developer-enablement-squad"
+          EOF
+
+          if ! grafana-bench validate --slack-notifier-permissions; then
+            echo "Command failed as expected"
+          else
+            echo "Command unexpectedly succeeded"
+            exit 1
+          fi
+
+      - name: Test Slack Notifications
+        env:
+          TEST_SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mv codeowner-mapping.yaml.tmp codeowner-mapping.yaml
+          grafana-bench validate --slack-notifier-permissions
+
+
   test-container:
     runs-on: ubuntu-latest
 

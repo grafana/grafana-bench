@@ -50,7 +50,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 }
 
 func ValidateSlackNotiferPermissions(config *config.BenchConfig) error {
-
 	if config.Slack.Token == "" {
 		return fmt.Errorf("no slack token provided")
 	}
@@ -60,6 +59,7 @@ func ValidateSlackNotiferPermissions(config *config.BenchConfig) error {
 		codeownersMap = filepath.Join(config.TestSuite.BaseDir, codeownersMap)
 	}
 
+	// NewSlackNotifer returns a notifer interface.
 	n, err := notifier.NewSlackNotifier(notifier.SlackNotifierOptions{
 		Token:        config.Slack.Token,
 		MappingFile:  codeownersMap,
@@ -69,28 +69,31 @@ func ValidateSlackNotiferPermissions(config *config.BenchConfig) error {
 		return fmt.Errorf("creating slack notifier: %w", err)
 	}
 
-	// NewSlackNotifer returns a notifer interface. cast back so we can call check permissions
+	// Cast to slackNotifier so we can call check permissions
 	slackNotifier := n.(*notifier.SlackNotifier)
-
 	channelStatuses := slackNotifier.CheckPermissions()
 
 	table := tablewriter.NewWriter(os.Stdout)
 	table.Header([]string{"Channel ID", "Channel Name", "Status", "Error"})
 
+	anyError := false
 	for _, status := range channelStatuses {
 		s := "ok!"
+		e := ""
 		if status.Err != nil {
+			anyError = true
 			s = "error"
+			e = status.Err.Error()
 		}
-		table.Append([]string{
-			status.ID,
-			status.Name,
-			s,
-			status.Err.Error(),
-		})
+
+		table.Append([]string{status.ID, status.Name, s, e})
 	}
 
 	table.Render()
+
+	if anyError {
+		return fmt.Errorf("Slack bot does not have permissions for one or more channels")
+	}
 
 	return nil
 }

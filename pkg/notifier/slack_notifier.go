@@ -159,10 +159,11 @@ type ChannelStatus struct {
 // Checks whether grafana-bench bot has permissions to post in the channel that
 // the mapping is pointing to
 func (s *SlackNotifier) CheckPermissions() []ChannelStatus {
-	// for each item in the map check whether the slack bot is a member of that channel
-	channelStatuses := make([]ChannelStatus, len(s.channels))
-	for _, c := range s.channels {
-		channelStatuses = append(channelStatuses, isMember(s.client, c))
+
+	// for each item in the mapping and check whether the slack bot is a member of that channel
+	var channelStatuses []ChannelStatus
+	for _, m := range s.mapping {
+		channelStatuses = append(channelStatuses, isMember(s.client, m))
 	}
 
 	return channelStatuses
