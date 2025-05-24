@@ -112,7 +112,6 @@ jobs:
         env:
           TEST_SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          mv codeowner-mapping.yaml.tmp codeowner-mapping.yaml
           grafana-bench validate --slack-notifier-permissions
 
       - name: CMD should fail if we don't have permissions on a channel
