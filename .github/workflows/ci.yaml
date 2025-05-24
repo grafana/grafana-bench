@@ -108,6 +108,13 @@ jobs:
           repo_secrets: |
             SLACK_TOKEN=slack_token:slack_token
 
+      - name: Test Slack Notifications
+        env:
+          TEST_SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mv codeowner-mapping.yaml.tmp codeowner-mapping.yaml
+          grafana-bench validate --slack-notifier-permissions
+
       - name: CMD should fail if we don't have permissions on a channel
         run: |
           mv codeowner-mapping.yaml codeowner-mapping.yaml.tmp
@@ -123,13 +130,6 @@ jobs:
             echo "Command unexpectedly succeeded"
             exit 1
           fi
-
-      - name: Test Slack Notifications
-        env:
-          TEST_SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          mv codeowner-mapping.yaml.tmp codeowner-mapping.yaml
-          grafana-bench validate --slack-notifier-permissions
 
 
   test-container:
