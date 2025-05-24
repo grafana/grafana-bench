@@ -95,7 +95,7 @@ jobs:
       - name: Should fail with no slack token
         run: |
           if ! grafana-bench validate --slack-notifier-permissions; then
-            echo "Command failed as expected"
+            echo "Command failed without token as expected"
           else
             echo "Command unexpectedly succeeded"
             exit 1
@@ -116,7 +116,7 @@ jobs:
 
       - name: CMD should fail if we don't have permissions on a channel
         run: |
-          mv codeowner-mapping.yaml codeowner-mapping.yaml.tmp
+          mv codeowners-mapping.yaml codeowners-mapping.yaml.tmp
           cat > codeowner-mapping.yaml << 'EOF'
           mapping:
             - slack_channel: "grafana-bench-private"
