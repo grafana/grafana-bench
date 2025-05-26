@@ -36,7 +36,7 @@ RUN go get github.com/boxboat/fixuid@${FIXUID_VERSION} && \
     CGO_ENABLED=0 go build -o build/fixuid github.com/boxboat/fixuid
 
 FROM grafana/k6:latest AS k6
-FROM debian:12.8-slim AS runtime
+FROM debian:12.11-slim AS runtime
 
 USER root
 RUN apt update && apt install --no-install-recommends -y \
