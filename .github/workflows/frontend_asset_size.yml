@@ -1,6 +1,8 @@
 name: Measure frontend asset size
 
 on:
+  pull_request:
+    branches: ["main"]
   schedule:
     - cron: '0 * * * *'
   # Optional: Also allow manual triggering
@@ -24,6 +26,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: false
+
       - uses: actions/setup-go@v5
         with:
           go-version: 'stable'
@@ -75,6 +78,7 @@ jobs:
         env:
           PROMETHEUS_URL: "https://prometheus-ops-03-ops-eu-south-0.grafana-ops.net/api/prom/push"
           PROMETHEUS_USER: 10428
+          PROMETHEUS_PASSWORD: ${{ secrets.TEMP_PROMETHEUS_PASSWORD }}
         run: |
           grafana-bench report \
             --grafana-url "https://leeoniya.grafana.net" \
