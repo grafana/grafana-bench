@@ -163,6 +163,7 @@ func AddPlaywrightFlags(fs *pflag.FlagSet, config *PWConfig) {
 type GoTestConfig struct {
 	GoArgs   []string
 	TestArgs []string
+	Patterns []string
 	Retries  int
 }
 
