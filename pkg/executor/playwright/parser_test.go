@@ -39,11 +39,12 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 						},
 					},
 				},
-				TotalDuration: time.Duration(float64(2745.645) * float64(time.Millisecond)),
-				TestsExecuted: 1,
-				TestsPassed:   1,
-				TestsFailed:   0,
-				TestsError:    0,
+				ScenariosDuration: time.Duration(float64(2148) * float64(time.Millisecond)),
+				TotalDuration:     time.Duration(float64(2745.645) * float64(time.Millisecond)),
+				TestsExecuted:     1,
+				TestsPassed:       1,
+				TestsFailed:       0,
+				TestsError:        0,
 			},
 		},
 		{
@@ -64,11 +65,12 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 						},
 					},
 				},
-				TotalDuration: time.Duration(float64(5942.315) * float64(time.Millisecond)),
-				TestsExecuted: 1,
-				TestsPassed:   0,
-				TestsFailed:   1,
-				TestsError:    0,
+				ScenariosDuration: time.Duration(float64(5001) * float64(time.Millisecond)),
+				TotalDuration:     time.Duration(float64(5942.315) * float64(time.Millisecond)),
+				TestsExecuted:     1,
+				TestsPassed:       0,
+				TestsFailed:       1,
+				TestsError:        0,
 			},
 		},
 		{
@@ -173,11 +175,12 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 						},
 					},
 				},
-				TotalDuration: time.Duration(float64(37814.297) * float64(time.Millisecond)),
-				TestsExecuted: 7,
-				TestsPassed:   3,
-				TestsFailed:   4,
-				TestsError:    0,
+				ScenariosDuration: time.Duration(float64(39960) * float64(time.Millisecond)),
+				TotalDuration:     time.Duration(float64(37814.297) * float64(time.Millisecond)),
+				TestsExecuted:     7,
+				TestsPassed:       3,
+				TestsFailed:       4,
+				TestsError:        0,
 			},
 		},
 		{
@@ -201,7 +204,7 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 						TestFile: "failures.test.ts",
 						Status:   executor.TestFailed,
 						Durations: executor.TestDurations{
-							ScenarioDuration: time.Millisecond * 6757/3,
+							ScenarioDuration: time.Millisecond * 6757 / 3,
 							TotalDuration:    time.Millisecond * 6757,
 						},
 						ExitMessage: "failures.test.ts:3:5 => Error: ENOENT: no such file or directory, open '/Users/timmulqueen/projects/grafana-plugin-tests/provisioning/datasources/jfkladsjfkldasjdfklasjlk.yml'",
@@ -213,7 +216,7 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 						TestFile: "failures.test.ts",
 						Status:   executor.TestFailed,
 						Durations: executor.TestDurations{
-							ScenarioDuration: time.Millisecond * 4628/3,
+							ScenarioDuration: time.Millisecond * 4628 / 3,
 							TotalDuration:    time.Millisecond * 4628,
 						},
 						ExitMessage: "failures.test.ts:13:5 => Error: expect(received).toEqual(expected) // deep equality",
@@ -225,7 +228,7 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 						TestFile: "failures.test.ts",
 						Status:   executor.TestFailed,
 						Durations: executor.TestDurations{
-							ScenarioDuration: time.Millisecond * 90000/3,
+							ScenarioDuration: time.Millisecond * 90000 / 3,
 							TotalDuration:    time.Millisecond * 90000,
 						},
 						ExitMessage: "failures.test.ts:21:5 => Test timeout of 30000ms exceeded.",
@@ -237,7 +240,7 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 						TestFile: "failures.test.ts",
 						Status:   executor.TestFailed,
 						Durations: executor.TestDurations{
-							ScenarioDuration: time.Millisecond * 1527,
+							ScenarioDuration: time.Millisecond * 4581 / 3,
 							TotalDuration:    time.Millisecond * 4581,
 						},
 						ExitMessage: "failures.test.ts:26:5 => Error: This is a random javascript type error failure",
@@ -270,6 +273,8 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 						},
 					},
 				},
+				// This should be 39844 milliseconds but we have to adjust for some rounding errors
+				ScenariosDuration: time.Duration(39841999999),
 				// The value in the json file is 11114061499999999 but we lose some precision in the calculations
 				TotalDuration: time.Duration(111140614999),
 				TestsExecuted: 7,
@@ -332,11 +337,12 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 						},
 					},
 				},
-				TotalDuration: time.Duration(float64(11508.904) * float64(time.Millisecond)),
-				TestsExecuted: 4,
-				TestsPassed:   1,
-				TestsFailed:   3,
-				TestsError:    0,
+				ScenariosDuration: time.Duration(30532 * time.Millisecond),
+				TotalDuration:     time.Duration(float64(11508.904) * float64(time.Millisecond)),
+				TestsExecuted:     4,
+				TestsPassed:       1,
+				TestsFailed:       3,
+				TestsError:        0,
 			},
 		},
 	}
@@ -357,6 +363,7 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 			assert(t, "tests passed", tc.expected.TestsPassed, summary.TestsPassed)
 			assert(t, "tests error", tc.expected.TestsError, summary.TestsError)
 			assert(t, "tests failed", tc.expected.TestsFailed, summary.TestsFailed)
+			assert(t, "scenario duration", tc.expected.ScenariosDuration, summary.ScenariosDuration)
 			assert(t, "total duration", tc.expected.TotalDuration, summary.TotalDuration)
 
 			assert(t, "test runs len", len(tc.expected.TestRuns), len(summary.TestRuns))

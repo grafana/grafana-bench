@@ -42,10 +42,14 @@ func ParseJsonOutput(report io.Reader) (executor.SuiteRunSummary, error) {
 		suiteStatus = executor.SuiteFailed
 	}
 
+	scenarioDuration := time.Duration(0)
+	for _, r := range testRuns {
+		scenarioDuration += r.Durations.ScenarioDuration
+	}
 	suiteRunSummary := executor.SuiteRunSummary{
 		Status:            suiteStatus,
 		StartTime:         output.Stats.StartTime,
-		ScenariosDuration: time.Duration(output.Stats.Duration * float64(time.Millisecond)),
+		ScenariosDuration: scenarioDuration,
 		TestsExecuted:     totalTestAmount,
 		TestsFailed:       int32(output.Stats.Unexpected),
 		TestsPassed:       int32(output.Stats.Expected),
