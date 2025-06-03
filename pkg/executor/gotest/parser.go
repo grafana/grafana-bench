@@ -49,9 +49,8 @@ func ParseJsonOutput(report io.Reader) (executor.SuiteRunSummary, error) {
 		}
 
 		// calculate the latest end time among all tests
-		testDuration := time.Duration(float32(time.Second) * test.Durations.TotalDuration)
-		if test.StartTime.Add(testDuration).After(endTime) {
-			endTime = test.StartTime.Add(testDuration)
+		if test.StartTime.Add(test.Durations.TotalDuration).After(endTime) {
+			endTime = test.StartTime.Add(test.Durations.TotalDuration)
 		}
 
 		if test.Status == executor.TestSkipped {
@@ -72,7 +71,7 @@ func ParseJsonOutput(report io.Reader) (executor.SuiteRunSummary, error) {
 		summary.TestRuns = append(summary.TestRuns, *test)
 	}
 
-	summary.TotalDuration += float32(endTime.Sub(summary.StartTime).Seconds())
+	summary.TotalDuration += endTime.Sub(summary.StartTime)
 	summary.TestsExecuted = int32(len(summary.TestRuns))
 
 	return summary, nil
@@ -134,7 +133,7 @@ func parseTestRuns(report io.Reader) (testRuns, error) {
 			continue
 		}
 
-		testRun.Durations.TotalDuration = line.Elapsed
+		testRun.Durations.TotalDuration = time.Duration(line.Elapsed * float32(time.Second))
 	}
 
 	return testRuns, nil

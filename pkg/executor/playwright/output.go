@@ -92,7 +92,7 @@ type Test struct {
 type Results struct {
 	WorkerIndex int    `json:"workerIndex"`
 	Status      string `json:"status"`
-	Duration    int    `json:"duration"`
+	Duration    float64    `json:"duration"`
 	Error       struct {
 		Message  string
 		Stack    string

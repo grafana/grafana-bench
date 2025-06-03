@@ -102,7 +102,6 @@ func (r *LogReporter) Report(
 }
 
 // prettyMS adds ms suffix to ms float
-func prettyMS(ms float32) string {
-	duration := time.Duration(ms) * time.Millisecond
+func prettyMS(duration time.Duration) string {
 	return fmt.Sprintf("%dms", duration.Milliseconds())
 }

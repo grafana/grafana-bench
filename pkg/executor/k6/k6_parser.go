@@ -100,14 +100,15 @@ func parseDurationFromJsonFile(scenarioName, jsonFile string) (executor.TestDura
 		//  fmt.Printf("%#v", logEntry)
 		//}
 
+		duration := time.Duration(float32(logEntry.Data.Value) * float32(time.Millisecond))
 		switch logEntry.Data.Tags.Group {
 		case "::setup":
-			td.SetupDuration += float32(logEntry.Data.Value)
+			td.SetupDuration += duration
 		case "::teardown":
-			td.TeardownDuration += float32(logEntry.Data.Value)
+			td.TeardownDuration += duration
 		default:
 			if logEntry.Data.Tags.Scenario == scenarioName {
-				td.ScenarioDuration += float32(logEntry.Data.Value)
+				td.ScenarioDuration += duration
 			}
 		}
 	}

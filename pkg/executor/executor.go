@@ -19,10 +19,10 @@ const (
 )
 
 type TestDurations struct {
-	SetupDuration    float32
-	ScenarioDuration float32
-	TeardownDuration float32
-	TotalDuration    float32
+	SetupDuration    time.Duration
+	ScenarioDuration time.Duration
+	TeardownDuration time.Duration
+	TotalDuration    time.Duration
 }
 
 type SuiteStatus string
@@ -67,8 +67,8 @@ type SuiteRunSummary struct {
 	TestsFlaky        int32
 	TestsPassed       int32
 	TestsError        int32
-	TotalDuration     float32
-	ScenariosDuration float32
+	TotalDuration     time.Duration
+	ScenariosDuration time.Duration
 	TestRuns          []TestRunSummary
 	Metrics           []metrics.Metric
 }
