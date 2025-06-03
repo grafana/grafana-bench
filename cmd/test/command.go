@@ -94,21 +94,34 @@ test runner.
 Go
 --
 
-Execute go test suites. The '--suite-path' is used as a pattern for selecting the
-packages to test. It must start with './' to test local packages. To ensure sub-
-packages are also included, add '/...' at the end. For example:
+Execute go a test suite. It wraps go test command and reports the results using the bench reporters.
+It also provides the possibility of retrying failed test and report flaky tests.
 
-    grafana-bench test --test-runner go --suite-path ./path/to/package/...
+The --go-test-packages argument defines the packages to be tested using the same format as the go test command.
+If not specified, only the tests under the current working directory are executed.
+    grafana-bench test --test-runner go --go-test-packages ./path/to/packages/...
+
+The '--suite-path' can be used to change the working directory for the go test command.
+The following command will search for tests under the 'tests' directory using the pattern defined by
+the --go-test-packages:
+    grafana-bench test --test-runner go \
+      --suite-path tests --go-test-packages ./path/to/package/...
 
 Additional arguments such as build tags can be passed using the --go-args flag.
     grafana-bench test --test-runner go \
-       --go-args "-tags=slow -race -timeout=30m" \
-       --suite-path ./path/to/package/...
+       --go-test-packages ./path/to/package/... \
+       --go-args "-tags=slow -race -timeout=30m"
 
 For passing flags to configure the test, use the --go-test-args flag
     grafana-bench test --test-runner go \
-       --go-test-args "-slow 1" \
-       --suite-path ./path/to/package/...
+       --go-test-packages ./path/to/package/... \ 
+       --go-test-args "-slow 1"
+
+The go test executor can retry failed tests. Test that pass after retrying are reported as flaky.
+The number of retries is defined by the go-retries option.
+    grafana-bench test --test-runner go \
+       --go-test-packages ./path/to/package/... \
+       --go-retries 3
 
 [1] https://github.com/grafana/grafana-bench/blob/main/docs/writing_pw_tests.md
 

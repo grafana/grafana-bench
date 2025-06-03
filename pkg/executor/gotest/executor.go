@@ -10,12 +10,15 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/grafana/grafana-bench/pkg/executor"
 )
 
 // GoExecutorOptions defines the options for a GoExecutor
 type GoExecutorOptions struct {
+	// Packages package selector patterns
+	Packages []string
 	// GoArgs arguments to pass to go test (e.g. []string{"-tags", "slow", "-race")
 	GoArgs []string
 	// TestAgs arguments to be passed to the test (using go test -args)
@@ -29,6 +32,7 @@ type GoExecutor struct {
 	log      *slog.Logger
 	goArgs   []string
 	testArgs []string
+	packages []string
 	retries  int
 }
 
@@ -38,6 +42,7 @@ func NewGoExecutor(log *slog.Logger, opts GoExecutorOptions) *GoExecutor {
 		goArgs:   opts.GoArgs,
 		testArgs: opts.TestArgs,
 		retries:  opts.Retries,
+		packages: opts.Packages,
 	}
 }
 
@@ -52,7 +57,8 @@ func (e *GoExecutor) ExecTestSuite(
 	suite executor.TestSuite,
 	env map[string]string,
 ) (executor.SuiteRunSummary, error) {
-	stdOut, err := runGoTest(ctx, e.log, suite.Path, e.goArgs, e.testArgs)
+	workDir := filepath.Join(suite.BaseDir, suite.Path)
+	stdOut, err := runGoTest(ctx, e.log, workDir, e.packages, e.goArgs, e.testArgs)
 	if err != nil {
 		return executor.SuiteRunSummary{}, fmt.Errorf("failed to execute tests  %w", err)
 	}
@@ -67,7 +73,7 @@ func (e *GoExecutor) ExecTestSuite(
 			if t.Status != executor.TestFailed {
 				continue
 			}
-			tr, err := retryTest(ctx, e.log, e.retries, t.TestFolder, e.goArgs, e.testArgs, t.TestFile)
+			tr, err := retryTest(ctx, e.log, workDir, e.retries, t.TestFolder, e.goArgs, e.testArgs, t.TestFile)
 			if err != nil {
 				return executor.SuiteRunSummary{}, fmt.Errorf("failed to run go test %w", err)
 			}
@@ -83,17 +89,19 @@ func (e *GoExecutor) ExecTestSuite(
 	return summary, nil
 }
 
+// retry one test
 func retryTest(
 	ctx context.Context,
 	log *slog.Logger,
+	workdir string,
 	retries int,
-	pattern string,
+	pkg string,
 	args []string,
 	testArgs []string,
 	test string,
 ) (executor.TestRunSummary, error) {
 	args = append(args, "--run", test)
-	result, err := runGoTest(ctx, log, pattern, args, testArgs)
+	result, err := runGoTest(ctx, log, workdir, []string{pkg}, args, testArgs)
 	if err != nil {
 		return executor.TestRunSummary{}, fmt.Errorf("failed to execute go test %w", err)
 	}
@@ -103,13 +111,13 @@ func retryTest(
 		return executor.TestRunSummary{}, fmt.Errorf("failed to parse go test output %w", err)
 	}
 
-	return *testRuns[testkey{pkg: pattern, test: test}], nil
+	return *testRuns[testkey{pkg: pkg, test: test}], nil
 }
 
-func runGoTest(ctx context.Context, log *slog.Logger, pattern string, goArgs []string, testArgs []string) (io.Reader, error) {
+func runGoTest(ctx context.Context, log *slog.Logger, workdir string, packages []string, goArgs []string, testArgs []string) (io.Reader, error) {
 	cmdArgs := []string{"test"}
-	cmdArgs = append(cmdArgs, goArgs...) // add test args (e.g. -tags)
-	cmdArgs = append(cmdArgs, pattern)   // use suite path as package selection pattern
+	cmdArgs = append(cmdArgs, goArgs...)   // add test args (e.g. -tags)
+	cmdArgs = append(cmdArgs, packages...) // use suite path as package selection patterns
 
 	// capture output in json format from stdout
 	cmdArgs = append(cmdArgs, "-json")
@@ -118,11 +126,13 @@ func runGoTest(ctx context.Context, log *slog.Logger, pattern string, goArgs []s
 		cmdArgs = append(cmdArgs, testArgs...)
 	}
 	cmd := exec.CommandContext(ctx, "go", cmdArgs...)
+	//cmd = exec.CommandContext(ctx, "go", "test", "-tags", "goexecutor", "./subpkg/.", "-json")
 	cmd.Env = os.Environ()
 	stdErr := &bytes.Buffer{}
 	stdOut := &bytes.Buffer{}
 	cmd.Stdout = stdOut
 	cmd.Stderr = stdErr
+	cmd.Dir = workdir
 
 	log.Debug("executing go test", "args", cmd.Args)
 	err := cmd.Run()

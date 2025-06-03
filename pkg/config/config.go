@@ -163,6 +163,7 @@ func AddPlaywrightFlags(fs *pflag.FlagSet, config *PWConfig) {
 type GoTestConfig struct {
 	GoArgs   []string
 	TestArgs []string
+	Packages []string
 	Retries  int
 }
 
@@ -184,6 +185,13 @@ func AddGoExecutorFlags(fs *pflag.FlagSet, config *GoTestConfig) {
 		"go-test-args",
 		nil,
 		"arguments to be passed to the test using the arg flag (e.g '-args -slow 1')",
+	)
+	fs.StringArrayVar(
+		&config.Packages,
+		"go-test-packages",
+		nil,
+		"patterns for selecting packages for testing. Can be repeated to specify multiple packages."+
+			"\nIf no pattern is specified only tests under the current working directory are executed.",
 	)
 }
 
@@ -598,7 +606,10 @@ func (config BenchConfig) BuildTestExecutor(
 		executor = gotest.NewGoExecutor(
 			log,
 			gotest.GoExecutorOptions{
-				GoArgs: config.Go.GoArgs,
+				GoArgs:   config.Go.GoArgs,
+				Packages: config.Go.Packages,
+				TestArgs: config.Go.TestArgs,
+				Retries:  config.Go.Retries,
 			},
 		)
 	case "k6":

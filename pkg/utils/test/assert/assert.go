@@ -43,15 +43,15 @@ func SuiteSummaryEqual(expected *executor.SuiteRunSummary, actual executor.Suite
 	}
 
 	if expected.TestsError != actual.TestsError {
-		return newAssertionError("test executed assertion failed", expected.TestsError, actual.TestsError)
+		return newAssertionError("test error assertion failed", expected.TestsError, actual.TestsError)
 	}
 
 	if expected.TestsFailed != actual.TestsFailed {
-		return newAssertionError("test executed assertion failed", expected.TestsFailed, actual.TestsFailed)
+		return newAssertionError("test failed assertion failed", expected.TestsFailed, actual.TestsFailed)
 	}
 
 	if expected.TestsPassed != actual.TestsPassed {
-		return newAssertionError("test executed assertion failed", expected.TestsPassed, actual.TestsPassed)
+		return newAssertionError("test passed assertion failed", expected.TestsPassed, actual.TestsPassed)
 	}
 
 	if len(expected.TestRuns) != len(actual.TestRuns) {
