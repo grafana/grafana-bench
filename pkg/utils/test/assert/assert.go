@@ -1,71 +1,47 @@
 package assert
 
 import (
-	"fmt"
-	"sort"
+	"testing"
 
 	"github.com/grafana/grafana-bench/pkg/executor"
+	"github.com/grafana/grafana-bench/pkg/utils/test/sort"
+
 )
 
-func sortTestRunByFilename(tr []executor.TestRunSummary) {
-	sort.Slice(tr, func(i, j int) bool {
-		return tr[i].TestFile < tr[j].TestFile
-	})
+func Equal(t *testing.T, message string, expected, actual interface{}) {
+	t.Helper()
+	if expected != actual {
+		t.Fatalf("%s expected '%v', got '%v'", message, expected, actual)
+	}
 }
 
-func newAssertionError(message string, expected, actual any) error {
-	return fmt.Errorf("%s: expected: %v got: %v", message, expected, actual)
-}
-
-func TestRunEqual(expected *executor.TestRunSummary, actual executor.TestRunSummary) error {
+func TestRunEqual(t *testing.T, expected *executor.TestRunSummary, actual executor.TestRunSummary) {
 	if expected == nil {
-		return nil
+		return
 	}
 
-	if expected.TestFile != actual.TestFile {
-		return newAssertionError("test filename assertion failed", expected.TestFile, actual.TestFile)
-	}
-
-	if expected.Status != actual.Status {
-		return newAssertionError("test status assertion failed", expected.Status, actual.Status)
-	}
-
-	return nil
+	Equal(t, "test filename assertion failed", expected.TestFile, actual.TestFile)
+	Equal(t, "test status assertion failed", expected.Status, actual.Status)
+	Equal(t, "test durations assertion failed", expected.Durations, actual.Durations)
 }
 
-func SuiteSummaryEqual(expected *executor.SuiteRunSummary, actual executor.SuiteRunSummary) error {
+func SuiteSummaryEqual(t *testing.T, expected *executor.SuiteRunSummary, actual executor.SuiteRunSummary) {
 	if expected == nil {
-		return nil
+		return
 	}
 
-	if expected.TestsExecuted != actual.TestsExecuted {
-		return newAssertionError("test executed assertion failed", expected.TestsExecuted, actual.TestsExecuted)
-	}
+	Equal(t, "test executed assertion failed", expected.TestsExecuted, actual.TestsExecuted)
+	Equal(t, "test error assertion failed", expected.TestsError, actual.TestsError)
+	Equal(t, "test failed assertion failed", expected.TestsFailed, actual.TestsFailed)
+	Equal(t, "test passed assertion failed", expected.TestsPassed, actual.TestsPassed)
+	Equal(t, "number of test runs assertion failed", len(expected.TestRuns), len(actual.TestRuns))
+	Equal(t, "total durations assertion failed", expected.TotalDuration, actual.TotalDuration)
+	Equal(t, "scenario durations assertion failed", expected.ScenariosDuration, actual.ScenariosDuration)
 
-	if expected.TestsError != actual.TestsError {
-		return newAssertionError("test error assertion failed", expected.TestsError, actual.TestsError)
-	}
-
-	if expected.TestsFailed != actual.TestsFailed {
-		return newAssertionError("test failed assertion failed", expected.TestsFailed, actual.TestsFailed)
-	}
-
-	if expected.TestsPassed != actual.TestsPassed {
-		return newAssertionError("test passed assertion failed", expected.TestsPassed, actual.TestsPassed)
-	}
-
-	if len(expected.TestRuns) != len(actual.TestRuns) {
-		return newAssertionError("number of test runs assertion failed", len(expected.TestRuns), len(actual.TestRuns))
-	}
-
-	sortTestRunByFilename(expected.TestRuns)
-	sortTestRunByFilename(actual.TestRuns)
+	sort.SortTestRunByFilename(expected.TestRuns)
+	sort.SortTestRunByFilename(actual.TestRuns)
 
 	for i, tr := range expected.TestRuns {
-		if err := TestRunEqual(&tr, actual.TestRuns[i]); err != nil {
-			return err
-		}
+		TestRunEqual(t, &tr, actual.TestRuns[i])
 	}
-
-	return nil
 }

@@ -6,14 +6,9 @@ import (
 	"time"
 
 	"github.com/grafana/grafana-bench/pkg/executor"
+	"github.com/grafana/grafana-bench/pkg/utils/test/assert"
 )
 
-func assert(t *testing.T, message string, expected, actual interface{}) {
-	t.Helper()
-	if expected != actual {
-		t.Fatalf("%s expected '%v', got '%v'", message, expected, actual)
-	}
-}
 
 func TestParsePlaywrightJSONReport(t *testing.T) {
 	testCases := []struct {
@@ -359,20 +354,20 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 				t.Fatalf("failed parsing json file: %s", err)
 			}
 
-			assert(t, "tests executed", tc.expected.TestsExecuted, summary.TestsExecuted)
-			assert(t, "tests passed", tc.expected.TestsPassed, summary.TestsPassed)
-			assert(t, "tests error", tc.expected.TestsError, summary.TestsError)
-			assert(t, "tests failed", tc.expected.TestsFailed, summary.TestsFailed)
-			assert(t, "scenario duration", tc.expected.ScenariosDuration, summary.ScenariosDuration)
-			assert(t, "total duration", tc.expected.TotalDuration, summary.TotalDuration)
+			assert.Equal(t, "tests executed", tc.expected.TestsExecuted, summary.TestsExecuted)
+			assert.Equal(t, "tests passed", tc.expected.TestsPassed, summary.TestsPassed)
+			assert.Equal(t, "tests error", tc.expected.TestsError, summary.TestsError)
+			assert.Equal(t, "tests failed", tc.expected.TestsFailed, summary.TestsFailed)
+			assert.Equal(t, "scenario duration", tc.expected.ScenariosDuration, summary.ScenariosDuration)
+			assert.Equal(t, "total duration", tc.expected.TotalDuration, summary.TotalDuration)
 
-			assert(t, "test runs len", len(tc.expected.TestRuns), len(summary.TestRuns))
+			assert.Equal(t, "test runs len", len(tc.expected.TestRuns), len(summary.TestRuns))
 			for i, tr := range tc.expected.TestRuns {
-				assert(t, "test file", tr.TestFile, summary.TestRuns[i].TestFile)
-				assert(t, "test status", tr.Status, summary.TestRuns[i].Status)
-				assert(t, "test durations", tr.Durations, summary.TestRuns[i].Durations)
-				assert(t, "exit message", tr.ExitMessage, summary.TestRuns[i].ExitMessage)
-				assert(t, "test title", tr.Attributes["title"], summary.TestRuns[i].Attributes["title"])
+				assert.Equal(t, "test file", tr.TestFile, summary.TestRuns[i].TestFile)
+				assert.Equal(t, "test status", tr.Status, summary.TestRuns[i].Status)
+				assert.Equal(t, "test durations", tr.Durations, summary.TestRuns[i].Durations)
+				assert.Equal(t, "exit message", tr.ExitMessage, summary.TestRuns[i].ExitMessage)
+				assert.Equal(t, "test title", tr.Attributes["title"], summary.TestRuns[i].Attributes["title"])
 			}
 
 		})

@@ -10,6 +10,7 @@ import (
 
 	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/utils/test/assert"
+	"github.com/grafana/grafana-bench/pkg/utils/test/sort"
 )
 
 // TestExecutor executes the go test under ./tests folder and collects the execution summary.
@@ -82,9 +83,19 @@ func TestExecutor(t *testing.T) {
 				t.Fatalf("expected %v got %v", tc.expectErr, err)
 			}
 
-			err = assert.SuiteSummaryEqual(&tc.expect, summary)
-			if err != nil {
-				t.Fatal(err.Error())
+			// we can't assert durations because are unpredictable
+			assert.Equal(t, "tests executed", tc.expect.TestsExecuted, summary.TestsExecuted)
+			assert.Equal(t, "tests passed", tc.expect.TestsPassed, summary.TestsPassed)
+			assert.Equal(t, "tests error", tc.expect.TestsError, summary.TestsError)
+			assert.Equal(t, "tests failed", tc.expect.TestsFailed, summary.TestsFailed)
+			assert.Equal(t, "test runs len", len(tc.expect.TestRuns), len(summary.TestRuns))
+
+			sort.SortTestRunByFilename(tc.expect.TestRuns)
+			sort.SortTestRunByFilename(summary.TestRuns)
+			for i, tr := range tc.expect.TestRuns {
+				assert.Equal(t, "test file", tr.TestFile, summary.TestRuns[i].TestFile)
+				assert.Equal(t, "test status", tr.Status, summary.TestRuns[i].Status)
+
 			}
 		})
 	}
@@ -163,10 +174,7 @@ func TestFlakyTest(t *testing.T) {
 				t.Fatalf("expected %v got %v", tc.expectErr, err)
 			}
 
-			err = assert.SuiteSummaryEqual(&tc.expect, summary)
-			if err != nil {
-				t.Fatal(err.Error())
-			}
+			assert.SuiteSummaryEqual(t, &tc.expect, summary)
 		})
 	}
 }
