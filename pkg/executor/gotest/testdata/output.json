@@ -1,33 +1,41 @@
-{"Time":"2025-06-03T16:38:01.201641878+02:00","Action":"start","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests"}
-{"Time":"2025-06-03T16:38:01.201770085+02:00","Action":"start","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests/subpkg"}
-{"Time":"2025-06-03T16:38:01.201804573+02:00","Action":"run","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests/subpkg","Test":"TestPassing4"}
-{"Time":"2025-06-03T16:38:01.201809928+02:00","Action":"output","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests/subpkg","Test":"TestPassing4","Output":"=== RUN   TestPassing4\n"}
-{"Time":"2025-06-03T16:38:01.201819625+02:00","Action":"output","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests/subpkg","Test":"TestPassing4","Output":"--- PASS: TestPassing4 (0.02s)\n"}
-{"Time":"2025-06-03T16:38:01.201824905+02:00","Action":"pass","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests/subpkg","Test":"TestPassing4","Elapsed":0.02}
-{"Time":"2025-06-03T16:38:01.201838286+02:00","Action":"output","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests/subpkg","Output":"PASS\n"}
-{"Time":"2025-06-03T16:38:01.201843049+02:00","Action":"output","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests/subpkg","Output":"ok  \tgithub.com/grafana/grafana-bench/pkg/executor/gotest/tests/subpkg\t(cached)\n"}
-{"Time":"2025-06-03T16:38:01.201848367+02:00","Action":"pass","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests/subpkg","Elapsed":0}
-{"Time":"2025-06-03T16:38:01.203662931+02:00","Action":"run","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestFailing"}
-{"Time":"2025-06-03T16:38:01.203691759+02:00","Action":"output","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestFailing","Output":"=== RUN   TestFailing\n"}
-{"Time":"2025-06-03T16:38:01.304079309+02:00","Action":"output","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestFailing","Output":"--- FAIL: TestFailing (0.10s)\n"}
-{"Time":"2025-06-03T16:38:01.304230166+02:00","Action":"fail","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestFailing","Elapsed":0.1}
-{"Time":"2025-06-03T16:38:01.304262426+02:00","Action":"run","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestPassing1"}
-{"Time":"2025-06-03T16:38:01.304271136+02:00","Action":"output","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestPassing1","Output":"=== RUN   TestPassing1\n"}
-{"Time":"2025-06-03T16:38:01.324644832+02:00","Action":"output","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestPassing1","Output":"--- PASS: TestPassing1 (0.02s)\n"}
-{"Time":"2025-06-03T16:38:01.324745157+02:00","Action":"pass","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestPassing1","Elapsed":0.02}
-{"Time":"2025-06-03T16:38:01.324772225+02:00","Action":"run","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestPassing2"}
-{"Time":"2025-06-03T16:38:01.324784838+02:00","Action":"output","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestPassing2","Output":"=== RUN   TestPassing2\n"}
-{"Time":"2025-06-03T16:38:01.385226831+02:00","Action":"output","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestPassing2","Output":"--- PASS: TestPassing2 (0.06s)\n"}
-{"Time":"2025-06-03T16:38:01.385298709+02:00","Action":"pass","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestPassing2","Elapsed":0.06}
-{"Time":"2025-06-03T16:38:01.385314833+02:00","Action":"run","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestPassing3"}
-{"Time":"2025-06-03T16:38:01.385321167+02:00","Action":"output","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestPassing3","Output":"=== RUN   TestPassing3\n"}
-{"Time":"2025-06-03T16:38:01.405562296+02:00","Action":"output","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestPassing3","Output":"--- PASS: TestPassing3 (0.02s)\n"}
-{"Time":"2025-06-03T16:38:01.405677997+02:00","Action":"pass","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestPassing3","Elapsed":0.02}
-{"Time":"2025-06-03T16:38:01.405696705+02:00","Action":"run","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestSkipped"}
-{"Time":"2025-06-03T16:38:01.405704716+02:00","Action":"output","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestSkipped","Output":"=== RUN   TestSkipped\n"}
-{"Time":"2025-06-03T16:38:01.405728963+02:00","Action":"output","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestSkipped","Output":"    skipped_test.go:8: skipping\n"}
-{"Time":"2025-06-03T16:38:01.4057406+02:00","Action":"output","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestSkipped","Output":"--- SKIP: TestSkipped (0.00s)\n"}
-{"Time":"2025-06-03T16:38:01.40574896+02:00","Action":"skip","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestSkipped","Elapsed":0}
-{"Time":"2025-06-03T16:38:01.405757041+02:00","Action":"output","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Output":"FAIL\n"}
-{"Time":"2025-06-03T16:38:01.406845303+02:00","Action":"output","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Output":"FAIL\tgithub.com/grafana/grafana-bench/pkg/executor/gotest/tests\t0.205s\n"}
-{"Time":"2025-06-03T16:38:01.406941594+02:00","Action":"fail","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Elapsed":0.205}
+{"Time":"2025-06-04T10:09:37.954333835+02:00","Action":"start","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests"}
+{"Time":"2025-06-04T10:09:37.954538969+02:00","Action":"start","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests/subpkg"}
+{"Time":"2025-06-04T10:09:37.95458165+02:00","Action":"run","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests/subpkg","Test":"TestPassing4"}
+{"Time":"2025-06-04T10:09:37.954588266+02:00","Action":"output","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests/subpkg","Test":"TestPassing4","Output":"=== RUN   TestPassing4\n"}
+{"Time":"2025-06-04T10:09:37.954599242+02:00","Action":"output","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests/subpkg","Test":"TestPassing4","Output":"--- PASS: TestPassing4 (0.02s)\n"}
+{"Time":"2025-06-04T10:09:37.954609652+02:00","Action":"pass","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests/subpkg","Test":"TestPassing4","Elapsed":0.02}
+{"Time":"2025-06-04T10:09:37.95462246+02:00","Action":"output","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests/subpkg","Output":"PASS\n"}
+{"Time":"2025-06-04T10:09:37.954626571+02:00","Action":"output","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests/subpkg","Output":"ok  \tgithub.com/grafana/grafana-bench/pkg/executor/gotest/tests/subpkg\t(cached)\n"}
+{"Time":"2025-06-04T10:09:37.954631551+02:00","Action":"pass","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests/subpkg","Elapsed":0}
+{"Time":"2025-06-04T10:09:37.956190748+02:00","Action":"run","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestFailing"}
+{"Time":"2025-06-04T10:09:37.956212166+02:00","Action":"output","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestFailing","Output":"=== RUN   TestFailing\n"}
+{"Time":"2025-06-04T10:09:38.056785588+02:00","Action":"output","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestFailing","Output":"--- FAIL: TestFailing (0.10s)\n"}
+{"Time":"2025-06-04T10:09:38.057012667+02:00","Action":"fail","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestFailing","Elapsed":0.1}
+{"Time":"2025-06-04T10:09:38.057060154+02:00","Action":"run","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestPassing1"}
+{"Time":"2025-06-04T10:09:38.057078638+02:00","Action":"output","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestPassing1","Output":"=== RUN   TestPassing1\n"}
+{"Time":"2025-06-04T10:09:38.077446433+02:00","Action":"output","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestPassing1","Output":"--- PASS: TestPassing1 (0.02s)\n"}
+{"Time":"2025-06-04T10:09:38.077559025+02:00","Action":"pass","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestPassing1","Elapsed":0.02}
+{"Time":"2025-06-04T10:09:38.077595982+02:00","Action":"run","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestPassing2"}
+{"Time":"2025-06-04T10:09:38.077612265+02:00","Action":"output","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestPassing2","Output":"=== RUN   TestPassing2\n"}
+{"Time":"2025-06-04T10:09:38.137920537+02:00","Action":"output","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestPassing2","Output":"--- PASS: TestPassing2 (0.06s)\n"}
+{"Time":"2025-06-04T10:09:38.138034284+02:00","Action":"pass","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestPassing2","Elapsed":0.06}
+{"Time":"2025-06-04T10:09:38.138062908+02:00","Action":"run","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestPassing3"}
+{"Time":"2025-06-04T10:09:38.138079261+02:00","Action":"output","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestPassing3","Output":"=== RUN   TestPassing3\n"}
+{"Time":"2025-06-04T10:09:38.138103075+02:00","Action":"run","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestPassing3/SubTest1"}
+{"Time":"2025-06-04T10:09:38.138149135+02:00","Action":"output","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestPassing3/SubTest1","Output":"=== RUN   TestPassing3/SubTest1\n"}
+{"Time":"2025-06-04T10:09:38.148671962+02:00","Action":"output","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestPassing3/SubTest1","Output":"--- PASS: TestPassing3/SubTest1 (0.01s)\n"}
+{"Time":"2025-06-04T10:09:38.148784189+02:00","Action":"pass","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestPassing3/SubTest1","Elapsed":0.01}
+{"Time":"2025-06-04T10:09:38.148812681+02:00","Action":"run","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestPassing3/SubTest2"}
+{"Time":"2025-06-04T10:09:38.148824527+02:00","Action":"output","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestPassing3/SubTest2","Output":"=== RUN   TestPassing3/SubTest2\n"}
+{"Time":"2025-06-04T10:09:38.159279573+02:00","Action":"output","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestPassing3/SubTest2","Output":"--- PASS: TestPassing3/SubTest2 (0.01s)\n"}
+{"Time":"2025-06-04T10:09:38.159460355+02:00","Action":"pass","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestPassing3/SubTest2","Elapsed":0.01}
+{"Time":"2025-06-04T10:09:38.159506617+02:00","Action":"output","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestPassing3","Output":"--- PASS: TestPassing3 (0.02s)\n"}
+{"Time":"2025-06-04T10:09:38.15952971+02:00","Action":"pass","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestPassing3","Elapsed":0.02}
+{"Time":"2025-06-04T10:09:38.159549782+02:00","Action":"run","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestSkipped"}
+{"Time":"2025-06-04T10:09:38.159565671+02:00","Action":"output","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestSkipped","Output":"=== RUN   TestSkipped\n"}
+{"Time":"2025-06-04T10:09:38.159591253+02:00","Action":"output","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestSkipped","Output":"    skipped_test.go:8: skipping\n"}
+{"Time":"2025-06-04T10:09:38.159610686+02:00","Action":"output","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestSkipped","Output":"--- SKIP: TestSkipped (0.00s)\n"}
+{"Time":"2025-06-04T10:09:38.15963877+02:00","Action":"skip","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Test":"TestSkipped","Elapsed":0}
+{"Time":"2025-06-04T10:09:38.159656866+02:00","Action":"output","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Output":"FAIL\n"}
+{"Time":"2025-06-04T10:09:38.160910585+02:00","Action":"output","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Output":"FAIL\tgithub.com/grafana/grafana-bench/pkg/executor/gotest/tests\t0.206s\n"}
+{"Time":"2025-06-04T10:09:38.160995029+02:00","Action":"fail","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Elapsed":0.207}

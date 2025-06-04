@@ -16,5 +16,11 @@ func TestPassing2(t *testing.T) {
 }
 
 func TestPassing3(t *testing.T) {
-	time.Sleep(time.Millisecond * 20)
+	t.Run("SubTest1", func (t *testing.T) {
+		time.Sleep(time.Millisecond * 10)
+	})
+
+	t.Run("SubTest2", func (t *testing.T) {
+		time.Sleep(time.Millisecond * 10)
+	})
 }

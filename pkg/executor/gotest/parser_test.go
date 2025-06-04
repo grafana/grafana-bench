@@ -26,12 +26,12 @@ func TestParseJsonOutput(t *testing.T) {
 			expectErr: nil,
 			expect: executor.SuiteRunSummary{
 				Status:            "",
-				TestsExecuted:     5,
+				TestsExecuted:     7,
 				TestsFailed:       1,
 				TestsFlaky:        0,
-				TestsPassed:       4,
+				TestsPassed:       6,
 				TestsError:        0,
-				TotalDuration:     time.Duration(203892132),
+				TotalDuration:     time.Duration(204968132),
 				ScenariosDuration: time.Duration(0.22 * float32(time.Second)),
 				TestRuns: []executor.TestRunSummary{
 					{
@@ -68,6 +68,24 @@ func TestParseJsonOutput(t *testing.T) {
 						Durations: executor.TestDurations{
 							ScenarioDuration: time.Duration(float64(0.02) * float64(time.Second)),
 							TotalDuration:    time.Duration(float64(0.02) * float64(time.Second)),
+						},
+					},
+					{
+						TestFolder: "github.com/grafana/grafana-bench/pkg/executor/gotest/tests",
+						TestFile:   "TestPassing3/SubTest1",
+						Status:     executor.TestPassed,
+						Durations: executor.TestDurations{
+							ScenarioDuration: time.Duration(float64(0.01) * float64(time.Second)),
+							TotalDuration:    time.Duration(float64(0.01) * float64(time.Second)),
+						},
+					},
+					{
+						TestFolder: "github.com/grafana/grafana-bench/pkg/executor/gotest/tests",
+						TestFile:   "TestPassing3/SubTest2",
+						Status:     executor.TestPassed,
+						Durations: executor.TestDurations{
+							ScenarioDuration: time.Duration(float64(0.01) * float64(time.Second)),
+							TotalDuration:    time.Duration(float64(0.01) * float64(time.Second)),
 						},
 					},
 					{

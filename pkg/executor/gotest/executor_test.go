@@ -36,14 +36,16 @@ func TestExecutor(t *testing.T) {
 			expectErr: nil,
 			expect: executor.SuiteRunSummary{
 				Status:        executor.SuiteFailed,
-				TestsExecuted: 5,
-				TestsPassed:   4,
+				TestsExecuted: 7,
+				TestsPassed:   6,
 				TestsFailed:   1,
 				TestRuns: []executor.TestRunSummary{
 					{TestFile: "TestFailing", Status: executor.TestFailed},
 					{TestFile: "TestPassing1", Status: executor.TestPassed},
 					{TestFile: "TestPassing2", Status: executor.TestPassed},
 					{TestFile: "TestPassing3", Status: executor.TestPassed},
+					{TestFile: "TestPassing3/SubTest1", Status: executor.TestPassed},
+					{TestFile: "TestPassing3/SubTest2", Status: executor.TestPassed},
 					{TestFile: "TestPassing4", Status: executor.TestPassed},
 				},
 			},

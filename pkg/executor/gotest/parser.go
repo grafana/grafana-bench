@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"regexp"
 	"time"
 
 	"github.com/grafana/grafana-bench/pkg/executor"
@@ -12,6 +13,8 @@ import (
 
 var (
 	ErrInvalidFormat = errors.New("invalid format")
+
+	subTestRegexp = regexp.MustCompile(`^(\S+)\/\S+$`)
 )
 
 type line struct {
@@ -57,7 +60,10 @@ func ParseJsonOutput(report io.Reader) (executor.SuiteRunSummary, error) {
 			continue
 		}
 
-		summary.ScenariosDuration += test.Durations.ScenarioDuration
+		// do not add the test duration if it is a subtest, as parent will already count it
+		if !subTestRegexp.MatchString(test.TestFile) {
+			summary.ScenariosDuration += test.Durations.ScenarioDuration
+		}
 
 		switch test.Status {
 		case executor.TestError:
