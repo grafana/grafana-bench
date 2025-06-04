@@ -73,15 +73,26 @@ func (e *GoExecutor) ExecTestSuite(
 			if t.Status != executor.TestFailed {
 				continue
 			}
-			tr, err := retryTest(ctx, e.log, workDir, e.retries, t.TestFolder, e.goArgs, e.testArgs, t.TestFile)
-			if err != nil {
-				return executor.SuiteRunSummary{}, fmt.Errorf("failed to run go test %w", err)
-			}
-			if tr.Status == executor.TestPassed {
-				summary.TestRuns[i] = tr
-				summary.TestRuns[i].Status = executor.TestFlaky
-				summary.TestsFailed--
-				summary.TestsFlaky++
+
+			for range e.retries {
+				tr, err := retryTest(ctx, e.log, workDir, t.TestFolder, e.goArgs, e.testArgs, t.TestFile)
+				if err != nil {
+					return executor.SuiteRunSummary{}, fmt.Errorf("failed to run go test %w", err)
+				}
+
+				// account for additional duration of retries
+				summary.TestRuns[i].TotalDuration += tr.TotalDuration
+
+				// adjust suite's total duration to account for retries
+				if tr.StartTime.Add(tr.TotalDuration).After(summary.StartTime.Add(summary.TotalDuration)) {
+					summary.TotalDuration = tr.StartTime.Add(tr.TotalDuration).Sub(summary.StartTime)
+				}
+
+				if tr.Status == executor.TestPassed {
+					summary.TestRuns[i].Status = executor.TestFlaky
+					summary.TestsFailed--
+					summary.TestsFlaky++
+				}
 			}
 		}
 	}
@@ -94,7 +105,6 @@ func retryTest(
 	ctx context.Context,
 	log *slog.Logger,
 	workdir string,
-	retries int,
 	pkg string,
 	args []string,
 	testArgs []string,
