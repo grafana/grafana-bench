@@ -2,14 +2,19 @@
 
 package tests
 
-import "testing"
-
+import (
+	"testing"
+	"time"
+)
 
 func TestPassing1(t *testing.T) {
+	time.Sleep(time.Millisecond * 20)
 }
 
 func TestPassing2(t *testing.T) {
+	time.Sleep(time.Millisecond * 60)
 }
 
 func TestPassing3(t *testing.T) {
+	time.Sleep(time.Millisecond * 20)
 }

@@ -57,6 +57,8 @@ func ParseJsonOutput(report io.Reader) (executor.SuiteRunSummary, error) {
 			continue
 		}
 
+		summary.ScenariosDuration += test.Durations.ScenarioDuration
+
 		switch test.Status {
 		case executor.TestError:
 			summary.TestsError += 1
@@ -125,15 +127,19 @@ func parseTestRuns(report io.Reader) (testRuns, error) {
 		case "pass":
 			testRun.Status = executor.TestPassed
 			testRun.ExitMessage = "" // delete message for passed tests to reduce noise
+			duration := time.Duration(line.Elapsed * float32(time.Second))
+			testRun.Durations.TotalDuration = duration
+			testRun.Durations.ScenarioDuration = duration
 		case "fail":
 			testRun.Status = executor.TestFailed
+			duration := time.Duration(line.Elapsed * float32(time.Second))
+			testRun.Durations.TotalDuration = duration
+			testRun.Durations.ScenarioDuration = duration
 		case "skip":
 			testRun.Status = executor.TestSkipped
-		default:
+		case "pause", "cont":
 			continue
 		}
-
-		testRun.Durations.TotalDuration = time.Duration(line.Elapsed * float32(time.Second))
 	}
 
 	return testRuns, nil
