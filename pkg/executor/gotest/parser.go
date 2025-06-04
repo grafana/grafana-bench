@@ -52,8 +52,8 @@ func ParseJsonOutput(report io.Reader) (executor.SuiteRunSummary, error) {
 		}
 
 		// calculate the latest end time among all tests
-		if test.StartTime.Add(test.Durations.TotalDuration).After(endTime) {
-			endTime = test.StartTime.Add(test.Durations.TotalDuration)
+		if test.StartTime.Add(test.TotalDuration).After(endTime) {
+			endTime = test.StartTime.Add(test.TotalDuration)
 		}
 
 		if test.Status == executor.TestSkipped {
@@ -62,7 +62,7 @@ func ParseJsonOutput(report io.Reader) (executor.SuiteRunSummary, error) {
 
 		// do not add the test duration if it is a subtest, as parent will already count it
 		if !subTestRegexp.MatchString(test.TestFile) {
-			summary.ScenariosDuration += test.Durations.ScenarioDuration
+			summary.ScenariosDuration += test.ScenarioDuration
 		}
 
 		switch test.Status {
@@ -134,13 +134,13 @@ func parseTestRuns(report io.Reader) (testRuns, error) {
 			testRun.Status = executor.TestPassed
 			testRun.ExitMessage = "" // delete message for passed tests to reduce noise
 			duration := time.Duration(line.Elapsed * float32(time.Second))
-			testRun.Durations.TotalDuration = duration
-			testRun.Durations.ScenarioDuration = duration
+			testRun.TotalDuration = duration
+			testRun.ScenarioDuration = duration
 		case "fail":
 			testRun.Status = executor.TestFailed
 			duration := time.Duration(line.Elapsed * float32(time.Second))
-			testRun.Durations.TotalDuration = duration
-			testRun.Durations.ScenarioDuration = duration
+			testRun.TotalDuration = duration
+			testRun.ScenarioDuration = duration
 		case "skip":
 			testRun.Status = executor.TestSkipped
 		case "pause", "cont":

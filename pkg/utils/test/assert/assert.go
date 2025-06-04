@@ -22,7 +22,8 @@ func TestRunEqual(t *testing.T, expected *executor.TestRunSummary, actual execut
 
 	Equal(t, "test filename assertion failed", expected.TestFile, actual.TestFile)
 	Equal(t, "test status assertion failed", expected.Status, actual.Status)
-	Equal(t, "test durations assertion failed", expected.Durations, actual.Durations)
+	Equal(t, "test total duration assertion failed", expected.TotalDuration, actual.TotalDuration)
+	Equal(t, "test scenario duration assertion failed", expected.ScenarioDuration, actual.ScenarioDuration)
 }
 
 func SuiteSummaryEqual(t *testing.T, expected *executor.SuiteRunSummary, actual executor.SuiteRunSummary) {

@@ -9,7 +9,6 @@ import (
 	"github.com/grafana/grafana-bench/pkg/utils/test/assert"
 )
 
-
 func TestParsePlaywrightJSONReport(t *testing.T) {
 	testCases := []struct {
 		title    string
@@ -22,13 +21,11 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 			expected: executor.SuiteRunSummary{
 				TestRuns: []executor.TestRunSummary{
 					{
-						TestFile: "smoke.test.ts",
-						Status:   executor.TestPassed,
-						Durations: executor.TestDurations{
-							ScenarioDuration: time.Millisecond * 2148,
-							TotalDuration:    time.Millisecond * 2148,
-						},
-						ExitMessage: "success",
+						TestFile:         "smoke.test.ts",
+						Status:           executor.TestPassed,
+						ScenarioDuration: time.Millisecond * 2148,
+						TotalDuration:    time.Millisecond * 2148,
+						ExitMessage:      "success",
 						Attributes: map[string]string{
 							"title": "should redirect to start page when permissions to navigate to page is missing",
 						},
@@ -48,13 +45,11 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 			expected: executor.SuiteRunSummary{
 				TestRuns: []executor.TestRunSummary{
 					{
-						TestFile: "failures.test.ts",
-						Status:   executor.TestFailed,
-						Durations: executor.TestDurations{
-							ScenarioDuration: time.Millisecond * 5001,
-							TotalDuration:    time.Millisecond * 5001,
-						},
-						ExitMessage: "failures.test.ts:22:6 => Test timeout of 5000ms exceeded.",
+						TestFile:         "failures.test.ts",
+						Status:           executor.TestFailed,
+						ScenarioDuration: time.Millisecond * 5001,
+						TotalDuration:    time.Millisecond * 5001,
+						ExitMessage:      "failures.test.ts:22:6 => Test timeout of 5000ms exceeded.",
 						Attributes: map[string]string{
 							"title": "should fail due to missing element",
 						},
@@ -86,85 +81,71 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 			expected: executor.SuiteRunSummary{
 				TestRuns: []executor.TestRunSummary{
 					{
-						TestFile:    "auth.setup.js",
-						Status:      executor.TestPassed,
-						ExitMessage: "success",
-						Durations: executor.TestDurations{
-							ScenarioDuration: time.Millisecond * 104,
-							TotalDuration:    time.Millisecond * 104,
-						},
+						TestFile:         "auth.setup.js",
+						Status:           executor.TestPassed,
+						ExitMessage:      "success",
+						ScenarioDuration: time.Millisecond * 104,
+						TotalDuration:    time.Millisecond * 104,
 						Attributes: map[string]string{
 							"title": "authenticate",
 						},
 					},
 					{
-						TestFile: "failures.test.ts",
-						Status:   executor.TestFailed,
-						Durations: executor.TestDurations{
-							ScenarioDuration: time.Millisecond * 2557,
-							TotalDuration:    time.Millisecond * 2557,
-						},
-						ExitMessage: "failures.test.ts:3:5 => Error: ENOENT: no such file or directory, open '/Users/timmulqueen/projects/grafana-plugin-tests/provisioning/datasources/jfkladsjfkldasjdfklasjlk.yml'",
+						TestFile:         "failures.test.ts",
+						Status:           executor.TestFailed,
+						ScenarioDuration: time.Millisecond * 2557,
+						TotalDuration:    time.Millisecond * 2557,
+						ExitMessage:      "failures.test.ts:3:5 => Error: ENOENT: no such file or directory, open '/Users/timmulqueen/projects/grafana-plugin-tests/provisioning/datasources/jfkladsjfkldasjdfklasjlk.yml'",
 						Attributes: map[string]string{
 							"title": "should fail due to missing file",
 						},
 					},
 					{
-						TestFile: "failures.test.ts",
-						Status:   executor.TestFailed,
-						Durations: executor.TestDurations{
-							ScenarioDuration: time.Millisecond * 1570,
-							TotalDuration:    time.Millisecond * 1570,
-						},
-						ExitMessage: "failures.test.ts:13:5 => Error: expect(received).toEqual(expected) // deep equality",
+						TestFile:         "failures.test.ts",
+						Status:           executor.TestFailed,
+						ScenarioDuration: time.Millisecond * 1570,
+						TotalDuration:    time.Millisecond * 1570,
+						ExitMessage:      "failures.test.ts:13:5 => Error: expect(received).toEqual(expected) // deep equality",
 						Attributes: map[string]string{
 							"title": "should fail due to expect",
 						},
 					},
 					{
-						TestFile: "failures.test.ts",
-						Status:   executor.TestFailed,
-						Durations: executor.TestDurations{
-							ScenarioDuration: time.Millisecond * 30000,
-							TotalDuration:    time.Millisecond * 30000,
-						},
-						ExitMessage: "failures.test.ts:21:5 => Test timeout of 30000ms exceeded.",
+						TestFile:         "failures.test.ts",
+						Status:           executor.TestFailed,
+						ScenarioDuration: time.Millisecond * 30000,
+						TotalDuration:    time.Millisecond * 30000,
+						ExitMessage:      "failures.test.ts:21:5 => Test timeout of 30000ms exceeded.",
 						Attributes: map[string]string{
 							"title": "should fail due to missing element",
 						},
 					},
 					{
-						TestFile: "failures.test.ts",
-						Status:   executor.TestFailed,
-						Durations: executor.TestDurations{
-							ScenarioDuration: time.Millisecond * 1437,
-							TotalDuration:    time.Millisecond * 1437,
-						},
-						ExitMessage: "failures.test.ts:26:5 => Error: This is a random javascript type error failure",
+						TestFile:         "failures.test.ts",
+						Status:           executor.TestFailed,
+						ScenarioDuration: time.Millisecond * 1437,
+						TotalDuration:    time.Millisecond * 1437,
+						ExitMessage:      "failures.test.ts:26:5 => Error: This is a random javascript type error failure",
 						Attributes: map[string]string{
 							"title": "should fail due to type error in test",
 						},
 					},
 					{
-						TestFile: "smoke.test.ts",
-						Status:   executor.TestPassed,
-						Durations: executor.TestDurations{
-							ScenarioDuration: time.Millisecond * 2774,
-							TotalDuration:    time.Millisecond * 2774,
-						},
-						ExitMessage: "success",
+						TestFile:         "smoke.test.ts",
+						Status:           executor.TestPassed,
+						ScenarioDuration: time.Millisecond * 2774,
+						TotalDuration:    time.Millisecond * 2774,
+						ExitMessage:      "success",
 						Attributes: map[string]string{
 							"title": "data query should return values 1 and 3",
 						},
 					},
 					{
-						TestFile: "smoke.test.ts",
-						Status:   executor.TestPassed,
-						Durations: executor.TestDurations{
-							ScenarioDuration: time.Millisecond * 1518,
-							TotalDuration:    time.Millisecond * 1518,
-						},
-						ExitMessage: "success",
+						TestFile:         "smoke.test.ts",
+						Status:           executor.TestPassed,
+						ScenarioDuration: time.Millisecond * 1518,
+						TotalDuration:    time.Millisecond * 1518,
+						ExitMessage:      "success",
 						Attributes: map[string]string{
 							"title": "should redirect to start page when permissions to navigate to page is missing",
 						},
@@ -184,85 +165,71 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 			expected: executor.SuiteRunSummary{
 				TestRuns: []executor.TestRunSummary{
 					{
-						TestFile:    "auth.setup.js",
-						Status:      executor.TestPassed,
-						ExitMessage: "success",
-						Durations: executor.TestDurations{
-							ScenarioDuration: time.Millisecond * 101,
-							TotalDuration:    time.Millisecond * 101,
-						},
+						TestFile:         "auth.setup.js",
+						Status:           executor.TestPassed,
+						ExitMessage:      "success",
+						ScenarioDuration: time.Millisecond * 101,
+						TotalDuration:    time.Millisecond * 101,
 						Attributes: map[string]string{
 							"title": "authenticate",
 						},
 					},
 					{
-						TestFile: "failures.test.ts",
-						Status:   executor.TestFailed,
-						Durations: executor.TestDurations{
-							ScenarioDuration: time.Millisecond * 6757 / 3,
-							TotalDuration:    time.Millisecond * 6757,
-						},
-						ExitMessage: "failures.test.ts:3:5 => Error: ENOENT: no such file or directory, open '/Users/timmulqueen/projects/grafana-plugin-tests/provisioning/datasources/jfkladsjfkldasjdfklasjlk.yml'",
+						TestFile:         "failures.test.ts",
+						Status:           executor.TestFailed,
+						ScenarioDuration: time.Millisecond * 6757 / 3,
+						TotalDuration:    time.Millisecond * 6757,
+						ExitMessage:      "failures.test.ts:3:5 => Error: ENOENT: no such file or directory, open '/Users/timmulqueen/projects/grafana-plugin-tests/provisioning/datasources/jfkladsjfkldasjdfklasjlk.yml'",
 						Attributes: map[string]string{
 							"title": "should fail due to missing file",
 						},
 					},
 					{
-						TestFile: "failures.test.ts",
-						Status:   executor.TestFailed,
-						Durations: executor.TestDurations{
-							ScenarioDuration: time.Millisecond * 4628 / 3,
-							TotalDuration:    time.Millisecond * 4628,
-						},
-						ExitMessage: "failures.test.ts:13:5 => Error: expect(received).toEqual(expected) // deep equality",
+						TestFile:         "failures.test.ts",
+						Status:           executor.TestFailed,
+						ScenarioDuration: time.Millisecond * 4628 / 3,
+						TotalDuration:    time.Millisecond * 4628,
+						ExitMessage:      "failures.test.ts:13:5 => Error: expect(received).toEqual(expected) // deep equality",
 						Attributes: map[string]string{
 							"title": "should fail due to expect",
 						},
 					},
 					{
-						TestFile: "failures.test.ts",
-						Status:   executor.TestFailed,
-						Durations: executor.TestDurations{
-							ScenarioDuration: time.Millisecond * 90000 / 3,
-							TotalDuration:    time.Millisecond * 90000,
-						},
-						ExitMessage: "failures.test.ts:21:5 => Test timeout of 30000ms exceeded.",
+						TestFile:         "failures.test.ts",
+						Status:           executor.TestFailed,
+						ScenarioDuration: time.Millisecond * 90000 / 3,
+						TotalDuration:    time.Millisecond * 90000,
+						ExitMessage:      "failures.test.ts:21:5 => Test timeout of 30000ms exceeded.",
 						Attributes: map[string]string{
 							"title": "should fail due to missing element",
 						},
 					},
 					{
-						TestFile: "failures.test.ts",
-						Status:   executor.TestFailed,
-						Durations: executor.TestDurations{
-							ScenarioDuration: time.Millisecond * 4581 / 3,
-							TotalDuration:    time.Millisecond * 4581,
-						},
-						ExitMessage: "failures.test.ts:26:5 => Error: This is a random javascript type error failure",
+						TestFile:         "failures.test.ts",
+						Status:           executor.TestFailed,
+						ScenarioDuration: time.Millisecond * 4581 / 3,
+						TotalDuration:    time.Millisecond * 4581,
+						ExitMessage:      "failures.test.ts:26:5 => Error: This is a random javascript type error failure",
 						Attributes: map[string]string{
 							"title": "should fail due to type error in test",
 						},
 					},
 					{
-						TestFile: "smoke.test.ts",
-						Status:   executor.TestPassed,
-						Durations: executor.TestDurations{
-							ScenarioDuration: time.Millisecond * 2854,
-							TotalDuration:    time.Millisecond * 2854,
-						},
-						ExitMessage: "success",
+						TestFile:         "smoke.test.ts",
+						Status:           executor.TestPassed,
+						ScenarioDuration: time.Millisecond * 2854,
+						TotalDuration:    time.Millisecond * 2854,
+						ExitMessage:      "success",
 						Attributes: map[string]string{
 							"title": "data query should return values 1 and 3",
 						},
 					},
 					{
-						TestFile: "smoke.test.ts",
-						Status:   executor.TestPassed,
-						Durations: executor.TestDurations{
-							ScenarioDuration: time.Millisecond * 1565,
-							TotalDuration:    time.Millisecond * 1565,
-						},
-						ExitMessage: "success",
+						TestFile:         "smoke.test.ts",
+						Status:           executor.TestPassed,
+						ScenarioDuration: time.Millisecond * 1565,
+						TotalDuration:    time.Millisecond * 1565,
+						ExitMessage:      "success",
 						Attributes: map[string]string{
 							"title": "should redirect to start page when permissions to navigate to page is missing",
 						},
@@ -284,49 +251,41 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 			expected: executor.SuiteRunSummary{
 				TestRuns: []executor.TestRunSummary{
 					{
-						TestFile: "auth.setup.js",
-						Status:   executor.TestPassed,
-						Durations: executor.TestDurations{
-							ScenarioDuration: time.Millisecond * 63,
-							TotalDuration:    time.Millisecond * 63,
-						},
-						ExitMessage: "success",
+						TestFile:         "auth.setup.js",
+						Status:           executor.TestPassed,
+						ScenarioDuration: time.Millisecond * 63,
+						TotalDuration:    time.Millisecond * 63,
+						ExitMessage:      "success",
 						Attributes: map[string]string{
 							"title": "authenticate",
 						},
 					},
 					{
-						TestFile: "configEditor.spec.ts",
-						Status:   executor.TestFailed,
-						Durations: executor.TestDurations{
-							ScenarioDuration: time.Millisecond * 10159,
-							TotalDuration:    time.Millisecond * 10159,
-						},
-						ExitMessage: "configEditor.spec.ts:7:7 => Test timeout of 10000ms exceeded.",
+						TestFile:         "configEditor.spec.ts",
+						Status:           executor.TestFailed,
+						ScenarioDuration: time.Millisecond * 10159,
+						TotalDuration:    time.Millisecond * 10159,
+						ExitMessage:      "configEditor.spec.ts:7:7 => Test timeout of 10000ms exceeded.",
 						Attributes: map[string]string{
 							"title": "invalid credentials should return an error",
 						},
 					},
 					{
-						TestFile: "configEditor.spec.ts",
-						Status:   executor.TestFailed,
-						Durations: executor.TestDurations{
-							ScenarioDuration: time.Millisecond * 10155,
-							TotalDuration:    time.Millisecond * 10155,
-						},
-						ExitMessage: "configEditor.spec.ts:13:7 => Test timeout of 10000ms exceeded.",
+						TestFile:         "configEditor.spec.ts",
+						Status:           executor.TestFailed,
+						ScenarioDuration: time.Millisecond * 10155,
+						TotalDuration:    time.Millisecond * 10155,
+						ExitMessage:      "configEditor.spec.ts:13:7 => Test timeout of 10000ms exceeded.",
 						Attributes: map[string]string{
 							"title": "valid credentials should display a success alert on the page",
 						},
 					},
 					{
-						TestFile: "configEditor.spec.ts",
-						Status:   executor.TestFailed,
-						Durations: executor.TestDurations{
-							ScenarioDuration: time.Millisecond * 10155,
-							TotalDuration:    time.Millisecond * 10155,
-						},
-						ExitMessage: "configEditor.spec.ts:26:7 => Test timeout of 10000ms exceeded.",
+						TestFile:         "configEditor.spec.ts",
+						Status:           executor.TestFailed,
+						ScenarioDuration: time.Millisecond * 10155,
+						TotalDuration:    time.Millisecond * 10155,
+						ExitMessage:      "configEditor.spec.ts:26:7 => Test timeout of 10000ms exceeded.",
 						Attributes: map[string]string{
 							"title": "mandatory fields should show error if left empty",
 						},
@@ -365,11 +324,11 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 			for i, tr := range tc.expected.TestRuns {
 				assert.Equal(t, "test file", tr.TestFile, summary.TestRuns[i].TestFile)
 				assert.Equal(t, "test status", tr.Status, summary.TestRuns[i].Status)
-				assert.Equal(t, "test durations", tr.Durations, summary.TestRuns[i].Durations)
+				assert.Equal(t, "test total duration", tr.TotalDuration, summary.TestRuns[i].TotalDuration)
+				assert.Equal(t, "test scenario duration", tr.ScenarioDuration, summary.TestRuns[i].ScenarioDuration)
 				assert.Equal(t, "exit message", tr.ExitMessage, summary.TestRuns[i].ExitMessage)
 				assert.Equal(t, "test title", tr.Attributes["title"], summary.TestRuns[i].Attributes["title"])
 			}
-
 		})
 	}
 }

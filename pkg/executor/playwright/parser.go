@@ -44,7 +44,7 @@ func ParseJsonOutput(report io.Reader) (executor.SuiteRunSummary, error) {
 
 	scenarioDuration := time.Duration(0)
 	for _, r := range testRuns {
-		scenarioDuration += r.Durations.ScenarioDuration
+		scenarioDuration += r.ScenarioDuration
 	}
 	suiteRunSummary := executor.SuiteRunSummary{
 		Status:            suiteStatus,
@@ -132,10 +132,8 @@ func parseTestRun(spec Specs, folder string) executor.TestRunSummary {
 	if len(spec.Tests[0].Results) > 0 {
 		run.StartTime = spec.Tests[0].Results[0].StartTime
 	}
-	run.Durations = executor.TestDurations{
-		ScenarioDuration: time.Duration(averageScenarioDuration * float64(time.Millisecond)),
-		TotalDuration:    time.Duration(scenarioTotal * float64(time.Millisecond)),
-	}
+	run.ScenarioDuration = time.Duration(averageScenarioDuration * float64(time.Millisecond))
+	run.TotalDuration = time.Duration(scenarioTotal * float64(time.Millisecond))
 
 	return run
 }
