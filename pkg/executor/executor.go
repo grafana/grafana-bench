@@ -18,13 +18,6 @@ const (
 	TestSkipped TestStatus = "skipped"
 )
 
-type TestDurations struct {
-	SetupDuration    float32
-	ScenarioDuration float32
-	TeardownDuration float32
-	TotalDuration    float32
-}
-
 type SuiteStatus string
 
 const (
@@ -47,16 +40,16 @@ type SuiteRun struct {
 
 // TestRunSummary summarizes the execution of a test
 type TestRunSummary struct {
-	TestFolder  string            `json:"testFolder"`
-	TestFile    string            `json:"testFile"`
-	StartTime   time.Time         `json:"startTime"`
-	Status      TestStatus        `json:"status"`
-	ExitMessage string            `json:"exitMessage"`
-	Iterations  string            `json:"iterations"`
-	Durations   TestDurations     `json:"durations"`
-	Attributes  map[string]string `json:"attributes"`
+	TestFolder        string            `json:"testFolder"`
+	TestFile          string            `json:"testFile"`
+	StartTime         time.Time         `json:"startTime"`
+	Status            TestStatus        `json:"status"`
+	ExitMessage       string            `json:"exitMessage"`
+	Iterations        string            `json:"iterations"`
+	TotalDuration     time.Duration     `json:"totalDuration"`
+	ScenarioDuration  time.Duration     `json:"scenarioDuration"`
+	Attributes        map[string]string `json:"attributes"`
 }
-
 
 // TestSuiteSummary summarizes the execution of  a test suite
 type SuiteRunSummary struct {
@@ -67,8 +60,8 @@ type SuiteRunSummary struct {
 	TestsFlaky        int32
 	TestsPassed       int32
 	TestsError        int32
-	TotalDuration     float32
-	ScenariosDuration float32
+	TotalDuration     time.Duration
+	ScenariosDuration time.Duration
 	TestRuns          []TestRunSummary
 	Metrics           []metrics.Metric
 }

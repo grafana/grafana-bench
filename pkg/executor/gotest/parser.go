@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"regexp"
 	"time"
 
 	"github.com/grafana/grafana-bench/pkg/executor"
@@ -12,6 +13,8 @@ import (
 
 var (
 	ErrInvalidFormat = errors.New("invalid format")
+
+	subTestRegexp = regexp.MustCompile(`^(\S+)\/\S+$`)
 )
 
 type line struct {
@@ -49,13 +52,17 @@ func ParseJsonOutput(report io.Reader) (executor.SuiteRunSummary, error) {
 		}
 
 		// calculate the latest end time among all tests
-		testDuration := time.Duration(float32(time.Second) * test.Durations.TotalDuration)
-		if test.StartTime.Add(testDuration).After(endTime) {
-			endTime = test.StartTime.Add(testDuration)
+		if test.StartTime.Add(test.TotalDuration).After(endTime) {
+			endTime = test.StartTime.Add(test.TotalDuration)
 		}
 
 		if test.Status == executor.TestSkipped {
 			continue
+		}
+
+		// do not add the test duration if it is a subtest, as parent will already count it
+		if !subTestRegexp.MatchString(test.TestFile) {
+			summary.ScenariosDuration += test.ScenarioDuration
 		}
 
 		switch test.Status {
@@ -72,7 +79,7 @@ func ParseJsonOutput(report io.Reader) (executor.SuiteRunSummary, error) {
 		summary.TestRuns = append(summary.TestRuns, *test)
 	}
 
-	summary.TotalDuration += float32(endTime.Sub(summary.StartTime).Seconds())
+	summary.TotalDuration += endTime.Sub(summary.StartTime)
 	summary.TestsExecuted = int32(len(summary.TestRuns))
 
 	return summary, nil
@@ -126,15 +133,19 @@ func parseTestRuns(report io.Reader) (testRuns, error) {
 		case "pass":
 			testRun.Status = executor.TestPassed
 			testRun.ExitMessage = "" // delete message for passed tests to reduce noise
+			duration := time.Duration(line.Elapsed * float32(time.Second))
+			testRun.TotalDuration = duration
+			testRun.ScenarioDuration = duration
 		case "fail":
 			testRun.Status = executor.TestFailed
+			duration := time.Duration(line.Elapsed * float32(time.Second))
+			testRun.TotalDuration = duration
+			testRun.ScenarioDuration = duration
 		case "skip":
 			testRun.Status = executor.TestSkipped
-		default:
+		case "pause", "cont":
 			continue
 		}
-
-		testRun.Durations.TotalDuration = line.Elapsed
 	}
 
 	return testRuns, nil

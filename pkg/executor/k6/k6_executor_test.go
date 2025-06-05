@@ -9,7 +9,6 @@ import (
 
 	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/utils/test/assert"
-
 )
 
 type k6TestExecutorOption func(*K6TestExecutor) error
@@ -59,21 +58,20 @@ func k6TestRunnerForTesting(
 	return te, nil
 }
 
-
 func TestK6Executor(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		testCase      string
-		k6options     []k6TestExecutorOption
-		testSuite     string
-		expectSummary *executor.SuiteRunSummary
-		expectErr     error
+		testCase  string
+		k6options []k6TestExecutorOption
+		testSuite string
+		expect    *executor.SuiteRunSummary
+		expectErr error
 	}{
 		{
 			testCase:  "passing test",
 			testSuite: "k6tests/pass.js",
-			expectSummary: &executor.SuiteRunSummary{
+			expect: &executor.SuiteRunSummary{
 				TestsExecuted: 1,
 				TestsPassed:   1,
 				TestRuns: []executor.TestRunSummary{
@@ -84,7 +82,7 @@ func TestK6Executor(t *testing.T) {
 		{
 			testCase:  "failing test",
 			testSuite: "k6tests/fail.js",
-			expectSummary: &executor.SuiteRunSummary{
+			expect: &executor.SuiteRunSummary{
 				TestsExecuted: 1,
 				TestsFailed:   1,
 				TestRuns: []executor.TestRunSummary{
@@ -98,7 +96,7 @@ func TestK6Executor(t *testing.T) {
 			k6options: []k6TestExecutorOption{
 				WithRetries(3),
 			},
-			expectSummary: &executor.SuiteRunSummary{
+			expect: &executor.SuiteRunSummary{
 				TestsExecuted: 1,
 				TestsFailed:   1,
 				TestRuns: []executor.TestRunSummary{
@@ -109,7 +107,7 @@ func TestK6Executor(t *testing.T) {
 		{
 			testCase:  "error test",
 			testSuite: "k6tests/abort.js",
-			expectSummary: &executor.SuiteRunSummary{
+			expect: &executor.SuiteRunSummary{
 				TestsExecuted: 1,
 				TestsError:    1,
 				TestRuns: []executor.TestRunSummary{
@@ -125,7 +123,7 @@ func TestK6Executor(t *testing.T) {
 		{
 			testCase:  "test suite directory",
 			testSuite: "k6tests/",
-			expectSummary: &executor.SuiteRunSummary{
+			expect: &executor.SuiteRunSummary{
 				TestsExecuted: 3,
 				TestsError:    1,
 				TestsFailed:   1,
@@ -144,6 +142,13 @@ func TestK6Executor(t *testing.T) {
 				WithK6Credentials(),
 			},
 			testSuite: "k6tests/pass.js",
+			expect: &executor.SuiteRunSummary{
+				TestsExecuted: 1,
+				TestsError:   1,
+				TestRuns: []executor.TestRunSummary{
+					{TestFile: "pass.js", Status: executor.TestError},
+				},
+			},
 		},
 		{
 			testCase: "invalid k6 cloud config",
@@ -176,16 +181,23 @@ func TestK6Executor(t *testing.T) {
 
 			summary, err := k6Executor.ExecTestSuite(context.TODO(), suite, map[string]string{})
 
-			if tc.expectErr == nil && err != nil {
-				t.Fatalf("unexpected error: %v", err)
+			if !errors.Is(err, tc.expectErr) {
+				t.Fatalf("expected '%v' got: '%v'", tc.expectErr, err)
 			}
 
-			if tc.expectErr != nil && !errors.Is(err, tc.expectErr) {
-				t.Fatalf("should had failed with '%v' got: '%v'", tc.expectErr, err)
+			if tc.expectErr != nil {
+				return
 			}
 
-			if err = assert.SuiteSummaryEqual(tc.expectSummary, summary); err != nil {
-				t.Fatalf("invalid summary %v", err)
+			// we can't assert durations because are unpredictable
+			assert.Equal(t, "tests executed", tc.expect.TestsExecuted, summary.TestsExecuted)
+			assert.Equal(t, "tests passed", tc.expect.TestsPassed, summary.TestsPassed)
+			assert.Equal(t, "tests error", tc.expect.TestsError, summary.TestsError)
+			assert.Equal(t, "tests failed", tc.expect.TestsFailed, summary.TestsFailed)
+			assert.Equal(t, "test runs len", len(tc.expect.TestRuns), len(summary.TestRuns))
+			for i, tr := range tc.expect.TestRuns {
+				assert.Equal(t, "test file", tr.TestFile, summary.TestRuns[i].TestFile)
+				assert.Equal(t, "test status", tr.Status, summary.TestRuns[i].Status)
 			}
 		})
 	}

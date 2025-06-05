@@ -2,40 +2,94 @@ package gotest
 
 import (
 	"bytes"
+	"errors"
 	"os"
 	"testing"
+	"time"
+
+	"github.com/grafana/grafana-bench/pkg/executor"
+	"github.com/grafana/grafana-bench/pkg/utils/test/assert"
 )
 
 func TestParseJsonOutput(t *testing.T) {
 	t.Parallel()
 
 	testcases := []struct {
-		name                 string
-		testdata             string
-		expectSummarySuccess bool
-		expectSummaryFailure bool
-		expectErr            bool
+		name      string
+		testdata  string
+		expect    executor.SuiteRunSummary
+		expectErr error
 	}{
 		{
-			name:                 "file with valid format and all passing tests returns the summary",
-			testdata:             "./testdata/output.json",
-			expectSummarySuccess: true,
-			expectSummaryFailure: false,
-			expectErr:            false,
+			name:      "file with valid format",
+			testdata:  "./testdata/output.json",
+			expectErr: nil,
+			expect: executor.SuiteRunSummary{
+				Status:            "",
+				TestsExecuted:     7,
+				TestsFailed:       1,
+				TestsFlaky:        0,
+				TestsPassed:       6,
+				TestsError:        0,
+				TotalDuration:     time.Duration(204968132),
+				ScenariosDuration: time.Duration(0.22 * float32(time.Second)),
+				TestRuns: []executor.TestRunSummary{
+					{
+						TestFolder:       "github.com/grafana/grafana-bench/pkg/executor/gotest/tests",
+						TestFile:         "TestFailing",
+						Status:           executor.TestFailed,
+						ScenarioDuration: time.Duration(float64(0.1) * float64(time.Second)),
+						TotalDuration:    time.Duration(float64(0.1) * float64(time.Second)),
+					},
+					{
+						TestFolder:       "github.com/grafana/grafana-bench/pkg/executor/gotest/tests",
+						TestFile:         "TestPassing1",
+						Status:           executor.TestPassed,
+						ScenarioDuration: time.Duration(float64(0.02) * float64(time.Second)),
+						TotalDuration:    time.Duration(float64(0.02) * float64(time.Second)),
+					},
+					{
+						TestFolder:       "github.com/grafana/grafana-bench/pkg/executor/gotest/tests",
+						TestFile:         "TestPassing2",
+						Status:           executor.TestPassed,
+						ScenarioDuration: time.Duration(float64(0.06) * float64(time.Second)),
+						TotalDuration:    time.Duration(float64(0.06) * float64(time.Second)),
+					},
+					{
+						TestFolder:       "github.com/grafana/grafana-bench/pkg/executor/gotest/tests",
+						TestFile:         "TestPassing3",
+						Status:           executor.TestPassed,
+						ScenarioDuration: time.Duration(float64(0.02) * float64(time.Second)),
+						TotalDuration:    time.Duration(float64(0.02) * float64(time.Second)),
+					},
+					{
+						TestFolder:       "github.com/grafana/grafana-bench/pkg/executor/gotest/tests",
+						TestFile:         "TestPassing3/SubTest1",
+						Status:           executor.TestPassed,
+						ScenarioDuration: time.Duration(float64(0.01) * float64(time.Second)),
+						TotalDuration:    time.Duration(float64(0.01) * float64(time.Second)),
+					},
+					{
+						TestFolder:       "github.com/grafana/grafana-bench/pkg/executor/gotest/tests",
+						TestFile:         "TestPassing3/SubTest2",
+						Status:           executor.TestPassed,
+						ScenarioDuration: time.Duration(float64(0.01) * float64(time.Second)),
+						TotalDuration:    time.Duration(float64(0.01) * float64(time.Second)),
+					},
+					{
+						TestFolder:       "github.com/grafana/grafana-bench/pkg/executor/gotest/tests/subpkg",
+						TestFile:         "TestPassing4",
+						Status:           executor.TestPassed,
+						ScenarioDuration: time.Duration(float64(0.02) * float64(time.Second)),
+						TotalDuration:    time.Duration(float64(0.02) * float64(time.Second)),
+					},
+				},
+			},
 		},
 		{
-			name:                 "file with valid format and failing tests returns the summary",
-			testdata:             "./testdata/output_fail.json",
-			expectSummarySuccess: true,
-			expectSummaryFailure: true,
-			expectErr:            false,
-		},
-		{
-			name:                 "file with invalid format returns an error",
-			testdata:             "./testdata/output_invalid.json",
-			expectSummarySuccess: false,
-			expectSummaryFailure: false,
-			expectErr:            true,
+			name:      "file with invalid format returns an error",
+			testdata:  "./testdata/output_invalid.json",
+			expectErr: ErrInvalidFormat,
 		},
 	}
 
@@ -49,19 +103,11 @@ func TestParseJsonOutput(t *testing.T) {
 			}
 
 			summary, err := ParseJsonOutput(bytes.NewBuffer(report))
-			if tc.expectErr && err == nil {
-				t.Error("Expected error but got nil")
-			}
-			if !tc.expectErr && err != nil {
-				t.Errorf("Expected no error but got %v", err.Error())
+			if !errors.Is(err, tc.expectErr) {
+				t.Errorf("Expected %v got %v", tc.expectErr, err)
 			}
 
-			if tc.expectSummarySuccess && summary.TestsPassed == 0 {
-				t.Errorf("Expected test successes in summary but got 0")
-			}
-			if tc.expectSummaryFailure && summary.TestsFailed == 0 {
-				t.Errorf("Expected test failures in summary but got 0")
-			}
+			assert.SuiteSummaryEqual(t, &tc.expect, summary)
 		})
 	}
 }

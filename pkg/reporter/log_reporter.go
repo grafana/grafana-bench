@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/grafana/grafana-bench/pkg/executor"
+	"github.com/grafana/grafana-bench/pkg/utils/format"
 )
 
 const (
@@ -65,10 +66,8 @@ func (r *LogReporter) Report(
 			"folder", testRun.TestFolder,
 			"testFile", testRun.TestFile,
 			"iterations", testRun.Iterations,
-			"setupDuration", prettyMS(testRun.Durations.SetupDuration),
-			"scenarioDuration", prettyMS(testRun.Durations.ScenarioDuration),
-			"teardownDuration", prettyMS(testRun.Durations.TeardownDuration),
-			"totalDuration", prettyMS(testRun.Durations.TotalDuration),
+			"scenarioDuration", format.PrettyMS(testRun.ScenarioDuration),
+			"totalDuration", format.PrettyMS(testRun.TotalDuration),
 			"status", testRun.Status,
 			"exitMessage", testRun.ExitMessage,
 			"order", strconv.Itoa(order),
@@ -99,10 +98,4 @@ func (r *LogReporter) Report(
 	log.With(suiteRunAttrs...).Info("suiteRun", "anyFailures", anyFailures)
 
 	return nil
-}
-
-// prettyMS adds ms suffix to ms float
-func prettyMS(ms float32) string {
-	duration := time.Duration(ms) * time.Millisecond
-	return fmt.Sprintf("%dms", duration.Milliseconds())
 }

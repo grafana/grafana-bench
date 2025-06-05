@@ -18,6 +18,7 @@ import (
 
 	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/utils"
+	"github.com/grafana/grafana-bench/pkg/utils/format"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
@@ -63,7 +64,7 @@ func NewK6TestExecutor(
 
 type k6Output struct {
 	iterations string
-	durations  executor.TestDurations
+	durations  TestDurations
 	cloudId    string
 	cloudURL   string
 }
@@ -74,7 +75,7 @@ type K6TestRun struct {
 	ExitCode    int
 	ExitMessage string
 	Iterations  string
-	Durations   executor.TestDurations
+	Durations   TestDurations
 	CloudID     string
 	CloudURL    string
 }
@@ -103,7 +104,7 @@ func (t *K6TestExecutor) ExecTestSuite(
 
 	// run k6 tests
 	var (
-		scenariosDuration float32
+		scenariosDuration time.Duration
 	)
 
 	k6Version, err := t.getK6Version()
@@ -166,16 +167,19 @@ func (t *K6TestExecutor) ExecTestSuite(
 		testFolder, _ := filepath.Rel(rootDir, filepath.Dir(testFile))
 
 		summary := executor.TestRunSummary{
-			TestFolder:  testFolder,
-			TestFile:    path.Base(testFile),
-			StartTime:   testStartTime,
-			Status:      k6Summary.Status,
-			Durations:   k6Summary.Durations,
-			Iterations:  k6Summary.Iterations,
-			ExitMessage: k6Summary.ExitMessage,
+			TestFolder:       testFolder,
+			TestFile:         path.Base(testFile),
+			StartTime:        testStartTime,
+			Status:           k6Summary.Status,
+			TotalDuration:    k6Summary.Durations.TotalDuration,
+			ScenarioDuration: k6Summary.Durations.ScenarioDuration,
+			Iterations:       k6Summary.Iterations,
+			ExitMessage:      k6Summary.ExitMessage,
 			Attributes: map[string]string{
-				"cloudId":  k6Summary.CloudID,
-				"cloudURL": k6Summary.CloudURL,
+				"cloudId":          k6Summary.CloudID,
+				"cloudURL":         k6Summary.CloudURL,
+				"setupDuration":    format.PrettyMS(k6Summary.Durations.SetupDuration),
+				"teardownDuration": format.PrettyMS(k6Summary.Durations.TeardownDuration),
 			},
 		}
 
@@ -200,7 +204,7 @@ func (t *K6TestExecutor) ExecTestSuite(
 	}
 
 	suiteSummary.ScenariosDuration = scenariosDuration
-	suiteSummary.TotalDuration = float32(time.Since(suiteSummary.StartTime).Milliseconds())
+	suiteSummary.TotalDuration = time.Since(suiteSummary.StartTime)
 
 	return suiteSummary, nil
 }

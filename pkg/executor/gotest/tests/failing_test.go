@@ -2,9 +2,13 @@
 
 package tests
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 func TestFailing(t *testing.T) {
+	time.Sleep(time.Millisecond * 100)
 	t.Fail()
 }
 

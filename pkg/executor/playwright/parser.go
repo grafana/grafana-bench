@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"math"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/acarl005/stripansi"
 
@@ -42,15 +42,19 @@ func ParseJsonOutput(report io.Reader) (executor.SuiteRunSummary, error) {
 		suiteStatus = executor.SuiteFailed
 	}
 
+	scenarioDuration := time.Duration(0)
+	for _, r := range testRuns {
+		scenarioDuration += r.ScenarioDuration
+	}
 	suiteRunSummary := executor.SuiteRunSummary{
 		Status:            suiteStatus,
 		StartTime:         output.Stats.StartTime,
-		ScenariosDuration: float32(output.Stats.Duration),
+		ScenariosDuration: scenarioDuration,
 		TestsExecuted:     totalTestAmount,
 		TestsFailed:       int32(output.Stats.Unexpected),
 		TestsPassed:       int32(output.Stats.Expected),
 		TestsError:        0,
-		TotalDuration:     float32(output.Stats.Duration),
+		TotalDuration:     time.Duration(output.Stats.Duration * float64(time.Millisecond)),
 		TestRuns:          testRuns,
 	}
 
@@ -109,7 +113,7 @@ func parseTestRun(spec Specs, folder string) executor.TestRunSummary {
 
 	// FIXME: tests can be executed more than once due to retries so we average the duration.
 	// maybe we should take the duration of the last execution (either failed or passed)
-	scenarioTotal := 0
+	scenarioTotal := float64(0)
 	executions := 0
 	for _, test := range spec.Tests {
 		for _, result := range test.Results {
@@ -118,9 +122,9 @@ func parseTestRun(spec Specs, folder string) executor.TestRunSummary {
 		}
 	}
 
-	averageScenarioDuration := float32(scenarioTotal)
+	averageScenarioDuration := float64(scenarioTotal)
 	if executions > 0 {
-		averageScenarioDuration = float32(math.Round(float64(scenarioTotal) / float64(executions)))
+		averageScenarioDuration = scenarioTotal / float64(executions)
 	}
 
 	run.Iterations = fmt.Sprintf("%d", len(spec.Tests[0].Results))
@@ -128,10 +132,8 @@ func parseTestRun(spec Specs, folder string) executor.TestRunSummary {
 	if len(spec.Tests[0].Results) > 0 {
 		run.StartTime = spec.Tests[0].Results[0].StartTime
 	}
-	run.Durations = executor.TestDurations{
-		ScenarioDuration: float32(averageScenarioDuration),
-		TotalDuration:    float32(scenarioTotal),
-	}
+	run.ScenarioDuration = time.Duration(averageScenarioDuration * float64(time.Millisecond))
+	run.TotalDuration = time.Duration(scenarioTotal * float64(time.Millisecond))
 
 	return run
 }
