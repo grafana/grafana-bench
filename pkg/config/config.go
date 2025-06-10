@@ -324,6 +324,7 @@ type TestConfig struct {
 }
 
 func AddTestFlags(fs *pflag.FlagSet, test *TestConfig) {
+	AddTestVeboseFlag(fs, test)
 	AddTestEnvFlags(fs, test)
 	AddTestTypeFlag(fs, test)
 	AddTestRunnerFlag(fs, test)
