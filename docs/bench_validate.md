@@ -15,7 +15,7 @@ bench validate [flags]
 ```
 
 Validate slack configuration
-  bench validate --slack-notifier-permissions
+  bench validate --check-slack-permissions
 
   Requires the --slack-token and the --codeowners-mapping flags
 
@@ -25,11 +25,11 @@ Validate slack configuration
 ### Options
 
 ```
+      --check-slack-permissions           validate slack notifier permissions based on the current codeowner-mapping file
       --codeowners-mapping string         deprecated. Use slack-codeowners-mapping (default "codeowners-mapping.yaml")
   -h, --help                              help for validate
       --slack-codeowners-mapping string   path or url to the codeowner to slack channel id mapping.
                                           Relative to test suite base dir. (default "codeowners-mapping.yaml")
-      --slack-notifier-permissions        validate slack notifier permissions based on the current codeowner-mapping file
       --slack-token string                slack token used for sending notifications. If not defined SLACK_TOKEN environment variable is used.
                                           The token requires chat:write and channels:read scopes
 ```

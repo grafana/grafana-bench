@@ -18,7 +18,7 @@ var (
 
 const example = `
 Validate slack configuration
-  bench validate --slack-notifier-permissions
+  bench validate --check-slack-permissions
 
   Requires the --slack-token and the --codeowners-mapping flags
 
@@ -44,7 +44,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	fs := cmd.Flags()
 	fs.BoolVar(
 		&validateSlackNotifierPermissions,
-		"slack-notifier-permissions",
+		"check-slack-permissions",
 		false,
 		"validate slack notifier permissions based on the current codeowner-mapping file",
 	)
