@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/grafana/grafana-bench/pkg/config"
-	"github.com/grafana/grafana-bench/pkg/notifier"
+	"github.com/grafana/grafana-bench/pkg/validate"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
@@ -16,22 +16,26 @@ var (
 	validateSlackNotifierPermissions bool
 )
 
+const example = `
+Validate slack configuration
+  bench validate --slack-notifier-permissions
+
+  Requires the --slack-token and the --codeowners-mapping flags
+
+`
+
 // NewCmd returns a new bench version command
 func NewCmd(log *slog.Logger) *cobra.Command {
 	benchConfig := &config.BenchConfig{}
 
 	cmd := cobra.Command{
 		Use:     "validate",
-		Short:   "validate --<validation>",
-		Long:    "validate provides validations for the current bench configuration. currently only codeowners is supported",
-		Example: "bench validate --slack-notifier-permissions",
+		Short:   "validate",
+		Long:    "validate provides validations for the bench configuration.",
+		Example: example,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if validateSlackNotifierPermissions {
-				err := ValidateSlackNotiferPermissions(benchConfig)
-				if err != nil {
-					log.Error(err.Error())
-					return err
-				}
+				return ValidateSlackNotiferPermissions(benchConfig)
 			}
 			return nil
 		},
@@ -45,7 +49,8 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 		"validate slack notifier permissions based on the current codeowner-mapping file",
 	)
 
-	config.AddSlackFlags(fs, &benchConfig.Slack)
+	config.AddSlackToken(fs, &benchConfig.Slack)
+	config.AddSlackCodeownersMapFlag(fs, &benchConfig.Slack)
 
 	return &cmd
 }
@@ -56,23 +61,17 @@ func ValidateSlackNotiferPermissions(config *config.BenchConfig) error {
 	}
 
 	codeownersMap := config.Slack.CodeownersMap
+	if codeownersMap == "" {
+		return fmt.Errorf("no codeowners mapping provided")
+	}
 	if !filepath.IsAbs(codeownersMap) {
 		codeownersMap = filepath.Join(config.TestSuite.BaseDir, codeownersMap)
 	}
 
-	// NewSlackNotifer returns a notifer interface.
-	n, err := notifier.NewSlackNotifier(notifier.SlackNotifierOptions{
-		Token:        config.Slack.Token,
-		MappingFile:  codeownersMap,
-		DashboardURL: config.SuiteRun.DashboardURL,
-	})
+	channelStatuses, err := validate.CheckPermissions(codeownersMap, config.Slack.Token)
 	if err != nil {
-		return fmt.Errorf("creating slack notifier: %w", err)
+		return err
 	}
-
-	// Cast to slackNotifier so we can call check permissions
-	slackNotifier := n.(*notifier.SlackNotifier)
-	channelStatuses := slackNotifier.CheckPermissions()
 
 	table := tablewriter.NewWriter(os.Stdout)
 	table.Header([]string{"Channel ID", "Channel Name", "Status", "Error"})
