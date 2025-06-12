@@ -30,7 +30,8 @@ jobs:
           docker run --rm \
             --network=host \
             --volume="./CI/:/home/bench/tests/CI/" \
-            us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.5.0 test \
+
+            us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.5.1 test \
             --grafana-url "http://localhost:3000" \
             --grafana-admin-user "admin" \
             --grafana-admin-password "admin" \
@@ -104,7 +105,7 @@ jobs:
           docker run --rm \
             --network=host \
             --volume="./:/home/bench/tests/" \
-            us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.5.0 test \
+            us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.5.1 test \
             --test-runner "playwright" \
             --test-suite-base "/home/bench/tests/" \
             --grafana-url "http://localhost:3000" \
