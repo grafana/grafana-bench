@@ -112,7 +112,7 @@ jobs:
         env:
           TEST_SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          grafana-bench validate --slack-notifier-permissions
+          grafana-bench validate --check-slack-permissions
 
       - name: CMD should fail if we don't have permissions on a channel
         run: |
@@ -123,7 +123,7 @@ jobs:
               github_team: "@grafana/grafana-developer-enablement-squad"
           EOF
 
-          if ! grafana-bench validate --slack-notifier-permissions; then
+          if ! grafana-bench validate --check-slack-permissions; then
             echo "Command failed as expected"
           else
             echo "Command unexpectedly succeeded"
