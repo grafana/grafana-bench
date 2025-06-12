@@ -509,6 +509,22 @@ type SlackNotifierConfig struct {
 }
 
 func AddSlackFlags(fs *pflag.FlagSet, config *SlackNotifierConfig) {
+	AddSlackNotificationsFlag(fs, config)
+	AddSlackNotifyPassingFlag(fs, config)
+	AddSlackToken(fs, config)
+	AddSlackCodeownersMapFlag(fs, config)
+}
+
+func AddSlackNotificationsFlag(fs *pflag.FlagSet, config *SlackNotifierConfig) {
+	fs.BoolVar(
+		&config.Notifications,
+		"slack-notifications",
+		false,
+		"send notifications to slack. Requires setting the --slack-token option or the SLACK_TOKEN environment variable.",
+	)
+}
+
+func AddSlackNotifyPassingFlag(fs *pflag.FlagSet, config *SlackNotifierConfig) {
 	fs.BoolVar(
 		&config.NotifyPassing,
 		"notify-passing",
@@ -521,12 +537,9 @@ func AddSlackFlags(fs *pflag.FlagSet, config *SlackNotifierConfig) {
 		false,
 		"send notifications for passing test suites. By default only not passing test suites are notified",
 	)
-	fs.BoolVar(
-		&config.Notifications,
-		"slack-notifications",
-		false,
-		"send notifications to slack. Requires setting the --slack-token option or the SLACK_TOKEN environment variable.",
-	)
+}
+
+func AddSlackToken(fs *pflag.FlagSet, config *SlackNotifierConfig) {
 	fs.StringVar(
 		&config.Token,
 		"slack-token",
@@ -534,6 +547,8 @@ func AddSlackFlags(fs *pflag.FlagSet, config *SlackNotifierConfig) {
 		"slack token used for sending notifications. If not defined SLACK_TOKEN environment variable is used."+
 			"\nThe token requires chat:write and channels:read scopes",
 	)
+}
+func AddSlackCodeownersMapFlag(fs *pflag.FlagSet, config *SlackNotifierConfig) {
 	fs.StringVar(
 		&config.CodeownersMap,
 		"codeowners-mapping",
