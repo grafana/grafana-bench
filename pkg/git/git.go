@@ -49,8 +49,9 @@ func (tc *GitRepo) Get(ctx context.Context, targetDir string, revision string, c
 		targetDir,
 		false,
 		&git.CloneOptions{
-			URL:  tc.Repo,
-			Auth: auth,
+			NoCheckout: true,
+			URL:        tc.Repo,
+			Auth:       auth,
 		},
 	)
 
