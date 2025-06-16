@@ -19,13 +19,6 @@ var (
 	ErrPostingMessage      = errors.New("posting message")
 )
 
-type data struct {
-	TestSuiteRunId string
-	TestRuns       []executor.TestRunSummary
-	TestSuite      executor.TestSuite
-	DashboardURL   string
-}
-
 func FormatTestResults(
 	dashboardURL string,
 	suiteRunId string,
@@ -80,7 +73,7 @@ func FormatTestResults(
 	return blocks, nil
 }
 
-type slackNotifier struct {
+type SlackNotifier struct {
 	client       *slack.Client
 	mapping      CodeownersMapping
 	channels     map[string]string
@@ -124,7 +117,7 @@ func NewSlackNotifier(options SlackNotifierOptions) (Notifier, error) {
 			return nil, err
 		}
 	}
-	return &slackNotifier{
+	return &SlackNotifier{
 		client:       client,
 		mapping:      mapping,
 		channels:     make(map[string]string),
@@ -132,7 +125,7 @@ func NewSlackNotifier(options SlackNotifierOptions) (Notifier, error) {
 	}, nil
 }
 
-func (s *slackNotifier) Notify(
+func (s *SlackNotifier) Notify(
 	ctx context.Context,
 	recipient string,
 	suiteRunId string,

@@ -7,6 +7,7 @@ import (
 
 	"github.com/grafana/grafana-bench/cmd/report"
 	"github.com/grafana/grafana-bench/cmd/test"
+	"github.com/grafana/grafana-bench/cmd/validate"
 	"github.com/grafana/grafana-bench/cmd/version"
 	"github.com/grafana/grafana-bench/pkg/utils/env"
 	"github.com/grafana/grafana-bench/pkg/utils/flags"
@@ -57,15 +58,14 @@ func NewCmd(log *logger.Logger) *cobra.Command {
 	pf := rootCmd.PersistentFlags()
 	pf.StringVar(&envFile, "env", "", "path to a file with the environment variables."+
 		"\nIf none is specified and a .env files exists in the work directory, it will be used")
-	pf.StringVar(&logLevel, "log-level", "ERROR", "set the log level ('ERROR', 'WARN', 'INFO', 'DEBUG')." +
+	pf.StringVar(&logLevel, "log-level", "ERROR", "set the log level ('ERROR', 'WARN', 'INFO', 'DEBUG')."+
 		"\n overridden by the BENCH_LOG_LEVEL environment variable")
 	pf.StringVar(&cfgFile, "config", "bench.yaml", "path to config file")
-	
-
 
 	rootCmd.AddCommand(test.NewCmd(log.Log()))
 	rootCmd.AddCommand(version.NewCmd())
 	rootCmd.AddCommand(report.NewCmd(log.Log()))
+	rootCmd.AddCommand(validate.NewCmd(log.Log()))
 
 	return rootCmd
 }
