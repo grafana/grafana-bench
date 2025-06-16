@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.4.2-labs
 
-FROM golang:1.22-alpine AS builder
+FROM golang:1.23-alpine AS builder
 
 ARG BENCH_REVISION 
 ARG TARGETOS=linux
@@ -36,7 +36,7 @@ RUN go get github.com/boxboat/fixuid@${FIXUID_VERSION} && \
     CGO_ENABLED=0 go build -o build/fixuid github.com/boxboat/fixuid
 
 FROM grafana/k6:latest AS k6
-FROM debian:12.8-slim AS runtime
+FROM debian:12.11-slim AS runtime
 
 USER root
 RUN apt update && apt install --no-install-recommends -y \
