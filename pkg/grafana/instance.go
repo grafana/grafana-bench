@@ -50,7 +50,6 @@ var (
 	InstanceNotAvailableError = errors.New("Instance not available")
 	LoginDisableError         = errors.New("Login disabled")
 
-
 	slugEx = regexp.MustCompile(`.grafana(-dev)?.net`)
 )
 
@@ -149,7 +148,6 @@ func (g *grafanaInstance) AdminPassword() string {
 	return g.adminPassword
 }
 
-
 // GetSession returns the current grafana session value
 func (g *grafanaInstance) GetGrafanaSession() (string, error) {
 	session, err := g.getGrafanaSessionCookie()
@@ -179,7 +177,7 @@ func (g *grafanaInstance) WaitForLiveGrafana(ctx context.Context) error {
 				return nil
 			}
 		case <-ctxTimeout.Done():
-			if errors.Is(context.DeadlineExceeded, ctx.Err()) {
+			if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 				return InstanceNotAvailableError
 			}
 			return ctx.Err()
@@ -211,12 +209,12 @@ func (g *grafanaInstance) getGrafanaSessionCookie() (*http.Cookie, error) {
 
 	jsonPayload, err := json.Marshal(loginPayload)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to marshal JSON payload: %w", err)
+		return nil, fmt.Errorf("failed to marshal JSON payload: %w", err)
 	}
 
 	req, err := http.NewRequest("POST", loginURL, bytes.NewBuffer(jsonPayload))
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create request: %w", err)
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 
@@ -227,7 +225,7 @@ func (g *grafanaInstance) getGrafanaSessionCookie() (*http.Cookie, error) {
 	for {
 		resp, err := client.Do(req)
 		if err != nil {
-			return nil, fmt.Errorf("Request failed: %w", err)
+			return nil, fmt.Errorf("request failed: %w", err)
 		}
 		defer resp.Body.Close()
 
@@ -290,7 +288,7 @@ func (g *grafanaInstance) GetGrafanaBuildVersion() (string, error) {
 	targetURL := g.url.String() + "/api/frontend/settings"
 	req, err := http.NewRequest("GET", targetURL, nil)
 	if err != nil {
-		return "", fmt.Errorf("Failed to create request: %w", err)
+		return "", fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.AddCookie(grafanaSession)
