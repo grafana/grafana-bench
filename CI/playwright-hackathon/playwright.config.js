@@ -25,6 +25,21 @@ export default defineConfig({
           role: 'Admin',
         },
       },
+    },
+
+    // START HERE
+    // fix node version. we have 23 and need 22 to setup dependencies
+    //
+
+
+    // yarn playwright test --project=get-frontend-settings --ui
+    {
+      name: 'get-frontend-settings',
+      testMatch: [/.*\.js/],
+      use: {
+        ...devices["Desktop Chrome"],
+      },
     }
+
   ]
 });
