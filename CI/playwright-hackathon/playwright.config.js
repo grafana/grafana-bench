@@ -1,5 +1,5 @@
 import { dirname } from 'path';
-import { defineConfig, devices, test as base } from '@playwright/test';
+import { defineConfig, devices } from '@playwright/test';
 
 const pluginE2eAuth = `${dirname(require.resolve('@grafana/plugin-e2e'))}/auth`;
 
@@ -27,17 +27,16 @@ export default defineConfig({
       },
     },
 
-    // START HERE
-    // fix node version. we have 23 and need 22 to setup dependencies
-    //
-
-
     // yarn playwright test --project=get-frontend-settings --ui
     {
       name: 'get-frontend-settings',
       testMatch: [/.*\.js/],
       use: {
         ...devices["Desktop Chrome"],
+          user: {
+            user: "admin",
+            password: "admin",
+          }
       },
     }
 

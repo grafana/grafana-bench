@@ -9,6 +9,9 @@ grafana-bench.tar.gz
 test-repo/**
 infra_back
 
+CI/**/test-results
+CI/**/playwright
+
 # Binaries for programs and plugins
 *.exe
 *.exe~

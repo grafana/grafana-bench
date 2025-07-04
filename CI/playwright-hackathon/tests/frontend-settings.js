@@ -1,6 +1,13 @@
+import { expect } from "@playwright/test";
+import { test } from '@playwright/test';
+
 test('fetch settings from /api/frontend/settings', async ({ request, baseURL }) => {
   // Make GET request to the settings endpoint
   const response = await request.get('/api/frontend/settings');
+
+  // START HERE
+  // 1. get auth working properly. double check the docs. see if the auth test is running first
+  // 2. once request is working, get bench running in container command with latest image
   
   // Verify the response is successful
   expect(response.ok()).toBeTruthy();
