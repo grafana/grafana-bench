@@ -72,7 +72,6 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 
 	maps.Copy(playwrightEnv, env)
 
-	fmt.Println("prepare")
 	// prepare test execution
 	if t.PrepareCmd != "" {
 		// allow multiple commands separated by ";"
@@ -99,7 +98,6 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 	playwrightEnv["PLAYWRIGHT_JSON_OUTPUT_NAME"] = jsonOutput.Name()
 	executeCmd := fmt.Sprintf("%s --reporter=json %s", t.ExecuteCmd, suite.Path)
 
-	fmt.Println("execute")
 	if err := t.executeCommand(filepath.Join(suite.BaseDir, suite.Path), playwrightEnv, executeCmd); err != nil {
 		// we can't tell if there was a error executing the test or the test command was wrong (e.g. misspelled)
 		// so we check if there's any report. If not, we assume the test was not executed and return
@@ -115,8 +113,6 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 }
 
 func (t *PlaywrightTestExecutor) executeCommand(execDir string, env map[string]string, cmd string) error {
-	fmt.Println(execDir)
-
 	cmdFields := strings.Fields(cmd)
 
 	execCmd := exec.Command(cmdFields[0], cmdFields[1:]...)
