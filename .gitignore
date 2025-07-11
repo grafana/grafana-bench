@@ -10,7 +10,9 @@ test-repo/**
 infra_back
 
 CI/**/test-results
-CI/**/playwright
+CI/**/node_modules
+CI/plugin-e2e/playwright
+CI/playwright/playwright
 
 # Binaries for programs and plugins
 *.exe

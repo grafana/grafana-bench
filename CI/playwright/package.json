@@ -1,0 +1,20 @@
+{
+  "name": "grafana-bench-playwright-test-suite",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:grafana/grafana-bench.git",
+  "author": "Jeff Levin<jeff.levin@grafana.com>",
+  "license": "MIT",
+  "scripts": {
+    "test": "playwright test",
+    "playwright:install": "playwright install",
+    "test:ui": "playwright test --ui"
+  },
+  "dependencies": {
+    "@playwright/test": "^1.42.1",
+    "playwright": "^1.42.1"
+  },
+  "devDependencies": {
+    "@grafana/plugin-e2e": "^1.8.3"
+  }
+}
