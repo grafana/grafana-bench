@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test";
 import { test } from '@playwright/test';
 
-test('fetch settings from /api/frontend/settings', async ({ request, baseURL }) => {
+test('fetch settings from /api/frontend/settings', async ({ request }) => {
   // Make GET request to the settings endpoint
   const response = await request.get('/api/frontend/settings');
 
@@ -22,12 +22,6 @@ test('fetch settings from /api/frontend/settings', async ({ request, baseURL }) 
   // Basic validation that we got an object back
   expect(settingsData).toBeDefined();
   expect(typeof settingsData).toBe('object');
-  
-  // Optional: Add specific assertions based on expected structure
-  // Example assertions (uncomment and modify as needed):
-  // expect(settingsData).toHaveProperty('theme');
-  // expect(settingsData).toHaveProperty('apiVersion');
-  // expect(settingsData.enabled).toBe(true);
   
   return settingsData;
 });

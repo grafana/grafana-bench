@@ -86,7 +86,7 @@ ENV K6_BROWSER_ARGS=no-sandbox
 WORKDIR /home/bench
 
 RUN mkdir /home/bench/tests /home/bench/.cache && \
-  chown -R bench:bench /home/bench/*
+  chown -R bench:bench /home/bench/tests /home/bench/.cache
 
 USER bench
 
