@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"maps"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/grafana/grafana-bench/pkg/executor"
@@ -67,9 +69,8 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 	playwrightEnv := map[string]string{}
 	playwrightEnv["path"] = os.Getenv("PATH")
 	playwrightEnv[chromiumPath] = os.Getenv(chromiumPath)
-	for k, v := range env {
-		playwrightEnv[k] = v
-	}
+
+	maps.Copy(playwrightEnv, env)
 
 	// prepare test execution
 	if t.PrepareCmd != "" {
@@ -78,7 +79,7 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 			if cmd == "" {
 				continue
 			}
-			if err := t.executeCommand(suite.BaseDir, playwrightEnv, cmd); err != nil {
+			if err := t.executeCommand(filepath.Join(suite.BaseDir, suite.Path), playwrightEnv, cmd); err != nil {
 				return executor.SuiteRunSummary{}, fmt.Errorf("failed to prepare codebase: %w", err)
 			}
 		}
@@ -97,7 +98,7 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 	playwrightEnv["PLAYWRIGHT_JSON_OUTPUT_NAME"] = jsonOutput.Name()
 	executeCmd := fmt.Sprintf("%s --reporter=json %s", t.ExecuteCmd, suite.Path)
 
-	if err := t.executeCommand(suite.BaseDir, playwrightEnv, executeCmd); err != nil {
+	if err := t.executeCommand(filepath.Join(suite.BaseDir, suite.Path), playwrightEnv, executeCmd); err != nil {
 		// we can't tell if there was a error executing the test or the test command was wrong (e.g. misspelled)
 		// so we check if there's any report. If not, we assume the test was not executed and return
 		// otherwise we are trying to process the report with parseJsonOutput below
