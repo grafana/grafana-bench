@@ -42,20 +42,13 @@ USER root
 RUN apt update && apt install --no-install-recommends -y \
   ca-certificates \
   git \
-  wget \
-  chromium chromium-sandbox
+  wget
 
 RUN wget -qO- https://deb.nodesource.com/setup_20.x | bash
 
 RUN apt install -y nodejs
 
 RUN npm install -g yarn
-
-# install browser dependencies
-# but we don't really need the browsers (pw setup will install them)
-RUN PLAYWRIGHT_BROWSERS_PATH=/tmp/playwright-browsers yarn create playwright \
-  --lang=ts --install-deps --quiet && \
-  rm -rf /tmp/playwright-browsers
 
 RUN addgroup --gid 127 bench && \
   adduser --disabled-password --uid 1001 --gid 127 bench && \
@@ -73,15 +66,6 @@ COPY docker-entrypoint.sh /usr/local/bin/entrypoint.sh
 
 RUN chown root:root /usr/local/bin/fixuid && \
   chmod 4755 /usr/local/bin/fixuid
-
-# config k6 browser
-ENV CHROME_BIN=/usr/bin/chromium
-ENV CHROME_PATH=/usr/lib/chromium/
-ENV K6_BROWSER_HEADLESS=true
-# no-sandbox chrome arg is required to run chrome browser in
-# alpine and avoids the usage of SYS_ADMIN Docker capability
-# TODO: check if this is needed in the debian image given we have chromium-sandbox installed
-ENV K6_BROWSER_ARGS=no-sandbox
 
 WORKDIR /home/bench
 
