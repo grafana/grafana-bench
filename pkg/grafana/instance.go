@@ -314,21 +314,24 @@ func (g *grafanaInstance) GetGrafanaBuildVersion() (string, error) {
 	return settings.BuildInfo.Version, nil
 }
 
-// parseAddress takes an address and returns its scheme, host and port components
+// parseAddress takes an address and returns its scheme, host, port and path components
 // Examples:
 //
 //	https://instance:3000 returns (https://instance:3000)
+//	https://instance:3000/grafana returns (https://instance:3000/grafana)
 //	http://instance returns (http://instance:80) (port inferred from scheme)
+//	http://instance/grafana returns (http://instance:80/grafana)
 //	instance:3000 returns an error (cannot infer the schema from port)
 //	instance:80 returns (http://instance:80) (scheme inferred from port)
+//	instance:/grafana returns (http://instance:80/grafana)
 func parseAddress(address string) (*url.URL, error) {
 	u, err := url.Parse(address)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing grafana address: %w", err)
 	}
-
 	host, port, _ := strings.Cut(u.Host, ":")
 	scheme := u.Scheme
+	path := u.Path
 
 	// try to infer the scheme from the standard ports
 	if scheme == "" {
@@ -341,7 +344,6 @@ func parseAddress(address string) (*url.URL, error) {
 			return nil, fmt.Errorf("unknown scheme: address: %s", address)
 		}
 	}
-
 	// try to infer the port from scheme
 	if port == "" {
 		switch scheme {
@@ -353,6 +355,5 @@ func parseAddress(address string) (*url.URL, error) {
 			return nil, fmt.Errorf("unknown scheme: address: %s", address)
 		}
 	}
-
-	return url.Parse(fmt.Sprintf("%s://%s:%s", scheme, host, port))
+	return url.Parse(fmt.Sprintf("%s://%s:%s%s", scheme, host, port, path))
 }
