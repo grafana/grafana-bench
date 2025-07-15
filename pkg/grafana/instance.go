@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 )
@@ -321,9 +322,6 @@ func (g *grafanaInstance) GetGrafanaBuildVersion() (string, error) {
 //	https://instance:3000/grafana returns (https://instance:3000/grafana)
 //	http://instance returns (http://instance:80) (port inferred from scheme)
 //	http://instance/grafana returns (http://instance:80/grafana)
-//	instance:3000 returns an error (cannot infer the schema from port)
-//	instance:80 returns (http://instance:80) (scheme inferred from port)
-//	instance:/grafana returns (http://instance:80/grafana)
 func parseAddress(address string) (*url.URL, error) {
 	u, err := url.Parse(address)
 	if err != nil {
@@ -333,27 +331,22 @@ func parseAddress(address string) (*url.URL, error) {
 	scheme := u.Scheme
 	path := u.Path
 
-	// try to infer the scheme from the standard ports
+	// no scheme
 	if scheme == "" {
-		switch port {
-		case "443":
-			scheme = "https"
-		case "80":
-			scheme = "http"
-		default:
-			return nil, fmt.Errorf("unknown scheme: address: %s", address)
-		}
+		return nil, fmt.Errorf("no scheme provided. please add http or https to your grafana url: %s", address)
 	}
-	// try to infer the port from scheme
-	if port == "" {
-		switch scheme {
-		case "https":
-			port = "443"
-		case "http":
-			port = "80"
-		default:
-			return nil, fmt.Errorf("unknown scheme: address: %s", address)
-		}
+
+	// unsupported scheme
+	if !slices.Contains([]string{"http", "https"}, scheme) {
+		return nil, fmt.Errorf("invalid scheme provided address: %s, scheme: %s", address, scheme)
 	}
+
+	// derive port from scheme if not provided
+	if scheme == "http" && port == "" {
+		port = "80"
+	} else if scheme == "https" && port == "" {
+		port = "443"
+	}
+
 	return url.Parse(fmt.Sprintf("%s://%s:%s%s", scheme, host, port, path))
 }

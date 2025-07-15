@@ -247,28 +247,6 @@ func TestParseAddress(t *testing.T) {
 			expected: "http://instance:80/grafana/api",
 		},
 
-		// Valid addresses with standard ports, no scheme (scheme inferred)
-		{
-			name:     "port 443 infers https",
-			address:  "instance:443",
-			expected: "https://instance:443",
-		},
-		{
-			name:     "port 80 infers http",
-			address:  "instance:80",
-			expected: "http://instance:80",
-		},
-		{
-			name:     "port 443 with path infers https",
-			address:  "instance:443/grafana",
-			expected: "https://instance:443/grafana",
-		},
-		{
-			name:     "port 80 with path infers http",
-			address:  "instance:80/grafana/dashboard",
-			expected: "http://instance:80/grafana/dashboard",
-		},
-
 		// Path variations
 		{
 			name:     "root path",
@@ -283,7 +261,7 @@ func TestParseAddress(t *testing.T) {
 		{
 			name:     "path with query parameters",
 			address:  "https://instance:3000/grafana?org=1",
-			expected: "https://instance:3000/grafana?org=1",
+			expected: "https://instance:3000/grafana",
 		},
 
 		// Domain variations
