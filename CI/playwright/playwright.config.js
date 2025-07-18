@@ -34,8 +34,8 @@ export default defineConfig({
       use: {
         ...devices["Desktop Chrome"],
           user: {
-            user: "admin",
-            password: "admin",
+            user: process.env.GRAFANA_ADMMIN_USER || "admin",
+            password: process.env.GRAFANA_ADMIN_PASSWORD || "admin",
           }
       },
     }
