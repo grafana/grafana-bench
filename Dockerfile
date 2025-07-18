@@ -42,7 +42,28 @@ USER root
 RUN apt update && apt install --no-install-recommends -y \
   ca-certificates \
   git \
-  wget
+  wget \
+  chromium chromium-sandbox
+# browser deps- left here for debugging purposes.
+# `playwright install --with-deps` requires sudo access
+# however when we install the deps directly, without chrome
+# we get test timeouts
+#libglib2.0-0 \ 
+#libnss3 \ 
+#libnspr4 \
+#libdbus-1-3 \
+#libatk1.0-0 \
+#libatspi2.0-0 \
+#libx11-6 \
+#libxcomposite1 \
+#libxdamage1 \
+#libxext6 \
+#libxfixes3 \
+#libxrandr2 \
+#libgbm1 \
+#libxcb1 \
+#libxkbcommon0 \
+#libasound2
 
 RUN wget -qO- https://deb.nodesource.com/setup_20.x | bash
 
