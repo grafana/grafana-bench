@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/grafana/grafana-bench/pkg/config"
+	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/spf13/cobra"
 )
 
@@ -274,6 +275,9 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				return fmt.Errorf("reporting test suite run %w", err)
 			}
 
+			if suiteRunSummary.Status == executor.SuiteFailed {
+				return fmt.Errorf("Tests suite failed")
+			}
 			return nil
 		},
 	}
