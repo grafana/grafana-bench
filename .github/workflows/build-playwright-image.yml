@@ -1,0 +1,176 @@
+name: build publish playwright image
+
+on:
+  workflow_call:
+
+jobs:
+  test-container-playwright:
+    runs-on: ubuntu-latest
+
+    # run local registry that buildx can push to
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
+      grafana:
+        image: grafana/grafana:latest
+        ports:
+          - 3000:3000
+
+    env:
+      DOCKER_CLI_EXPERIMENTAL: enabled
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: build container
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          file: Dockerfile-playwright
+          build-args: |-
+            BENCH_REVISION=${{ github.sha }}
+          load: true
+          tags: localhost:5000/grafana-bench-test-playwright:latest
+
+      - name: check Grafana instance
+        run: |
+          curl http://localhost:3000
+          #RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000)
+          #echo $response
+          #if [ $RESPONSE -ne 200 ]; then
+          #  sleep 5;
+          #  echo "Grafana is not accessible"
+          #  exit 1
+          #fi
+
+      - name: mount and run plugin-e2e test suite
+        run: |
+          docker run --rm --network=host --volume="./CI/:/home/bench/tests/CI/" \
+            localhost:5000/grafana-bench-test-playwright:latest test \
+              --config "/home/bench/tests/CI/plugin-e2e.yaml"
+
+      #- name: archive screenshots
+      #  uses: actions/upload-artifact@v4
+      #  with:
+      #    name: screenshots
+      #    path: screenshots
+
+      - name: checkout and run playwright test suite
+        env:
+          TEST_SUITE_REPO_TOKEN: ${{ github.token }}
+        run: |
+          docker run --rm -e TEST_SUITE_REPO_TOKEN --network=host \
+            localhost:5000/grafana-bench-test-playwright:latest test \
+            --log-level debug \
+            --pw-prepare "yarn install; yarn playwright install" \
+            --pw-execute "yarn playwright test" \
+            --report-format log \
+            --run-trigger grafana-bench-ci \
+            --suite-path ./CI/playwright \
+            --suite-revision ${{ github.sha }}\
+            --suite-name grafana-bench/ci/playwright \
+            --suite-repo-url https://github.com/grafana/grafana-bench.git \
+            --test-report-format text \
+            --test-runner playwright \
+            --test-type smoke
+
+  publish-dev-playwright:
+    # publish latest from main to dev
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [test-container-playwright]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - name: get short sha
+        run: echo "SHORT_SHA=$(echo ${{ github.sha }} | cut -c 1-7)" >> $GITHUB_ENV
+      - name: Log into ghcr.io
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
+      - uses: grafana/shared-workflows/actions/push-to-gar-docker@de81a07e6f6718fb289c7a4612c9c514c28bd798 # v0.4.1
+        id: push-to-gar
+        with:
+          environment: "dev"
+          file: Dockerfile-playwright
+          image_name: grafana-bench-playwright
+          platforms: linux/amd64,linux/arm64
+          build-args: |-
+            BENCH_REVISION=${{ env.SHORT_SHA }}
+          tags: |-
+            ${{ env.SHORT_SHA }}
+            latest
+      - name: copy image to ghcr.io
+        run: |
+          # this is a multi-line string, so just use the first
+          GAR_IMAGE=$(echo "${{ steps.push-to-gar.outputs.tags }}" | head -n1)
+          echo "GAR_IMAGE=$GAR_IMAGE"
+          GHCR_IMAGE=ghcr.io/grafana/grafana-bench-playwright:${{ steps.push-to-gar.outputs.version }}
+          echo "GHCR_IMAGE=$GHCR_IMAGE"
+
+          docker buildx imagetools create \
+            --tag $GHCR_IMAGE \
+            $GAR_IMAGE
+
+
+  publish-prod-playwright:
+    # publish tagged versions to prod
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    needs: [test-bench, test-container-slim]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - name: Log into ghcr.io
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
+      - uses: grafana/shared-workflows/actions/push-to-gar-docker@de81a07e6f6718fb289c7a4612c9c514c28bd798 # v0.4.1
+        id: push-to-gar
+        with:
+          environment: "prod"
+          file: Dockerfile-playwright
+          image_name: grafana-bench-playwright
+          platforms: linux/amd64,linux/arm64
+          build-args: |-
+            BENCH_REVISION=${{ github.ref_name }}
+          tags: |-
+            ${{ github.ref_name }}
+            ${{ github.sha }}
+            latest
+      - name: copy image to ghcr.io
+        run: |
+          # this is a multi-line string, so just use the first
+          GAR_IMAGE=$(echo "${{ steps.push-to-gar.outputs.tags }}" | head -n1)
+          echo "GAR_IMAGE=$GAR_IMAGE"
+
+          GHCR_IMAGE=ghcr.io/grafana/grafana-bench-playwright:${{ steps.push-to-gar.outputs.version }}
+          echo "GHCR_IMAGE=$GHCR_IMAGE"
+
+          GHCR_IMAGE_LATEST=ghcr.io/grafana/grafana-bench-playwright:latest
+          echo "GHCR_IMAGE_LATEST=$GHCR_IMAGE_LATEST"
+
+          docker buildx imagetools create \
+            --tag $GHCR_IMAGE --tag $GHCR_IMAGE_LATEST \
+            $GAR_IMAGE
