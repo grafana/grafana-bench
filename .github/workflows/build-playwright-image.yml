@@ -46,17 +46,24 @@ jobs:
           #  exit 1
           #fi
 
-      - name: mount and run plugin-e2e test suite
+      - name: checkout and run plugin-e2e test suite
+        env:
+          TEST_SUITE_REPO_TOKEN: ${{ github.token }}
         run: |
-          docker run --rm --network=host --volume="./CI/:/home/bench/tests/CI/" \
+          docker run --rm -e TEST_SUITE_REPO_TOKEN --network=host \
             localhost:5000/grafana-bench-test-playwright:latest test \
-              --config "/home/bench/tests/CI/plugin-e2e.yaml"
-
-      #- name: archive screenshots
-      #  uses: actions/upload-artifact@v4
-      #  with:
-      #    name: screenshots
-      #    path: screenshots
+            --log-level debug \
+            --pw-prepare "yarn install; yarn playwright install" \
+            --pw-execute "yarn playwright test --grep-invert @performance" \
+            --report-format log \
+            --run-trigger grafana-bench-ci \
+            --suite-path ./CI/plugin-e2e \
+            --suite-revision ${{ github.sha }}\
+            --suite-name grafana-bench/ci/plugin-e2e\
+            --suite-repo-url https://github.com/grafana/grafana-bench.git \
+            --test-report-format text \
+            --test-runner playwright \
+            --test-type smoke
 
       - name: checkout and run playwright test suite
         env:
