@@ -11,12 +11,28 @@ permissions:
   contents: read
 
 jobs:
-  test-bench:
+  test-go:
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Test
+        run: go test -v ./...
+
+      - name: Build
+        run: go build -v ./...
+
+  test-binary:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
-
     services:
       grafana:
         image: grafana/grafana:latest
@@ -34,12 +50,6 @@ jobs:
 
       - name: Set up k6
         run: go install go.k6.io/k6@latest
-
-      - name: Test
-        run: go test -v ./...
-
-      - name: Build
-        run: go build -v ./...
 
       - name: Install
         run: go install
@@ -68,7 +78,7 @@ jobs:
             --test-trigger grafana-bench-ci \
             --slack-notifications
 
-  test-bench-validate:
+  test-validate:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -131,7 +141,7 @@ jobs:
           fi
 
   build-slim-image:
-    needs: [test-bench]
+    needs: [test-go, test-binary, test-validate]
     permissions:
       contents: read
       packages: write
@@ -139,7 +149,7 @@ jobs:
     uses: ./.github/workflows/build-slim-image.yml
 
   build-playwright-image:
-    needs: [test-bench]
+    needs: [test-go, test-binary, test-validate]
     permissions:
       contents: read
       packages: write
