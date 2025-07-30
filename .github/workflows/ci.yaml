@@ -130,10 +130,10 @@ jobs:
             exit 1
           fi
 
-    build-slim-image:
-      needs: [test-bench]
-      uses: ./.github/workflows/build-slim-image.yml
+  build-slim-image:
+    needs: [test-bench]
+    uses: ./.github/workflows/build-slim-image.yml
 
-    build-playwright-image:
-      needs: [test-bench]
-      uses: ./.github/workflows/build-playwright-image.yml
+  build-playwright-image:
+    needs: [test-bench]
+    uses: ./.github/workflows/build-playwright-image.yml

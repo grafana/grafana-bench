@@ -128,7 +128,7 @@ jobs:
   publish-prod-playwright:
     # publish tagged versions to prod
     if: ${{ startsWith(github.ref, 'refs/tags/v') }}
-    needs: [test-bench, test-container-slim]
+    needs: [test-container-playwright]
     runs-on: ubuntu-latest
     permissions:
       contents: read
