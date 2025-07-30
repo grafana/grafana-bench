@@ -51,7 +51,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
 
 # Create bench user and group with known IDs
 RUN groupadd -g 127 bench && \
-  useradd --no-create-home --uid 1001 --gid 127 bench
+  useradd --no-create-home --uid 1027 --gid 127 bench
 
 # Configure fixuid to map the bench user to the uid:gid of the user invoking the image
 RUN mkdir -p /etc/fixuid && \
