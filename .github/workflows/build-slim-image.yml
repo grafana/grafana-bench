@@ -2,6 +2,9 @@ name: build publish slim image
 
 on:
   workflow_call:
+    secrets:
+      GITHUB_TOKEN:
+        required: true
 
 jobs:
   test-container:
@@ -38,9 +41,9 @@ jobs:
         run: |
           curl http://localhost:3000
 
-      - name: checkout and run playwright test suite
+      - name: checkout and run api-tests suite
         env:
-          TEST_SUITE_REPO_TOKEN: ${{ github.token }}
+          TEST_SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           docker run --rm -e TEST_SUITE_REPO_TOKEN --network=host \
             localhost:5000/grafana-bench-test:latest test \
