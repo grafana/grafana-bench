@@ -1,0 +1,20 @@
+name: 'Setup K6'
+description: 'Install the latest version of K6'
+runs:
+  using: 'composite'
+  steps:
+    - name: Install K6
+      shell: bash
+      run: |
+        LATEST_VERSION=$(curl -s https://api.github.com/repos/grafana/k6/releases/latest | jq -r '.tag_name // "v0.54.0"')
+        echo "Installing k6 version: $LATEST_VERSION"
+        
+        DOWNLOAD_URL="https://github.com/grafana/k6/releases/download/${LATEST_VERSION}/k6-${LATEST_VERSION}-linux-amd64.tar.gz"
+        if wget -q --spider "$DOWNLOAD_URL"; then
+          wget -q -O - "$DOWNLOAD_URL" | tar -xzf - --strip-components=1
+          sudo mv k6 /usr/local/bin/
+          k6 version
+        else
+          echo "Failed to download latest k6, falling back to go install"
+          go install go.k6.io/k6@latest
+        fi

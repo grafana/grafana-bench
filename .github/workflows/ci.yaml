@@ -23,6 +23,8 @@ jobs:
           go-version-file: go.mod
           cache: false
 
+      - uses: ./.github/actions/setup-k6
+
       - name: Test
         run: go test -v ./...
 
@@ -49,8 +51,7 @@ jobs:
           go-version-file: go.mod
           cache: false
 
-      - name: Set up k6
-        run: go install go.k6.io/k6@latest
+      - uses: ./.github/actions/setup-k6
 
       - name: Install
         run: go install

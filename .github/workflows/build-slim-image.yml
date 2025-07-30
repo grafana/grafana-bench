@@ -1,4 +1,4 @@
-name: build publish playwright image
+name: build publish slim image
 
 on:
   workflow_call:
