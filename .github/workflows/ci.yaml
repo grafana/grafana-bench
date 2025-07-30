@@ -132,8 +132,16 @@ jobs:
 
   build-slim-image:
     needs: [test-bench]
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
     uses: ./.github/workflows/build-slim-image.yml
 
   build-playwright-image:
     needs: [test-bench]
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
     uses: ./.github/workflows/build-playwright-image.yml
