@@ -150,7 +150,7 @@ jobs:
       id-token: write
     uses: ./.github/workflows/build-slim-image.yml
     secrets:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      TEST_SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-playwright-image:
     needs: [test-go, test-binary, test-validate]

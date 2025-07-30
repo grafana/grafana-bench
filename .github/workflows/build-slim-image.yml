@@ -3,7 +3,7 @@ name: build publish slim image
 on:
   workflow_call:
     secrets:
-      GITHUB_TOKEN:
+      TEST_SUITE_REPO_TOKEN:
         required: true
 
 jobs:
@@ -43,7 +43,7 @@ jobs:
 
       - name: checkout and run api-tests suite
         env:
-          TEST_SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TEST_SUITE_REPO_TOKEN: ${{ secrets.TEST_SUITE_REPO_TOKEN }}
         run: |
           docker run --rm -e TEST_SUITE_REPO_TOKEN --network=host \
             localhost:5000/grafana-bench-test:latest test \
