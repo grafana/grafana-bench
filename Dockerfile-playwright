@@ -31,8 +31,8 @@ RUN CGO_ENABLED=0 go build \
   -trimpath -o build/grafana-bench .
 
 # Install fixuid to allow setting the right uid when running local tests
-RUN go get github.com/boxboat/fixuid@${FIXUID_VERSION} && \
-  CGO_ENABLED=0 go build -o build/fixuid github.com/boxboat/fixuid
+#RUN go get github.com/boxboat/fixuid@${FIXUID_VERSION} && \
+#  CGO_ENABLED=0 go build -o build/fixuid github.com/boxboat/fixuid
 
 FROM grafana/k6:latest AS k6
 
@@ -50,21 +50,21 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
   && rm -rf /var/lib/apt/lists/*
 
 # Create bench user and group with known IDs
-RUN groupadd -g 127 bench && \
-  useradd --no-create-home --uid 1001 --gid 127 bench
+#RUN groupadd -g 127 bench && \
+#  useradd --no-create-home --uid 1001 --gid 127 bench
 
 # Configure fixuid to map the bench user to the uid:gid of the user invoking the image
-RUN mkdir -p /etc/fixuid && \
-  printf "user: bench\ngroup: bench\n" > /etc/fixuid/config.yml
+#RUN mkdir -p /etc/fixuid && \
+#  printf "user: bench\ngroup: bench\n" > /etc/fixuid/config.yml
 
 # Copy binaries
 COPY --from=k6 /usr/bin/k6 /usr/local/bin/k6
 COPY --from=builder /app/build/grafana-bench /usr/local/bin/grafana-bench
-COPY --from=builder /app/build/fixuid /usr/local/bin/
+#COPY --from=builder /app/build/fixuid /usr/local/bin/
 COPY docker-entrypoint.sh /usr/local/bin/entrypoint.sh
 
-RUN chown root:root /usr/local/bin/fixuid && \
-  chmod 4755 /usr/local/bin/fixuid
+#RUN chown root:root /usr/local/bin/fixuid && \
+#  chmod 4755 /usr/local/bin/fixuid
 
 # Set up working directory and permissions
 WORKDIR /home/bench
