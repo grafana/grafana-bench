@@ -46,6 +46,17 @@ jobs:
           echo "=== CI directory ownership ==="
           stat ./CI/
 
+      - name: check Grafana instance
+        run: |
+          curl http://localhost:3000
+          #RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000)
+          #echo $response
+          #if [ $RESPONSE -ne 200 ]; then
+          #  sleep 5;
+          #  echo "Grafana is not accessible"
+          #  exit 1
+          #fi
+          
       - name: mount and run plugin-e2e test suite in dev container (FIXUID)
         env:
           TEST_SUITE_REPO_TOKEN: ${{ github.token }}
@@ -64,17 +75,6 @@ jobs:
             ENABLE_FIXUID=false
           load: true
           tags: localhost:5000/grafana-bench-test-playwright:latest
-
-      - name: check Grafana instance
-        run: |
-          curl http://localhost:3000
-          #RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000)
-          #echo $response
-          #if [ $RESPONSE -ne 200 ]; then
-          #  sleep 5;
-          #  echo "Grafana is not accessible"
-          #  exit 1
-          #fi
 
       - name: checkout and run plugin-e2e test suite
         env:
