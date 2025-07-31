@@ -68,8 +68,11 @@ COPY docker-entrypoint.sh /usr/local/bin/entrypoint.sh
 
 # Set up working directory and permissions
 WORKDIR /home/bench
-RUN mkdir -p /home/bench/tests /home/bench/.cache && \
-  chown -R bench:bench /home/bench
+RUN mkdir -p /home/bench/tests && chown -R bench:bench /home/bench
+
+## playwright cache
+RUN mkdir /home/bench/.cache && chown -R bench:bench /home/bench/.cache
+
 
 USER bench
 

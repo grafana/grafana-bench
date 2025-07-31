@@ -42,8 +42,8 @@ USER root
 RUN apk add --no-cache ca-certificates git wget
 
 ## add bench user and group with known group id and user id
-#RUN addgroup -g 127 bench && \
-#  adduser --disabled-password -u 1001 -G bench bench
+RUN addgroup -g 127 bench && \
+  adduser --disabled-password -u 1001 -G bench bench
 
 # configure fixuid to map the bench user to the uid:gui of the user invoking the image
 #RUN mkdir -p /etc/fixuid && \
@@ -62,9 +62,6 @@ WORKDIR /home/bench
 
 ## ensure permissions on default test directory
 RUN mkdir /home/bench/tests && chown -R bench:bench /home/bench/tests
-
-## playwright cache
-RUN mkdir /home/bench/.cache && chown -R bench:bench /home/bench/.cache
 
 USER bench
 
