@@ -63,8 +63,18 @@ jobs:
         run: |
           docker run --rm --network=host --volume="./CI/:/home/pwuser/tests/CI/" \
              localhost:5000/grafana-bench-test-playwright-dev:latest test \
-              --test-type smoke \
-              --test-runner k6 \
+              --log-level debug \
+              --pw-prepare "yarn install; yarn playwright install" \
+              --pw-execute "yarn playwright test --grep-invert @performance" \
+              --report-format log \
+              --run-trigger grafana-bench-ci \
+              --suite-path ./CI/plugin-e2e \
+              --suite-revision ${{ github.sha }}\
+              --suite-name grafana-bench-dev/ci/plugin-e2e \
+              --suite-repo-url https://github.com/grafana/grafana-bench.git \
+              --test-report-format text \
+              --test-runner playwright \
+              --test-type smoke
 
       - name: build prod container
         uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
