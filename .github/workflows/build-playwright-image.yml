@@ -56,7 +56,7 @@ jobs:
           #  echo "Grafana is not accessible"
           #  exit 1
           #fi
-          
+
       - name: mount and run plugin-e2e test suite in dev container (FIXUID)
         env:
           TEST_SUITE_REPO_TOKEN: ${{ github.token }}

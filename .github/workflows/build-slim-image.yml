@@ -98,7 +98,7 @@ jobs:
 
   publish-dev-slim:
     # publish dev images from main to dev
-    #if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [test-container-slim]
     runs-on: ubuntu-latest
     permissions:
@@ -189,7 +189,7 @@ jobs:
           persist-credentials: false
       - name: Set up QEMU
         uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
-      
+
       # Build and publish dev variant
       - uses: grafana/shared-workflows/actions/push-to-gar-docker@de81a07e6f6718fb289c7a4612c9c514c28bd798 # v0.4.1
         id: push-to-gar-dev
