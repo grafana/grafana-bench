@@ -36,6 +36,16 @@ jobs:
           load: true
           tags: localhost:5000/grafana-bench-test-playwright-dev:latest
 
+      - name: debug permissions before mounting
+        run: |
+          echo "=== Host CI directory permissions ==="
+          ls -la ./CI/
+          ls -la ./CI/plugin-e2e/ || echo "plugin-e2e directory doesn't exist"
+          echo "=== Current user info ==="
+          id
+          echo "=== CI directory ownership ==="
+          stat ./CI/
+
       - name: mount and run plugin-e2e test suite in dev container (FIXUID)
         env:
           TEST_SUITE_REPO_TOKEN: ${{ github.token }}
