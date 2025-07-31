@@ -56,7 +56,7 @@ jobs:
         run: |
           docker run --rm --network=host --volume="./CI/:/home/bench/tests/CI/" \
              localhost:5000/grafana-bench-test-dev:latest test \
-              --config "/home/bench/tests/CI/plugin-e2e.yaml"
+              --config "/home/bench/tests/CI/k6.yaml"
 
 
       #- name: Debug token availability
