@@ -7,7 +7,7 @@ on:
         required: true
 
 jobs:
-  test-container:
+  test-container-slim:
     runs-on: ubuntu-latest
 
     # run local registry that buildx can push to
@@ -52,6 +52,13 @@ jobs:
         run: |
           curl http://localhost:3000
 
+      - name: mount and run k6 tests
+        run: |
+          docker run --rm --network=host --volume="./CI/:/home/bench/tests/CI/" \
+             localhost:5000/grafana-bench-test-slim-dev:latest test \
+              --config "/home/bench/tests/CI/plugin-e2e.yaml"
+
+
       #- name: Debug token availability
       #  env:
       #    SUITE_REPO_TOKEN: ${{ secrets.TEST_SUITE_REPO_TOKEN }}
@@ -91,8 +98,8 @@ jobs:
 
   publish-dev-slim:
     # publish dev images from main to dev
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [test-container]
+    #if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [test-container-slim]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -164,7 +171,7 @@ jobs:
   publish-prod-slim:
     # publish tagged versions to prod (both dev and prod variants)
     if: ${{ startsWith(github.ref, 'refs/tags/v') }}
-    needs: [test-container]
+    needs: [test-container-slim]
     runs-on: ubuntu-latest
     permissions:
       contents: read

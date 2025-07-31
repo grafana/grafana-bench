@@ -77,7 +77,6 @@ RUN mkdir -p /home/bench/tests && chown -R bench:bench /home/bench
 ## playwright cache
 RUN mkdir /home/bench/.cache && chown -R bench:bench /home/bench/.cache
 
-
 USER bench
 
 # Call fixuid before calling bench to set the file permissions when running locally
