@@ -49,9 +49,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
-# Create bench user and group with known IDs
-RUN groupadd -g 127 bench && \
-  useradd --no-create-home --uid 1002 --gid 127 bench
+# Use existing pwuser from Playwright base image instead of creating bench user
 
 # Copy binaries
 COPY --from=k6 /usr/bin/k6 /usr/local/bin/k6
@@ -63,7 +61,7 @@ ARG ENABLE_FIXUID=false
 COPY --from=builder /app/build/fixuid /tmp/fixuid
 RUN if [ "$ENABLE_FIXUID" = "true" ]; then \
       mkdir -p /etc/fixuid && \
-      printf "user: bench\ngroup: bench\npaths:\n  - /home/bench\n  - /home/bench/.cache\n  - /home/bench/tests\n  - /tmp\n" > /etc/fixuid/config.yml && \
+      printf "user: pwuser\ngroup: pwuser\npaths:\n  - /home/pwuser\n  - /home/pwuser/.cache\n  - /home/pwuser/tests\n  - /tmp\n" > /etc/fixuid/config.yml && \
       mv /tmp/fixuid /usr/local/bin/fixuid && \
       chown root:root /usr/local/bin/fixuid && \
       chmod 4755 /usr/local/bin/fixuid; \
@@ -71,13 +69,13 @@ RUN if [ "$ENABLE_FIXUID" = "true" ]; then \
       rm /tmp/fixuid; \
     fi
 
-# Set up working directory and permissions
-WORKDIR /home/bench
-RUN mkdir -p /home/bench/tests && chown -R bench:bench /home/bench
-## playwright cache
-RUN mkdir /home/bench/.cache && chown -R bench:bench /home/bench/.cache
+# Set up working directory and permissions for pwuser
+WORKDIR /home/pwuser
+RUN mkdir -p /home/pwuser/tests && chown -R pwuser:pwuser /home/pwuser/tests
+## playwright cache (should already exist, but ensure ownership)
+RUN mkdir -p /home/pwuser/.cache && chown -R pwuser:pwuser /home/pwuser/.cache
 
-USER bench
+USER pwuser
 
 # Call fixuid before calling bench to set the file permissions when running locally
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

@@ -43,7 +43,7 @@ RUN apk add --no-cache ca-certificates git wget
 
 ## add bench user and group with known group id and user id
 RUN addgroup -g 127 bench && \
-  adduser --disabled-password -u 1002 -G bench bench
+  adduser --disabled-password -u 1001 -G bench bench
 
 # Copy binaries
 COPY --from=k6 /usr/bin/k6 /usr/local/bin/k6
