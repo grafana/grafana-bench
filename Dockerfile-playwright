@@ -50,8 +50,8 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
   && rm -rf /var/lib/apt/lists/*
 
 # Create bench user and group with known IDs
-#RUN groupadd -g 127 bench && \
-#  useradd --no-create-home --uid 1001 --gid 127 bench
+RUN groupadd -g 127 bench && \
+  useradd --no-create-home --uid 1001 --gid 127 bench
 
 # Configure fixuid to map the bench user to the uid:gid of the user invoking the image
 #RUN mkdir -p /etc/fixuid && \
@@ -69,7 +69,6 @@ COPY docker-entrypoint.sh /usr/local/bin/entrypoint.sh
 # Set up working directory and permissions
 WORKDIR /home/bench
 RUN mkdir -p /home/bench/tests && chown -R bench:bench /home/bench
-
 ## playwright cache
 RUN mkdir /home/bench/.cache && chown -R bench:bench /home/bench/.cache
 
