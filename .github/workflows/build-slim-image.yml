@@ -28,12 +28,23 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: build container
+      - name: build dev container
         uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
         with:
           context: .
           build-args: |-
             BENCH_REVISION=${{ github.sha }}
+            ENABLE_FIXUID=true
+          load: true
+          tags: localhost:5000/grafana-bench-test-dev:latest
+
+      - name: build prod container
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          build-args: |-
+            BENCH_REVISION=${{ github.sha }}
+            ENABLE_FIXUID=false
           load: true
           tags: localhost:5000/grafana-bench-test:latest
 
@@ -79,7 +90,7 @@ jobs:
       #      --test-type smoke
 
   publish-dev-slim:
-    # publish latest from main to dev
+    # publish dev images from main to dev
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [test-container]
     runs-on: ubuntu-latest
@@ -102,22 +113,48 @@ jobs:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
       - uses: grafana/shared-workflows/actions/push-to-gar-docker@de81a07e6f6718fb289c7a4612c9c514c28bd798 # v0.4.1
-        id: push-to-gar
+        id: push-to-gar-dev
         with:
           environment: "dev"
           image_name: grafana-bench
           platforms: linux/amd64,linux/arm64
           build-args: |-
             BENCH_REVISION=${{ env.SHORT_SHA }}
+            ENABLE_FIXUID=true
+          tags: |-
+            dev-${{ env.SHORT_SHA }}
+            dev-latest
+      - name: copy dev image to ghcr.io
+        run: |
+          # this is a multi-line string, so just use the first
+          GAR_IMAGE=$(echo "${{ steps.push-to-gar-dev.outputs.tags }}" | head -n1)
+          echo "GAR_IMAGE=$GAR_IMAGE"
+          GHCR_IMAGE=ghcr.io/grafana/grafana-bench:dev-${{ steps.push-to-gar-dev.outputs.version }}
+          echo "GHCR_IMAGE=$GHCR_IMAGE"
+
+          docker buildx imagetools create \
+            --tag $GHCR_IMAGE \
+            $GAR_IMAGE
+
+      # Build and publish prod images
+      - uses: grafana/shared-workflows/actions/push-to-gar-docker@de81a07e6f6718fb289c7a4612c9c514c28bd798 # v0.4.1
+        id: push-to-gar-prod
+        with:
+          environment: "dev"
+          image_name: grafana-bench
+          platforms: linux/amd64,linux/arm64
+          build-args: |-
+            BENCH_REVISION=${{ env.SHORT_SHA }}
+            ENABLE_FIXUID=false
           tags: |-
             ${{ env.SHORT_SHA }}
             latest
-      - name: copy image to ghcr.io
+      - name: copy prod image to ghcr.io
         run: |
           # this is a multi-line string, so just use the first
-          GAR_IMAGE=$(echo "${{ steps.push-to-gar.outputs.tags }}" | head -n1)
+          GAR_IMAGE=$(echo "${{ steps.push-to-gar-prod.outputs.tags }}" | head -n1)
           echo "GAR_IMAGE=$GAR_IMAGE"
-          GHCR_IMAGE=ghcr.io/grafana/grafana-bench:${{ steps.push-to-gar.outputs.version }}
+          GHCR_IMAGE=ghcr.io/grafana/grafana-bench:${{ steps.push-to-gar-prod.outputs.version }}
           echo "GHCR_IMAGE=$GHCR_IMAGE"
 
           docker buildx imagetools create \
@@ -125,7 +162,7 @@ jobs:
             $GAR_IMAGE
 
   publish-prod-slim:
-    # publish tagged versions to prod
+    # publish tagged versions to prod (both dev and prod variants)
     if: ${{ startsWith(github.ref, 'refs/tags/v') }}
     needs: [test-container]
     runs-on: ubuntu-latest
@@ -145,25 +182,56 @@ jobs:
           persist-credentials: false
       - name: Set up QEMU
         uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
+      
+      # Build and publish dev variant
       - uses: grafana/shared-workflows/actions/push-to-gar-docker@de81a07e6f6718fb289c7a4612c9c514c28bd798 # v0.4.1
-        id: push-to-gar
+        id: push-to-gar-dev
         with:
           environment: "prod"
           image_name: grafana-bench
           platforms: linux/amd64,linux/arm64
           build-args: |-
             BENCH_REVISION=${{ github.ref_name }}
+            ENABLE_FIXUID=true
+          tags: |-
+            dev-${{ github.ref_name }}
+            dev-${{ github.sha }}
+            dev-latest
+      - name: copy dev image to ghcr.io
+        run: |
+          GAR_IMAGE=$(echo "${{ steps.push-to-gar-dev.outputs.tags }}" | head -n1)
+          echo "GAR_IMAGE=$GAR_IMAGE"
+
+          GHCR_IMAGE=ghcr.io/grafana/grafana-bench:dev-${{ steps.push-to-gar-dev.outputs.version }}
+          echo "GHCR_IMAGE=$GHCR_IMAGE"
+
+          GHCR_IMAGE_LATEST=ghcr.io/grafana/grafana-bench:dev-latest
+          echo "GHCR_IMAGE_LATEST=$GHCR_IMAGE_LATEST"
+
+          docker buildx imagetools create \
+            --tag $GHCR_IMAGE --tag $GHCR_IMAGE_LATEST \
+            $GAR_IMAGE
+
+      # Build and publish prod variant
+      - uses: grafana/shared-workflows/actions/push-to-gar-docker@de81a07e6f6718fb289c7a4612c9c514c28bd798 # v0.4.1
+        id: push-to-gar-prod
+        with:
+          environment: "prod"
+          image_name: grafana-bench
+          platforms: linux/amd64,linux/arm64
+          build-args: |-
+            BENCH_REVISION=${{ github.ref_name }}
+            ENABLE_FIXUID=false
           tags: |-
             ${{ github.ref_name }}
             ${{ github.sha }}
             latest
-      - name: copy image to ghcr.io
+      - name: copy prod image to ghcr.io
         run: |
-          # this is a multi-line string, so just use the first
-          GAR_IMAGE=$(echo "${{ steps.push-to-gar.outputs.tags }}" | head -n1)
+          GAR_IMAGE=$(echo "${{ steps.push-to-gar-prod.outputs.tags }}" | head -n1)
           echo "GAR_IMAGE=$GAR_IMAGE"
 
-          GHCR_IMAGE=ghcr.io/grafana/grafana-bench:${{ steps.push-to-gar.outputs.version }}
+          GHCR_IMAGE=ghcr.io/grafana/grafana-bench:${{ steps.push-to-gar-prod.outputs.version }}
           echo "GHCR_IMAGE=$GHCR_IMAGE"
 
           GHCR_IMAGE_LATEST=ghcr.io/grafana/grafana-bench:latest
