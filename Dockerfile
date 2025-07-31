@@ -55,7 +55,7 @@ ARG ENABLE_FIXUID=false
 COPY --from=builder /app/build/fixuid /tmp/fixuid
 RUN if [ "$ENABLE_FIXUID" = "true" ]; then \
       mkdir -p /etc/fixuid && \
-      printf "user: bench\ngroup: bench\n" > /etc/fixuid/config.yml && \
+      printf "user: bench\ngroup: bench\npaths:\n  - /home/bench\n  - /tmp\n" > /etc/fixuid/config.yml && \
       mv /tmp/fixuid /usr/local/bin/fixuid && \
       chown root:root /usr/local/bin/fixuid && \
       chmod 4755 /usr/local/bin/fixuid; \
