@@ -52,10 +52,10 @@ jobs:
         run: |
           curl http://localhost:3000
 
-      - name: mount and run k6 tests
+      - name: mount and run k6 tests  in dev container (FIXUID)
         run: |
           docker run --rm --network=host --volume="./CI/:/home/bench/tests/CI/" \
-             localhost:5000/grafana-bench-test-slim-dev:latest test \
+             localhost:5000/grafana-bench-test-dev:latest test \
               --config "/home/bench/tests/CI/plugin-e2e.yaml"
 
 
