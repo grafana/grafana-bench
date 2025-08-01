@@ -1,0 +1,157 @@
+name: build publish slim image
+
+on:
+  workflow_call:
+    secrets:
+      TEST_SUITE_REPO_TOKEN:
+        required: true
+
+jobs:
+  test-container-base:
+    runs-on: ubuntu-latest
+
+    # run local registry that buildx can push to
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
+      grafana:
+        image: grafana/grafana:latest
+        ports:
+          - 3000:3000
+
+    env:
+      DOCKER_CLI_EXPERIMENTAL: enabled
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: get short sha
+        run: echo "SHORT_SHA=$(echo ${{ github.sha }} | cut -c 1-7)" >> $GITHUB_ENV
+      - name: build dev container
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          file: Dockerfile.dev
+          build-args: |-
+            BENCH_REVISION=${{ env.SHORT_SHA }}
+          load: true
+          tags: localhost:5000/grafana-bench-test-dev:latest
+
+      - name: build prod container
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          file: Dockerfile
+          build-args: |-
+            BENCH_REVISION=${{ env.SHORT_SHA }}
+          load: true
+          tags: localhost:5000/grafana-bench-test:latest
+
+      - name: check Grafana instance
+        run: |
+          curl http://localhost:3000
+
+      - name: mount and run k6 tests  in dev container (FIXUID)
+        run: |
+          docker run --rm --network=host --volume="./CI/:/tests/CI/" \
+             localhost:5000/grafana-bench-test-dev:latest test \
+              --config "/tests/CI/k6.yaml"
+
+  publish-dev-base:
+    # publish dev images from main to dev
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [test-container-base]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - name: get short sha
+        run: echo "SHORT_SHA=$(echo ${{ github.sha }} | cut -c 1-7)" >> $GITHUB_ENV
+      - name: Log into ghcr.io
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
+      - uses: grafana/shared-workflows/actions/push-to-gar-docker@de81a07e6f6718fb289c7a4612c9c514c28bd798 # v0.4.1
+        id: push-to-gar-dev
+        with:
+          environment: "dev"
+          file: Dockerfile.dev
+          image_name: grafana-bench
+          platforms: linux/amd64,linux/arm64
+          build-args: |-
+            BENCH_REVISION=${{ env.SHORT_SHA }}
+          tags: |-
+            dev-${{ env.SHORT_SHA }}
+            dev-latest
+      - name: copy dev image to ghcr.io
+        run: |
+          # this is a multi-line string, so just use the first
+          GAR_IMAGE=$(echo "${{ steps.push-to-gar-dev.outputs.tags }}" | head -n1)
+          echo "GAR_IMAGE=$GAR_IMAGE"
+
+          GHCR_IMAGE=ghcr.io/grafana/grafana-bench:dev-${{ steps.push-to-gar-dev.outputs.version }}
+          echo "GHCR_IMAGE=$GHCR_IMAGE"
+
+          docker buildx imagetools create \
+            --tag $GHCR_IMAGE \
+            $GAR_IMAGE
+
+  publish-prod-base:
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    needs: [test-container-base]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - name: Log into ghcr.io
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
+      - uses: grafana/shared-workflows/actions/push-to-gar-docker@de81a07e6f6718fb289c7a4612c9c514c28bd798 # v0.4.1
+        id: push-to-gar-prod
+        with:
+          environment: "prod"
+          file: Dockerfile
+          image_name: grafana-bench
+          platforms: linux/amd64,linux/arm64
+          build-args: |-
+            BENCH_REVISION=${{ github.ref_name }}
+          tags: |-
+            ${{ github.ref_name }}
+            ${{ env.SHORT_SHA }}
+            latest
+      - name: copy prod image to ghcr.io
+        run: |
+          GAR_IMAGE=$(echo "${{ steps.push-to-gar-prod.outputs.tags }}" | head -n1)
+          echo "GAR_IMAGE=$GAR_IMAGE"
+
+          GHCR_IMAGE=ghcr.io/grafana/grafana-bench:${{ steps.push-to-gar-prod.outputs.version }}
+          echo "GHCR_IMAGE=$GHCR_IMAGE"
+
+          GHCR_IMAGE_LATEST=ghcr.io/grafana/grafana-bench:latest
+          echo "GHCR_IMAGE_LATEST=$GHCR_IMAGE_LATEST"
+
+          docker buildx imagetools create \
+            --tag $GHCR_IMAGE --tag $GHCR_IMAGE_LATEST \
+            $GAR_IMAGE

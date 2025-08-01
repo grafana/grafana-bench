@@ -2,11 +2,11 @@ trigger: "ci"
 
 test:
   type: "smoke"
-  runner: "playwright"
+  runner: "k6"
 
 suite:
   name: "CI"
-  base: "/tests/CI/plugin-e2e"
+  base: "/tests/CI/k6"
 
 grafana:
   url: "http://localhost:3000"
@@ -14,9 +14,6 @@ grafana:
     user: "admin"
     password: "admin"
 
-pw:
-  prepare: "yarn install; yarn playwright install"
-  execute: "yarn run test --grep-invert @performance"
-
 log:
   level: DEBUG
+

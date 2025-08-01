@@ -1,6 +1,5 @@
 #!/bin/sh
 set -e
 
-eval "$(fixuid)"
-
+# Production entrypoint - no fixuid
 exec grafana-bench "$@"
