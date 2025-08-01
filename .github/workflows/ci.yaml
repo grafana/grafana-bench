@@ -142,7 +142,7 @@ jobs:
             exit 1
           fi
 
-  build-slim-image:
+  build-base-image:
     needs: [test-go, test-binary, test-validate]
     permissions:
       contents: read

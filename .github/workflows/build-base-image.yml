@@ -7,7 +7,7 @@ on:
         required: true
 
 jobs:
-  test-container-slim:
+  test-container-base:
     runs-on: ubuntu-latest
 
     # run local registry that buildx can push to
@@ -58,48 +58,10 @@ jobs:
              localhost:5000/grafana-bench-test-dev:latest test \
               --config "/home/bench/tests/CI/k6.yaml"
 
-
-      #- name: Debug token availability
-      #  env:
-      #    SUITE_REPO_TOKEN: ${{ secrets.TEST_SUITE_REPO_TOKEN }}
-      #  run: |
-      #    echo "Token length: ${#SUITE_REPO_TOKEN}"
-      #    if [ -z "$SUITE_REPO_TOKEN" ]; then
-      #      echo "ERROR: SUITE_REPO_TOKEN is empty or not set"
-      #      exit 1
-      #    else
-      #      echo "Token is set (first 8 chars): ${SUITE_REPO_TOKEN:0:8}..."
-      #    fi
-
-      #- name: Test GitHub API access with token
-      #  env:
-      #    SUITE_REPO_TOKEN: ${{ secrets.TEST_SUITE_REPO_TOKEN }}
-      #  run: |
-      #    echo "Testing GitHub API access..."
-      #    curl -H "Authorization: token $SUITE_REPO_TOKEN" \
-      #         -H "Accept: application/vnd.github.v3+json" \
-      #         https://api.github.com/repos/grafana/grafana-api-tests \
-      #         -s -o /dev/null -w "HTTP Status: %{http_code}\n" || echo "API test failed"
-
-      #- name: checkout and run api-tests suite
-      #  env:
-      #    SUITE_REPO_TOKEN: ${{ secrets.TEST_SUITE_REPO_TOKEN }}
-      #  run: |
-      #    docker run --rm -e SUITE_REPO_TOKEN --network=host \
-      #      localhost:5000/grafana-bench-test:latest test \
-      #      --log-level debug \
-      #      --run-trigger grafana-bench-ci \
-      #      --suite-path ./tests \
-      #      --suite-revision main \
-      #      --suite-name grafana-bench/ci/api-tests\
-      #      --suite-repo-url https://github.com/grafana/grafana-api-tests.git \
-      #      --test-report-format log \
-      #      --test-type smoke
-
-  publish-dev-slim:
+  publish-dev-base:
     # publish dev images from main to dev
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [test-container-slim]
+    needs: [test-container-base]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -168,10 +130,10 @@ jobs:
             --tag $GHCR_IMAGE \
             $GAR_IMAGE
 
-  publish-prod-slim:
+  publish-prod-base:
     # publish tagged versions to prod (both dev and prod variants)
     if: ${{ startsWith(github.ref, 'refs/tags/v') }}
-    needs: [test-container-slim]
+    needs: [test-container-base]
     runs-on: ubuntu-latest
     permissions:
       contents: read
