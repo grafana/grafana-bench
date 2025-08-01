@@ -148,7 +148,7 @@ jobs:
       contents: read
       packages: write
       id-token: write
-    uses: ./.github/workflows/build-slim-image.yml
+    uses: ./.github/workflows/build-base-image.yml
     secrets:
       TEST_SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
