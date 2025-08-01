@@ -17,7 +17,6 @@ import (
 )
 
 const (
-	chromiumPath = "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH"
 	ExecutorName = "playwright"
 )
 
@@ -62,13 +61,8 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 		return executor.SuiteRunSummary{}, errMissingExecuteCmd
 	}
 
-	if os.Getenv(chromiumPath) == "" {
-		t.Log.Warn("playwright configuration", "environment variable not set", chromiumPath)
-	}
-
 	playwrightEnv := map[string]string{}
 	playwrightEnv["path"] = os.Getenv("PATH")
-	playwrightEnv[chromiumPath] = os.Getenv(chromiumPath)
 
 	maps.Copy(playwrightEnv, env)
 
