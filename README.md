@@ -2,7 +2,8 @@
 
 Grafana bench is a tool for testing Grafana.
 
-It's built on top of k6, and [Grafana API Tests](https://github.com/grafana/grafana-api-tests) to build and test a grafana on the platform and architecture of your choosing.
+It's built on top of k6, and [Grafana API Tests](https://github.com/grafana/grafana-api-tests)
+to build and test a grafana on the platform and architecture of your choosing.
 
 ## Docs
 
@@ -24,6 +25,55 @@ having bench check out tests from a repo.
 
 * grafana-bench-playwright is for browser testing and includes all the
 playwright dependencies preinstalled for you preinstalled for you.
+
+## Running locally
+
+1. build the container you need
+
+`docker build . -f Dockerfile-playwright.dev  -t bench-playwright:dev`
+
+2. start a grafana instance
+
+`docker run --rm grafana/grafana:latest -P 3000:3000`
+
+3. run your tests with bench
+
+If you're checking out tests from a repo include the SUITE_REPO_TOKEN with permissions
+to access the repo with tests
+
+```sh
+    docker run --rm -e SUITE_REPO_TOKEN --network=host bench-playwright:dev test\
+    --log-level debug \
+    --pw-prepare "yarn install; yarn playwright install" \
+    --pw-execute "yarn playwright test" \
+    --report-format log \
+    --run-trigger grafana-bench-ci \
+    --suite-path ./CI/playwright \
+    --suite-revision main \
+    --suite-name grafana-bench/ci/playwright \
+    --suite-repo-url https://github.com/grafana/grafana-bench.git \
+    --test-report-format text \
+    --test-runner playwright \
+    --test-type smoke
+```
+
+If you're running local tests, mount the volume inside the container.
+
+```sh
+    docker run --rm --network=host --volume="./CI/:/home/pwuser/tests/CI/" \
+     localhost:5000/grafana-bench-test-playwright-dev:latest test \
+      --log-level debug \
+      --pw-prepare "yarn install; yarn playwright install" \
+      --pw-execute "yarn playwright test --grep-invert @performance" \
+      --report-format log \
+      --run-trigger grafana-bench-ci \
+      --suite-path tests/CI/plugin-e2e \
+      --suite-revision ${{ github.sha }}\
+      --suite-name grafana-bench-dev/ci/plugin-e2e \
+      --test-report-format text \
+      --test-runner playwright \
+      --test-type smoke
+```
 
 **NOTE**
 Due to the way dependencies are configured the home directory and user for the grafana-bench-playwright image needs to
