@@ -75,11 +75,6 @@ If you're running local tests, mount the volume inside the container.
       --test-type smoke
 ```
 
-**NOTE**
-Due to the way dependencies are configured the home directory and user for the grafana-bench-playwright image needs to
-be `pwuser` rather than `bench`. So if you would normally put files in `/home/bench/tests` you'll put those in
-`/home/pwuser/tests` instead
-
 ## CLI interface
 
 Grafana bench provided a CLI interface for executing diverse actions implemented as sub-commands.

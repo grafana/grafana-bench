@@ -48,10 +48,10 @@ COPY --from=k6 /usr/bin/k6 /usr/local/bin/k6
 COPY --from=builder /app/build/grafana-bench /usr/local/bin/grafana-bench
 COPY docker-entrypoint.sh /usr/local/bin/entrypoint.sh
 
-WORKDIR /home/bench
+# Create /tests directory as default test location
+RUN mkdir -p /tests && chown -R bench:bench /tests
 
-## ensure permissions on default test directory
-RUN mkdir /home/bench/tests && chown -R bench:bench /home/bench/tests
+WORKDIR /tests
 
 USER bench
 

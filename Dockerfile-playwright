@@ -54,11 +54,12 @@ COPY --from=k6 /usr/bin/k6 /usr/local/bin/k6
 COPY --from=builder /app/build/grafana-bench /usr/local/bin/grafana-bench
 COPY docker-entrypoint.sh /usr/local/bin/entrypoint.sh
 
-# Set up working directory and permissions for pwuser
-WORKDIR /home/pwuser
-RUN mkdir -p /home/pwuser/tests && chown -R pwuser:pwuser /home/pwuser/tests
+# Create /tests directory as default test location
+RUN mkdir -p /tests && chown -R pwuser:pwuser /tests
 ## playwright cache (should already exist, but ensure ownership)
 RUN mkdir -p /home/pwuser/.cache && chown -R pwuser:pwuser /home/pwuser/.cache
+
+WORKDIR /tests
 
 USER pwuser
 

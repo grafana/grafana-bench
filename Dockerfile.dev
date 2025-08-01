@@ -52,14 +52,14 @@ COPY docker-entrypoint-dev.sh /usr/local/bin/entrypoint.sh
 
 # Configure fixuid for development
 RUN mkdir -p /etc/fixuid && \
-  printf "user: bench\ngroup: bench\npaths:\n  - /home/bench\n  - /home/bench/tests\n  - /tmp\n" > /etc/fixuid/config.yml && \
+  printf "user: bench\ngroup: bench\npaths:\n  - /home/bench\n  - /tests\n  - /tmp\n" > /etc/fixuid/config.yml && \
   chown root:root /usr/local/bin/fixuid && \
   chmod 4755 /usr/local/bin/fixuid
 
-WORKDIR /home/bench
+# Create /tests directory as default test location
+RUN mkdir -p /tests && chown -R bench:bench /tests
 
-## ensure permissions on default test directory
-RUN mkdir /home/bench/tests && chown -R bench:bench /home/bench/tests
+WORKDIR /tests
 
 USER bench
 

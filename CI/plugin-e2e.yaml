@@ -6,7 +6,7 @@ test:
 
 suite:
   name: "CI"
-  base: "/home/bench/tests/CI/plugin-e2e"
+  base: "/tests/CI/plugin-e2e"
 
 grafana:
   url: "http://localhost:3000"

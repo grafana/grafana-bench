@@ -54,9 +54,9 @@ jobs:
 
       - name: mount and run k6 tests  in dev container (FIXUID)
         run: |
-          docker run --rm --network=host --volume="./CI/:/home/bench/tests/CI/" \
+          docker run --rm --network=host --volume="./CI/:/tests/CI/" \
              localhost:5000/grafana-bench-test-dev:latest test \
-              --config "/home/bench/tests/CI/k6.yaml"
+              --config "/tests/CI/k6.yaml"
 
   publish-dev-base:
     # publish dev images from main to dev

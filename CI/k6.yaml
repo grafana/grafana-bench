@@ -6,7 +6,7 @@ test:
 
 suite:
   name: "CI"
-  base: "/home/bench/tests/CI/k6"
+  base: "/tests/CI/k6"
 
 grafana:
   url: "http://localhost:3000"

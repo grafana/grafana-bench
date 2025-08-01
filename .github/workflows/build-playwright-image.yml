@@ -60,7 +60,7 @@ jobs:
         env:
           TEST_SUITE_REPO_TOKEN: ${{ github.token }}
         run: |
-          docker run --rm --network=host --volume="./CI/:/home/pwuser/tests/CI/" \
+          docker run --rm --network=host --volume="./CI/:/tests/CI/" \
              localhost:5000/grafana-bench-test-playwright-dev:latest test \
               --log-level debug \
               --pw-prepare "yarn install; yarn playwright install" \
