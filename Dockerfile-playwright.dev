@@ -30,7 +30,9 @@ RUN CGO_ENABLED=0 go build \
   -ldflags="-X github.com/grafana/grafana-bench/pkg/revision.bench=${BENCH_REVISION}" \
   -trimpath -o build/grafana-bench .
 
-# Production playwright image - no fixuid needed
+# Install fixuid for development builds
+RUN go get github.com/boxboat/fixuid@${FIXUID_VERSION} && \
+  CGO_ENABLED=0 go build -o build/fixuid github.com/boxboat/fixuid
 
 FROM grafana/k6:latest AS k6
 
@@ -52,7 +54,14 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
 # Copy binaries
 COPY --from=k6 /usr/bin/k6 /usr/local/bin/k6
 COPY --from=builder /app/build/grafana-bench /usr/local/bin/grafana-bench
-COPY docker-entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY --from=builder /app/build/fixuid /usr/local/bin/fixuid
+COPY docker-entrypoint-dev.sh /usr/local/bin/entrypoint.sh
+
+# Configure fixuid for development
+RUN mkdir -p /etc/fixuid && \
+  printf "user: pwuser\ngroup: pwuser\npaths:\n  - /home/pwuser\n  - /home/pwuser/.cache\n  - /home/pwuser/tests\n  - /tmp\n" > /etc/fixuid/config.yml && \
+  chown root:root /usr/local/bin/fixuid && \
+  chmod 4755 /usr/local/bin/fixuid
 
 # Set up working directory and permissions for pwuser
 WORKDIR /home/pwuser

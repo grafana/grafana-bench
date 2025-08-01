@@ -15,7 +15,6 @@ RUN apk add --no-cache ca-certificates git
 WORKDIR /app
 
 # go mod download first to cache modules for faster local builds
-# TODO: check if we need to add the cache mounts to the go build steps bellow
 COPY go.mod go.sum ./
 RUN --mount=type=cache,id=go-build-${TARGETOS}-${TARGETARCH}${TARGETVARIANT},target=/root/.cache/go-build \
   --mount=type=cache,id=go-pkg-${TARGETOS}-${TARGETARCH}${TARGETVARIANT},target=/go/pkg \
@@ -31,7 +30,9 @@ RUN CGO_ENABLED=0 go build \
   -ldflags="-X github.com/grafana/grafana-bench/pkg/revision.bench=${BENCH_REVISION}" \
   -trimpath -o build/grafana-bench .
 
-# Production slim image - no fixuid needed
+# Install fixuid for development builds
+RUN go get github.com/boxboat/fixuid@${FIXUID_VERSION} && \
+  CGO_ENABLED=0 go build -o build/fixuid github.com/boxboat/fixuid
 
 FROM grafana/k6:latest AS k6
 FROM alpine:3.20 AS runtime
@@ -46,7 +47,14 @@ RUN addgroup -g 127 bench && \
 # Copy binaries
 COPY --from=k6 /usr/bin/k6 /usr/local/bin/k6
 COPY --from=builder /app/build/grafana-bench /usr/local/bin/grafana-bench
-COPY docker-entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY --from=builder /app/build/fixuid /usr/local/bin/fixuid
+COPY docker-entrypoint-dev.sh /usr/local/bin/entrypoint.sh
+
+# Configure fixuid for development
+RUN mkdir -p /etc/fixuid && \
+  printf "user: bench\ngroup: bench\npaths:\n  - /home/bench\n  - /home/bench/tests\n  - /tmp\n" > /etc/fixuid/config.yml && \
+  chown root:root /usr/local/bin/fixuid && \
+  chmod 4755 /usr/local/bin/fixuid
 
 WORKDIR /home/bench
 
@@ -55,6 +63,5 @@ RUN mkdir /home/bench/tests && chown -R bench:bench /home/bench/tests
 
 USER bench
 
-# call fixuid before calling bench to set the file permissions
-# when running locally
+# call fixuid before calling bench to set the file permissions when running locally
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
