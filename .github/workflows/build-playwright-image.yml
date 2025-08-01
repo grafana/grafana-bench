@@ -67,7 +67,7 @@ jobs:
               --pw-execute "yarn playwright test --grep-invert @performance" \
               --report-format log \
               --run-trigger grafana-bench-ci \
-              --suite-path tests/CI/plugin-e2e \
+              --suite-path ./CI/plugin-e2e \
               --suite-revision ${{ github.sha }}\
               --suite-name grafana-bench-dev/ci/plugin-e2e \
               --test-report-format text \
