@@ -109,41 +109,6 @@ func (tc *GitRepo) cloneFullRepository(targetDir string) (*git.Repository, error
 	return repo, nil
 }
 
-// fetchSpecificRef tries to fetch only the needed reference
-func (tc *GitRepo) fetchSpecificRef(repo *git.Repository, revision string) error {
-	auth := tc.getAuth()
-
-	// Try as branch first
-	branchRefSpec := config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/heads/%s", revision, revision))
-	err := repo.Fetch(&git.FetchOptions{
-		RefSpecs: []config.RefSpec{branchRefSpec},
-		Auth:     auth,
-		Depth:    1, // Only get the tip
-	})
-
-	if err == nil || errors.Is(err, git.NoErrAlreadyUpToDate) {
-		return nil
-	}
-
-	// Try as tag
-	tagRefSpec := config.RefSpec(fmt.Sprintf("refs/tags/%s:refs/tags/%s", revision, revision))
-	err = repo.Fetch(&git.FetchOptions{
-		RefSpecs: []config.RefSpec{tagRefSpec},
-		Auth:     auth,
-		Depth:    1,
-	})
-
-	if err == nil || errors.Is(err, git.NoErrAlreadyUpToDate) {
-		return nil
-	}
-
-	// Fallback: fetch all refs (current behavior)
-	return repo.Fetch(&git.FetchOptions{
-		RefSpecs: []config.RefSpec{"refs/*:refs/*"},
-		Auth:     auth,
-	})
-}
-
 // performCheckout handles the actual checkout with sparse directories
 func (tc *GitRepo) performCheckout(repo *git.Repository, hash plumbing.Hash, targetDir string, checkoutDirs []string) error {
 	tree, err := repo.Worktree()
