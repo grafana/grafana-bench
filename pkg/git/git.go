@@ -81,6 +81,34 @@ func (tc *GitRepo) cloneForCommitHash(targetDir string) (*git.Repository, error)
 	})
 }
 
+// cloneFullRepository clones the complete repository with all history and references
+// This is needed when we need to resolve arbitrary references that might not be available
+// in shallow or single-branch clones (e.g., commit hashes, complex refs, etc.)
+func (tc *GitRepo) cloneFullRepository(targetDir string) (*git.Repository, error) {
+	repo, err := git.PlainClone(targetDir, false, &git.CloneOptions{
+		NoCheckout: true,
+		URL:        tc.Repo,
+		Auth:       tc.getAuth(),
+		// No Depth or SingleBranch restrictions - get everything
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Fetch all remote references to ensure we have everything
+	err = repo.Fetch(&git.FetchOptions{
+		RefSpecs: []config.RefSpec{"refs/*:refs/*"},
+		Auth:     tc.getAuth(),
+	})
+
+	// Ignore "already up to date" errors
+	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
+		return nil, fmt.Errorf("fetching all references: %w", err)
+	}
+
+	return repo, nil
+}
+
 // fetchSpecificRef tries to fetch only the needed reference
 func (tc *GitRepo) fetchSpecificRef(repo *git.Repository, revision string) error {
 	auth := tc.getAuth()
@@ -170,7 +198,7 @@ func (tc *GitRepo) Get(ctx context.Context, targetDir string, revision string, c
 		checkoutHash = head.Hash()
 
 	case isCommitHash(revision):
-		repo, err = tc.cloneForCommitHash(targetDir)
+		repo, err = tc.cloneFullRepository(targetDir)
 		if err != nil {
 			return "", fmt.Errorf("cloning repo for commit %s: %w", tc.Repo, err)
 		}
@@ -185,15 +213,10 @@ func (tc *GitRepo) Get(ctx context.Context, targetDir string, revision string, c
 		repo, err = tc.cloneSpecificBranch(targetDir, revision)
 
 		if err != nil {
-			// Fallback: clone default and fetch specific ref
-			repo, err = tc.cloneDefaultBranch(targetDir)
+			// Fallback: need full repo to resolve arbitrary references/commits
+			repo, err = tc.cloneFullRepository(targetDir)
 			if err != nil {
 				return "", fmt.Errorf("cloning repo %s: %w", tc.Repo, err)
-			}
-
-			// Fetch the specific reference we need
-			if err := tc.fetchSpecificRef(repo, revision); err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
-				return "", fmt.Errorf("fetching reference %q: %w", revision, err)
 			}
 		}
 
