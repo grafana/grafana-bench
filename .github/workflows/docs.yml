@@ -77,6 +77,7 @@ jobs:
     secrets: inherit
     permissions:
       contents: read
+      id-token: write
     with:
       namespace: default
       kind: component
