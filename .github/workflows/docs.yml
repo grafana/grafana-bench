@@ -46,11 +46,29 @@ jobs:
             
             const diff = execSync('git diff docs/').toString();
             
+            const body = [
+              "## 📚 Documentation Update Needed",
+              "",
+              "Changes to `cmd/` require documentation updates. Please run:",
+              "",
+              "```bash",
+              "go run ./gendoc -o docs",
+              "```",
+              "",
+              "<details>",
+              "<summary>Preview of changes</summary>",
+              "",
+              "```diff",
+              diff,
+              "```",
+              "</details>"
+            ].join("\n");
+            
             await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: "## 📚 Documentation Update Needed\n\nChanges to `cmd/` require documentation updates. Please run:\n\n```bash\ngo run ./gendoc -o docs\n```\n\n<details>\n<summary>Preview of changes</summary>\n\n```diff\n" + diff + "\n```\n</details>"
+              body: body
             });
 
   publish-docs:
