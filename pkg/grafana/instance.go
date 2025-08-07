@@ -51,7 +51,7 @@ var (
 	InstanceNotAvailableError = errors.New("Instance not available")
 	LoginDisableError         = errors.New("Login disabled")
 
-	slugEx = regexp.MustCompile(`.grafana(-dev)?.net`)
+	slugEx = regexp.MustCompile(`\.grafana(-dev)?\.net`)
 )
 
 type grafanaInstance struct {
