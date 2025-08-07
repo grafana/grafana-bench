@@ -1,4 +1,4 @@
-name: Documentation
+name: Update Documentation
 
 on:
   push:
@@ -52,18 +52,18 @@ jobs:
               repo: context.repo.repo,
               body: `## 📚 Documentation Update Needed
               
-Changes to \`cmd/\` require documentation updates. Please run:
+Changes to \\\`cmd/\\\` require documentation updates. Please run:
 
-\`\`\`bash
+\\\`\\\`\\\`bash
 go run ./gendoc -o docs
-\`\`\`
+\\\`\\\`\\\`
 
 <details>
 <summary>Preview of changes</summary>
 
-\`\`\`diff
+\\\`\\\`\\\`diff
 ${diff}
-\`\`\`
+\\\`\\\`\\\`
 </details>`
             });
 
