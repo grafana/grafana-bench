@@ -12,8 +12,6 @@ on:
       - 'actions/build-techdocs/**'
       - 'actions/publish-techdocs/**'
   pull_request:
-    paths:
-      - 'cmd/**/*.go'
 
 jobs:
   suggest-doc-updates:
