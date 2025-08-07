@@ -457,3 +457,210 @@ func TestParseAddressEdgeCases(t *testing.T) {
 		})
 	}
 }
+
+func TestSlugExRegex(t *testing.T) {
+	tests := []struct {
+		name     string
+		hostname string
+		expected string
+	}{
+		// Valid Grafana hostnames that should have suffix removed
+		{
+			name:     "basic grafana.net",
+			hostname: "test.grafana.net",
+			expected: "test",
+		},
+		{
+			name:     "basic grafana-dev.net",
+			hostname: "test.grafana-dev.net",
+			expected: "test",
+		},
+		{
+			name:     "exact grafana.net",
+			hostname: "grafana.net",
+			expected: "",
+		},
+		{
+			name:     "exact grafana-dev.net",
+			hostname: "grafana-dev.net",
+			expected: "",
+		},
+		{
+			name:     "multi-subdomain grafana.net",
+			hostname: "app.staging.grafana.net",
+			expected: "app.staging",
+		},
+		{
+			name:     "multi-subdomain grafana-dev.net",
+			hostname: "app.staging.grafana-dev.net",
+			expected: "app.staging",
+		},
+
+		// Hostnames that should NOT be modified (no suffix removed)
+		{
+			name:     "different TLD",
+			hostname: "test.grafana.com",
+			expected: "test.grafana.com",
+		},
+		{
+			name:     "substring match - prefix",
+			hostname: "xgrafana.net",
+			expected: "xgrafana.net",
+		},
+		{
+			name:     "substring match - suffix",
+			hostname: "grafana.net.evil.com",
+			expected: "grafana.net.evil.com",
+		},
+		{
+			name:     "similar domain",
+			hostname: "test-grafana-dev.net",
+			expected: "test-grafana-dev.net",
+		},
+		{
+			name:     "grafana in middle",
+			hostname: "test.grafana.example.net",
+			expected: "test.grafana.example.net",
+		},
+		{
+			name:     "completely different domain",
+			hostname: "example.com",
+			expected: "example.com",
+		},
+		{
+			name:     "localhost",
+			hostname: "localhost",
+			expected: "localhost",
+		},
+		{
+			name:     "IP address",
+			hostname: "192.168.1.1",
+			expected: "192.168.1.1",
+		},
+		
+		// Edge cases and security tests
+		{
+			name:     "malicious domain with grafana substring",
+			hostname: "malicious-grafana-dev.net.attacker.com",
+			expected: "malicious-grafana-dev.net.attacker.com",
+		},
+		{
+			name:     "typosquatting attempt",
+			hostname: "grafana-devx.net",
+			expected: "grafana-devx.net",
+		},
+		{
+			name:     "partial match at end",
+			hostname: "test.ngrafana.net",
+			expected: "test.ngrafana.net",
+		},
+		{
+			name:     "empty string",
+			hostname: "",
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := slugEx.ReplaceAllString(tt.hostname, "")
+			if result != tt.expected {
+				t.Errorf("slugEx.ReplaceAllString(%q) = %q, want %q", tt.hostname, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestSlug(t *testing.T) {
+	tests := []struct {
+		name        string
+		url         string
+		expected    string
+		expectError bool
+	}{
+		// Valid Grafana URLs
+		{
+			name:     "basic grafana.net URL",
+			url:      "https://test.grafana.net",
+			expected: "test",
+		},
+		{
+			name:     "grafana-dev.net URL",
+			url:      "https://test.grafana-dev.net",
+			expected: "test",
+		},
+		{
+			name:     "grafana.net with path",
+			url:      "https://app.staging.grafana.net/dashboard",
+			expected: "app.staging",
+		},
+		{
+			name:     "exact grafana.net domain",
+			url:      "https://grafana.net",
+			expected: "",
+		},
+
+		// Non-Grafana URLs (should return hostname unchanged)
+		{
+			name:     "localhost",
+			url:      "http://localhost:3000",
+			expected: "localhost",
+		},
+		{
+			name:     "different domain",
+			url:      "https://example.com:3000",
+			expected: "example.com",
+		},
+		{
+			name:     "IP address",
+			url:      "http://192.168.1.100:3000",
+			expected: "192.168.1.100",
+		},
+
+		// Security test cases
+		{
+			name:     "malicious domain with grafana substring",
+			url:      "https://grafana.net.evil.com",
+			expected: "grafana.net.evil.com",
+		},
+		{
+			name:     "typosquatting attempt",
+			url:      "https://grafana-devx.net",
+			expected: "grafana-devx.net",
+		},
+
+		// Edge cases (url.Parse is more permissive than expected)
+		{
+			name:     "relative path returns empty hostname",
+			url:      "not-a-url",
+			expected: "",
+		},
+		{
+			name:     "empty URL returns empty string",
+			url:      "",
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Slug(tt.url)
+			
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("expected error for URL %q, but got none", tt.url)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("unexpected error for URL %q: %v", tt.url, err)
+				return
+			}
+
+			if result != tt.expected {
+				t.Errorf("Slug(%q) = %q, want %q", tt.url, result, tt.expected)
+			}
+		})
+	}
+}
