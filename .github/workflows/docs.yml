@@ -1,4 +1,5 @@
-name: Publish TechDocs
+name: Documentation
+
 on:
   push:
     branches:
@@ -10,9 +11,66 @@ on:
       - '.github/workflows/publish-docs.yml'
       - 'actions/build-techdocs/**'
       - 'actions/publish-techdocs/**'
+  pull_request:
+    paths:
+      - 'cmd/**/*.go'
 
 jobs:
+  suggest-doc-updates:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: go.mod
+
+      - name: Generate documentation
+        run: go run ./gendoc -o docs
+
+      - name: Create suggestions
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const { execSync } = require('child_process');
+            
+            // Check if docs changed
+            try {
+              execSync('git diff --exit-code docs/', { stdio: 'ignore' });
+              console.log('No documentation changes needed');
+              return;
+            } catch {
+              // Docs changed, create suggestions
+            }
+            
+            const diff = execSync('git diff docs/').toString();
+            
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 📚 Documentation Update Needed
+              
+Changes to \`cmd/\` require documentation updates. Please run:
+
+\`\`\`bash
+go run ./gendoc -o docs
+\`\`\`
+
+<details>
+<summary>Preview of changes</summary>
+
+\`\`\`diff
+${diff}
+\`\`\`
+</details>`
+            });
+
   publish-docs:
+    if: github.event_name == 'push'
     uses: grafana/shared-workflows/.github/workflows/publish-techdocs.yaml@main
     secrets: inherit
     permissions:
