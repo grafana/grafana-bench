@@ -14,7 +14,7 @@ on:
   pull_request:
 
 jobs:
-  doc-updates-required:
+  gen-docs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
