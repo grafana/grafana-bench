@@ -33,6 +33,7 @@ jobs:
         run: go run ./gendoc -o docs
 
       - name: Create suggestions
+        id: create-suggestions
         uses: actions/github-script@v6
         with:
           script: |
@@ -100,8 +101,15 @@ jobs:
               body: body
             });
             
-            // Fail the workflow to require documentation update
-            process.exit(1);
+            // Set output to indicate docs need updating
+            core.setOutput('docs-needed', 'true');
+
+      - name: gen docs required
+        id: check-docs
+        if: steps.create-suggestions.outputs.docs-needed == 'true'
+        run: |
+          echo "Documentation update required. Please run: go run ./gendoc -o docs"
+          exit 1
 
   publish-to-enghub:
     if: github.event_name == 'push'
