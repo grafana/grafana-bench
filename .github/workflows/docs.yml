@@ -11,9 +11,9 @@ on:
       - '.github/workflows/publish-docs.yml'
       - 'actions/build-techdocs/**'
       - 'actions/publish-techdocs/**'
-  pull_request:
-    paths:
-      - 'cmd/**/*.go'
+  #pull_request:
+  #  paths:
+  #    - 'cmd/**/*.go'
 
 jobs:
   suggest-doc-updates:
