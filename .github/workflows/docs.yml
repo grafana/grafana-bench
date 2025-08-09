@@ -90,7 +90,7 @@ jobs:
               "<summary>Preview of changes</summary>",
               "",
               "```diff",
-              diff,
+              filteredDiff,
               "```",
               "</details>"
             ].join("\n");
@@ -101,6 +101,9 @@ jobs:
               repo: context.repo.repo,
               body: body
             });
+            
+            // Fail the workflow to require documentation update
+            process.exit(1);
 
   publish-docs:
     if: github.event_name == 'push'
