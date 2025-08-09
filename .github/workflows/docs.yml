@@ -1,4 +1,4 @@
-name: Update Documentation
+name: documentation
 
 on:
   push:
@@ -14,7 +14,7 @@ on:
   pull_request:
 
 jobs:
-  suggest-doc-updates:
+  doc-updates-required:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
@@ -103,7 +103,7 @@ jobs:
             // Fail the workflow to require documentation update
             process.exit(1);
 
-  publish-docs:
+  publish-to-enghub:
     if: github.event_name == 'push'
     uses: grafana/shared-workflows/.github/workflows/publish-techdocs.yaml@main
     secrets: inherit
