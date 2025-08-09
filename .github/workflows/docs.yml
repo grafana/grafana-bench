@@ -15,6 +15,9 @@ on:
 
 jobs:
   gen-docs:
+    permissions:
+      contents: read
+      issues: write
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
