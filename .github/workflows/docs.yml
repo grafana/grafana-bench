@@ -47,7 +47,7 @@ jobs:
               // Docs changed, create suggestions
             }
             
-            const diff = execSync('git diff --no-header docs/').toString();
+            const diff = execSync('git diff docs/').toString();
             
             // Filter out lines that only contain date changes and file headers
             const filteredDiff = diff.split('\n').filter(line => {
