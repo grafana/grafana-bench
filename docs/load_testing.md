@@ -1,10 +1,139 @@
 # Performing load testing on Grafana
 
-## creating your instance
+## Foreword
 
-It is VERY important that you are aware of how and where your instance is created. These scripts WILL cause outages on shared database servers and should NEVER be run in production. In most cases it is recommended to create a dedicated load testing database instance.
+Congratulations for making it to the load testing milestone!
+
+As a company, we've reached a level of success and sophistication
+that delivering quality software to our users depends on the performance of the
+code we write. This is a huge milestone and you should be proud.
+
+## Load testing vs. benchmarking
+
+Benchmarking is generally concerned with units of code. Think functions or routines.
+Most languages offer tools and packages for benchmarking itself. For example, in go,
+we use go benchmarks.
+
+Load testing is concerned with looking at a specific path of behavior as a wholistic
+system. E.g. I'm hitting `/apis/dashboards/create` as an authenticated user and measuring
+database usage, performance, error rates. In this case, it doesn't help to measure the speed
+of the create dashboard path when we are almost certainly IO bound.
+
+We've built out most of the tooling you need to perform load testing on your Grafana service,
+however, it is up to you and your team to determine what aspects of performance are important
+to you. For example, are you optimizing for latency or throughput?
+
+If you're not sure, reach out in [#grafana-bench](https://grafanalabs.enterprise.slack.com/archives/C069CQCLDCG).
+We'd love to help facilitate the conversation and help you develop some performance goals.
+
+## Setting up your load testing environment
+
+**⚠️ IMPORTANT WARNING ⚠️**
+
+**It is VERY important that you are aware of how and where your instance is created.
+These scripts WILL cause outages on shared database servers and should NEVER be
+run in production environments. In most cases it is recommended to create a
+dedicated load testing database instance.**
+
+### Create your load testing database server
+
+We manage our Grafana database servers in deployment tools.
+
+1. Check out the [deployment_tools](https://github.com/grafana/deployment_tools) repo
+2. Navigate to [`terraform/databases/grafanalabs-dev/cloud_sql_hosted_grafana.tf`](https://github.com/grafana/deployment_tools/blob/d875826af5c5e8d7de55abec1c7c6cfac9a494fb/terraform/databases/grafanalabs-dev/cloud_sql_hosted_grafana.tf#L157)
+3. Add a new entry at the bottom for your new database server:
+
+```terraform
+#make sure you update the name of the instance
+module "cloud_sql_dev-us-central-0-hosted-grafana-dedicated-lt" {
+  source            = "../../modules/cloud_sql"
+  database_version  = "MYSQL_8_0"
+
+  # update the name of the instance
+  name              = "dev-us-central-0-hosted-grafana-dedicated-lt"
+ 
+  # make sure the database is in the same region as your test instance
+  region            = "us-central1"
+  tier              = "db-n1-highmem-16"
+  disk_autoresize   = true
+  # need larger disk in order to provision more IOPS
+  disk_size         = 500
+  zone_preference   = "us-central1-a"
+  high_availability = false
+  private_network   = local.private_network_ops
+  database_flags = [
+    {
+      name  = "innodb_file_per_table"
+      value = "off"
+    },
+    {
+      name  = "performance_schema"
+      value = "on"
+    },
+    {
+      # we're setting this to the max allowed by MySQL - we don't want this
+      # database to be limited by the number of connections server-side
+      name  = "max_connections"
+      value = 32000
+    },
+    {
+      name  = "slow_query_log"
+      value = "on"
+    },
+    {
+      name  = "log_output"
+      value = "FILE"
+    },
+    {
+      name = "table_open_cache"
+      # max_connections * N where N is the max # of tables per join, plus a
+      # few extra for temp tables, etc. We'll assume a max of 6 tables per join
+      # as an absolute worst case scenario.
+      value = 192000
+    },
+  ]
+
+  # gives us the ability to inspect sql queries in the google cloud console
+  insights_config = {
+    query_insights_enabled  = true
+    query_plans_per_minute  = 5
+    query_string_length     = 2048
+    record_application_tags = false
+    record_client_address   = false
+  }
+
+  users = {
+    "admin" = {
+      password_vault_path = "secret/hosted-grafana/dev-us-central-0/cloudsql-hosted-grafana-dedicated-lt-admin-password"
+    }
+  }
+}
+```
+
+4. Create a PR and push
+5. In a comment on the PR, run `atlantis plan`
+6. Wait for this to finish, review the resulting created database and verify
+7. Get a review
+8. Run `atlantis apply`
+9. Merge the PR
+
+### Creating your instance
+
+1. Navigate to [grafana-dev.net](https://grafana-dev.net)
+2. Sign in using your Okta/Google credentials
+3. This will sign you into the raintank org
+4. Click `add stack`
+5. Select your stack identifier
+6. Set your region to the same as your database server above and click apply
+7. Wait for your stack to be created and note the id in the url for configuring your instance
+
+Example URL: `https://grafana-dev.com/orgs/raintank/stacks/8182`
 
 ### Configuring your instance
+
+1. Substitute the id of your stack into the ADMIN url `https://admin.grafana-dev.com/orgs/raintank/stacks/{YOURID}`
+2. Navigate to that url and click the edit button next to Grafana
+3. Update the following config sections:
 
 ```ini
 [alerting]
@@ -15,7 +144,7 @@ enabled = false
 
 [auth]
 disable_login_form = false
-token_rotation_interval_mintes = 2800 # this is for session timeouts
+token_rotation_interval_minutes = 2800 # this is for session timeouts
 
 [database]
 conn_max_lifetime = 14400
@@ -40,55 +169,242 @@ replicas = 10
 [log]
 level = debug
 
-[rbac]
-resources_with_managed_permissions_on_creation = []
-resources_with_seeded_wildcard_access = dashboard folder datasource service-account
+#[rbac]
+#resources_with_managed_permissions_on_creation = []
+#resources_with_seeded_wildcard_access = dashboard folder datasource service-account
 ```
+
+### Migrating the instance to the new database
+
+From the deployment tools repo:
+
+1. [Request timed access](https://timed-access.grafana-ops.net/timed-access/access/request)
+2. Pause the instance:
+   ```sh
+   scripts/gcom/gcom-dev /instances/{YOUR SLUG}/archive -d ""
+   ```
+3. Migrate to new database server:
+   ```sh
+   scripts/hg/hg-dev /instances/{YOUR SLUG}/migrate_db -d targetDbServer={YOUR DATABASE SERVER NAME}
+   ```
 
 ### Create a load testing user
 
 You need to login as the super admin in order to create a user with enough permissions to create everything we need. You can do this with the root secret.
 
-### get the admin secret
+#### Get the admin secret
 
-Scripts in [deployment_tools](https://github.com/grafana/deployment_tools/tree/master/scripts/hg)
+Scripts in [deployment_tools](https://github.com/grafana/deployment_tools/tree/master/scripts/hg):
 
-1. connect to the hosted_grafana server in the the appropriate region
-```sh
-/hg-mysql-dev dev-us-central-0 hosted_grafana
-```
-2. get the admin secret
+1. Connect to the hosted_grafana server in the appropriate region:
+   ```sh
+   scripts/hg/hg-mysql-dev dev-us-central-0 hosted_grafana
+   ```
 
-```sql
-select secret from instances where slug='benchloadtestingxxl';
-```
+2. Get the admin secret:
+   ```sql
+   select secret from instances where slug='benchloadtestingxxl';
+   ```
 
-### create the user
+#### Create the user
 
+1. Create the admin user:
+   ```sh
+   POST https://{YOUR_INSTANCE}.grafana-dev.net/api/admin/users
+   {
+     "name": "benchloadtester",
+     "email": "", 
+     "login": "benchloadtester", 
+     "password": "<YOURPASSWORD>"
+   }
+   ```
 
-## populating instance
-[Fake User Generator](https://github.com/grafana/grafana-fake-users-generator) built by @alexanderzobnin gives us two options for populating an instance.
+2. Grant admin permissions:
+   ```sh
+   PUT https://{YOUR_INSTANCE}.grafana-dev.net/api/admin/users/{USER_ID}/permissions
+   {"isGrafanaAdmin": true}
+   ```
 
-1. using the API
-2. creating sql scripts and writing to disk
+3. Assign roles:
+   ```sh
+   PUT https://{YOUR_INSTANCE}.grafana-dev.net/api/access-control/users/{USER_ID}/roles?targetOrgId=1
+   {"orgId": 1, "roleUids": []}
+   ```
 
-Sql is quite a bit faster, however, more difficult to push to an instance of Grafana. Currently I just use the API as it's fast enough to populate an instance.
+## Populating instance
 
-1. pull the repo on the branch jalevin/add_google_script
-2. create a config file called <yourinstance>.config.json
+The [Fake User Generator](https://github.com/grafana/grafana-fake-users-generator) built by @alexanderzobnin gives us two options for populating an instance:
+
+1. Using the API
+2. Creating SQL scripts and writing to disk
+
+SQL is quite a bit faster, however, more difficult to push to an instance of Grafana. Currently we use the API as it's fast enough to populate an instance.
+
+### Setup
+
+1. Clone the repo on the branch `jalevin/add_google_script`
+2. Create a config file called `<yourinstance>.config.json`:
 
 ```json
 {
-  "grafanaUrl": "http://localhost:3000",
-  "user": "admin",
-  "password": "admin",
+  "grafanaUrl": "https://{YOUR_INSTANCE}.grafana-dev.net",
+  "user": "benchloadtester",
+  "password": "<YOURPASSWORD>",
   "token": ""
 }
 ```
 
-Run the script
+3. Run the script:
+
 ```sh
 ./generateNestedFoldersAPI.js --skipPermissions --scenario google --config <yourinstance>.config.json
 ```
 
-## Dedicated load testing database instance
+## Managing your load testing instance
+
+### Monitoring instance status
+
+Review pods:
+```sh
+kubectl get pods -n hosted-grafana --context=dev-us-central-0 -l slug={YOUR_SLUG}
+```
+
+View logs:
+```sh
+kubectl logs -n hosted-grafana --context=dev-us-central-0 -f {POD_NAME}
+```
+
+Check instance database config:
+```sh
+scripts/hg/hg-dev /instances/{YOUR_SLUG} | jq .database
+```
+
+### Instance operations
+
+#### Restart instance
+```sh
+scripts/gcom/gcom-dev /instances/{YOUR_SLUG}/restart -d ''
+```
+
+#### Configure instance via gcom
+```sh
+scripts/gcom/gcom-dev /instances/{YOUR_SLUG}/config \
+  -d 'config[auth][disable_login_form]=false' \
+  -d 'config[auth][token_rotation_interval_minutes]=2800' \
+  -d 'config[database][conn_max_lifetime]=14400' \
+  -d 'config[database][instrument_queries]=true' \
+  -d 'config[database][max_idle_conn]=1200' \
+  -d 'config[database][max_open_conn]=1200' \
+  -d 'config[hosted_grafana][autoscaling]=false' \
+  -d 'config[hosted_grafana][cpu_request]=4' \
+  -d 'config[hosted_grafana][memory_limit]=12000Mi' \
+  -d 'config[hosted_grafana][memory_request]=8000Mi' \
+  -d 'config[hosted_grafana][replicas]=10' \
+  -d 'config[log][level]=debug'
+```
+
+### Restoring database backups
+
+1. [Request timed access](https://internal-ops-us-east-0.grafana.net/timed-access/access/request)
+
+2. Pause instance:
+   ```sh
+   scripts/gcom/gcom-dev /instances/{YOUR_SLUG}/archive -d ""
+   ```
+
+3. Create `~/.boto` file (ignore key values):
+   ```ini
+   [GSUtil]
+   encryption_key=
+   decryption_key=
+   ```
+
+4. Locate backup in [Google Cloud Storage](https://console.cloud.google.com/storage/browser/hg-databases)
+   - Search for your slug
+   - Click on the `.sql` file
+   - View version history
+   - Grab the generation number for the version you want
+
+5. Copy backup (this will boot the instance after):
+   ```sh
+   scripts/hg/copy-old-archive/copy_archive {YOUR_SLUG} {GENERATION_NUMBER}
+   ```
+
+6. Migrate to correct database server:
+   ```sh
+   scripts/hg/hg-dev /instances/{YOUR_SLUG}/migrate_db -d targetDbServer={YOUR_DATABASE_SERVER}
+   ```
+
+### Create alert to prevent instance pausing
+
+Create an alert to keep the instance active:
+```sh
+POST https://{YOUR_INSTANCE}.grafana-dev.net/api/ruler/grafana/api/v1/rules/{FOLDER_ID}?subtype=cortex
+{
+  "name": "test",
+  "interval": "4h",
+  "rules": [{
+    "grafana_alert": {
+      "title": "test",
+      "condition": "C",
+      "no_data_state": "NoData",
+      "exec_err_state": "OK",
+      "data": [
+        {
+          "refId": "A",
+          "datasourceUid": "grafanacloud-prom",
+          "queryType": "",
+          "relativeTimeRange": {"from": 600, "to": 0},
+          "model": {
+            "refId": "A",
+            "expr": "sum(rate([$__rate_interval]))",
+            "range": false,
+            "instant": true,
+            "editorMode": "builder",
+            "legendFormat": "__auto"
+          }
+        }
+      ],
+      "is_paused": false,
+      "notification_settings": {"receiver": "grafana-default-email"}
+    },
+    "for": "20h",
+    "annotations": {},
+    "labels": {"service_name": ""}
+  }]
+}
+```
+
+## Debugging and profiling
+
+### Connect to database directly
+```sh
+scripts/hg/hg-mysql-dev dev-us-central-0 hg_{YOUR_SLUG}
+```
+
+### SSH into pod
+```sh
+kubectl -n hosted-grafana exec -ti {POD_NAME} -- sh
+```
+
+### Local profiling setup
+
+For local development, disable race detector in Makefile and add profiling:
+
+```makefile
+run-go: ## Build and run web server immediately.
+	$(GO) run $(if $(GO_BUILD_TAGS),-build-tags=$(GO_BUILD_TAGS)) \
+		./pkg/cmd/grafana -- server -packaging=dev cfg:app_mode=development
+```
+
+Environment variables:
+```sh
+export GF_DIAGNOSTICS_PROFILING_ENABLED=1
+export GF_DIAGNOSTICS_PROFILING_ADDR=0.0.0.0
+export GF_DIAGNOSTICS_PROFILING_PORT=6000
+```
+
+View profiling data:
+```sh
+go tool pprof -http=:6060 http://localhost:6000/debug/pprof/heap
+```
