@@ -468,8 +468,6 @@ jobs:
           GRAFANA_PASSWORD: ${{ secrets.GRAFANA_PASSWORD }}
 ```
 
-## Understanding test results
-
 ## Tracing and improving performance
 
 ### Viewing traces in k6 Cloud
