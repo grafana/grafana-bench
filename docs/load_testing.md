@@ -212,25 +212,31 @@ Scripts in [deployment_tools](https://github.com/grafana/deployment_tools/tree/m
 
 1. Create the admin user:
    ```sh
-   POST https://{YOUR_INSTANCE}.grafana-dev.net/api/admin/users
-   {
-     "name": "benchloadtester",
-     "email": "", 
-     "login": "benchloadtester", 
-     "password": "<YOURPASSWORD>"
-   }
+   curl -X POST https://{YOUR_INSTANCE}.grafana-dev.net/api/admin/users \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer {ADMIN_SECRET}" \
+     -d '{
+       "name": "benchloadtester",
+       "email": "", 
+       "login": "benchloadtester", 
+       "password": "<YOURPASSWORD>"
+     }'
    ```
 
 2. Grant admin permissions:
    ```sh
-   PUT https://{YOUR_INSTANCE}.grafana-dev.net/api/admin/users/{USER_ID}/permissions
-   {"isGrafanaAdmin": true}
+   curl -X PUT https://{YOUR_INSTANCE}.grafana-dev.net/api/admin/users/{USER_ID}/permissions \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer {ADMIN_SECRET}" \
+     -d '{"isGrafanaAdmin": true}'
    ```
 
 3. Assign roles:
    ```sh
-   PUT https://{YOUR_INSTANCE}.grafana-dev.net/api/access-control/users/{USER_ID}/roles?targetOrgId=1
-   {"orgId": 1, "roleUids": []}
+   curl -X PUT https://{YOUR_INSTANCE}.grafana-dev.net/api/access-control/users/{USER_ID}/roles?targetOrgId=1 \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer {ADMIN_SECRET}" \
+     -d '{"orgId": 1, "roleUids": []}'
    ```
 
 ## Populating your instance
