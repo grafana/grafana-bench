@@ -241,7 +241,7 @@ Scripts in [deployment_tools](https://github.com/grafana/deployment_tools/tree/m
 
 ## Populating your instance
 
-The [Fake User Generator](https://github.com/grafana/grafana-fake-users-generator) built by @alexanderzobnin gives us two options for populating an instance:
+The fake-user-generator tool in the simulation directory gives us two options for populating an instance:
 
 1. Using the API
 2. Creating SQL scripts and writing to disk
@@ -250,23 +250,38 @@ SQL is quite a bit faster, however, more difficult to push to an instance of Gra
 
 ### Setup
 
-1. Clone the repo on the branch `jalevin/add_google_script`
-2. Create a config file called `<yourinstance>.config.json`:
+1. Navigate to the fake-user-generator directory:
+   ```sh
+   cd grafana-api-tests/simulation/fake-user-generator
+   ```
 
-```json
-{
-  "grafanaUrl": "https://{YOUR_INSTANCE}.grafana-dev.net",
-  "user": "benchloadtester",
-  "password": "<YOURPASSWORD>",
-  "token": ""
-}
-```
+2. Install dependencies:
+   ```sh
+   yarn install --immutable
+   yarn add ts-node -D
+   ```
 
-3. Run the script:
+3. Create a config file:
+   ```sh
+   cp config.example.json config.json
+   ```
 
-```sh
-./generateNestedFoldersAPI.js --skipPermissions --scenario google --config <yourinstance>.config.json
-```
+4. Edit `config.json` with your instance details:
+   ```json
+   {
+     "grafanaUrl": "https://{YOUR_INSTANCE}.grafana-dev.net",
+     "user": "benchloadtester",
+     "password": "<YOURPASSWORD>",
+     "token": ""
+   }
+   ```
+
+5. Run the script:
+   ```sh
+   ./generateNestedFolders.ts --scenario medium --timeout 10
+   ```
+
+Available scenarios: `flat`, `tiny`, `small`, `medium`, `big`, `huge`
 
 # Writing and running tests
 
