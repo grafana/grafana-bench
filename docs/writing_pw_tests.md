@@ -98,6 +98,10 @@ export default defineConfig<PluginOptions>({
       testDir: pluginE2eAuth,
       testMatch: [/.*\.js/],
       use: {
+        // THIS IS IMPORTANT. plugin-e2e writes auth to a json file with the name of the user.
+        // by default this is admin.json, however, if you are running tests with a different 
+        // admin user you must set this to the name of the user.
+        storageState: `playwright/.auth/${process.env.GRAFANA_ADMIN_USER ?? 'admin'}.json`,
         // This specifies the user for the test and is not related to Bench.
         user: {
           user: 'user',
@@ -110,6 +114,10 @@ export default defineConfig<PluginOptions>({
 
 }
 ```
+
+## A note on auth with plugin-e2e
+
+plugin-e2e sets an auth
 
 ## Adding to an existing project
 
