@@ -163,14 +163,30 @@ func (tc *GitRepo) Get(ctx context.Context, targetDir string, revision string, c
 		checkoutHash = head.Hash()
 
 	case isCommitHash(revision):
-		repo, err = tc.cloneFullRepository(targetDir)
+		// Try shallow clone first (much faster)
+		repo, err = tc.cloneDefaultBranch(targetDir)
 		if err != nil {
-			return "", fmt.Errorf("cloning repo for commit %s: %w", tc.Repo, err)
+			return "", fmt.Errorf("cloning default branch for commit %s: %w", revision, err)
 		}
 
+		// Try to resolve the commit hash in shallow clone
 		revisionHash, err := repo.ResolveRevision(plumbing.Revision(revision))
 		if err != nil {
-			return "", fmt.Errorf("resolving commit hash %q: %w", revision, err)
+			// Commit not found in shallow clone, try fetching more history
+			tc.Lg.Info("Commit not found in shallow clone, fetching full repository", "commit", revision)
+			
+			// Remove the shallow clone directory and try full clone
+			os.RemoveAll(targetDir)
+			
+			repo, err = tc.cloneFullRepository(targetDir)
+			if err != nil {
+				return "", fmt.Errorf("cloning full repo for commit %s: %w", revision, err)
+			}
+			
+			revisionHash, err = repo.ResolveRevision(plumbing.Revision(revision))
+			if err != nil {
+				return "", fmt.Errorf("resolving commit hash %q: %w", revision, err)
+			}
 		}
 		checkoutHash = *revisionHash
 

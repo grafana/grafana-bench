@@ -1,4 +1,5 @@
 # ignore directory where we're doing all the work and setting stuff up
+.claude
 !work/grafanaTemplate/
 work
 creds/*
