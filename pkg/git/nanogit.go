@@ -9,6 +9,7 @@ import (
 
 	"github.com/grafana/nanogit"
 	"github.com/grafana/nanogit/log"
+	"github.com/grafana/nanogit/options"
 	"github.com/grafana/nanogit/protocol/hash"
 )
 
@@ -22,19 +23,16 @@ type NanoGitRepo struct {
 
 // NewNanoGitSource returns a new NanoGitRepo instance that's compatible with the existing GitRepo interface
 func NewNanoGitSource(repo string, token string) (*NanoGitRepo, error) {
-	// Create nanogit HTTP client
-	var client nanogit.Client
-	var err error
+	// Create nanogit HTTP client with authentication options
+	var clientOptions []options.Option
 	
 	if token != "" {
-		// For authenticated repos, we'd need to implement auth options
-		// For now, create without auth
-		client, err = nanogit.NewHTTPClient(repo)
-	} else {
-		// Public repo
-		client, err = nanogit.NewHTTPClient(repo)
+		// Use Basic Auth with token as password to match go-git behavior
+		// This is the standard pattern for GitHub/GitLab tokens
+		clientOptions = append(clientOptions, options.WithBasicAuth("gituser", token))
 	}
 	
+	client, err := nanogit.NewHTTPClient(repo, clientOptions...)
 	if err != nil {
 		return nil, fmt.Errorf("create nanogit client: %w", err)
 	}
