@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestNanoGitAuthSetup(t *testing.T) {
+func TestGitAuthSetup(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping auth setup tests in short mode")
 	}
@@ -43,33 +43,33 @@ func TestNanoGitAuthSetup(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			nanoRepo, err := NewNanoGitSource(tt.repo, tt.token)
+			gitRepo, err := NewGitSource(tt.repo, tt.token)
 			
 			if tt.wantErr {
 				if err == nil {
-					t.Errorf("NewNanoGitSource() error = nil, wantErr %v", tt.wantErr)
+					t.Errorf("NewGitSource() error = nil, wantErr %v", tt.wantErr)
 				}
 				return
 			}
 			
 			if err != nil {
-				t.Errorf("NewNanoGitSource() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("NewGitSource() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			
 			// Verify the client was created
-			if nanoRepo == nil {
-				t.Error("NewNanoGitSource() returned nil repo")
+			if gitRepo == nil {
+				t.Error("NewGitSource() returned nil repo")
 			}
 			
 			// Verify the token was stored
-			if nanoRepo.RepoToken != tt.token {
-				t.Errorf("NewNanoGitSource() stored token = %v, want %v", nanoRepo.RepoToken, tt.token)
+			if gitRepo.RepoToken != tt.token {
+				t.Errorf("NewGitSource() stored token = %v, want %v", gitRepo.RepoToken, tt.token)
 			}
 			
 			// Verify the repository URL was stored
-			if nanoRepo.Repo != tt.repo {
-				t.Errorf("NewNanoGitSource() stored repo = %v, want %v", nanoRepo.Repo, tt.repo)
+			if gitRepo.Repo != tt.repo {
+				t.Errorf("NewGitSource() stored repo = %v, want %v", gitRepo.Repo, tt.repo)
 			}
 		})
 	}

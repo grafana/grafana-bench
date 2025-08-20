@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	// Dedicated test repository for nanogit integration tests
+	// Dedicated test repository for git integration tests
 	testRepoURL = "https://github.com/grafana/grafana-bench-git-test"
 	testTag     = "v1.0.0"
 	// Commit hash from deleted feature branch
@@ -35,7 +35,7 @@ var expectedFeatureFiles = []string{
 	"tests/dashboard.spec.js",
 }
 
-func TestNanoGitIntegration(t *testing.T) {
+func TestGitIntegrationRemote(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration tests in short mode")
 	}
@@ -81,12 +81,12 @@ func TestNanoGitIntegration(t *testing.T) {
 	t.Run("Scenario 1: Full checkout at main branch", func(t *testing.T) {
 		targetDir := t.TempDir()
 		
-		nanoRepo, err := NewNanoGitSource(testRepoURL, "")
+		gitRepo, err := NewGitSource(testRepoURL, "")
 		if err != nil {
-			t.Fatalf("creating nanogit source: %v", err)
+			t.Fatalf("creating git source: %v", err)
 		}
 
-		revision, err := nanoRepo.Get(ctx, targetDir, "")
+		revision, err := gitRepo.Get(ctx, targetDir, "")
 		if err != nil {
 			t.Fatalf("getting test repo at main branch: %v", err)
 		}
@@ -102,15 +102,15 @@ func TestNanoGitIntegration(t *testing.T) {
 	t.Run("Scenario 2: Checkout at specific commit hash (main branch)", func(t *testing.T) {
 		targetDir := t.TempDir()
 		
-		nanoRepo, err := NewNanoGitSource(testRepoURL, "")
+		gitRepo, err := NewGitSource(testRepoURL, "")
 		if err != nil {
-			t.Fatalf("creating nanogit source: %v", err)
+			t.Fatalf("creating git source: %v", err)
 		}
 
 		// Use the commit hash directly instead of tag (nanogit seems to have tag resolution issues)
 		mainCommit := "49b46169b77812aab51476d1e6f28a6971e20ea6" // Initial commit hash
 		
-		revision, err := nanoRepo.Get(ctx, targetDir, mainCommit)
+		revision, err := gitRepo.Get(ctx, targetDir, mainCommit)
 		if err != nil {
 			t.Fatalf("getting test repo at commit %s: %v", mainCommit, err)
 		}
@@ -131,13 +131,13 @@ func TestNanoGitIntegration(t *testing.T) {
 	t.Run("Scenario 3: Checkout commit from deleted branch", func(t *testing.T) {
 		targetDir := t.TempDir()
 		
-		nanoRepo, err := NewNanoGitSource(testRepoURL, "")
+		gitRepo, err := NewGitSource(testRepoURL, "")
 		if err != nil {
-			t.Fatalf("creating nanogit source: %v", err)
+			t.Fatalf("creating git source: %v", err)
 		}
 
 		// Checkout commit from deleted feature branch
-		revision, err := nanoRepo.Get(ctx, targetDir, deletedBranchCommit)
+		revision, err := gitRepo.Get(ctx, targetDir, deletedBranchCommit)
 		if err != nil {
 			t.Fatalf("getting test repo at deleted branch commit %s: %v", deletedBranchCommit, err)
 		}
@@ -161,13 +161,13 @@ func TestNanoGitIntegration(t *testing.T) {
 	t.Run("Scenario 4: Test directory filtering", func(t *testing.T) {
 		targetDir := t.TempDir()
 		
-		nanoRepo, err := NewNanoGitSource(testRepoURL, "")
+		gitRepo, err := NewGitSource(testRepoURL, "")
 		if err != nil {
-			t.Fatalf("creating nanogit source: %v", err)
+			t.Fatalf("creating git source: %v", err)
 		}
 
 		// Checkout only tests directory
-		revision, err := nanoRepo.Get(ctx, targetDir, "", "tests")
+		revision, err := gitRepo.Get(ctx, targetDir, "", "tests")
 		if err != nil {
 			t.Fatalf("getting test repo with tests directory only: %v", err)
 		}
@@ -198,14 +198,14 @@ func TestNanoGitIntegration(t *testing.T) {
 	})
 
 	t.Run("Error handling tests", func(t *testing.T) {
-		nanoRepo, err := NewNanoGitSource(testRepoURL, "")
+		gitRepo, err := NewGitSource(testRepoURL, "")
 		if err != nil {
-			t.Fatalf("creating nanogit source: %v", err)
+			t.Fatalf("creating git source: %v", err)
 		}
 
 		// Test non-existent branch
 		targetDir := t.TempDir()
-		_, err = nanoRepo.Get(ctx, targetDir, "non-existent-branch-12345")
+		_, err = gitRepo.Get(ctx, targetDir, "non-existent-branch-12345")
 		if err == nil {
 			t.Error("expected error for non-existent branch")
 		}
@@ -214,7 +214,7 @@ func TestNanoGitIntegration(t *testing.T) {
 		// Test short commit hash (should error)
 		targetDir2 := t.TempDir()
 		shortHash := deletedBranchCommit[:7]
-		_, err = nanoRepo.Get(ctx, targetDir2, shortHash)
+		_, err = gitRepo.Get(ctx, targetDir2, shortHash)
 		if err == nil {
 			t.Error("expected error for short commit hash")
 		}
@@ -222,7 +222,7 @@ func TestNanoGitIntegration(t *testing.T) {
 
 		// Test non-existent tag
 		targetDir3 := t.TempDir()
-		_, err = nanoRepo.Get(ctx, targetDir3, "v999.999.999")
+		_, err = gitRepo.Get(ctx, targetDir3, "v999.999.999")
 		if err == nil {
 			t.Error("expected error for non-existent tag")
 		}

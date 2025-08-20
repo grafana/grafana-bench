@@ -47,7 +47,10 @@ func NewTestCompiler(
 // CompileTestSuite collect the test suite from a source repository
 // returns the test suite revision
 func (tc *TestCompiler)CompileTestSuite(ctx context.Context) (string, error) {
-	gitSource := git.NewGitSource(tc.TestSuiteRepo, tc.RepoToken)
+	gitSource, err := git.NewGitSource(tc.TestSuiteRepo, tc.RepoToken)
+	if err != nil {
+		return "", fmt.Errorf("creating git source for %s: %w", tc.TestSuiteRepo, err)
+	}
 	revision, err := gitSource.Get(ctx, tc.TargetDir, tc.TestSuiteRevision, tc.CheckoutDirs...)
 	if err != nil {
 		return "", fmt.Errorf("checking out test suite %s: %w", tc.TestSuiteRepo, err)

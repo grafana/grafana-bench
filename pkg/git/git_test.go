@@ -2,7 +2,11 @@ package git
 
 import (
 	"context"
+	"fmt"
+	"net/http/cgi"
+	"net/http/httptest"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"slices"
@@ -88,6 +92,24 @@ func TestGitSource(t *testing.T) {
 		t.Fatalf("creating tag: %v", err)
 	}
 
+	// Start a git HTTP server using git http-backend
+	gitPath, err := exec.LookPath("git")
+	if err != nil {
+		t.Fatalf("cannot find git: %v", err)
+	}
+
+	gitHandler := &cgi.Handler{
+		Path: gitPath,
+		Args: []string{"http-backend"},
+		Env: []string{
+			fmt.Sprintf("GIT_PROJECT_ROOT=%s", repoDir),
+			"GIT_HTTP_EXPORT_ALL=true",
+		},
+	}
+
+	gitSrv := httptest.NewServer(gitHandler)
+	defer gitSrv.Close()
+
 	testCases := []struct {
 		name      string
 		revision  string
@@ -142,7 +164,10 @@ func TestGitSource(t *testing.T) {
 		})
 
 		t.Run(tc.name, func(t *testing.T) {
-			source := NewGitSource(repoDir,"")
+			source, err := NewGitSource(gitSrv.URL,"")
+			if err != nil {
+				t.Fatalf("creating git source: %v", err)
+			}
 
 			targetDir := path.Join(t.TempDir(), "repo")
 			_, err = source.Get(context.TODO(), targetDir,tc.revision)
@@ -166,7 +191,10 @@ func TestGitSource(t *testing.T) {
 		}
 
 		// get source again into cloned repository
-		source := NewGitSource(repoDir,"")
+		source, err := NewGitSource(gitSrv.URL,"")
+		if err != nil {
+			t.Fatalf("creating git source: %v", err)
+		}
 
 		_, err = source.Get(context.TODO(), clonedRepo, "")
 		if err == nil {
@@ -199,7 +227,10 @@ func TestGitSource(t *testing.T) {
 				slices.Sort(dirs)
 
 				targetRepo := path.Join(t.TempDir(), "repo")
-				source := NewGitSource(repoDir, "")
+				source, err := NewGitSource(gitSrv.URL, "")
+				if err != nil {
+					t.Fatalf("creating git source: %v", err)
+				}
 
 				_, err = source.Get(context.TODO(), targetRepo, "", dirs...)
 				if err != nil && !tc.expectErr {
