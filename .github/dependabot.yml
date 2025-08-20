@@ -16,6 +16,15 @@ updates:
     time: "13:00"
     timezone: UTC
   open-pull-requests-limit: 10
+  # Enable updates for Grafana Docker images
+  ignore:
+    - dependency-name: "*"
+      update-types: ["version-update:semver-major"]
+  groups:
+    grafana:
+      patterns:
+        - "grafana/grafana"
+        - "grafana/k6"
 - package-ecosystem: github-actions
   directory: /
   schedule:

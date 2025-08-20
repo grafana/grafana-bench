@@ -15,7 +15,7 @@ jobs:
 
     #services:
     #  grafana:
-    #    image: grafana/grafana:latest
+    #    image: grafana/grafana:12.0.1
     #    ports:
     #      - 3000:3000
 
