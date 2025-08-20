@@ -16,6 +16,12 @@ updates:
     time: "13:00"
     timezone: UTC
   open-pull-requests-limit: 10
+  # Group Grafana Docker images together
+  groups:
+    grafana:
+      patterns:
+        - "grafana/grafana"
+        - "grafana/k6"
 - package-ecosystem: github-actions
   directory: /
   schedule:
