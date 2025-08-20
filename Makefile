@@ -10,10 +10,7 @@ SLIM_PROD_TAG = grafana-bench:$(BENCH_REVISION)
 PLAYWRIGHT_DEV_TAG = grafana-bench-playwright:dev-$(BENCH_REVISION)
 PLAYWRIGHT_PROD_TAG = grafana-bench-playwright:$(BENCH_REVISION)
 
-.PHONY: all build-all build-slim-dev build-slim-prod build-playwright-dev build-playwright-prod clean help
-
-# Default target
-all: build-all
+.PHONY: build-all build-slim-dev build-slim-prod build-playwright-dev build-playwright-prod clean help
 
 # Build all images
 build-all: build-slim-dev build-slim-prod build-playwright-dev build-playwright-prod
