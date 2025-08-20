@@ -41,7 +41,7 @@ jobs:
         run: |
           echo "=== Host CI directory permissions ==="
           ls -la ./CI/
-          ls -la ./CI/plugin-e2e/ || echo "plugin-e2e directory doesn't exist"
+          ls -la ./CI/playwright-e2e/ || echo "playwright directory doesn't exist"
           echo "=== Current user info ==="
           id
           echo "=== CI directory ownership ==="
@@ -58,7 +58,7 @@ jobs:
           #  exit 1
           #fi
 
-      - name: mount and run plugin-e2e test suite in dev container (FIXUID)
+      - name: mount and run playwright test suite in dev container (FIXUID)
         env:
           TEST_SUITE_REPO_TOKEN: ${{ github.token }}
         run: |
