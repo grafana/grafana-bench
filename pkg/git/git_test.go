@@ -2,31 +2,42 @@ package git
 
 import (
 	"context"
-	"fmt"
-	"net/http/cgi"
-	"net/http/httptest"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
+
 	"slices"
 	"testing"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
+
+	"github.com/grafana/grafana-bench/internal/testutils/gittest"
 )
 
-
 var repoFiles = map[string]string{
-	"directory/file": "file",
+	"directory/file":          "file",
 	"anotherDir/another_file": "another file",
 }
 
 func TestGitSource(t *testing.T) {
-	// test setup
+	// start a git server
+	gitSrv, err := gittest.NewGitServer(
+		t.Context(),
+		gittest.GitServerConfig{
+			RepoName: "bench",
+			User:     "bench",
+			Password: "benchbench",
+			Email:    "bench-testing@grafana.com",
+		})
+	if err != nil {
+		t.Fatalf("creating test git server %v", err)
+	}
 
-	// 1. create a test git repository (will have a master branch by default)
+	// create a test git repository (will have a master branch by default)
 	repoDir := t.TempDir()
 	repo, err := git.PlainInit(repoDir, false)
 	if err != nil {
@@ -44,7 +55,16 @@ func TestGitSource(t *testing.T) {
 		Branch: plumbing.NewBranchReferenceName("master"),
 	})
 
-	// 2 create files in repository
+	// add the remote
+	_, err = repo.CreateRemote(&config.RemoteConfig{
+		Name: "origin",
+		URLs: []string{gitSrv.URL},
+	})
+	if err != nil {
+		t.Fatalf("creating remote: %v", err)
+	}
+
+	// add files in repository
 	for path, content := range repoFiles {
 		path = filepath.Join(repoDir, path)
 		err = os.MkdirAll(filepath.Dir(path), 0o755)
@@ -57,7 +77,7 @@ func TestGitSource(t *testing.T) {
 		}
 	}
 
-	// 3. commit files (path must be relative to repo's root)
+	// commit files (path must be relative to repo's root)
 	_, err = wt.Add(".")
 	if err != nil {
 		t.Fatalf("adding files to commit: %v", err)
@@ -70,15 +90,7 @@ func TestGitSource(t *testing.T) {
 		t.Fatalf("committing files: %v", err)
 	}
 
-	// 4. create a branch 'test-branch'
-	branchName := "test-branch"
-	branchRef := plumbing.NewBranchReferenceName(branchName)
-	err = wt.Checkout(&git.CheckoutOptions{Create: true, Force: false, Branch: branchRef})
-	if err != nil {
-		t.Fatalf("creating branch: %v", err)
-	}
-
-	// 5. create a tag 'v0.0.0'
+	// create tag 'v0.0.0'
 	tagName := "v0.0.0"
 	_, err = repo.CreateTag(
 		tagName,
@@ -92,22 +104,24 @@ func TestGitSource(t *testing.T) {
 		t.Fatalf("creating tag: %v", err)
 	}
 
-	// start a git server
-	gitPath, err := exec.LookPath("git")
-    	if err != nil {
-        	t.Fatalf("cannot find git: %v", err)
-    	}
+	// create a branch 'test-branch'
+	branchName := "test-branch"
+	branchRef := plumbing.NewBranchReferenceName(branchName)
+	err = wt.Checkout(&git.CheckoutOptions{Create: true, Force: false, Branch: branchRef})
+	if err != nil {
+		t.Fatalf("creating branch: %v", err)
+	}
 
-   	gitHandler := &cgi.Handler{
-        	Path: gitPath,
-       		Args: []string{"http-backend"},
-        	Env: []string{
-            		fmt.Sprintf("GIT_PROJECT_ROOT=%s", repoDir),
-            		"GIT_HTTP_EXPORT_ALL=true",
+	// push all to the remote
+	err = repo.Push(&git.PushOptions{
+		RemoteName: "origin",
+		RefSpecs: []config.RefSpec{
+			config.RefSpec("+refs/heads/*:refs/heads/*"), // Push all branches
+			config.RefSpec("+refs/tags/*:refs/tags/*"),   // Push all tags
 		},
-        }
+		Auth: &http.BasicAuth{Username: "gituser", Password: gitSrv.Token},
+	})
 
-	gitSrv := httptest.NewServer(gitHandler)
 
 	testCases := []struct {
 		name      string
@@ -115,54 +129,59 @@ func TestGitSource(t *testing.T) {
 		dirs      []string
 		expectErr bool
 	}{
-		// {
-		// 	name:      "get default",
-		// 	revision:  "",
-		// 	expectErr: false,
-		// },
+		{
+			name:      "get empty",
+			revision:  "",
+			expectErr: true,
+		},
 		{
 			name:      "get master",
 			revision:  "master",
 			expectErr: false,
 		},
-		// {
-		// 	name:      "get branch",
-		// 	revision:  branchName,
-		// 	expectErr: false,
-		// },
-		// {
-		// 	name:      "get tag",
-		// 	revision:  tagName,
-		// 	expectErr: false,
-		// },
-		// {
-		// 	name:      "get hash",
-		// 	revision:  commitHash.String(),
-		// 	expectErr: false,
-		// },
-		// {
-		// 	name:      "get non-existing hash",
-		// 	revision:  "abcdef",
-		// 	expectErr: true,
-		// },
-		// {
-		// 	name:      "get non-existing branch",
-		// 	revision:  "fake-branch",
-		// 	expectErr: true,
-		// },
+		{
+			name:      "get branch",
+			revision:  branchName,
+			expectErr: false,
+		},
+		{
+			name:      "get tag",
+			revision:  tagName,
+			expectErr: false,
+		},
+		{
+			name:      "get hash",
+			revision:  commitHash.String(),
+			expectErr: false,
+		},
+		{
+			name:      "get non-existing hash",
+			revision:  "00000aaaaabbbbbcccccdddddeeeeefffff11111",
+			expectErr: true,
+		},
+		{
+			name:      "short hash",
+			revision:  "0abcdef",
+			expectErr: true,
+		},
+		{
+			name:      "get non-existing branch",
+			revision:  "fake-branch",
+			expectErr: true,
+		},
 	}
 
 	for _, tc := range testCases {
 		tc := tc
 
 		t.Run(tc.name, func(t *testing.T) {
-			source, err := NewGitSource(gitSrv.URL, "")
+			source, err := NewGitSource(gitSrv.URL, gitSrv.Token)
 			if err != nil {
 				t.Fatalf("creating git Source %v", err)
 			}
-		
+
 			targetDir := path.Join(t.TempDir(), "repo")
-			_, err = source.Get(context.TODO(), targetDir,tc.revision)
+			_, err = source.Get(context.TODO(), targetDir, tc.revision)
 			if err != nil && !tc.expectErr {
 				t.Fatalf("getting source: %v", err)
 			}
@@ -183,7 +202,7 @@ func TestGitSource(t *testing.T) {
 		}
 
 		// get source again into cloned repository
-		source, err := NewGitSource(gitSrv.URL, "master")
+		source, err := NewGitSource(gitSrv.URL, gitSrv.Token)
 		if err != nil {
 			t.Fatalf("creating git Source %v", err)
 		}
