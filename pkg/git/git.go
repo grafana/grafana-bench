@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"regexp"
 
 	"github.com/grafana/nanogit"
@@ -24,6 +23,7 @@ var (
 )
 
 type GitRepo struct {
+	repo   string
 	client nanogit.Client
 }
 
@@ -44,6 +44,7 @@ func NewGitSource(
 	}
 
 	return &GitRepo{
+		repo:   repo,
 		client: client,
 	}, nil
 }
@@ -55,21 +56,23 @@ func (g *GitRepo) Get(ctx context.Context, targetDir string, revision string, ch
 		return "", fmt.Errorf("revision must be provided")
 	}
 
-	if len(checkoutDirs) > 0 {
-		return "", fmt.Errorf("sparse checkout is not yet implemented")
-	}
-
 	err := validateTargetDir(targetDir)
 	if err != nil {
 		return "", fmt.Errorf("invalid target %w", err)
 	}
 
-	hash, err := g.checkoutRevision(ctx, targetDir,revision)
+	hash, err := g.resolveRevision(ctx, revision)
 	if err != nil {
-		return "", fmt.Errorf("getting work tree %w", err)
+		return "", fmt.Errorf("resolving revision %w", err)
 	}
 
-	return hash, nil
+	err = g.clone(ctx, targetDir, hash, checkoutDirs)
+	if err != nil {
+		return "", fmt.Errorf("cloning %s at %s to %s: %w", g.repo, revision, targetDir, err)
+	}
+
+	// return the short revision hash
+	return hash.String()[:7], nil
 }
 
 func validateTargetDir(targetDir string) error {
@@ -101,90 +104,76 @@ func validateTargetDir(targetDir string) error {
 	return nil
 }
 
-
 func isEmpty(dir string) (bool, error) {
 	files, err := os.ReadDir(dir)
-      	if err != nil {
-              return false, fmt.Errorf("accessing directory %w", err)
-      	}
+	if err != nil {
+		return false, fmt.Errorf("accessing directory %w", err)
+	}
 
 	return len(files) == 0, nil
 }
 
-func (g *GitRepo) checkoutRevision(ctx context.Context, target string, revision string) (string, error) {
-	if commitHash.MatchString(revision) {
-		return "", fmt.Errorf("checkout of commit not supported")
-	}
-
-	ref, err := g.resolveRevision(ctx, revision)
-	if err != nil {
-		return "", err
-	}
-
-	err = g.downloadTree(ctx, target, ref.Hash)
-	if err != nil {
-		return "", err
-	}
-
-	// return short hash
-	return ref.Hash.String()[:7], nil
-}
-
-func (g *GitRepo) resolveRevision(ctx context.Context, revision string) (nanogit.Ref, error) {
-	// if already a full reference, nothing to do
-	if gitRefRegexp.MatchString(revision) {
-		return g.client.GetRef(ctx, revision)
-	}
-
-	// try usual reference patterns
-	for _, prefix := range []string{"heads", "refs/heads", "refs/tags"} {
-		ref, err := g.client.GetRef(ctx, fmt.Sprintf("%s/%s", prefix, revision))
-		if err == nil {
-			return ref, nil
+func (g *GitRepo) resolveRevision(ctx context.Context, revision string) (hash.Hash, error) {
+	switch {
+	// it is already a commit hash
+	case commitHash.MatchString(revision):
+		if len(revision) != 40 {
+			return hash.Hash{}, fmt.Errorf("a full 40-character commit hash is required"+
+				", got %d characters: %s", len(revision), revision)
 		}
-
-		var refNotFound *nanogit.RefNotFoundError
-		if errors.As(err, &refNotFound) {
-			continue
+		commitHash, err := hash.FromHex(revision)
+		if err != nil {
+			return hash.Hash{}, fmt.Errorf("parsing commit hash %s: %w", revision, err)
 		}
+		return commitHash, nil
 
-		return nanogit.Ref{}, fmt.Errorf("retrieving ref %w", err)
-	}
-
-	return nanogit.Ref{}, fmt.Errorf("%w: %q", ErrRefNotFound, revision)
-}
-
-// recursively downloads content from the repo at a given reference's hash
-func (g *GitRepo) downloadTree(ctx context.Context, target string, hash hash.Hash) error {
-	var err error
-
-	if err = os.MkdirAll(target, 0o755); err != nil {
-		return fmt.Errorf("creating target dir %s: %w", target, err)
-	}
-
-	tree, err := g.client.GetTree(ctx, hash)
-	if err != nil {
-		return fmt.Errorf("retrieving tree at hash %s: %w", hash.String(), err)
-	}
-
-	for _, e := range tree.Entries {
-		// if entry is a  directory
-		if e.Mode & 0o40000 != 0 {
-			if err = g.downloadTree(ctx, filepath.Join(target, e.Name), e.Hash); err != nil {
-				return err
+	// if already a full reference, get it
+	case gitRefRegexp.MatchString(revision):
+		ref, err := g.client.GetRef(ctx, revision)
+		if err != nil {
+			return hash.Hash{}, fmt.Errorf("resolving revision %s: %w", revision, err)
+		}
+		return ref.Hash, nil
+	// not a full reference, try usual reference patterns
+	default:
+		for _, prefix := range []string{"heads", "refs/heads", "refs/tags"} {
+			ref, err := g.client.GetRef(ctx, fmt.Sprintf("%s/%s", prefix, revision))
+			if err == nil {
+				return ref.Hash, nil
 			}
-			continue
+
+			var refNotFound *nanogit.RefNotFoundError
+			if errors.As(err, &refNotFound) {
+				continue
+			}
+
+			return hash.Hash{}, fmt.Errorf("retrieving ref %w", err)
 		}
 
-		content, err := g.client.GetBlob(ctx, e.Hash)
-		if err != nil {
-			return fmt.Errorf("downloading file %s: %w", e.Name, err)
-		}
-		err = os.WriteFile(filepath.Join(target, e.Name), content.Content, os.FileMode(e.Mode))
-		if err != nil {
-			return fmt.Errorf("writing file %s: %w", filepath.Join(target, e.Name), err)
-		}
+		return hash.Hash{}, fmt.Errorf("%w: %q", ErrRefNotFound, revision)
+	}
+}
+
+func (g *GitRepo) clone(ctx context.Context, targetDir string, commitHash hash.Hash, checkoutDirs []string) error {
+
+	// Prepare clone options
+	cloneOpts := nanogit.CloneOptions{
+		Path: targetDir,
+		Hash: commitHash,
 	}
 
-	return nil
+	// Handle checkout directories (path filtering)
+	if len(checkoutDirs) > 0 {
+		// Convert checkout directories to include paths with glob patterns
+		includePaths := make([]string, len(checkoutDirs))
+		for i, dir := range checkoutDirs {
+			// Add /** to make it include all files under the directory
+			includePaths[i] = dir + "/**"
+		}
+		cloneOpts.IncludePaths = includePaths
+	}
+
+	// Perform the clone
+	_, err := g.client.Clone(ctx, cloneOpts)
+	return err
 }
