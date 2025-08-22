@@ -92,6 +92,8 @@ func (e *GoExecutor) ExecTestSuite(
 					summary.TestRuns[i].Status = executor.TestFlaky
 					summary.TestsFailed--
 					summary.TestsFlaky++
+
+					break
 				}
 			}
 		}

@@ -136,7 +136,7 @@ func TestFlakyTest(t *testing.T) {
 			title: "retry flaky test",
 			opts: GoExecutorOptions{
 				Packages: []string{"./..."},
-				Retries:  1,
+				Retries:  3,
 			},
 			suite: executor.TestSuite{
 				Path: "flaky",
