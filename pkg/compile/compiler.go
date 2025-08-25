@@ -9,7 +9,6 @@ import (
 
 	"github.com/grafana/grafana-bench/pkg/git"
 	"github.com/grafana/grafana-bench/pkg/utils"
-
 )
 
 // TestCompiler
@@ -23,7 +22,6 @@ type TestCompiler struct {
 	TestPrepareCmd    []string
 }
 
-
 func NewTestCompiler(
 	log *slog.Logger,
 	targetDir string,
@@ -32,7 +30,7 @@ func NewTestCompiler(
 	repoToken string,
 	testSuiteRevision string,
 	testPrepareCmd []string,
-)  *TestCompiler {
+) *TestCompiler {
 	return &TestCompiler{
 		Log:               log,
 		TargetDir:         targetDir,
@@ -46,8 +44,8 @@ func NewTestCompiler(
 
 // CompileTestSuite collect the test suite from a source repository
 // returns the test suite revision
-func (tc *TestCompiler)CompileTestSuite(ctx context.Context) (string, error) {
-	gitSource, err := git.NewGitSource(tc.TestSuiteRepo, tc.RepoToken)
+func (tc *TestCompiler) CompileTestSuite(ctx context.Context) (string, error) {
+	gitSource, err := git.NewNanogitSource(tc.TestSuiteRepo, tc.RepoToken)
 	if err != nil {
 		return "", fmt.Errorf("creating git source %s: %w", tc.TestSuiteRepo, err)
 	}

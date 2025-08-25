@@ -22,16 +22,16 @@ var (
 	ErrRefNotFound = errors.New("reference not found")
 )
 
-type GitRepo struct {
+type NanogitRepo struct {
 	repo   string
 	client nanogit.Client
 }
 
-// NewGitSource returns a new GitRepo instance.
-func NewGitSource(
+// NewNanogitSource returns a new GitRepo instance.
+func NewNanogitSource(
 	repo string,
 	token string,
-) (*GitRepo, error) {
+) (*NanogitRepo, error) {
 	var opts []options.Option
 	if token != "" {
 		// for tokens, gituser must be passed. Empty user is rejected
@@ -43,7 +43,7 @@ func NewGitSource(
 		return nil, fmt.Errorf("creating nanogit client %w", err)
 	}
 
-	return &GitRepo{
+	return &NanogitRepo{
 		repo:   repo,
 		client: client,
 	}, nil
@@ -51,7 +51,7 @@ func NewGitSource(
 
 // Get retrieves a revision from a git repository into a target directory, optionally checkout specific directories
 // Returns the revision that was retrieved
-func (g *GitRepo) Get(ctx context.Context, targetDir string, revision string, checkoutDirs ...string) (string, error) {
+func (g *NanogitRepo) Get(ctx context.Context, targetDir string, revision string, checkoutDirs ...string) (string, error) {
 	if revision == "" {
 		return "", fmt.Errorf("revision must be provided")
 	}
@@ -113,7 +113,7 @@ func isEmpty(dir string) (bool, error) {
 	return len(files) == 0, nil
 }
 
-func (g *GitRepo) resolveRevision(ctx context.Context, revision string) (hash.Hash, error) {
+func (g *NanogitRepo) resolveRevision(ctx context.Context, revision string) (hash.Hash, error) {
 	switch {
 	// it is already a commit hash
 	case commitHash.MatchString(revision):
@@ -154,7 +154,7 @@ func (g *GitRepo) resolveRevision(ctx context.Context, revision string) (hash.Ha
 	}
 }
 
-func (g *GitRepo) clone(ctx context.Context, targetDir string, commitHash hash.Hash, checkoutDirs []string) error {
+func (g *NanogitRepo) clone(ctx context.Context, targetDir string, commitHash hash.Hash, checkoutDirs []string) error {
 
 	// Prepare clone options
 	cloneOpts := nanogit.CloneOptions{

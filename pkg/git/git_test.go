@@ -122,7 +122,6 @@ func TestGitSource(t *testing.T) {
 		Auth: &http.BasicAuth{Username: "gituser", Password: gitSrv.Token},
 	})
 
-
 	testCases := []struct {
 		name      string
 		revision  string
@@ -175,7 +174,7 @@ func TestGitSource(t *testing.T) {
 		tc := tc
 
 		t.Run(tc.name, func(t *testing.T) {
-			source, err := NewGitSource(gitSrv.URL, gitSrv.Token)
+			source, err := NewNanogitSource(gitSrv.URL, gitSrv.Token)
 			if err != nil {
 				t.Fatalf("creating git Source %v", err)
 			}
@@ -202,7 +201,7 @@ func TestGitSource(t *testing.T) {
 		}
 
 		// get source again into cloned repository
-		source, err := NewGitSource(gitSrv.URL, gitSrv.Token)
+		source, err := NewNanogitSource(gitSrv.URL, gitSrv.Token)
 		if err != nil {
 			t.Fatalf("creating git Source %v", err)
 		}
@@ -239,7 +238,7 @@ func TestGitSource(t *testing.T) {
 				slices.Sort(dirs)
 
 				targetRepo := path.Join(t.TempDir(), "repo")
-				source, err := NewGitSource(gitSrv.URL, "")
+				source, err := NewNanogitSource(gitSrv.URL, "")
 				if err != nil {
 					t.Fatalf("creating git Source %v", err)
 				}
