@@ -40,34 +40,34 @@ func (r *TextReporter) Report(
 		)
 	}
 
-	unsuccessfulTests := make(map[executor.TestStatus][]string, 0)
+	testsByStatus := make(map[executor.TestStatus][]string, 0)
 	for _, testRun := range suiteRunSummary.TestRuns {
-		if testRun.Status == executor.TestPassed {
+		fmt.Fprintf(
+			tw,
+			"[%s]\t%.2f sec\t%s:\t%s\n",
+			strings.ToUpper(string(testRun.Status)),
+			testRun.TotalDuration.Seconds(),
+			testRun.TestFolder,
+			testRun.TestFile,
+		)
+	
+		if testRun.Status == executor.TestPassed && testRun.Status != executor.TestSkipped {
 			continue
 		}
-
-		if unsuccessfulTests[testRun.Status] == nil {
-			unsuccessfulTests[testRun.Status] = make([]string, 0)
-		}
-
-		unsuccessfulTests[testRun.Status] = append(
-			unsuccessfulTests[testRun.Status],
-			fmt.Sprintf("%s:\t%s", testRun.TestFolder, testRun.TestFile),
-		)
+	
+		// collect tests that didn't pass
+		tests := testsByStatus[testRun.Status]
+		tests = append( tests, fmt.Sprintf("%s:\t%s", testRun.TestFolder, testRun.TestFile))
+		testsByStatus[testRun.Status] = tests
 	}
 
-	if len(unsuccessfulTests) > 0 {
-		if flakyTests, ok := unsuccessfulTests[executor.TestFlaky]; ok {
-			fmt.Fprintf(tw, "\n--------------FLAKY TESTS--------------\n")
-			for _, flakyTest := range flakyTests {
-				fmt.Fprintf(tw, "%s\n", flakyTest)
-			}
-		}
-
-		if failedTests, ok := unsuccessfulTests[executor.TestFailed]; ok {
-			fmt.Fprintf(tw, "\n--------------FAILED TESTS-------------\n")
-			for _, failedTest := range failedTests {
-				fmt.Fprintf(tw, "%s\n", failedTest)
+	statuses := []executor.TestStatus{executor.TestError, executor.TestFailed, executor.TestFlaky}
+	for _, status := range statuses {
+		tests := testsByStatus[status]
+		if len(tests) > 0 {
+			fmt.Fprintf(tw, "\n--------------%s TESTS--------------\n", strings.ToUpper(string(status)))
+			for _, test := range tests {
+				fmt.Fprintf(tw, "%s\n", test)
 			}
 		}
 	}
