@@ -32,7 +32,7 @@ func (r *TextReporter) Report(
 	for _, testRun := range suiteRunSummary.TestRuns {
 		fmt.Fprintf(
 			tw,
-			"[%s]\t%.2f sec\t%s/%s\n",
+			"[%s]\t%.2f sec\t%s:\t%s\n",
 			strings.ToUpper(string(testRun.Status)),
 			testRun.TotalDuration.Seconds(),
 			testRun.TestFolder,
