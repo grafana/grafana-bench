@@ -40,6 +40,38 @@ func (r *TextReporter) Report(
 		)
 	}
 
+	unsuccessfulTests := make(map[executor.TestStatus][]string, 0)
+	for _, testRun := range suiteRunSummary.TestRuns {
+		if testRun.Status == executor.TestPassed {
+			continue
+		}
+
+		if unsuccessfulTests[testRun.Status] == nil {
+			unsuccessfulTests[testRun.Status] = make([]string, 0)
+		}
+
+		unsuccessfulTests[testRun.Status] = append(
+			unsuccessfulTests[testRun.Status],
+			fmt.Sprintf("%s:\t%s", testRun.TestFolder, testRun.TestFile),
+		)
+	}
+
+	if len(unsuccessfulTests) > 0 {
+		if flakyTests, ok := unsuccessfulTests[executor.TestFlaky]; ok {
+			fmt.Fprintf(tw, "\n--------------FLAKY TESTS--------------\n")
+			for _, flakyTest := range flakyTests {
+				fmt.Fprintf(tw, "%s\n", flakyTest)
+			}
+		}
+
+		if failedTests, ok := unsuccessfulTests[executor.TestFailed]; ok {
+			fmt.Fprintf(tw, "\n--------------FAILED TESTS-------------\n")
+			for _, failedTest := range failedTests {
+				fmt.Fprintf(tw, "%s\n", failedTest)
+			}
+		}
+	}
+
 	fmt.Fprintf(tw, "\n----------------SUMMARY----------------\n")
 	fmt.Fprintf(tw, "Executed:\t%d\n", suiteRunSummary.TestsExecuted)
 	fmt.Fprintf(tw, "Passed:\t%d\n", suiteRunSummary.TestsPassed)
