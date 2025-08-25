@@ -125,17 +125,19 @@ module "cloud_sql_dev-us-central-0-hosted-grafana-dedicated-lt" {
 2. Sign in using your Okta/Google credentials
 3. This will sign you into the raintank org
 4. Click `add stack`
-5. Select your stack identifier
-6. Set your region to the same as your database server above and click apply
-7. Wait for your stack to be created and note the id in the url for configuring your instance
+5. Select your stack identifier and set your region to the same as your database server and click apply. <img width="1454" height="950" alt="image" src="https://github.com/user-attachments/assets/262a8234-cced-4898-9df2-f95012f18a99" />
+6. Wait for your stack to be created and note the id in the url for configuring your instance. Example URL: `https://grafana-dev.com/orgs/raintank/stacks/8182`
 
-Example URL: `https://grafana-dev.com/orgs/raintank/stacks/8182`
+<img width="2070" height="756" alt="image" src="https://github.com/user-attachments/assets/561ffba6-1a8f-406e-b58a-5c554d700dfd" />
 
 ### Configuring your instance
 
 1. Substitute the id of your stack into the ADMIN url `https://admin.grafana-dev.com/orgs/raintank/stacks/{YOURID}`
 2. Navigate to that url and click the edit button next to Grafana
-3. Update the following config sections:
+
+<img width="1588" height="1606" alt="image" src="https://github.com/user-attachments/assets/05ae88ca-7fb0-4dec-bc54-c274f4cfbe53" />
+
+4. Update the following config sections:
 
 ```ini
 [alerting]
