@@ -116,6 +116,8 @@ cpu_usage_seconds_total 123.45
 5. These variables are also required:
     a. PROMETHEUS_URL: <https://prometheus-ops-03-ops-eu-south-0.grafana-ops.net/api/prom/push>
     b. PROMETHEUS_USER: 10428
+   
+<img width="1514" height="1398" alt="image" src="https://github.com/user-attachments/assets/8f12ccb7-ab8e-4558-968f-c55698b3a642" />
 
 ## Complete example
 
