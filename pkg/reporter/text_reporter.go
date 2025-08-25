@@ -50,14 +50,14 @@ func (r *TextReporter) Report(
 			testRun.TestFolder,
 			testRun.TestFile,
 		)
-	
+
 		if testRun.Status == executor.TestPassed && testRun.Status != executor.TestSkipped {
 			continue
 		}
-	
+
 		// collect tests that didn't pass
 		tests := testsByStatus[testRun.Status]
-		tests = append( tests, fmt.Sprintf("%s:\t%s", testRun.TestFolder, testRun.TestFile))
+		tests = append(tests, fmt.Sprintf("%s:\t%s", testRun.TestFolder, testRun.TestFile))
 		testsByStatus[testRun.Status] = tests
 	}
 
