@@ -32,9 +32,9 @@ func (r *TextReporter) Report(
 	for _, testRun := range suiteRunSummary.TestRuns {
 		fmt.Fprintf(
 			tw,
-			"[%s]\t%s\t%s/%s\n",
+			"[%s]\t%.2f sec\t%s/%s\n",
 			strings.ToUpper(string(testRun.Status)),
-			testRun.TotalDuration.String(),
+			testRun.TotalDuration.Seconds(),
 			testRun.TestFolder,
 			testRun.TestFile,
 		)
@@ -47,6 +47,7 @@ func (r *TextReporter) Report(
 	fmt.Fprintf(tw, "Failed:\t%d\n", suiteRunSummary.TestsFailed)
 	fmt.Fprintf(tw, "Errors:\t%d\n", suiteRunSummary.TestsError)
 	fmt.Fprintf(tw, "Suite:\t%s\n", suiteRunSummary.Status)
+	fmt.Fprintf(tw, "Total Run Time:\t%.2f sec\n", suiteRunSummary.TotalDuration.Seconds())
 
 	return nil
 }
