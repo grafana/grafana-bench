@@ -1,5 +1,5 @@
 // Package git implements git related utilities
-package git
+package nanogit
 
 import (
 	"context"
@@ -27,8 +27,8 @@ type NanogitRepo struct {
 	client nanogit.Client
 }
 
-// NewNanogitSource returns a new GitRepo instance.
-func NewNanogitSource(
+// NewSource returns a new GitRepo instance.
+func NewSource(
 	repo string,
 	token string,
 ) (*NanogitRepo, error) {
