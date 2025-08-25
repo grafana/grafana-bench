@@ -68,7 +68,7 @@ Metrics should look like `{AREA}_{TYPE}_{SUBJECT}_{INCREMENT}`. For instance:
 
 `fe_perf_used_js_heap_size_bytes`
 
-`be_perf_latency_ms`
+`be_perf_latency_seconds`
 
 Do not include the name of the service as that will be applied as a label, allowing
 for querying metrics by service.
