@@ -125,17 +125,19 @@ module "cloud_sql_dev-us-central-0-hosted-grafana-dedicated-lt" {
 2. Sign in using your Okta/Google credentials
 3. This will sign you into the raintank org
 4. Click `add stack`
-5. Select your stack identifier
-6. Set your region to the same as your database server above and click apply
-7. Wait for your stack to be created and note the id in the url for configuring your instance
+5. Select your stack identifier and set your region to the same as your database server and click apply. <img width="1454" height="950" alt="image" src="https://github.com/user-attachments/assets/262a8234-cced-4898-9df2-f95012f18a99" />
+6. Wait for your stack to be created and note the id in the url for configuring your instance. Example URL: `https://grafana-dev.com/orgs/raintank/stacks/8182`
 
-Example URL: `https://grafana-dev.com/orgs/raintank/stacks/8182`
+<img width="2070" height="756" alt="image" src="https://github.com/user-attachments/assets/561ffba6-1a8f-406e-b58a-5c554d700dfd" />
 
 ### Configuring your instance
 
 1. Substitute the id of your stack into the ADMIN url `https://admin.grafana-dev.com/orgs/raintank/stacks/{YOURID}`
 2. Navigate to that url and click the edit button next to Grafana
-3. Update the following config sections:
+
+<img width="1588" height="1606" alt="image" src="https://github.com/user-attachments/assets/05ae88ca-7fb0-4dec-bc54-c274f4cfbe53" />
+
+4. Update the following config sections:
 
 ```ini
 [alerting]
@@ -182,10 +184,13 @@ From the deployment tools repo:
 
 1. [Request timed access](https://timed-access.grafana-ops.net/timed-access/access/request)
 2. Pause the instance:
+
    ```sh
    scripts/gcom/gcom-dev /instances/{YOUR SLUG}/archive -d ""
    ```
+
 3. Migrate to new database server:
+
    ```sh
    scripts/hg/hg-dev /instances/{YOUR SLUG}/migrate_db -d targetDbServer={YOUR DATABASE SERVER NAME}
    ```
@@ -199,11 +204,13 @@ You need to login as the super admin in order to create a user with enough permi
 Scripts in [deployment_tools](https://github.com/grafana/deployment_tools/tree/master/scripts/hg):
 
 1. Connect to the hosted_grafana server in the appropriate region:
+
    ```sh
    scripts/hg/hg-mysql-dev dev-us-central-0 hosted_grafana
    ```
 
 2. Get the admin secret:
+
    ```sql
    select secret from instances where slug='benchloadtestingxxl';
    ```
@@ -211,6 +218,7 @@ Scripts in [deployment_tools](https://github.com/grafana/deployment_tools/tree/m
 #### Create the user
 
 1. Create the admin user:
+
    ```sh
    curl -X POST https://{YOUR_INSTANCE}.grafana-dev.net/api/admin/users \
      -H "Content-Type: application/json" \
@@ -224,6 +232,7 @@ Scripts in [deployment_tools](https://github.com/grafana/deployment_tools/tree/m
    ```
 
 2. Grant admin permissions:
+
    ```sh
    curl -X PUT https://{YOUR_INSTANCE}.grafana-dev.net/api/admin/users/{USER_ID}/permissions \
      -H "Content-Type: application/json" \
@@ -232,6 +241,7 @@ Scripts in [deployment_tools](https://github.com/grafana/deployment_tools/tree/m
    ```
 
 3. Assign roles:
+
    ```sh
    curl -X PUT https://{YOUR_INSTANCE}.grafana-dev.net/api/access-control/users/{USER_ID}/roles?targetOrgId=1 \
      -H "Content-Type: application/json" \
@@ -251,22 +261,26 @@ SQL is quite a bit faster, however, more difficult to push to an instance of Gra
 ### Setup
 
 1. Navigate to the fake-user-generator directory:
+
    ```sh
    cd grafana-api-tests/simulation/fake-user-generator
    ```
 
 2. Install dependencies:
+
    ```sh
    yarn install --immutable
    yarn add ts-node -D
    ```
 
 3. Create a config file:
+
    ```sh
    cp config.example.json config.json
    ```
 
 4. Edit `config.json` with your instance details:
+
    ```json
    {
      "grafanaUrl": "https://{YOUR_INSTANCE}.grafana-dev.net",
@@ -277,6 +291,7 @@ SQL is quite a bit faster, however, more difficult to push to an instance of Gra
    ```
 
 5. Run the script:
+
    ```sh
    ./generateNestedFolders.ts --scenario medium --timeout 10
    ```
@@ -292,6 +307,7 @@ The Grafana simulation suite provides a framework for writing load tests using k
 ### Getting started with the simulation suite
 
 1. **Clone and setup the API tests repository:**
+
    ```sh
    git clone https://github.com/grafana/grafana-api-tests
    cd grafana-api-tests/simulation
@@ -299,13 +315,16 @@ The Grafana simulation suite provides a framework for writing load tests using k
    ```
 
 2. **Build the simulation suite:**
+
    ```sh
    yarn build:simulation
    ```
+
    This compiles TypeScript to JavaScript in `simulation/dist`
 
 3. **Configure environment variables:**
    Create a `.env.{yourinstance}` file:
+
    ```sh
    export GRAFANA_URL="https://{YOUR_INSTANCE}.grafana-dev.net"
    export GRAFANA_ADMIN_USER="{YOUR_ADMIN_USER}"
@@ -319,6 +338,7 @@ The Grafana simulation suite provides a framework for writing load tests using k
    ```
 
 4. **Load environment variables:**
+
    ```sh
    source .env.{yourinstance}
    ```
@@ -326,6 +346,7 @@ The Grafana simulation suite provides a framework for writing load tests using k
 ### Creating tests for your domain
 
 1. **Create your domain directory:**
+
    ```sh
    mkdir simulation/src/{your_domain}
    ```
@@ -342,6 +363,7 @@ The Grafana simulation suite provides a framework for writing load tests using k
 The simulation suite supports different k6 execution patterns:
 
 #### Constant arrival rate
+
 ```javascript
 export const options = {
   scenarios: {
@@ -358,6 +380,7 @@ export const options = {
 ```
 
 #### Ramping arrival rate
+
 ```javascript
 export const options = {
   scenarios: {
@@ -410,6 +433,7 @@ There are two ways to schedule load tests: using k6 Cloud's built-in scheduling 
 You can schedule tests directly in k6 Cloud:
 
 1. **Run your test once to create it in k6 Cloud:**
+
    ```sh
    k6 cloud -e GRAFANA_URL=$GRAFANA_URL -e GRAFANA_USERNAME=$GRAFANA_USERNAME -e GRAFANA_PASSWORD=$GRAFANA_PASSWORD dist/tests/dashboard_by_uid_fetch_ap.js
    ```
@@ -426,6 +450,7 @@ You can schedule tests directly in k6 Cloud:
 ### GitHub Actions integration
 
 #### GitHub Actions
+
 Create `.github/workflows/load-test.yml`:
 
 ```yaml
@@ -531,16 +556,19 @@ For local work, check out the [hosted-grafana](https://github.com/grafana/hosted
 ### Monitoring instance status
 
 Review pods:
+
 ```sh
 kubectl get pods -n hosted-grafana --context=dev-us-central-0 -l slug={YOUR_SLUG}
 ```
 
 View logs:
+
 ```sh
 kubectl logs -n hosted-grafana --context=dev-us-central-0 -f {POD_NAME}
 ```
 
 Check instance database config:
+
 ```sh
 scripts/hg/hg-dev /instances/{YOUR_SLUG} | jq .database
 ```
@@ -548,11 +576,13 @@ scripts/hg/hg-dev /instances/{YOUR_SLUG} | jq .database
 ### Instance operations
 
 #### Restart instance
+
 ```sh
 scripts/gcom/gcom-dev /instances/{YOUR_SLUG}/restart -d ''
 ```
 
 #### Configure instance via gcom
+
 ```sh
 scripts/gcom/gcom-dev /instances/{YOUR_SLUG}/config \
   -d 'config[auth][disable_login_form]=false' \
@@ -574,11 +604,13 @@ scripts/gcom/gcom-dev /instances/{YOUR_SLUG}/config \
 1. [Request timed access](https://internal-ops-us-east-0.grafana.net/timed-access/access/request)
 
 2. Pause instance:
+
    ```sh
    scripts/gcom/gcom-dev /instances/{YOUR_SLUG}/archive -d ""
    ```
 
 3. Create `~/.boto` file (ignore key values):
+
    ```ini
    [GSUtil]
    encryption_key=
@@ -592,11 +624,13 @@ scripts/gcom/gcom-dev /instances/{YOUR_SLUG}/config \
    - Grab the generation number for the version you want
 
 5. Copy backup (this will boot the instance after):
+
    ```sh
    scripts/hg/copy-old-archive/copy_archive {YOUR_SLUG} {GENERATION_NUMBER}
    ```
 
 6. Migrate to correct database server:
+
    ```sh
    scripts/hg/hg-dev /instances/{YOUR_SLUG}/migrate_db -d targetDbServer={YOUR_DATABASE_SERVER}
    ```
@@ -604,6 +638,7 @@ scripts/gcom/gcom-dev /instances/{YOUR_SLUG}/config \
 ### Create alert to prevent instance pausing
 
 Create an alert to keep the instance active:
+
 ```sh
 POST https://{YOUR_INSTANCE}.grafana-dev.net/api/ruler/grafana/api/v1/rules/{FOLDER_ID}?subtype=cortex
 {
@@ -644,11 +679,13 @@ POST https://{YOUR_INSTANCE}.grafana-dev.net/api/ruler/grafana/api/v1/rules/{FOL
 ## Debugging and profiling
 
 ### Connect to database directly
+
 ```sh
 scripts/hg/hg-mysql-dev dev-us-central-0 hg_{YOUR_SLUG}
 ```
 
 ### SSH into pod
+
 ```sh
 kubectl -n hosted-grafana exec -ti {POD_NAME} -- sh
 ```
@@ -659,11 +696,12 @@ For local development, disable race detector in Makefile and add profiling:
 
 ```makefile
 run-go: ## Build and run web server immediately.
-	$(GO) run $(if $(GO_BUILD_TAGS),-build-tags=$(GO_BUILD_TAGS)) \
-		./pkg/cmd/grafana -- server -packaging=dev cfg:app_mode=development
+ $(GO) run $(if $(GO_BUILD_TAGS),-build-tags=$(GO_BUILD_TAGS)) \
+  ./pkg/cmd/grafana -- server -packaging=dev cfg:app_mode=development
 ```
 
 Environment variables:
+
 ```sh
 export GF_DIAGNOSTICS_PROFILING_ENABLED=1
 export GF_DIAGNOSTICS_PROFILING_ADDR=0.0.0.0
@@ -671,6 +709,7 @@ export GF_DIAGNOSTICS_PROFILING_PORT=6000
 ```
 
 View profiling data:
+
 ```sh
 go tool pprof -http=:6060 http://localhost:6000/debug/pprof/heap
 ```

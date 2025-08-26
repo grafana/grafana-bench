@@ -64,6 +64,15 @@ This helps us keep metrics useful and discoverable.
 
 ### General rules
 
+Metrics should look like `{AREA}_{TYPE}_{SUBJECT}_{INCREMENT}`. For instance:
+
+`fe_perf_used_js_heap_size_bytes`
+
+`be_perf_latency_seconds`
+
+Do not include the name of the service as that will be applied as a label, allowing
+for querying metrics by service.
+
 * Metric names and labels should be snake_case
 * Bench generates its own metrics for test suites in the form `bench_tests_executed`.
 * Custom metrics do not have the `bench_` prefix.
@@ -97,7 +106,20 @@ http_requests_total{method="POST",path="/api"} 50 1678886400000
 cpu_usage_seconds_total 123.45
 ```
 
-### Complete example
+## Generating an ops metrics key
+
+1. Go to <https://grafana-ops.com/orgs/grafana/access-policies> (where the ops instance and its data sources live)
+2. Create a new Cloud Access Policy with metrics:write permissions on the ops stack
+3. Generate a CAP token for this policy
+4. Use the token as the PROMETHEUS_PASSWORD argument to bench
+    a. To add the token to vault for use in a workflow: VAULT_INSTANCE=prod ./vault-put ci/repo/grafana/{your-repo}/prometheus_token prometheus_token={token}
+5. These variables are also required:
+    a. PROMETHEUS_URL: <https://prometheus-ops-03-ops-eu-south-0.grafana-ops.net/api/prom/push>
+    b. PROMETHEUS_USER: 10428
+   
+<img width="1514" height="1398" alt="image" src="https://github.com/user-attachments/assets/8f12ccb7-ab8e-4558-968f-c55698b3a642" />
+
+## Complete example
 
 The following is a complete example using a github action to run a playwright test
 and then pass the playwright output json and metrics file to the bench reporter.
