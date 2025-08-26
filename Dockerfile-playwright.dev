@@ -37,7 +37,7 @@ RUN go get github.com/boxboat/fixuid@${FIXUID_VERSION} && \
 FROM grafana/k6:latest AS k6
 
 # Use Playwright base image which includes all browser dependencies
-FROM mcr.microsoft.com/playwright:v1.54.0-noble AS runtime
+FROM mcr.microsoft.com/playwright:v1.55.0-noble AS runtime
 
 USER root
 
