@@ -46,9 +46,9 @@ func (r *LogReporter) Report(
 	suiteRun executor.SuiteRun,
 	summary executor.SuiteRunSummary,
 ) error {
-	
+
 	log := r.Log.With(
-		"runId", suiteRun.Id, 
+		"runId", suiteRun.Id,
 		// TODO: deprecate
 		"suiteRun", suiteRun.Name,
 		"testTrigger", suiteRun.Trigger,
@@ -75,7 +75,7 @@ func (r *LogReporter) Report(
 		for k, v := range testRun.Attributes {
 			testRunAttrs = append(testRunAttrs, k, v)
 		}
-		
+
 		log.With(testRunAttrs...).Info("testRun", "testRun", testRunId)
 	}
 
@@ -91,8 +91,9 @@ func (r *LogReporter) Report(
 		"testsFailed", summary.TestsFailed,
 		"testsError", summary.TestsError,
 	}
-	for k, v := range summary.Metrics {
-		suiteRunAttrs = append(suiteRunAttrs, k, v)
+
+	for _, v := range summary.Metrics {
+		suiteRunAttrs = append(suiteRunAttrs, v.Name, v.Value)
 	}
 
 	log.With(suiteRunAttrs...).Info("suiteRun", "anyFailures", anyFailures)
