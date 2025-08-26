@@ -68,7 +68,7 @@ require (
 )
 
 require (
-	github.com/go-playground/validator/v10 v10.26.0
+	github.com/go-playground/validator/v10 v10.27.0
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/google/go-cmp v0.7.0
 	github.com/hairyhenderson/go-codeowners v0.7.0
