@@ -14,7 +14,7 @@ require (
 	github.com/prometheus/client_golang v1.23.0
 	github.com/prometheus/client_model v0.6.2
 	github.com/slack-go/slack v0.17.3
-	github.com/spf13/pflag v1.0.7
+	github.com/spf13/pflag v1.0.9
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56
 	golang.org/x/text v0.28.0
 	google.golang.org/protobuf v1.36.8
