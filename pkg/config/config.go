@@ -225,19 +225,19 @@ func AddSuiteRunFlags(fs *pflag.FlagSet, config *SuiteRunConfig) {
 		&config.Trigger,
 		"test-trigger",
 		"local",
-		"deprecated. Use run-trigger",
+		"deprecated. Use ci-stage",
 	)
 	fs.StringVar(
 		&config.Trigger,
 		"trigger",
 		"local",
-		"deprecated. Use run-trigger",
+		"deprecated. Use ci-stage",
 	)
 	fs.StringVar(
 		&config.Trigger,
-		"run-trigger",
+		"ci-stage",
 		"local",
-		"trigger of bench execution. For example, 'ci' or 'local'.",
+		"the stage of CI the suite was executed. For example, 'local', 'ci', 'rrc'.",
 	)
 	fs.StringSliceVar(
 		&config.Metrics,
