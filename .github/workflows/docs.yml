@@ -28,7 +28,7 @@ jobs:
         run: git fetch --tags
 
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
 
@@ -41,7 +41,7 @@ jobs:
         with:
           script: |
             const { execSync } = require('child_process');
-            
+
             // Check if docs changed
             try {
               execSync('git diff --exit-code docs/', { stdio: 'ignore' });
@@ -50,9 +50,9 @@ jobs:
             } catch {
               // Docs changed, create suggestions
             }
-            
+
             const diff = execSync('git diff docs/').toString();
-            
+
             // Filter out lines that only contain date changes and file headers
             const filteredDiff = diff.split('\n').filter(line => {
               // Skip file headers (--- a/file, +++ b/file)
@@ -65,7 +65,7 @@ jobs:
               }
               return true;
             }).join('\n');
-            
+
             // Check if there are any meaningful changes after filtering
             const meaningfulChanges = filteredDiff.split('\n').some(line => 
               (line.startsWith('+') || line.startsWith('-')) && 
@@ -73,12 +73,12 @@ jobs:
               !line.match(/^(---|\+\+\+) [ab]\//) &&
               line.trim() !== '+' && line.trim() !== '-'
             );
-            
+
             if (!meaningfulChanges) {
               console.log('Only date/header changes detected, no documentation update needed');
               return;
             }
-            
+
             const body = [
               "## 📚 Documentation Update Needed",
               "",
@@ -96,14 +96,14 @@ jobs:
               "```",
               "</details>"
             ].join("\n");
-            
+
             await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: body
             });
-            
+
             // Set output to indicate docs need updating
             core.setOutput('docs-needed', 'true');
 
