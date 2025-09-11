@@ -13,12 +13,19 @@ test('login with username and password', async ({ page, context }) => {
   // Click the login button
   await page.click('button[type="submit"]');
 
+  // Wait for navigation to complete (handles React app redirects)
+  await page.waitForLoadState('networkidle');
 
-  // if we're still on login page, check to see if we have the Update dialog
+  // Check login result - could redirect to dashboard, setup guide, or stay on login for password update
   if (page.url().includes('/login')) {
     console.log('Redirected to password update page');
     await expect(page.locator('text=Update your password')).toBeVisible();
+  } else if (page.url().includes('grafana-setupguide-app')) {
+    // Hosted Grafana redirects to setup guide after login
+    console.log('Redirected to setup guide (hosted Grafana)');
+    await expect(page.locator('[aria-label="Profile"]')).toBeVisible();
   } else {
+    // Standard Grafana dashboard
     await expect(page.locator('[aria-label="Profile"]')).toBeVisible();
     await expect(page.locator('[data-testid="user-menu"]')).toBeVisible();
   }
