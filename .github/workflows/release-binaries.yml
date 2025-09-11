@@ -1,0 +1,48 @@
+name: Release Binaries
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release-binaries:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Run tests
+        run: go test -v ./...
+
+      - name: Build binaries
+        run: |
+          # Build for multiple platforms
+          GOOS=linux GOARCH=amd64 go build -o grafana-bench-linux-amd64 .
+          GOOS=linux GOARCH=arm64 go build -o grafana-bench-linux-arm64 .
+          GOOS=darwin GOARCH=amd64 go build -o grafana-bench-darwin-amd64 .
+          GOOS=darwin GOARCH=arm64 go build -o grafana-bench-darwin-arm64 .
+          GOOS=windows GOARCH=amd64 go build -o grafana-bench-windows-amd64.exe .
+
+      - name: Create checksums
+        run: |
+          sha256sum grafana-bench-* > checksums.txt
+
+      - name: Create release
+        uses: softprops/action-gh-release@6cbd405e2c4e67a21c47fa9e383d020e4e28b836 # v2.3.3
+        with:
+          files: |
+            grafana-bench-*
+            checksums.txt
+          generate_release_notes: true
+          draft: false
+          prerelease: false

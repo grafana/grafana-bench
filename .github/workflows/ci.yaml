@@ -159,3 +159,18 @@ jobs:
       packages: write
       id-token: write
     uses: ./.github/workflows/build-playwright-image.yml
+
+  test-setup-action:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Test setup-grafana-bench action with go install fallback
+        uses: ./.github/actions/setup-grafana-bench
+        with:
+          version: 'v0.6.1'
+
+      - name: Verify installation
+        run: |
+          grafana-bench version
+          which grafana-bench
