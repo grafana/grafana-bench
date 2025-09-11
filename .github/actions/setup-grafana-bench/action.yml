@@ -2,22 +2,16 @@ name: 'Setup Grafana Bench'
 description: 'Install grafana-bench binary'
 inputs:
   version:
-    description: 'Version of grafana-bench to install (e.g., "v1.0.0" or "latest")'
-    required: false
-    default: 'latest'
+    description: 'Version of grafana-bench to install (e.g., "v0.6.1")'
+    required: true
 runs:
   using: 'composite'
   steps:
     - name: Install grafana-bench
       shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
       run: |
-        VERSION="${{ inputs.version }}"
-        
-        # Get latest version if 'latest' is specified
-        if [ "$VERSION" == "latest" ]; then
-          VERSION=$(curl -s https://api.github.com/repos/grafana/grafana-bench/releases/latest | jq -r '.tag_name // "v0.1.0"')
-        fi
-        
         echo "Installing grafana-bench version: $VERSION"
         
         # Determine platform and architecture
