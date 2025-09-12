@@ -198,6 +198,7 @@ func AddGoExecutorFlags(fs *pflag.FlagSet, config *GoTestConfig) {
 type SuiteRunConfig struct {
 	Trigger       string
 	Id            string
+	ServiceName   string
 	DashboardURL  string
 	Metrics       []string
 	MetricsPrefix string
@@ -237,6 +238,12 @@ func AddSuiteRunFlags(fs *pflag.FlagSet, config *SuiteRunConfig) {
 		"run-trigger",
 		"local",
 		"trigger of bench execution. For example, 'ci' or 'local'.",
+	)
+	fs.StringVar(
+		&config.ServiceName,
+		"service-name",
+		"grafana",
+		"name of the service being tested. Used in log output for filtering and identification",
 	)
 	fs.StringSliceVar(
 		&config.Metrics,
@@ -759,7 +766,7 @@ func (config *BenchConfig) BuildReporter() (reporter.SuiteRunReporter, error) {
 	// FIXME: this is a quick fix for the missing service attribute
 	// There's no way to get the attributes set in the runner's logger to be used
 	// in the reporter logger.
-	logAttrs := []any{"service", "bench"}
+	logAttrs := []any{"service", "bench", "serviceName", config.SuiteRun.ServiceName}
 	switch config.Report.Output {
 	case "json":
 		suiteReporter, _ = reporter.NewLogReporter(reporter.JSONLog, logAttrs)

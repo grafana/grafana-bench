@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"strings"
 	"testing"
@@ -106,19 +107,15 @@ func TestLogReporter_Report(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var buf bytes.Buffer
 			
-			// Create LogReporter with JSON format and redirect to buffer
-			reporter, err := NewLogReporter("json", []interface{}{"service", "bench"})
-			if err != nil {
-				t.Fatalf("Failed to create LogReporter: %v", err)
-			}
-			
-			// Override the logger to write to our buffer instead of stdout
+			// Create logger that writes to buffer with both service and serviceName attributes
 			logger := slog.New(slog.NewJSONHandler(&buf, &slog.HandlerOptions{
 				Level: slog.LevelDebug,
-			}))
-			reporter.Log = logger
+			})).With("service", "bench", "serviceName", "test-service")
+			
+			// Create LogReporter directly with our custom logger
+			reporter := &LogReporter{Log: logger}
 
-			err = reporter.Report(context.Background(), tt.suiteRun, tt.summary)
+			err := reporter.Report(context.Background(), tt.suiteRun, tt.summary)
 			if err != nil {
 				t.Fatalf("Report failed: %v", err)
 			}
@@ -170,16 +167,13 @@ func TestLogReporter_SuiteNameFieldPresent(t *testing.T) {
 	// This specific test ensures the suiteName field is always present
 	var buf bytes.Buffer
 	
-	// Create LogReporter and override logger to write to buffer
-	reporter, err := NewLogReporter("json", []interface{}{"service", "bench"})
-	if err != nil {
-		t.Fatalf("Failed to create LogReporter: %v", err)
-	}
-	
+	// Create logger that writes to buffer with both service and serviceName attributes
 	logger := slog.New(slog.NewJSONHandler(&buf, &slog.HandlerOptions{
 		Level: slog.LevelDebug,
-	}))
-	reporter.Log = logger
+	})).With("service", "bench", "serviceName", "my-test-service")
+	
+	// Create LogReporter directly with our custom logger
+	reporter := &LogReporter{Log: logger}
 
 	suiteRun := executor.SuiteRun{
 		Name:           "test-suite-smoke",
@@ -210,7 +204,7 @@ func TestLogReporter_SuiteNameFieldPresent(t *testing.T) {
 		TestsPassed:   1,
 	}
 
-	err = reporter.Report(context.Background(), suiteRun, summary)
+	err := reporter.Report(context.Background(), suiteRun, summary)
 	if err != nil {
 		t.Fatalf("Report failed: %v", err)
 	}
@@ -233,6 +227,79 @@ func TestLogReporter_SuiteNameFieldPresent(t *testing.T) {
 
 		if !strings.Contains(line, `"suiteRevision":"commit-abc"`) {
 			t.Errorf("Log line %d does not contain suiteRevision field:\n%s", i, line)
+		}
+
+		if !strings.Contains(line, `"service":"bench"`) {
+			t.Errorf("Log line %d does not contain service field:\n%s", i, line)
+		}
+
+		if !strings.Contains(line, `"serviceName":"my-test-service"`) {
+			t.Errorf("Log line %d does not contain serviceName field:\n%s", i, line)
+		}
+	}
+}
+
+func TestLogReporter_CustomServiceName(t *testing.T) {
+	// Test that custom service names are used correctly
+	var buf bytes.Buffer
+	
+	customServiceName := "my-custom-app"
+	
+	// Create logger that writes to buffer with both service and serviceName attributes
+	logger := slog.New(slog.NewJSONHandler(&buf, &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	})).With("service", "bench", "serviceName", customServiceName)
+	
+	// Create LogReporter directly with our custom logger
+	reporter := &LogReporter{Log: logger}
+
+	suiteRun := executor.SuiteRun{
+		Name:           "test-run",
+		Id:             "test-123",
+		Trigger:        "local",
+		TestExecutor:   "k6",
+		SuiteName:      "my-suite",
+		SuiteRevision:  "abc123",
+		BenchRevision:  "v0.6.1",
+		GrafanaURL:     "http://localhost:3000",
+		GrafanaSlug:    "localhost",
+		GrafanaVersion: "11.0.0",
+	}
+
+	summary := executor.SuiteRunSummary{
+		StartTime:     time.Now(),
+		TotalDuration: 1000 * time.Millisecond,
+		TestRuns:      []executor.TestRunSummary{},
+		TestsExecuted: 0,
+		TestsPassed:   0,
+	}
+
+	err := reporter.Report(context.Background(), suiteRun, summary)
+	if err != nil {
+		t.Fatalf("Report failed: %v", err)
+	}
+
+	output := buf.String()
+	if output == "" {
+		t.Fatal("No log output generated")
+	}
+
+	// Verify the custom service name appears in all log lines
+	lines := strings.Split(strings.TrimSpace(output), "\n")
+	for i, line := range lines {
+		if line == "" {
+			continue
+		}
+
+		// Check for backward-compatible service="bench" field
+		if !strings.Contains(line, `"service":"bench"`) {
+			t.Errorf("Log line %d does not contain service field:\n%s", i, line)
+		}
+
+		// Check for new serviceName field with custom value
+		expectedServiceNameField := fmt.Sprintf(`"serviceName":"%s"`, customServiceName)
+		if !strings.Contains(line, expectedServiceNameField) {
+			t.Errorf("Log line %d does not contain expected serviceName %q:\n%s", i, customServiceName, line)
 		}
 	}
 }
