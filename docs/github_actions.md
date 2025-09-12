@@ -37,7 +37,6 @@ jobs:
             --test-type smoke \
             --grafana-url http://localhost:3000 \
             --test-suite CI/k6 \
-            --service-name my-app \
             --log-level info
       
       - name: Run Playwright Tests
@@ -46,7 +45,6 @@ jobs:
             --test-runner playwright \
             --test-suite-base ./CI/playwright \
             --grafana-url http://localhost:3000 \
-            --service-name my-app \
             --pw-prepare-cmd "npm install; npx playwright install" \
             --pw-execute-cmd "npm run test"
 ```
@@ -60,6 +58,7 @@ jobs:
 ### Platform Support
 
 The action automatically detects your platform and installs the appropriate binary:
+
 - **Linux**: amd64, arm64
 - **macOS**: amd64, arm64  
 - **Windows**: amd64
@@ -75,6 +74,7 @@ grafana-bench test --service-name my-app --suite-path ./tests
 ```
 
 This adds a `serviceName` attribute to all log entries, making it easier to:
+
 - **Filter logs** by service in monitoring systems
 - **Identify test results** for specific applications
 - **Track metrics** per service across different test runs
@@ -84,17 +84,20 @@ The default service name is `"grafana"` if not specified.
 ### When to Use Setup Action vs Docker
 
 **Use the Setup Action when:**
+
 - Running Go tests (`go test`)
 - Using bench for reporting only
 - You want to manage dependencies yourself (K6, Playwright, etc.)
 - Faster startup time is preferred
 
 **Use Docker when:**
+
 - You need pre-installed dependencies (K6, Playwright, browsers)
 - You want a consistent, isolated environment
 - Your tests require specific system dependencies
 
 **Setup Action Example (for Go tests/reporting):**
+
 ```yaml
 - name: Setup Grafana Bench
   uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@v1
@@ -111,6 +114,7 @@ The default service name is `"grafana"` if not specified.
 ```
 
 **Docker Example (with pre-installed dependencies):**
+
 ```yaml
 - name: Run Playwright tests with Docker
   run: |
@@ -124,6 +128,7 @@ The default service name is `"grafana"` if not specified.
 ```
 
 ## Docker-based CI Example
+
 This is an abreviated version of the [CI used for Bench](../.github/workflows/ci.yaml).
 
 ```yaml
@@ -170,10 +175,9 @@ jobs:
           path: screenshots
 ```
 
-
 ## Datasource workflow example
-This is a live example of a workflow from the [clickhouse datasource](https://github.com/grafana/clickhouse-datasource/blob/main/.github/workflows/grafana-bench.yml).
 
+This is a live example of a workflow from the [clickhouse datasource](https://github.com/grafana/clickhouse-datasource/blob/main/.github/workflows/grafana-bench.yml).
 
 ```yaml
 name: Grafana Bench
@@ -239,6 +243,7 @@ jobs:
 ```
 
 ### Workflow Breakdown
+
 We configure the tests to run on every PR and merge to Main. This gives us early and often feedback.
 
 ```yaml
@@ -250,6 +255,7 @@ on:
 ```
 
 This workflow first configures the plugin:
+
 1. checkout the code
 2. install node
 3. install go
@@ -263,4 +269,5 @@ Then we run Bench:
 8. invoke bench against the container
 
 ## Exporting logs to centralized loki database
+
 In development
