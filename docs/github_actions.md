@@ -37,6 +37,7 @@ jobs:
             --test-type smoke \
             --grafana-url http://localhost:3000 \
             --test-suite CI/k6 \
+            --service-name my-app \
             --log-level info
       
       - name: Run Playwright Tests
@@ -45,6 +46,7 @@ jobs:
             --test-runner playwright \
             --test-suite-base ./CI/playwright \
             --grafana-url http://localhost:3000 \
+            --service-name my-app \
             --pw-prepare-cmd "npm install; npx playwright install" \
             --pw-execute-cmd "npm run test"
 ```
@@ -63,6 +65,21 @@ The action automatically detects your platform and installs the appropriate bina
 - **Windows**: amd64
 
 If binary download fails, it falls back to `go install github.com/grafana/grafana-bench@<version>`.
+
+### Service Identification
+
+Use the `--service-name` flag to identify which service is being tested in your logs:
+
+```bash
+grafana-bench test --service-name my-app --suite-path ./tests
+```
+
+This adds a `serviceName` attribute to all log entries, making it easier to:
+- **Filter logs** by service in monitoring systems
+- **Identify test results** for specific applications
+- **Track metrics** per service across different test runs
+
+The default service name is `"grafana"` if not specified.
 
 ### When to Use Setup Action vs Docker
 
@@ -89,6 +106,7 @@ If binary download fails, it falls back to `go install github.com/grafana/grafan
     grafana-bench test \
       --test-runner gotest \
       --test-suite-base ./tests \
+      --service-name my-app \
       --grafana-url http://localhost:3000
 ```
 

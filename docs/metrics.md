@@ -21,6 +21,7 @@ This example uses the test runner with default metrics.
 PROMETHEUS_PASSWORD=MYSUPERSECRETPROMTOKEN grafana-bench test 
 --test-runner k6 \
         --suite-path myMetricsTest.ts \
+        --service-name grafana \
         --prometheus-metrics \
         --prometheus-strict-lint \
         --prometheus-url "https://prometheus-ops-03-ops-eu-south-0.grafana-ops.net/api/prom/push" \
@@ -201,6 +202,7 @@ jobs:
             --grafana-url "https://leeoniya.grafana.net" \
             --grafana-version "rrc-instant" \
             --test-suite-name "FrontendAssetSize" \
+            --service-name grafana \
             --report-input playwright \
             --report-output log \
             --prometheus-metrics \

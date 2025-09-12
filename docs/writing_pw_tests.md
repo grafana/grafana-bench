@@ -226,6 +226,7 @@ docker run --rm \
   --test-runner "playwright" \
   --test-suite-base "/home/bench/tests/" \
   --grafana-url "http://localhost:3000" \
+  --service-name mssql-datasource \
   --pw-prepare-cmd "yarn install --frozen-lockfile; yarn playwright install" \
   --pw-execute-cmd "yarn e2e" \
   --test-env-vars "CI=true" \
