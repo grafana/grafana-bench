@@ -196,7 +196,7 @@ func AddGoExecutorFlags(fs *pflag.FlagSet, config *GoTestConfig) {
 }
 
 type SuiteRunConfig struct {
-	Trigger       string
+	RunStage      string
 	Id            string
 	DashboardURL  string
 	Metrics       []string
@@ -222,20 +222,20 @@ func AddSuiteRunFlags(fs *pflag.FlagSet, config *SuiteRunConfig) {
 			"\nExample: http://localhost/dashboards?run={{.Id}}",
 	)
 	fs.StringVar(
-		&config.Trigger,
+		&config.RunStage,
 		"test-trigger",
 		"local",
 		"deprecated. Use ci-stage",
 	)
 	fs.StringVar(
-		&config.Trigger,
+		&config.RunStage,
 		"trigger",
 		"local",
 		"deprecated. Use ci-stage",
 	)
 	fs.StringVar(
-		&config.Trigger,
-		"ci-stage",
+		&config.RunStage,
+		"run-stage",
 		"local",
 		"the stage of CI the suite was executed. For example, 'local', 'ci', 'rrc'.",
 	)
