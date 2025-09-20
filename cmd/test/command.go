@@ -64,6 +64,17 @@ Supports two kinds of test executions defined by the --test-type option:
 * smoke: execute tests and reports failures (default)
 * load: execute tests and report execution stats
 
+Exit Codes
+----------
+The test command uses different exit codes to indicate the reason for failure:
+* 0: Success - all tests passed
+* 1: Test failure - one or more tests failed
+* 2: Internal error - configuration, execution, or system error
+
+This allows CI systems and automation tools to distinguish between test
+failures (which may be expected during development) and internal errors
+(which typically require immediate attention).
+
 k6
 --
 Executes a test suite using k6.

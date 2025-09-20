@@ -10,7 +10,7 @@ SLIM_PROD_TAG = grafana-bench:$(BENCH_REVISION)
 PLAYWRIGHT_DEV_TAG = grafana-bench-playwright:dev-$(BENCH_REVISION)
 PLAYWRIGHT_PROD_TAG = grafana-bench-playwright:$(BENCH_REVISION)
 
-.PHONY: build-all build-slim-dev build-slim-prod build-playwright-dev build-playwright-prod clean help
+.PHONY: build-all build-slim-dev build-slim-prod build-playwright-dev build-playwright-prod test docs clean help
 
 # Build all images
 build-all: build-slim-dev build-slim-prod build-playwright-dev build-playwright-prod
@@ -40,6 +40,16 @@ build-playwright-prod:
 	docker build $(DOCKER_BUILD_ARGS) -f Dockerfile-playwright -t $(PLAYWRIGHT_PROD_TAG) .
 	@echo "✅ Built: $(PLAYWRIGHT_PROD_TAG)"
 
+# Run tests including integration tests
+test:
+	@echo "🧪 Running tests..."
+	go test -v ./...
+
+# Generate documentation
+docs:
+	@echo "📚 Generating documentation..."
+	go run ./gendoc -o docs
+
 # Clean up all built images
 clean:
 	@echo "🧹 Cleaning up images..."
@@ -58,7 +68,7 @@ list:
 
 # Show help
 help:
-	@echo "🚀 Grafana Bench Docker Build Makefile"
+	@echo "🚀 Grafana Bench Makefile"
 	@echo ""
 	@echo "Available targets:"
 	@echo "  all                  - Build all images (default)"
@@ -67,6 +77,8 @@ help:
 	@echo "  build-slim-prod     - Build slim production image"
 	@echo "  build-playwright-dev - Build playwright development image (with fixuid)"
 	@echo "  build-playwright-prod - Build playwright production image"
+	@echo "  test                - Run all tests including integration tests"
+	@echo "  docs                - Generate documentation"
 	@echo "  sizes               - Show image sizes"
 	@echo "  list                - List all built images"
 	@echo "  clean               - Remove all built images"

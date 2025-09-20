@@ -64,6 +64,16 @@ The action automatically detects your platform and installs the appropriate bina
 
 If binary download fails, it falls back to `go install github.com/grafana/grafana-bench@<version>`.
 
+### Exit Codes for CI Integration
+
+Grafana Bench uses distinct exit codes to help CI systems differentiate between test failures and internal errors:
+
+- **Exit code 0**: Success - all tests passed
+- **Exit code 1**: Test failure - one or more tests failed
+- **Exit code 2**: Internal error - configuration, execution, or system error
+
+This allows your CI workflows to handle test failures differently from internal errors. For example, test failures might trigger notifications to developers, while internal errors might page the infrastructure team.
+
 ### When to Use Setup Action vs Docker
 
 **Use the Setup Action when:**
