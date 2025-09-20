@@ -11,6 +11,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// TestFailureError represents a test suite failure (exit code 1)
+type TestFailureError struct {
+	message string
+}
+
+func (e TestFailureError) Error() string {
+	return e.message
+}
+
 const examples = `
 # run a k6 smoke test from the test suite directory
 bench test --suite-path /path/to/test/folder
@@ -220,12 +229,12 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 
 			suite, err := benchConfig.BuildTestSuite(log)
 			if err != nil {
-				return err
+				return fmt.Errorf("building test suite: %w", err)
 			}
 
 			suiteRun, err := benchConfig.BuildSuiteRun()
 			if err != nil {
-				return err
+				return fmt.Errorf("building suite run: %w", err)
 			}
 
 			testExecutor, err := benchConfig.BuildTestExecutor(
@@ -233,12 +242,12 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				benchConfig.Test.Executor,
 			)
 			if err != nil {
-				return err
+				return fmt.Errorf("building test executor: %w", err)
 			}
 
 			reporter, err := benchConfig.BuildReporter()
 			if err != nil {
-				return err
+				return fmt.Errorf("building reporter: %w", err)
 			}
 
 			// set common test execution variables
@@ -261,22 +270,22 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				testEnvVars,
 			)
 			if err != nil {
-				return fmt.Errorf("executing test suite run %w", err)
+				return fmt.Errorf("executing test suite run: %w", err)
 			}
 
 			runMetrics, err := benchConfig.GetRunMetrics(log)
 			if err != nil {
-				return err
+				return fmt.Errorf("getting run metrics: %w", err)
 			}
 			suiteRunSummary.Metrics = append(suiteRunSummary.Metrics, runMetrics...)
 
 			err = reporter.Report(cmd.Context(), suiteRun, suiteRunSummary)
 			if err != nil {
-				return fmt.Errorf("reporting test suite run %w", err)
+				return fmt.Errorf("reporting test suite run: %w", err)
 			}
 
 			if suiteRunSummary.Status == executor.SuiteFailed {
-				return fmt.Errorf("Tests suite failed")
+				return TestFailureError{"test suite failed"}
 			}
 			return nil
 		},
