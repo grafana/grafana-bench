@@ -229,12 +229,12 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 
 			suite, err := benchConfig.BuildTestSuite(log)
 			if err != nil {
-				return fmt.Errorf("building test suite: %w", err)
+				return err
 			}
 
 			suiteRun, err := benchConfig.BuildSuiteRun()
 			if err != nil {
-				return fmt.Errorf("building suite run: %w", err)
+				return err
 			}
 
 			testExecutor, err := benchConfig.BuildTestExecutor(
@@ -242,12 +242,12 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				benchConfig.Test.Executor,
 			)
 			if err != nil {
-				return fmt.Errorf("building test executor: %w", err)
+				return err
 			}
 
 			reporter, err := benchConfig.BuildReporter()
 			if err != nil {
-				return fmt.Errorf("building reporter: %w", err)
+				return err
 			}
 
 			// set common test execution variables
@@ -270,18 +270,18 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				testEnvVars,
 			)
 			if err != nil {
-				return fmt.Errorf("executing test suite run: %w", err)
+				return err
 			}
 
 			runMetrics, err := benchConfig.GetRunMetrics(log)
 			if err != nil {
-				return fmt.Errorf("getting run metrics: %w", err)
+				return err
 			}
 			suiteRunSummary.Metrics = append(suiteRunSummary.Metrics, runMetrics...)
 
 			err = reporter.Report(cmd.Context(), suiteRun, suiteRunSummary)
 			if err != nil {
-				return fmt.Errorf("reporting test suite run: %w", err)
+				return err
 			}
 
 			if suiteRunSummary.Status == executor.SuiteFailed {
