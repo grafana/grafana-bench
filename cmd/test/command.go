@@ -11,15 +11,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// TestFailureError represents a test suite failure (exit code 1)
-type TestFailureError struct {
-	message string
-}
-
-func (e TestFailureError) Error() string {
-	return e.message
-}
-
 const examples = `
 # run a k6 smoke test from the test suite directory
 bench test --suite-path /path/to/test/folder
@@ -213,6 +204,15 @@ run:
   trigger: "ci"
 `
 
+// TestFailureError represents a test suite failure (exit code 1)
+type TestFailureError struct {
+	message string
+}
+
+func (e TestFailureError) Error() string {
+	return e.message
+}
+
 // NewCmd creates a new test command
 func NewCmd(log *slog.Logger) *cobra.Command {
 	var benchConfig = &config.BenchConfig{}
@@ -270,7 +270,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				testEnvVars,
 			)
 			if err != nil {
-				return err
+				return fmt.Errorf("executing test suite run %w", err)
 			}
 
 			runMetrics, err := benchConfig.GetRunMetrics(log)
@@ -281,7 +281,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 
 			err = reporter.Report(cmd.Context(), suiteRun, suiteRunSummary)
 			if err != nil {
-				return err
+				return fmt.Errorf("reporting test suite run %w", err)
 			}
 
 			if suiteRunSummary.Status == executor.SuiteFailed {
