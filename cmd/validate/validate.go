@@ -86,13 +86,20 @@ func ValidateSlackNotiferPermissions(config *config.BenchConfig) error {
 			e = status.Err.Error()
 		}
 
-		table.Append([]string{status.ID, status.Name, s, e})
+		// This should not happen
+		err = table.Append([]string{status.ID, status.Name, s, e})
+		if err != nil {
+			return err
+		}
 	}
 
-	table.Render()
+	err = table.Render()
+	if err != nil {
+		return err
+	}
 
 	if anyError {
-		return fmt.Errorf("Slack bot does not have permissions for one or more channels")
+		return fmt.Errorf("slack bot does not have permissions for one or more channels")
 	}
 
 	return nil
