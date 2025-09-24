@@ -51,6 +51,8 @@ func (r *LogReporter) Report(
 		"runId", suiteRun.Id,
 		// TODO: deprecate
 		"suiteRun", suiteRun.Name,
+		"suiteName", suiteRun.SuiteName,
+		"suiteRevision", suiteRun.SuiteRevision,
 		"testTrigger", suiteRun.Trigger,
 		"testExecutor", suiteRun.TestExecutor,
 		"benchRevision", suiteRun.BenchRevision,
