@@ -255,7 +255,7 @@ bench test  \
       --report-format string              deprecated. Use report-output (default "text")
       --report-output string              format of the test execution report. Allowed values 'log' or 'text'.
                                            'log' produced a structure log. 'text' produced an human readable output (default "text")
-      --run-attribute stringArray         adds custom attributes to a suite run. Good for descriptive information. Format: --run-attribute="key=value,key=value". Attributes with no value will be skipped. Call multiple times to add multiple attributes
+      --run-attribute stringArray         adds custom attributes to a suite run. Good for descriptive information. Format: --run-attribute="key=value,key=value". Attributes with no value will be skipped. You can either use the comma separated format shown here or call --run-attribute multiple times to add additional attributes
       --run-dashboard string              Template for the suite run dashboard URL.
                                           Supports the substitution of the following variables:
                                               Id: identifier of the suite run
