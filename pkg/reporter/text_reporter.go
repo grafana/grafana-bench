@@ -23,7 +23,7 @@ func NewTextReporter(report io.Writer) *TextReporter {
 
 func (r *TextReporter) Report(
 	_ context.Context,
-	_ executor.SuiteRun,
+	suiteRun executor.SuiteRun,
 	suiteRunSummary executor.SuiteRunSummary,
 ) error {
 	tw := tabwriter.NewWriter(r.report, 5, 0, 1, ' ', 0)
@@ -81,9 +81,9 @@ func (r *TextReporter) Report(
 	fmt.Fprintf(tw, "Suite:\t%s\n", suiteRunSummary.Status)
 	fmt.Fprintf(tw, "Total Run Time:\t%.2f sec\n", suiteRunSummary.TotalDuration.Seconds())
 
-	if len(suiteRunSummary.Attributes) > 0 {
+	if len(suiteRun.Attributes) > 0 {
 		fmt.Fprintf(tw, "\n--------------ATTRIBUTES---------------\n")
-		for key, value := range suiteRunSummary.Attributes {
+		for key, value := range suiteRun.Attributes {
 			fmt.Fprintf(tw, "%s:\t%s\n", key, value)
 		}
 	}

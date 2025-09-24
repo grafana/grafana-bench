@@ -36,19 +36,19 @@ type SuiteRun struct {
 	GrafanaURL     string
 	GrafanaSlug    string
 	BenchRevision  string
+	Attributes     map[string]string `json:"attributes"`
 }
 
 // TestRunSummary summarizes the execution of a test
 type TestRunSummary struct {
-	TestFolder       string            `json:"testFolder"`
-	TestFile         string            `json:"testFile"`
-	StartTime        time.Time         `json:"startTime"`
-	Status           TestStatus        `json:"status"`
-	ExitMessage      string            `json:"exitMessage"`
-	Iterations       string            `json:"iterations"`
-	TotalDuration    time.Duration     `json:"totalDuration"`
-	ScenarioDuration time.Duration     `json:"scenarioDuration"`
-	Attributes       map[string]string `json:"attributes"`
+	TestFolder       string        `json:"testFolder"`
+	TestFile         string        `json:"testFile"`
+	StartTime        time.Time     `json:"startTime"`
+	Status           TestStatus    `json:"status"`
+	ExitMessage      string        `json:"exitMessage"`
+	Iterations       string        `json:"iterations"`
+	TotalDuration    time.Duration `json:"totalDuration"`
+	ScenarioDuration time.Duration `json:"scenarioDuration"`
 }
 
 // TestSuiteSummary summarizes the execution of  a test suite

@@ -13,11 +13,17 @@ import (
 func TestTextReporter_Report(t *testing.T) {
 	tests := []struct {
 		name             string
+		suiteRun         executor.SuiteRun
 		summary          executor.SuiteRunSummary
 		expectedContains []string
 	}{
 		{
 			name: "basic summary output",
+			suiteRun: executor.SuiteRun{
+				Id:      "test-run-123",
+				Name:    "test-suite",
+				Trigger: "local",
+			},
 			summary: executor.SuiteRunSummary{
 				StartTime:         time.Now(),
 				Status:            executor.SuitePassed,
@@ -62,6 +68,16 @@ func TestTextReporter_Report(t *testing.T) {
 		},
 		{
 			name: "with custom attributes",
+			suiteRun: executor.SuiteRun{
+				Id:      "test-run-456",
+				Name:    "attributes-test",
+				Trigger: "local",
+				Attributes: map[string]string{
+					"environment": "staging",
+					"team":        "backend",
+					"build_id":    "12345",
+				},
+			},
 			summary: executor.SuiteRunSummary{
 				Status:        executor.SuiteFailed,
 				TestsExecuted: 5,
@@ -69,11 +85,6 @@ func TestTextReporter_Report(t *testing.T) {
 				TestsFailed:   2,
 				TotalDuration: 20 * time.Second,
 				TestRuns:      []executor.TestRunSummary{},
-				Attributes: map[string]string{
-					"environment": "staging",
-					"team":        "backend",
-					"build_id":    "12345",
-				},
 			},
 			expectedContains: []string{
 				"----------------SUMMARY----------------",
@@ -89,13 +100,17 @@ func TestTextReporter_Report(t *testing.T) {
 		},
 		{
 			name: "no attributes section when empty",
+			suiteRun: executor.SuiteRun{
+				Id:      "test-run-789",
+				Name:    "no-attributes-test",
+				Trigger: "local",
+			},
 			summary: executor.SuiteRunSummary{
 				Status:        executor.SuitePassed,
 				TestsExecuted: 1,
 				TestsPassed:   1,
 				TotalDuration: 5 * time.Second,
 				TestRuns:      []executor.TestRunSummary{},
-				Attributes:    map[string]string{},
 			},
 			expectedContains: []string{
 				"----------------SUMMARY----------------",
@@ -110,10 +125,14 @@ func TestTextReporter_Report(t *testing.T) {
 			var buf bytes.Buffer
 			reporter := NewTextReporter(&buf)
 
-			suiteRun := executor.SuiteRun{
-				Id:      "test-run-123",
-				Name:    "test-suite",
-				Trigger: "local",
+			// Use the test case's suiteRun if provided, otherwise use default
+			suiteRun := tt.suiteRun
+			if suiteRun.Id == "" {
+				suiteRun = executor.SuiteRun{
+					Id:      "test-run-123",
+					Name:    "test-suite",
+					Trigger: "local",
+				}
 			}
 
 			err := reporter.Report(context.Background(), suiteRun, tt.summary)

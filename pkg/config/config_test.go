@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestBenchConfig_GetRunAttributes(t *testing.T) {
+func TestBenchConfig_ParseSuiteAttributes(t *testing.T) {
 	// Create a test logger that discards output to avoid cluttering test output
 	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelError}))
 
@@ -100,7 +100,7 @@ func TestBenchConfig_GetRunAttributes(t *testing.T) {
 				},
 			}
 
-			result, err := config.GetRunAttributes(logger)
+			result, err := config.ParseSuiteAttributes(logger)
 
 			if tt.expectError {
 				if err == nil {

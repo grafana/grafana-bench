@@ -702,7 +702,7 @@ func (config *BenchConfig) BuildTestSuite(log *slog.Logger) (*executor.TestSuite
 	}, nil
 }
 
-func (benchConfig *BenchConfig) BuildSuiteRun() (executor.SuiteRun, error) {
+func (benchConfig *BenchConfig) BuildSuiteRun(log *slog.Logger) (executor.SuiteRun, error) {
 	grafanaSlug := ""
 	if benchConfig.Grafana.Url != "" {
 		// in case of error, slug it will be empty
@@ -742,6 +742,11 @@ func (benchConfig *BenchConfig) BuildSuiteRun() (executor.SuiteRun, error) {
 		benchConfig.Test.Type,
 	)
 
+	attributes, err := benchConfig.ParseSuiteAttributes(log)
+	if err != nil {
+		return executor.SuiteRun{}, err
+	}
+
 	return executor.SuiteRun{
 		Name:           suiteRunName,
 		Id:             runId,
@@ -749,6 +754,7 @@ func (benchConfig *BenchConfig) BuildSuiteRun() (executor.SuiteRun, error) {
 		TestExecutor:   benchConfig.Report.Input,
 		SuiteName:      benchConfig.TestSuite.Name,
 		SuiteRevision:  benchConfig.TestSuite.Revision,
+		Attributes:     attributes,
 		BenchRevision:  benchConfig.Revision,
 		GrafanaURL:     benchConfig.Grafana.Url,
 		GrafanaSlug:    grafanaSlug,
@@ -878,11 +884,11 @@ func (config *BenchConfig) GetRunMetrics(log *slog.Logger) ([]metrics.Metric, er
 	return metricList, nil
 }
 
-// GetRunAttributes parses the cobra stringArrayVar into a map[string]string of attributes
+// ParseSuiteAttributes parses the cobra stringArrayVar into a map[string]string of attributes
 // for ux, we allow a user to add multiple attributes in a single stringArrayVar
 // by using the format --run-attribute="key=value,key=value". If there are overlapping keys
 // the last one takes precedence
-func (config *BenchConfig) GetRunAttributes(log *slog.Logger) (map[string]string, error) {
+func (config *BenchConfig) ParseSuiteAttributes(log *slog.Logger) (map[string]string, error) {
 	attributeList := map[string]string{}
 
 	for _, attributeString := range config.SuiteRun.Attributes {

@@ -18,7 +18,6 @@ import (
 
 	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/utils"
-	"github.com/grafana/grafana-bench/pkg/utils/format"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
@@ -175,12 +174,6 @@ func (t *K6TestExecutor) ExecTestSuite(
 			ScenarioDuration: k6Summary.Durations.ScenarioDuration,
 			Iterations:       k6Summary.Iterations,
 			ExitMessage:      k6Summary.ExitMessage,
-			Attributes: map[string]string{
-				"cloudId":          k6Summary.CloudID,
-				"cloudURL":         k6Summary.CloudURL,
-				"setupDuration":    format.PrettyMS(k6Summary.Durations.SetupDuration),
-				"teardownDuration": format.PrettyMS(k6Summary.Durations.TeardownDuration),
-			},
 		}
 
 		suiteSummary.TestsExecuted += 1

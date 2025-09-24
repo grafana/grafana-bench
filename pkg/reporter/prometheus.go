@@ -77,7 +77,7 @@ func (p *PrometheusReporter) Report(
 		"suite_run":       suiteRun.Name,
 	}
 
-	for k, v := range summary.Attributes {
+	for k, v := range suiteRun.Attributes {
 		labels[k] = v
 	}
 

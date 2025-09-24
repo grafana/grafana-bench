@@ -243,7 +243,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				return err
 			}
 
-			suiteRun, err := benchConfig.BuildSuiteRun()
+			suiteRun, err := benchConfig.BuildSuiteRun(log)
 			if err != nil {
 				return err
 			}
@@ -289,11 +289,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				return err
 			}
 			suiteRunSummary.Metrics = append(suiteRunSummary.Metrics, runMetrics...)
-
-			suiteRunSummary.Attributes, err = benchConfig.GetRunAttributes(log)
-			if err != nil {
-				return err
-			}
 
 			err = reporter.Report(cmd.Context(), suiteRun, suiteRunSummary)
 			if err != nil {

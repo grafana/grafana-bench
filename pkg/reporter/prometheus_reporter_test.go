@@ -61,6 +61,7 @@ func TestPrometheusReporter_Report_WithAttributes(t *testing.T) {
 				Trigger:        "local",
 				BenchRevision:  "abc123",
 				GrafanaVersion: "9.0.0",
+				Attributes:     tt.attributes,
 			}
 
 			summary := executor.SuiteRunSummary{
@@ -80,7 +81,6 @@ func TestPrometheusReporter_Report_WithAttributes(t *testing.T) {
 						Labels: map[string]string{"test_label": "test_value"},
 					},
 				},
-				Attributes: tt.attributes,
 			}
 
 			// The main test is that this doesn't panic when processing attributes
@@ -116,6 +116,16 @@ func TestPrometheusReporter_Report_AttributesIntegration(t *testing.T) {
 		Trigger:        "ci",
 		BenchRevision:  "integration-abc123",
 		GrafanaVersion: "10.0.0",
+		Attributes: map[string]string{
+			"environment":    "production",
+			"region":         "us-west-2",
+			"team":           "platform",
+			"build_id":       "67890",
+			"branch":         "main",
+			"commit_sha":     "abcdef123456",
+			"instance_type":  "c5.large",
+			"test_suite_id":  "smoke-tests-v2",
+		},
 	}
 
 	// Test with a comprehensive set of attributes
@@ -146,16 +156,6 @@ func TestPrometheusReporter_Report_AttributesIntegration(t *testing.T) {
 				},
 			},
 		},
-		Attributes: map[string]string{
-			"environment":    "production",
-			"region":         "us-west-2",
-			"team":           "platform",
-			"build_id":       "67890",
-			"branch":         "main",
-			"commit_sha":     "abcdef123456",
-			"instance_type":  "c5.large",
-			"test_suite_id":  "smoke-tests-v2",
-		},
 	}
 
 	// This should complete without panicking, even though the network request will fail
@@ -182,12 +182,12 @@ func TestPrometheusReporter_Report_NilAttributesHandling(t *testing.T) {
 		Id:             "nil-test",
 		Name:           "nil-test-suite",
 		GrafanaVersion: "9.0.0",
+		Attributes:     nil, // Explicitly test nil attributes
 	}
 
 	summary := executor.SuiteRunSummary{
 		StartTime: time.Now(),
 		Status:    executor.SuitePassed,
-		Attributes: nil, // Explicitly test nil attributes
 	}
 
 	// Should not panic with nil attributes

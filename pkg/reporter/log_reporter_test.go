@@ -113,6 +113,12 @@ func TestLogReporter_Report(t *testing.T) {
 				GrafanaURL:     "http://localhost:3000",
 				GrafanaSlug:    "localhost",
 				GrafanaVersion: "11.0.0",
+				Attributes: map[string]string{
+					"environment": "staging",
+					"team":        "backend",
+					"build_id":    "12345",
+					"branch":      "feature/test",
+				},
 			},
 			summary: executor.SuiteRunSummary{
 				StartTime:     time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC),
@@ -131,12 +137,6 @@ func TestLogReporter_Report(t *testing.T) {
 				TestsPassed:   1,
 				TestsFailed:   0,
 				TestsError:    0,
-				Attributes: map[string]string{
-					"environment": "staging",
-					"team":        "backend",
-					"build_id":    "12345",
-					"branch":      "feature/test",
-				},
 			},
 			expected: map[string]any{
 				"runId":          "test-run-789",
