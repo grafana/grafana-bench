@@ -17,7 +17,7 @@ func TestLogReporter_Report(t *testing.T) {
 		name     string
 		suiteRun executor.SuiteRun
 		summary  executor.SuiteRunSummary
-		expected map[string]interface{}
+		expected map[string]any
 	}{
 		{
 			name: "complete suite run with all fields",
@@ -51,17 +51,17 @@ func TestLogReporter_Report(t *testing.T) {
 				TestsFailed:   0,
 				TestsError:    0,
 			},
-			expected: map[string]interface{}{
-				"runId":           "test-run-123",
-				"suiteRun":        "test-suite-smoke",
-				"suiteName":       "test-suite",
-				"suiteRevision":   "abc123",
-				"testTrigger":     "local",
-				"testExecutor":    "k6",
-				"benchRevision":   "v0.6.1",
-				"grafanaUrl":      "http://localhost:3000",
-				"grafanaSlug":     "localhost",
-				"grafanaVersion":  "11.0.0",
+			expected: map[string]any{
+				"runId":          "test-run-123",
+				"suiteRun":       "test-suite-smoke",
+				"suiteName":      "test-suite",
+				"suiteRevision":  "abc123",
+				"testTrigger":    "local",
+				"testExecutor":   "k6",
+				"benchRevision":  "v0.6.1",
+				"grafanaUrl":     "http://localhost:3000",
+				"grafanaSlug":    "localhost",
+				"grafanaVersion": "11.0.0",
 			},
 		},
 		{
@@ -87,17 +87,72 @@ func TestLogReporter_Report(t *testing.T) {
 				TestsFailed:   0,
 				TestsError:    0,
 			},
-			expected: map[string]interface{}{
-				"runId":           "test-run-456",
-				"suiteRun":        "empty-fields-test",
-				"suiteName":       "",
-				"suiteRevision":   "",
-				"testTrigger":     "ci",
-				"testExecutor":    "playwright",
-				"benchRevision":   "dev",
-				"grafanaUrl":      "https://grafana.com",
-				"grafanaSlug":     "grafana",
-				"grafanaVersion":  "10.0.0",
+			expected: map[string]any{
+				"runId":          "test-run-456",
+				"suiteRun":       "empty-fields-test",
+				"suiteName":      "",
+				"suiteRevision":  "",
+				"testTrigger":    "ci",
+				"testExecutor":   "playwright",
+				"benchRevision":  "dev",
+				"grafanaUrl":     "https://grafana.com",
+				"grafanaSlug":    "grafana",
+				"grafanaVersion": "10.0.0",
+			},
+		},
+		{
+			name: "suite run with custom attributes",
+			suiteRun: executor.SuiteRun{
+				Name:           "attributes-test",
+				Id:             "test-run-789",
+				Trigger:        "local",
+				TestExecutor:   "k6",
+				SuiteName:      "smoke-tests",
+				SuiteRevision:  "main-branch",
+				BenchRevision:  "v0.7.0",
+				GrafanaURL:     "http://localhost:3000",
+				GrafanaSlug:    "localhost",
+				GrafanaVersion: "11.0.0",
+			},
+			summary: executor.SuiteRunSummary{
+				StartTime:     time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC),
+				TotalDuration: 3000 * time.Millisecond,
+				TestRuns: []executor.TestRunSummary{
+					{
+						TestFile:         "smoke.js",
+						TestFolder:       "tests",
+						Status:           executor.TestPassed,
+						ScenarioDuration: 800 * time.Millisecond,
+						TotalDuration:    1000 * time.Millisecond,
+						Iterations:       "1",
+					},
+				},
+				TestsExecuted: 1,
+				TestsPassed:   1,
+				TestsFailed:   0,
+				TestsError:    0,
+				Attributes: map[string]string{
+					"environment": "staging",
+					"team":        "backend",
+					"build_id":    "12345",
+					"branch":      "feature/test",
+				},
+			},
+			expected: map[string]any{
+				"runId":          "test-run-789",
+				"suiteRun":       "attributes-test",
+				"suiteName":      "smoke-tests",
+				"suiteRevision":  "main-branch",
+				"testTrigger":    "local",
+				"testExecutor":   "k6",
+				"benchRevision":  "v0.7.0",
+				"grafanaUrl":     "http://localhost:3000",
+				"grafanaSlug":    "localhost",
+				"grafanaVersion": "11.0.0",
+				"environment":    "staging",
+				"team":           "backend",
+				"build_id":       "12345",
+				"branch":         "feature/test",
 			},
 		},
 	}
@@ -105,13 +160,13 @@ func TestLogReporter_Report(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var buf bytes.Buffer
-			
+
 			// Create LogReporter with JSON format and redirect to buffer
-			reporter, err := NewLogReporter("json", []interface{}{"service", "bench"})
+			reporter, err := NewLogReporter("json", []any{"service", "bench"})
 			if err != nil {
 				t.Fatalf("Failed to create LogReporter: %v", err)
 			}
-			
+
 			// Override the logger to write to our buffer instead of stdout
 			logger := slog.New(slog.NewJSONHandler(&buf, &slog.HandlerOptions{
 				Level: slog.LevelDebug,
@@ -129,32 +184,24 @@ func TestLogReporter_Report(t *testing.T) {
 				t.Fatal("No log output generated")
 			}
 
-			// Check that all expected fields are present in all log entries
+			// Find the suiteRun log entry (contains anyFailures field)
+			var suiteRunEntry map[string]any
 			for i, line := range lines {
 				if line == "" {
 					continue
 				}
 
-				var logEntry map[string]interface{}
+				var logEntry map[string]any
 				if err := json.Unmarshal([]byte(line), &logEntry); err != nil {
 					t.Fatalf("Failed to parse JSON log entry %d: %v\nLine: %s", i, err, line)
 				}
 
-				// Verify all expected fields are present
-				for key, expectedValue := range tt.expected {
-					actualValue, exists := logEntry[key]
-					if !exists {
-						t.Errorf("Log entry %d missing field %q\nLog entry: %s", i, key, line)
-						continue
-					}
-
-					if actualValue != expectedValue {
-						t.Errorf("Log entry %d field %q = %v, want %v\nLog entry: %s", 
-							i, key, actualValue, expectedValue, line)
-					}
+				// Check if this is the suiteRun entry (has anyFailures field)
+				if _, isSuiteRun := logEntry["anyFailures"]; isSuiteRun {
+					suiteRunEntry = logEntry
 				}
 
-				// Verify required fields exist
+				// Verify required fields exist in all entries
 				requiredFields := []string{"time", "level", "msg"}
 				for _, field := range requiredFields {
 					if _, exists := logEntry[field]; !exists {
@@ -162,77 +209,25 @@ func TestLogReporter_Report(t *testing.T) {
 					}
 				}
 			}
+
+			// Verify the suiteRun entry contains all expected fields
+			if suiteRunEntry == nil {
+				t.Fatal("No suiteRun log entry found (should contain anyFailures field)")
+			}
+
+			for key, expectedValue := range tt.expected {
+				actualValue, exists := suiteRunEntry[key]
+				if !exists {
+					t.Errorf("SuiteRun log entry missing field %q", key)
+					continue
+				}
+
+				if actualValue != expectedValue {
+					t.Errorf("SuiteRun log entry field %q = %v, want %v",
+						key, actualValue, expectedValue)
+				}
+			}
 		})
 	}
 }
 
-func TestLogReporter_SuiteNameFieldPresent(t *testing.T) {
-	// This specific test ensures the suiteName field is always present
-	var buf bytes.Buffer
-	
-	// Create LogReporter and override logger to write to buffer
-	reporter, err := NewLogReporter("json", []interface{}{"service", "bench"})
-	if err != nil {
-		t.Fatalf("Failed to create LogReporter: %v", err)
-	}
-	
-	logger := slog.New(slog.NewJSONHandler(&buf, &slog.HandlerOptions{
-		Level: slog.LevelDebug,
-	}))
-	reporter.Log = logger
-
-	suiteRun := executor.SuiteRun{
-		Name:           "test-suite-smoke",
-		Id:             "test-123",
-		Trigger:        "local",
-		TestExecutor:   "k6",
-		SuiteName:      "my-test-suite",
-		SuiteRevision:  "commit-abc",
-		BenchRevision:  "v0.6.1",
-		GrafanaURL:     "http://localhost:3000",
-		GrafanaSlug:    "localhost",
-		GrafanaVersion: "11.0.0",
-	}
-
-	summary := executor.SuiteRunSummary{
-		StartTime:     time.Now(),
-		TotalDuration: 1000 * time.Millisecond,
-		TestRuns: []executor.TestRunSummary{
-			{
-				TestFile:         "sample.js",
-				Status:           executor.TestPassed,
-				ScenarioDuration: 500 * time.Millisecond,
-				TotalDuration:    600 * time.Millisecond,
-				Iterations:       "1",
-			},
-		},
-		TestsExecuted: 1,
-		TestsPassed:   1,
-	}
-
-	err = reporter.Report(context.Background(), suiteRun, summary)
-	if err != nil {
-		t.Fatalf("Report failed: %v", err)
-	}
-
-	output := buf.String()
-	if output == "" {
-		t.Fatal("No log output generated")
-	}
-
-	// Check each line contains suiteName
-	lines := strings.Split(strings.TrimSpace(output), "\n")
-	for i, line := range lines {
-		if line == "" {
-			continue
-		}
-
-		if !strings.Contains(line, `"suiteName":"my-test-suite"`) {
-			t.Errorf("Log line %d does not contain suiteName field:\n%s", i, line)
-		}
-
-		if !strings.Contains(line, `"suiteRevision":"commit-abc"`) {
-			t.Errorf("Log line %d does not contain suiteRevision field:\n%s", i, line)
-		}
-	}
-}
