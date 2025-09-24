@@ -86,15 +86,12 @@ func ValidateSlackNotiferPermissions(config *config.BenchConfig) error {
 			e = status.Err.Error()
 		}
 
-		// This should not happen
-		err = table.Append([]string{status.ID, status.Name, s, e})
-		if err != nil {
+		if err = table.Append([]string{status.ID, status.Name, s, e}); err != nil {
 			return err
 		}
 	}
 
-	err = table.Render()
-	if err != nil {
+	if err = table.Render(); err != nil {
 		return err
 	}
 
