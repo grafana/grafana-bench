@@ -277,7 +277,7 @@ func AddSuiteRunFlags(fs *pflag.FlagSet, config *SuiteRunConfig) {
 		&config.Attributes,
 		"run-attribute",
 		nil,
-		"adds custom attributes to a suite run. Good for descriptive information. Format: --run-attribute=\"key=value,key=value\". Attributes with no value will be skipped. Call multiple times to add multiple attributes",
+		"adds custom attributes to a suite run. Good for descriptive information. Format: --run-attribute=\"key=value,key=value\". Attributes with no value will be skipped. You can either use the comma separated format shown here or call --run-attribute multiple times to add additional attributes",
 	)
 }
 
