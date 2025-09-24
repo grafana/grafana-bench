@@ -148,6 +148,11 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			}
 			suiteRunSummary.Metrics = append(suiteRunSummary.Metrics, runMetrics...)
 
+			suiteRunSummary.Attributes, err = benchConfig.GetRunAttributes(log)
+			if err != nil {
+				return err
+			}
+
 			err = reporter.Report(
 				cmd.Context(),
 				suiteRun,

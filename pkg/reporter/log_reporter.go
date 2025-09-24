@@ -96,6 +96,10 @@ func (r *LogReporter) Report(
 		suiteRunAttrs = append(suiteRunAttrs, v.Name, v.Value)
 	}
 
+	for k, v := range summary.Attributes {
+		suiteRunAttrs = append(suiteRunAttrs, k, v)
+	}
+
 	log.With(suiteRunAttrs...).Info("suiteRun", "anyFailures", anyFailures)
 
 	return nil

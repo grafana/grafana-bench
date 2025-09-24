@@ -64,6 +64,7 @@ type SuiteRunSummary struct {
 	ScenariosDuration time.Duration
 	TestRuns          []TestRunSummary
 	Metrics           []metrics.Metric
+	Attributes        map[string]string
 }
 
 // TestSuite defines the test suite
