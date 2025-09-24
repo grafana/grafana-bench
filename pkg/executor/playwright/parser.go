@@ -87,6 +87,11 @@ func parseTestRun(spec Specs, folder string) executor.TestRunSummary {
 		TestFolder: folder,
 		TestFile:   path.Base(spec.File),
 		Iterations: "0",
+		Attributes: map[string]string{
+			"title":  spec.Title,
+			"line":   fmt.Sprint(spec.Line),
+			"column": fmt.Sprint(spec.Column),
+		},
 	}
 
 	switch spec.Tests[0].Status {
