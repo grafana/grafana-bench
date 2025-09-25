@@ -742,7 +742,7 @@ func (benchConfig *BenchConfig) BuildSuiteRun(log *slog.Logger) (executor.SuiteR
 		benchConfig.Test.Type,
 	)
 
-	attributes, err := benchConfig.ParseSuiteAttributes(log)
+	attributes, err := parseAttributes(benchConfig.SuiteRun.Attributes, log)
 	if err != nil {
 		return executor.SuiteRun{}, err
 	}
@@ -884,14 +884,14 @@ func (config *BenchConfig) GetRunMetrics(log *slog.Logger) ([]metrics.Metric, er
 	return metricList, nil
 }
 
-// ParseSuiteAttributes parses the cobra stringArrayVar into a map[string]string of attributes
+// parseAttributes parses the cobra stringArrayVar into a map[string]string of attributes
 // for ux, we allow a user to add multiple attributes in a single stringArrayVar
 // by using the format --run-attribute="key=value,key=value". If there are overlapping keys
 // the last one takes precedence
-func (config *BenchConfig) ParseSuiteAttributes(log *slog.Logger) (map[string]string, error) {
+func parseAttributes(attributes []string, log *slog.Logger) (map[string]string, error) {
 	attributeList := map[string]string{}
 
-	for _, attributeString := range config.SuiteRun.Attributes {
+	for _, attributeString := range attributes {
 		if strings.TrimSpace(attributeString) == "" {
 			continue
 		}

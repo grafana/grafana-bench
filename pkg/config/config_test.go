@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestBenchConfig_ParseSuiteAttributes(t *testing.T) {
+func TestParseAttributes(t *testing.T) {
 	// Create a test logger that discards output to avoid cluttering test output
 	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelError}))
 
@@ -94,13 +94,7 @@ func TestBenchConfig_ParseSuiteAttributes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			config := &BenchConfig{
-				SuiteRun: SuiteRunConfig{
-					Attributes: tt.attributes,
-				},
-			}
-
-			result, err := config.ParseSuiteAttributes(logger)
+			result, err := parseAttributes(tt.attributes, logger)
 
 			if tt.expectError {
 				if err == nil {
