@@ -74,7 +74,7 @@ func (r *LogReporter) Report(
 			"exitMessage", testRun.ExitMessage,
 			"order", strconv.Itoa(order),
 		}
-		for k, v := range suiteRun.Attributes {
+		for k, v := range testRun.Attributes {
 			testRunAttrs = append(testRunAttrs, k, v)
 		}
 
