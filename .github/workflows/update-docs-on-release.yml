@@ -49,6 +49,7 @@ jobs:
         if: steps.check-changes.outputs.has_changes == 'true'
         id: get-info
         env:
+          GH_TOKEN: ${{ github.token }}
           EVENT_NAME: ${{ github.event_name }}
           RELEASE_TAG: ${{ github.event.release.tag_name }}
           RELEASE_AUTHOR: ${{ github.event.release.author.login }}
