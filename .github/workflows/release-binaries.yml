@@ -16,6 +16,8 @@ jobs:
         with:
           fetch-depth: 0
 
+      - uses: grafana/setup-k6-action@v1
+
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
