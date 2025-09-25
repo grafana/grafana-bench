@@ -4,9 +4,6 @@ on:
   workflow_dispatch:
   release:
     types: [published]
-  push:
-    tags:
-      - 'v*'
 
 jobs:
   update-docs:
@@ -40,6 +37,14 @@ jobs:
             echo "has_changes=true" >> $GITHUB_OUTPUT
           fi
 
+      - name: Debug trigger info
+        if: steps.check-changes.outputs.has_changes == 'true'
+        run: |
+          echo "Event name: ${{ github.event_name }}"
+          echo "GitHub ref: ${{ github.ref }}"
+          echo "GitHub ref name: ${{ github.ref_name }}"
+          echo "GitHub ref type: ${{ github.ref_type }}"
+
       - name: Get version and author info
         if: steps.check-changes.outputs.has_changes == 'true'
         id: get-info
@@ -53,11 +58,25 @@ jobs:
           if [ "$EVENT_NAME" == "release" ]; then
             VERSION="$RELEASE_TAG"
             AUTHOR="$RELEASE_AUTHOR"
-          else
-            VERSION="${GITHUB_REF#refs/tags/}"
+          elif [ "$EVENT_NAME" == "workflow_dispatch" ]; then
+            # Get the latest release tag
+            LATEST_TAG=$(gh release list --limit 1 --json tagName --jq '.[0].tagName')
+            if [ -z "$LATEST_TAG" ] || [ "$LATEST_TAG" == "null" ]; then
+              echo "No releases found"
+              exit 1
+            fi
+            VERSION="$LATEST_TAG"
             AUTHOR="$GITHUB_ACTOR"
+          else
+            echo "Unsupported event: $EVENT_NAME with ref: $GITHUB_REF"
+            exit 1
           fi
+          
+          # Sanitize version for branch name (remove invalid characters)
+          SAFE_VERSION=$(echo "$VERSION" | sed 's/[^a-zA-Z0-9.-]/-/g')
+          
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "safe_version=${SAFE_VERSION}" >> $GITHUB_OUTPUT
           echo "author=${AUTHOR}" >> $GITHUB_OUTPUT
 
       - name: Create Pull Request
@@ -83,7 +102,7 @@ jobs:
             🤖 This PR was created automatically when version ${{ steps.get-info.outputs.version }} was released.
             
             /cc @${{ steps.get-info.outputs.author }}
-          branch: docs/update-${{ steps.get-info.outputs.version }}
+          branch: docs/update-${{ steps.get-info.outputs.safe_version }}
           branch-suffix: short-commit-hash
           delete-branch: true
           assignees: ${{ steps.get-info.outputs.author }}
