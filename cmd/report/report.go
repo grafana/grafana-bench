@@ -105,7 +105,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				return fmt.Errorf("missing test suite name")
 			}
 
-			suiteRun, err := benchConfig.BuildSuiteRun()
+			suiteRun, err := benchConfig.BuildSuiteRun(log)
 			if err != nil {
 				return err
 			}

@@ -77,6 +77,10 @@ func (p *PrometheusReporter) Report(
 		"suite_run":       suiteRun.Name,
 	}
 
+	for k, v := range suiteRun.Attributes {
+		labels[k] = v
+	}
+
 	reportMetrics := []metrics.Metric{
 		{Name: "bench_tests_executed", Value: float64(summary.TestsExecuted), Labels: labels},
 		{Name: "bench_tests_passed", Value: float64(summary.TestsPassed), Labels: labels},

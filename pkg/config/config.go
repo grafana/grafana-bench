@@ -202,6 +202,7 @@ type SuiteRunConfig struct {
 	Metrics       []string
 	MetricsPrefix string
 	MetricsFile   string
+	Attributes    []string
 }
 
 func AddSuiteRunFlags(fs *pflag.FlagSet, config *SuiteRunConfig) {
@@ -271,6 +272,12 @@ func AddSuiteRunFlags(fs *pflag.FlagSet, config *SuiteRunConfig) {
 			"\nEach non commented line should follow the pattern metric{label1=value1,label2=value2,...} value."+
 			"\nThe timestamp, if present, is omitted and all metrics are reported using the suite run's execution time."+
 			"\n[1] https://github.com/Showmax/prometheus-docs/blob/master/content/docs/instrumenting/exposition_formats.md",
+	)
+	fs.StringArrayVar(
+		&config.Attributes,
+		"run-attribute",
+		nil,
+		"adds custom attributes to a suite run. Good for descriptive information. Format: --run-attribute=\"key=value,key=value\". Attributes with no value will be skipped. You can either use the comma separated format shown here or call --run-attribute multiple times to add additional attributes",
 	)
 }
 
@@ -695,7 +702,7 @@ func (config *BenchConfig) BuildTestSuite(log *slog.Logger) (*executor.TestSuite
 	}, nil
 }
 
-func (benchConfig *BenchConfig) BuildSuiteRun() (executor.SuiteRun, error) {
+func (benchConfig *BenchConfig) BuildSuiteRun(log *slog.Logger) (executor.SuiteRun, error) {
 	grafanaSlug := ""
 	if benchConfig.Grafana.Url != "" {
 		// in case of error, slug it will be empty
@@ -735,6 +742,11 @@ func (benchConfig *BenchConfig) BuildSuiteRun() (executor.SuiteRun, error) {
 		benchConfig.Test.Type,
 	)
 
+	attributes, err := parseAttributes(benchConfig.SuiteRun.Attributes, log)
+	if err != nil {
+		return executor.SuiteRun{}, err
+	}
+
 	return executor.SuiteRun{
 		Name:           suiteRunName,
 		Id:             runId,
@@ -742,6 +754,7 @@ func (benchConfig *BenchConfig) BuildSuiteRun() (executor.SuiteRun, error) {
 		TestExecutor:   benchConfig.Report.Input,
 		SuiteName:      benchConfig.TestSuite.Name,
 		SuiteRevision:  benchConfig.TestSuite.Revision,
+		Attributes:     attributes,
 		BenchRevision:  benchConfig.Revision,
 		GrafanaURL:     benchConfig.Grafana.Url,
 		GrafanaSlug:    grafanaSlug,
@@ -869,4 +882,47 @@ func (config *BenchConfig) GetRunMetrics(log *slog.Logger) ([]metrics.Metric, er
 	}
 
 	return metricList, nil
+}
+
+// parseAttributes parses the cobra stringArrayVar into a map[string]string of attributes
+// for ux, we allow a user to add multiple attributes in a single stringArrayVar
+// by using the format --run-attribute="key=value,key=value". If there are overlapping keys
+// the last one takes precedence
+func parseAttributes(attributes []string, log *slog.Logger) (map[string]string, error) {
+	attributeList := map[string]string{}
+
+	for _, attributeString := range attributes {
+		if strings.TrimSpace(attributeString) == "" {
+			continue
+		}
+
+		attrs := strings.Split(attributeString, ",")
+		for _, attr := range attrs {
+			attr = strings.TrimSpace(attr)
+			if attr == "" {
+				continue
+			}
+
+			kv := strings.SplitN(attr, "=", 2)
+			if len(kv) < 2 {
+				return nil, fmt.Errorf("invalid attribute format %q: expected 'key=value'", attr)
+			}
+
+			key := strings.TrimSpace(kv[0])
+			value := strings.TrimSpace(kv[1])
+
+			if key == "" {
+				return nil, fmt.Errorf("empty key in attribute %q", attr)
+			}
+
+			if value == "" {
+				log.Warn("parsing run attributes: skipping attribute with empty value", "key", key)
+				continue
+			}
+
+			attributeList[key] = value
+		}
+	}
+
+	return attributeList, nil
 }
