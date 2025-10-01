@@ -1,6 +1,6 @@
 module github.com/grafana/grafana-bench
 
-go 1.23.0
+go 1.24.0
 
 toolchain go1.24.1
 
@@ -16,7 +16,7 @@ require (
 	github.com/slack-go/slack v0.17.3
 	github.com/spf13/pflag v1.0.10
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56
-	golang.org/x/text v0.28.0
+	golang.org/x/text v0.29.0
 	google.golang.org/protobuf v1.36.8
 	gopkg.in/yaml.v3 v3.0.1
 )
