@@ -53,7 +53,7 @@ func (r *LogReporter) Report(
 		"suiteRun", suiteRun.Name,
 		"suiteName", suiteRun.SuiteName,
 		"suiteRevision", suiteRun.SuiteRevision,
-		"testTrigger", suiteRun.Trigger,
+		"runStage", suiteRun.RunStage,
 		"testExecutor", suiteRun.TestExecutor,
 		"benchRevision", suiteRun.BenchRevision,
 		"grafanaUrl", suiteRun.GrafanaURL,

@@ -225,13 +225,19 @@ func AddSuiteRunFlags(fs *pflag.FlagSet, config *SuiteRunConfig) {
 		&config.RunStage,
 		"test-trigger",
 		"local",
-		"deprecated. Use run-stage",
+		"deprecated. Use run-trigger",
 	)
 	fs.StringVar(
 		&config.RunStage,
 		"trigger",
 		"local",
-		"deprecated. Use run-stage",
+		"deprecated. Use run-trigger",
+	)
+	fs.StringVar(
+		&config.RunStage,
+		"run-trigger",
+		"local",
+		"trigger of bench execution. For example, 'ci' or 'local'.",
 	)
 	fs.StringVar(
 		&config.RunStage,
@@ -733,11 +739,11 @@ func (benchConfig *BenchConfig) BuildSuiteRun(log *slog.Logger) (executor.SuiteR
 	// get attributes of this test suite run using the test suite information from the config
 	runId := benchConfig.SuiteRun.Id
 	if runId == "" {
-		runId = id.Run(benchConfig.SuiteRun.Trigger, time.Now())
+		runId = id.Run(benchConfig.SuiteRun.RunStage, time.Now())
 	}
 
 	suiteRunName := id.SuiteRunName(
-		benchConfig.SuiteRun.Trigger,
+		benchConfig.SuiteRun.RunStage,
 		benchConfig.TestSuite.Name,
 		benchConfig.Test.Type,
 	)
@@ -750,7 +756,7 @@ func (benchConfig *BenchConfig) BuildSuiteRun(log *slog.Logger) (executor.SuiteR
 	return executor.SuiteRun{
 		Name:           suiteRunName,
 		Id:             runId,
-		Trigger:        benchConfig.SuiteRun.Trigger,
+		RunStage:       benchConfig.SuiteRun.RunStage,
 		TestExecutor:   benchConfig.Report.Input,
 		SuiteName:      benchConfig.TestSuite.Name,
 		SuiteRevision:  benchConfig.TestSuite.Revision,
