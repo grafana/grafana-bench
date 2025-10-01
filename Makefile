@@ -43,7 +43,7 @@ build-playwright-prod:
 # Run tests including integration tests
 test:
 	@echo "🧪 Running tests..."
-	go test -v ./...
+	go test ./...
 
 # Generate documentation
 docs:
