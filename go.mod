@@ -5,7 +5,7 @@ go 1.24.0
 toolchain go1.24.1
 
 require (
-	buf.build/gen/go/prometheus/prometheus/protocolbuffers/go v1.36.8-20250320161912-af2aab87b1b3.1
+	buf.build/gen/go/prometheus/prometheus/protocolbuffers/go v1.36.9-20250320161912-af2aab87b1b3.1
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
 	github.com/go-git/go-git/v5 v5.16.2
 	github.com/golang/snappy v1.0.0
@@ -22,7 +22,7 @@ require (
 )
 
 require (
-	buf.build/gen/go/gogo/protobuf/protocolbuffers/go v1.36.8-20240617172848-e1dbca2775a7.1 // indirect
+	buf.build/gen/go/gogo/protobuf/protocolbuffers/go v1.36.9-20240617172848-e1dbca2775a7.1 // indirect
 	dario.cat/mergo v1.0.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/ProtonMail/go-crypto v1.1.6 // indirect
