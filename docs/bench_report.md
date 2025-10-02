@@ -121,7 +121,7 @@ grafana:
                                           [1] https://github.com/Showmax/prometheus-docs/blob/master/content/docs/instrumenting/exposition_formats.md
       --run-metrics-prefix string         prefix to append to the suite run metric names
       --run-stage string                  the stage of CI the suite was executed. For example, 'local', 'ci', 'rrc'. (default "local")
-      --run-trigger string                trigger of bench execution. For example, 'ci' or 'local'. (default "local")
+      --run-trigger string                deprecated. Use run-stage. trigger of bench execution. For example, 'ci' or 'local'. (default "local")
       --suite-name string                 test suite name. If not specified, SUITE_NAME environment variable is used.
                                           Defaults to the last component of -suite-path.
                                           For example --suite--path path/to/testsuite will give a test suite name of 'testsuite'.
@@ -131,9 +131,9 @@ grafana:
       --test-report-format string         deprecated. Use report-output
       --test-suite-name string            deprecated. Use suite-name
       --test-suite-revision string        deprecated. Use suite-revision
-      --test-trigger string               deprecated. Use run-trigger (default "local")
+      --test-trigger string               deprecated. Use run-stage (default "local")
       --test-type string                  test type. Allowed values: 'smoke', 'load' (default "smoke")
-      --trigger string                    deprecated. Use run-trigger (default "local")
+      --trigger string                    deprecated. Use run-stage (default "local")
 ```
 
 ### Options inherited from parent commands

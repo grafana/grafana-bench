@@ -268,7 +268,7 @@ bench test  \
                                           [1] https://github.com/Showmax/prometheus-docs/blob/master/content/docs/instrumenting/exposition_formats.md
       --run-metrics-prefix string         prefix to append to the suite run metric names
       --run-stage string                  the stage of CI the suite was executed. For example, 'local', 'ci', 'rrc'. (default "local")
-      --run-trigger string                trigger of bench execution. For example, 'ci' or 'local'. (default "local")
+      --run-trigger string                deprecated. Use run-stage. trigger of bench execution. For example, 'ci' or 'local'. (default "local")
       --slack-codeowners-mapping string   path or url to the codeowner to slack channel id mapping.
                                           Relative to test suite base dir. (default "codeowners-mapping.yaml")
       --slack-notifications               send notifications to slack. Requires setting the --slack-token option or the SLACK_TOKEN environment variable.
@@ -305,10 +305,10 @@ bench test  \
       --test-suite-repo-dirs strings      deprecated. Use suite-repo-dirs
       --test-suite-repo-token string      deprecated. Use suite-repo-token
       --test-suite-revision string        deprecated. Use suite-revision
-      --test-trigger string               deprecated. Use run-trigger (default "local")
+      --test-trigger string               deprecated. Use run-stage (default "local")
       --test-type string                  test type. Allowed values: 'smoke', 'load' (default "smoke")
       --test-verbose                      show test output
-      --trigger string                    deprecated. Use run-trigger (default "local")
+      --trigger string                    deprecated. Use run-stage (default "local")
       --verbose                           deprecated. Use verbose
 ```
 
