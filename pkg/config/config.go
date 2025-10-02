@@ -196,7 +196,7 @@ func AddGoExecutorFlags(fs *pflag.FlagSet, config *GoTestConfig) {
 }
 
 type SuiteRunConfig struct {
-	Trigger       string
+	RunStage      string
 	Id            string
 	DashboardURL  string
 	Metrics       []string
@@ -222,22 +222,28 @@ func AddSuiteRunFlags(fs *pflag.FlagSet, config *SuiteRunConfig) {
 			"\nExample: http://localhost/dashboards?run={{.Id}}",
 	)
 	fs.StringVar(
-		&config.Trigger,
+		&config.RunStage,
 		"test-trigger",
 		"local",
-		"deprecated. Use run-trigger",
+		"deprecated. Use run-stage",
 	)
 	fs.StringVar(
-		&config.Trigger,
+		&config.RunStage,
 		"trigger",
 		"local",
-		"deprecated. Use run-trigger",
+		"deprecated. Use run-stage",
 	)
 	fs.StringVar(
-		&config.Trigger,
+		&config.RunStage,
 		"run-trigger",
 		"local",
-		"trigger of bench execution. For example, 'ci' or 'local'.",
+		"deprecated. Use run-stage. trigger of bench execution. For example, 'ci' or 'local'.",
+	)
+	fs.StringVar(
+		&config.RunStage,
+		"run-stage",
+		"local",
+		"the stage of CI the suite was executed. For example, 'local', 'ci', 'rrc'.",
 	)
 	fs.StringSliceVar(
 		&config.Metrics,
@@ -733,11 +739,11 @@ func (benchConfig *BenchConfig) BuildSuiteRun(log *slog.Logger) (executor.SuiteR
 	// get attributes of this test suite run using the test suite information from the config
 	runId := benchConfig.SuiteRun.Id
 	if runId == "" {
-		runId = id.Run(benchConfig.SuiteRun.Trigger, time.Now())
+		runId = id.Run(benchConfig.SuiteRun.RunStage, time.Now())
 	}
 
 	suiteRunName := id.SuiteRunName(
-		benchConfig.SuiteRun.Trigger,
+		benchConfig.SuiteRun.RunStage,
 		benchConfig.TestSuite.Name,
 		benchConfig.Test.Type,
 	)
@@ -750,7 +756,7 @@ func (benchConfig *BenchConfig) BuildSuiteRun(log *slog.Logger) (executor.SuiteR
 	return executor.SuiteRun{
 		Name:           suiteRunName,
 		Id:             runId,
-		Trigger:        benchConfig.SuiteRun.Trigger,
+		RunStage:       benchConfig.SuiteRun.RunStage,
 		TestExecutor:   benchConfig.Report.Input,
 		SuiteName:      benchConfig.TestSuite.Name,
 		SuiteRevision:  benchConfig.TestSuite.Revision,

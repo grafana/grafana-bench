@@ -20,9 +20,9 @@ func TestTextReporter_Report(t *testing.T) {
 		{
 			name: "basic summary output",
 			suiteRun: executor.SuiteRun{
-				Id:      "test-run-123",
-				Name:    "test-suite",
-				Trigger: "local",
+				Id:       "test-run-123",
+				Name:     "test-suite",
+				RunStage: "local",
 			},
 			summary: executor.SuiteRunSummary{
 				StartTime:         time.Now(),
@@ -43,7 +43,7 @@ func TestTextReporter_Report(t *testing.T) {
 						ScenarioDuration: 8 * time.Second,
 					},
 					{
-						TestFile:         "test2.js", 
+						TestFile:         "test2.js",
 						TestFolder:       "load",
 						Status:           executor.TestFailed,
 						TotalDuration:    15 * time.Second,
@@ -54,7 +54,7 @@ func TestTextReporter_Report(t *testing.T) {
 			expectedContains: []string{
 				"----------------SUMMARY----------------",
 				"Executed:       10",
-				"Passed:         8", 
+				"Passed:         8",
 				"Failed:         2",
 				"Flaky:          1",
 				"Errors:         0",
@@ -69,9 +69,9 @@ func TestTextReporter_Report(t *testing.T) {
 		{
 			name: "with custom attributes",
 			suiteRun: executor.SuiteRun{
-				Id:      "test-run-456",
-				Name:    "attributes-test",
-				Trigger: "local",
+				Id:       "test-run-456",
+				Name:     "attributes-test",
+				RunStage: "local",
 				Attributes: map[string]string{
 					"environment": "staging",
 					"team":        "backend",
@@ -90,7 +90,7 @@ func TestTextReporter_Report(t *testing.T) {
 				"----------------SUMMARY----------------",
 				"Executed:       5",
 				"Passed:         3",
-				"Failed:         2", 
+				"Failed:         2",
 				"Suite:          failed",
 				"--------------ATTRIBUTES---------------",
 				"environment: staging",
@@ -101,9 +101,9 @@ func TestTextReporter_Report(t *testing.T) {
 		{
 			name: "no attributes section when empty",
 			suiteRun: executor.SuiteRun{
-				Id:      "test-run-789",
-				Name:    "no-attributes-test",
-				Trigger: "local",
+				Id:       "test-run-789",
+				Name:     "no-attributes-test",
+				RunStage: "local",
 			},
 			summary: executor.SuiteRunSummary{
 				Status:        executor.SuitePassed,
@@ -129,9 +129,9 @@ func TestTextReporter_Report(t *testing.T) {
 			suiteRun := tt.suiteRun
 			if suiteRun.Id == "" {
 				suiteRun = executor.SuiteRun{
-					Id:      "test-run-123",
-					Name:    "test-suite",
-					Trigger: "local",
+					Id:       "test-run-123",
+					Name:     "test-suite",
+					RunStage: "local",
 				}
 			}
 

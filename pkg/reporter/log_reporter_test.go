@@ -24,7 +24,7 @@ func TestLogReporter_Report(t *testing.T) {
 			suiteRun: executor.SuiteRun{
 				Name:           "test-suite-smoke",
 				Id:             "test-run-123",
-				Trigger:        "local",
+				RunStage:       "local",
 				TestExecutor:   "k6",
 				SuiteName:      "test-suite",
 				SuiteRevision:  "abc123",
@@ -56,7 +56,7 @@ func TestLogReporter_Report(t *testing.T) {
 				"suiteRun":       "test-suite-smoke",
 				"suiteName":      "test-suite",
 				"suiteRevision":  "abc123",
-				"testTrigger":    "local",
+				"runStage":       "local",
 				"testExecutor":   "k6",
 				"benchRevision":  "v0.6.1",
 				"grafanaUrl":     "http://localhost:3000",
@@ -69,7 +69,7 @@ func TestLogReporter_Report(t *testing.T) {
 			suiteRun: executor.SuiteRun{
 				Name:           "empty-fields-test",
 				Id:             "test-run-456",
-				Trigger:        "ci",
+				RunStage:       "ci",
 				TestExecutor:   "playwright",
 				SuiteName:      "",
 				SuiteRevision:  "",
@@ -92,7 +92,7 @@ func TestLogReporter_Report(t *testing.T) {
 				"suiteRun":       "empty-fields-test",
 				"suiteName":      "",
 				"suiteRevision":  "",
-				"testTrigger":    "ci",
+				"runStage":       "ci",
 				"testExecutor":   "playwright",
 				"benchRevision":  "dev",
 				"grafanaUrl":     "https://grafana.com",
@@ -105,7 +105,7 @@ func TestLogReporter_Report(t *testing.T) {
 			suiteRun: executor.SuiteRun{
 				Name:           "attributes-test",
 				Id:             "test-run-789",
-				Trigger:        "local",
+				RunStage:       "local",
 				TestExecutor:   "k6",
 				SuiteName:      "smoke-tests",
 				SuiteRevision:  "main-branch",
@@ -143,7 +143,7 @@ func TestLogReporter_Report(t *testing.T) {
 				"suiteRun":       "attributes-test",
 				"suiteName":      "smoke-tests",
 				"suiteRevision":  "main-branch",
-				"testTrigger":    "local",
+				"runStage":       "local",
 				"testExecutor":   "k6",
 				"benchRevision":  "v0.7.0",
 				"grafanaUrl":     "http://localhost:3000",
@@ -230,4 +230,3 @@ func TestLogReporter_Report(t *testing.T) {
 		})
 	}
 }
-

@@ -37,9 +37,9 @@ func TestPrometheusReporter_Report_WithAttributes(t *testing.T) {
 		{
 			name: "attributes with special characters",
 			attributes: map[string]string{
-				"branch":     "feature/my-branch",
-				"commit":     "abc123def456",
-				"build_url":  "https://ci.example.com/build/123",
+				"branch":    "feature/my-branch",
+				"commit":    "abc123def456",
+				"build_url": "https://ci.example.com/build/123",
 			},
 			expectError: true, // Will error due to invalid URL, but should not panic
 		},
@@ -58,7 +58,7 @@ func TestPrometheusReporter_Report_WithAttributes(t *testing.T) {
 			suiteRun := executor.SuiteRun{
 				Id:             "test-run-123",
 				Name:           "test-suite",
-				Trigger:        "local",
+				RunStage:       "local",
 				BenchRevision:  "abc123",
 				GrafanaVersion: "9.0.0",
 				Attributes:     tt.attributes,
@@ -85,7 +85,7 @@ func TestPrometheusReporter_Report_WithAttributes(t *testing.T) {
 
 			// The main test is that this doesn't panic when processing attributes
 			err := reporter.Report(context.Background(), suiteRun, summary)
-			
+
 			if tt.expectError && err == nil {
 				t.Error("Expected error due to invalid URL but got none")
 			}
@@ -102,7 +102,7 @@ func TestPrometheusReporter_Report_AttributesIntegration(t *testing.T) {
 	// This test verifies the attributes are properly integrated into the label processing
 	// We test this by ensuring the Report method completes without errors when we have
 	// a valid (but non-existent) Prometheus endpoint
-	
+
 	config := PrometheusConfig{
 		URL:     "http://nonexistent-prometheus:9090/api/v1/write",
 		Prefix:  "test",
@@ -113,18 +113,18 @@ func TestPrometheusReporter_Report_AttributesIntegration(t *testing.T) {
 	suiteRun := executor.SuiteRun{
 		Id:             "integration-test",
 		Name:           "integration-suite",
-		Trigger:        "ci",
+		RunStage:       "ci",
 		BenchRevision:  "integration-abc123",
 		GrafanaVersion: "10.0.0",
 		Attributes: map[string]string{
-			"environment":    "production",
-			"region":         "us-west-2",
-			"team":           "platform",
-			"build_id":       "67890",
-			"branch":         "main",
-			"commit_sha":     "abcdef123456",
-			"instance_type":  "c5.large",
-			"test_suite_id":  "smoke-tests-v2",
+			"environment":   "production",
+			"region":        "us-west-2",
+			"team":          "platform",
+			"build_id":      "67890",
+			"branch":        "main",
+			"commit_sha":    "abcdef123456",
+			"instance_type": "c5.large",
+			"test_suite_id": "smoke-tests-v2",
 		},
 	}
 
@@ -141,16 +141,16 @@ func TestPrometheusReporter_Report_AttributesIntegration(t *testing.T) {
 		ScenariosDuration: 50 * time.Second,
 		Metrics: []metrics.Metric{
 			{
-				Name:   "response_time_p99",
-				Value:  1200.5,
+				Name:  "response_time_p99",
+				Value: 1200.5,
 				Labels: map[string]string{
 					"endpoint": "/api/v1/query",
 					"method":   "GET",
 				},
 			},
 			{
-				Name:   "error_rate",
-				Value:  0.02,
+				Name:  "error_rate",
+				Value: 0.02,
 				Labels: map[string]string{
 					"service": "api",
 				},
@@ -160,7 +160,7 @@ func TestPrometheusReporter_Report_AttributesIntegration(t *testing.T) {
 
 	// This should complete without panicking, even though the network request will fail
 	err := reporter.Report(context.Background(), suiteRun, summary)
-	
+
 	// We expect a network error since the endpoint doesn't exist
 	if err == nil {
 		t.Error("Expected network error due to nonexistent endpoint, but got no error")
@@ -192,7 +192,7 @@ func TestPrometheusReporter_Report_NilAttributesHandling(t *testing.T) {
 
 	// Should not panic with nil attributes
 	err := reporter.Report(context.Background(), suiteRun, summary)
-	
+
 	// We expect an error due to empty URL, but no panic
 	if err == nil {
 		t.Error("Expected error due to empty URL")

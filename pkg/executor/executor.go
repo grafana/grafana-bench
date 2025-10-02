@@ -29,7 +29,7 @@ type SuiteRun struct {
 	Name           string
 	Id             string
 	TestExecutor   string
-	Trigger        string
+	RunStage       string
 	SuiteName      string
 	SuiteRevision  string
 	GrafanaVersion string
