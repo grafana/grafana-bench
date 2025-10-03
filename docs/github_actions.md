@@ -109,7 +109,7 @@ This allows your CI workflows to handle test failures differently from internal 
     docker run --rm \
       --network=host \
       --volume="./:/home/bench/tests/" \
-      us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.6.2 test \
+      us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.6.3 test \
       --test-runner playwright \
       --test-suite-base "/home/bench/tests/" \
       --grafana-url "http://localhost:3000"
@@ -146,7 +146,7 @@ jobs:
             --network=host \
             --volume="./CI/:/home/bench/tests/CI/" \
 
-            us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.6.2 test \
+            us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.6.3 test \
             --grafana-url "http://localhost:3000" \
             --grafana-admin-user "admin" \
             --grafana-admin-password "admin" \
@@ -220,7 +220,7 @@ jobs:
           docker run --rm \
             --network=host \
             --volume="./:/home/bench/tests/" \
-            us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.6.2 test \
+            us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.6.3 test \
             --test-runner "playwright" \
             --test-suite-base "/home/bench/tests/" \
             --grafana-url "http://localhost:3000" \
