@@ -6,6 +6,7 @@ You'll use scripts in the deployment_tools repo.
 ## Prerequisites
 
 **Set your stack URL as an environment variable:**
+
 ```bash
 export STACK_SLUG={YOUR_STACK_SLUG}
 ```
@@ -31,12 +32,17 @@ MySQL [hosted_grafana]> select root_url,secret from instances where slug='{STACK
 +----------------------------------------+------------------------------------------+
 ```
 
+**Export the secret as an environment variable:**
+```bash
+export SLUG_SECRET={THE_SECRET_FROM_ABOVE}
+```
+
 ### 3. Create your test user
 
-You'll use the password fetched in the previous step along with the 'admin' user as credentials in the curl command:
+You'll use the exported secret with the 'admin' user as credentials in the curl command:
 
 ```sh
-curl -X POST https://admin:abcxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx123@{STACK_SLUG}.grafana-dev.net/api/admin/users \
+curl -X POST https://admin:${SLUG_SECRET}@${STACK_SLUG}.grafana-dev.net/api/admin/users \
   -H "Content-Type: application/json" \
   -d '{
     "name": "{YOUR_TEST_USER}",
@@ -47,6 +53,7 @@ curl -X POST https://admin:abcxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx123@{STACK_SLUG}
 ```
 
 **Response:**
+
 ```json
 {"id":18,"uid":"dev018jaxqdj4a","message":"User created"}
 ```
@@ -56,7 +63,7 @@ curl -X POST https://admin:abcxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx123@{STACK_SLUG}
 ### 4. Set your user as an admin (if necessary)
 
 ```sh
-curl -X PUT https://admin:abcxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx123@{STACK_SLUG}.grafana-dev.net/api/admin/users/{USER_ID}/permissions \
+curl -X PUT https://admin:${SLUG_SECRET}@${STACK_SLUG}.grafana-dev.net/api/admin/users/{USER_ID}/permissions \
   -H "Content-Type: application/json" \
   -d '{"isGrafanaAdmin": true}'
 ```
@@ -64,7 +71,7 @@ curl -X PUT https://admin:abcxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx123@{STACK_SLUG}.
 ### 5. Ensure your user has org permissions
 
 ```sh
-curl -X PUT https://admin:abcxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx123@{STACK_SLUG}.grafana-dev.net/api/access-control/users/{USER_ID}/roles\?targetOrgId=1 \
+curl -X PUT https://admin:${SLUG_SECRET}@${STACK_SLUG}.grafana-dev.net/api/access-control/users/{USER_ID}/roles\?targetOrgId=1 \
   -H "Content-Type: application/json" \
   -d '{"orgId": 1, "roleUids": []}'
 ```
@@ -74,6 +81,7 @@ curl -X PUT https://admin:abcxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx123@{STACK_SLUG}.
 By default, the login form is disabled for hosted Grafana stacks. The `gcom-dev` script is available [here](https://github.com/grafana/deployment_tools/blob/master/scripts/gcom/gcom-dev).
 
 > **Important:** Use the gcom command for the environment your stack is in:
+>
 > - `gcom` for prod
 > - `gcom-dev` for dev  
 > - `gcom-ops` for ops
