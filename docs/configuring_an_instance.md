@@ -58,14 +58,20 @@ curl -X PUT https://admin:abcxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx123@{STACK_SLUG}.
   -d '{"orgId": 1, "roleUids": []}'
 ```
 
-7. By default, the login form is disabled for hosted grafana stacks. Change the instance config to allow auth with username and password.
+7. Change the instance config to allow auth with username and password.
 
-`gcom-dev` script is available [here](https://github.com/grafana/deployment_tools/blob/master/scripts/gcom/gcom-dev).
-After making this change, you'll need to wait for the pod to reboot, so the changes will take a few minutes to show.
+By default, the login form is disabled for hosted grafana stacks. The `gcom-dev` script is available [here](https://github.com/grafana/deployment_tools/blob/master/scripts/gcom/gcom-dev).
 
-> [!NOTE]
 > Use the gcom command for the environment your stack is in. use gcom for prod, gcom-dev for dev, and gcom-ops for ops
+
+After making this change, you'll need to wait for the pod to reboot, so the changes will take a few minutes to show.
 
 ```
 gcom-dev /instances/{STACK_SLUG}/config -d 'config[auth][disable_login_form]=false'
 ```
+
+> [!TIP]
+> You can monitor the progress of your restarts with
+> `kubectl get pods -n hosted-grafana --context={SLUG_REGION} -l slug={STACK_SLUG}`
+> refer to deployment_tools documentation for [setting up your kubernetes
+> config](https://github.com/grafana/deployment_tools/?tab=readme-ov-file#accessing-kubernetes-clusters)
