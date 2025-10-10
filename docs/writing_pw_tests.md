@@ -1,6 +1,6 @@
-# Writing Playwright tests
+# Writing Playwright Tests
 
-Grafana uses the [grafana/plugin-e2e](https://grafana.com/developers/plugin-tools/e2e-test-a-plugin/introduction) based on playwright to perform browser testing. Bench has a test executor for running playwright tests.
+Grafana uses the [grafana/plugin-e2e](https://grafana.com/developers/plugin-tools/e2e-test-a-plugin/introduction) based on Playwright to perform browser testing. Bench has a test executor for running Playwright tests.
 
 ## Quickstart
 
@@ -12,28 +12,27 @@ Grafana uses the [grafana/plugin-e2e](https://grafana.com/developers/plugin-tool
 6. [A minimal plugin-e2e smoke test](#a-minimal-plugin-e2e-smoke-test-example)
 7. [Add your tests to CI](github_actions.md)
 
-## Passing the Grafana instance to the test
+## Passing the Grafana Instance to the Test
 
-Currently, there is no way to set the baseURL or executablePath of playwright via the command line. Instead, Bench will pass these values via Environment variable that will need to be referenced in the playwright.config.ts file of the project being tested.
+Currently, there is no way to set the baseURL or executablePath of Playwright via the command line. Instead, Bench will pass these values via environment variables that will need to be referenced in the `playwright.config.ts` file of the project being tested.
 
-The following cli arguments will be passed through Bench and available in the Playwright config as environment variables via the `process.env`. They will be :
+The following CLI arguments will be passed through Bench and available in the Playwright config as environment variables via `process.env`:
 
-`--grafana-url` will be available as `process.env.GRAFANA_URL`
+- `--grafana-url` will be available as `process.env.GRAFANA_URL`
+- `--grafana-admin-user` will be available as `process.env.GRAFANA_ADMIN_USER`
+- `--grafana-admin-password` will be available as `process.env.GRAFANA_ADMIN_PASSWORD`
 
-`--grafana-admin-user` will be available as `process.env.GRAFANA_ADMIN_USER`
+Both of the examples below will show you how to configure your Playwright tests to use these variables.
 
-`--grafana-admin-password` will be available as `process.env.GRAFANA_ADMIN_PASSWORD`
+> **Note:** plugin-e2e framework version 1.10.0 now looks for `process.env.GRAFANA_ADMIN_USER` and `process.env.GRAFANA_ADMIN_PASSWORD` by default, so you no longer need to configure those yourself.
 
-Both of the examples below will show you how to configure your playwright tests to use these variables.
-
-**NOTE plugin-e2e framework version 1.10.0 now looks for `process.env.GRAFANA_ADMIN_USER` and `process.env.GRAFANA_ADMIN_PASSWORD` by default, so you no longer need to configure those yourself.**
-
-## Configuring a new playwright project
+## Configuring a New Playwright Project
 
 ### Create a package.json
 
-This is a minimul package.json to init your project. The important bits are the `setup` and `e2e` commands.
-**note: plugin-e2e must be >= 1.10.0
+This is a minimal package.json to init your project. The important bits are the `setup` and `e2e` commands.
+
+> **Note:** plugin-e2e must be >= 1.10.0
 
 ```typescript
 {

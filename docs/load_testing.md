@@ -1,49 +1,37 @@
-# Performing load testing on Grafana
+# Performing Load Testing on Grafana
 
 ## Foreword
 
 Congratulations for making it to the load testing milestone!
 
-As a company, we've reached a level of success and sophistication
-that delivering quality software to our users depends on the performance of the
-code we write. This is a huge milestone and you should be proud.
+As a company, we've reached a level of success and sophistication that delivering quality software to our users depends on the performance of the code we write. This is a huge milestone and you should be proud.
 
-## Load testing vs. benchmarking
+## Load Testing vs. Benchmarking
 
-Benchmarking is generally concerned with units of code. Think functions or routines.
-Most languages offer tools and packages for benchmarking itself. For example, in go,
-we use go benchmarks.
+**Benchmarking** is generally concerned with units of code. Think functions or routines. Most languages offer tools and packages for benchmarking itself. For example, in Go, we use Go benchmarks.
 
-Load testing is concerned with looking at a specific path of behavior as a wholistic
-system. E.g. I'm hitting `/apis/dashboards/create` as an authenticated user and measuring
-database usage, performance, error rates. In this case, it doesn't help to measure the speed
-of the create dashboard path when we are almost certainly IO bound.
+**Load testing** is concerned with looking at a specific path of behavior as a holistic system. For example, hitting `/api/dashboards/create` as an authenticated user and measuring database usage, performance, error rates. In this case, it doesn't help to measure the speed of the create dashboard path when we are almost certainly IO bound.
 
-We've built out most of the tooling you need to perform load testing on your Grafana service,
-however, it is up to you and your team to determine what aspects of performance are important
-to you. For example, are you optimizing for latency or throughput?
+We've built out most of the tooling you need to perform load testing on your Grafana service, however, it is up to you and your team to determine what aspects of performance are important to you. For example, are you optimizing for latency or throughput?
 
-If you're not sure, reach out in [#grafana-bench](https://grafanalabs.enterprise.slack.com/archives/C069CQCLDCG).
-We'd love to help facilitate the conversation and help you develop some performance goals.
+If you're not sure, reach out in [#grafana-bench](https://grafanalabs.enterprise.slack.com/archives/C069CQCLDCG). We'd love to help facilitate the conversation and help you develop some performance goals.
 
-# Configuring your load testing instance
+## Configuring Your Load Testing Instance
 
-## Setting up your load testing environment
+### Setting Up Your Load Testing Environment
 
-**⚠️ IMPORTANT WARNING ⚠️**
+> **⚠️ IMPORTANT WARNING ⚠️**
+>
+> **It is VERY important that you are aware of how and where your instance is created. These scripts WILL cause outages on shared database servers and should NEVER be run in production environments. In most cases it is recommended to create a dedicated load testing database instance.**
 
-**It is VERY important that you are aware of how and where your instance is created.
-These scripts WILL cause outages on shared database servers and should NEVER be
-run in production environments. In most cases it is recommended to create a
-dedicated load testing database instance.**
-
-### Create your load testing database server
+### Creating Your Load Testing Database Server
 
 We manage our Grafana database servers in deployment tools.
 
-1. Check out the [deployment_tools](https://github.com/grafana/deployment_tools) repo
-2. Navigate to [`terraform/databases/grafanalabs-dev/cloud_sql_hosted_grafana.tf`](https://github.com/grafana/deployment_tools/blob/d875826af5c5e8d7de55abec1c7c6cfac9a494fb/terraform/databases/grafanalabs-dev/cloud_sql_hosted_grafana.tf#L157)
-3. Add a new entry at the bottom for your new database server:
+1. **Check out the [deployment_tools](https://github.com/grafana/deployment_tools) repo**
+2. **Navigate to the terraform configuration:**
+   [`terraform/databases/grafanalabs-dev/cloud_sql_hosted_grafana.tf`](https://github.com/grafana/deployment_tools/blob/d875826af5c5e8d7de55abec1c7c6cfac9a494fb/terraform/databases/grafanalabs-dev/cloud_sql_hosted_grafana.tf#L157)
+3. **Add a new entry at the bottom for your new database server:**
 
 ```terraform
 #make sure you update the name of the instance
@@ -112,32 +100,41 @@ module "cloud_sql_dev-us-central-0-hosted-grafana-dedicated-lt" {
 }
 ```
 
-4. Create a PR and push
-5. In a comment on the PR, run `atlantis plan`
-6. Wait for this to finish, review the resulting created database and verify
-7. Get a review
-8. Run `atlantis apply`
-9. Merge the PR
+4. **Create a PR and push**
+5. **In a comment on the PR, run `atlantis plan`**
+6. **Wait for this to finish, review the resulting created database and verify**
+7. **Get a review**
+8. **Run `atlantis apply`**
+9. **Merge the PR**
 
-### Creating your instance
+### Creating Your Instance
 
-1. Navigate to [grafana-dev.net](https://grafana-dev.net)
-2. Sign in using your Okta/Google credentials
-3. This will sign you into the raintank org
-4. Click `add stack`
-5. Select your stack identifier and set your region to the same as your database server and click apply. <img width="1454" height="950" alt="image" src="https://github.com/user-attachments/assets/262a8234-cced-4898-9df2-f95012f18a99" />
-6. Wait for your stack to be created and note the id in the url for configuring your instance. Example URL: `https://grafana-dev.com/orgs/raintank/stacks/8182`
+1. **Navigate to [grafana-dev.net](https://grafana-dev.net)**
+2. **Sign in using your Okta/Google credentials**
+3. **This will sign you into the raintank org**
+4. **Click `add stack`**
+5. **Select your stack identifier and set your region to the same as your database server and click apply**
+   
+   <img width="1454" height="950" alt="Create stack interface" src="https://github.com/user-attachments/assets/262a8234-cced-4898-9df2-f95012f18a99" />
 
-<img width="2070" height="756" alt="image" src="https://github.com/user-attachments/assets/561ffba6-1a8f-406e-b58a-5c554d700dfd" />
+6. **Wait for your stack to be created and note the ID in the URL for configuring your instance**
+   
+   Example URL: `https://grafana-dev.com/orgs/raintank/stacks/8182`
 
-### Configuring your instance
+<img width="2070" height="756" alt="Stack created confirmation" src="https://github.com/user-attachments/assets/561ffba6-1a8f-406e-b58a-5c554d700dfd" />
 
-1. Substitute the id of your stack into the ADMIN url `https://admin.grafana-dev.com/orgs/raintank/stacks/{YOURID}`
-2. Navigate to that url and click the edit button next to Grafana
+### Configuring Your Instance
 
-<img width="1588" height="1606" alt="image" src="https://github.com/user-attachments/assets/05ae88ca-7fb0-4dec-bc54-c274f4cfbe53" />
+1. **Substitute the ID of your stack into the admin URL:**
+   ```
+   https://admin.grafana-dev.com/orgs/raintank/stacks/{YOUR_ID}
+   ```
 
-4. Update the following config sections:
+2. **Navigate to that URL and click the edit button next to Grafana**
+
+   <img width="1588" height="1606" alt="Grafana admin interface" src="https://github.com/user-attachments/assets/05ae88ca-7fb0-4dec-bc54-c274f4cfbe53" />
+
+3. **Update the following config sections:**
 
 ```ini
 [alerting]
@@ -178,136 +175,79 @@ level = debug
 #resources_with_seeded_wildcard_access = dashboard folder datasource service-account
 ```
 
-### Migrating the instance to the new database
+### Migrating the Instance to the New Database
 
 From the deployment tools repo:
 
-1. [Request timed access](https://timed-access.grafana-ops.net/timed-access/access/request)
-2. Pause the instance:
+1. **[Request timed access](https://timed-access.grafana-ops.net/timed-access/access/request)**
 
+2. **Pause the instance:**
    ```sh
-   scripts/gcom/gcom-dev /instances/{YOUR SLUG}/archive -d ""
+   scripts/gcom/gcom-dev /instances/{YOUR_SLUG}/archive -d ""
    ```
 
-3. Migrate to new database server:
-
+3. **Migrate to new database server:**
    ```sh
-   scripts/hg/hg-dev /instances/{YOUR SLUG}/migrate_db -d targetDbServer={YOUR DATABASE SERVER NAME}
+   scripts/hg/hg-dev /instances/{YOUR_SLUG}/migrate_db -d targetDbServer={YOUR_DATABASE_SERVER_NAME}
    ```
 
-### Create a load testing user
+### Creating a Load Testing User
 
-You need to login as the super admin in order to create a user with enough permissions to create everything we need. You can do this with the root secret.
+For creating users and setting up authentication, follow the detailed steps in [Configuring a hosted Grafana instance for e2e tests](configuring_an_instance.md#setup-process).
 
-#### Get the admin secret
-
-Scripts in [deployment_tools](https://github.com/grafana/deployment_tools/tree/master/scripts/hg):
-
-1. Connect to the hosted_grafana server in the appropriate region:
-
-   ```sh
-   scripts/hg/hg-mysql-dev dev-us-central-0 hosted_grafana
-   ```
-
-2. Get the admin secret:
-
-   ```sql
-   select secret from instances where slug='benchloadtestingxxl';
-   ```
-
-#### Create the user
-
-1. Create the admin user:
-
-   ```sh
-   curl -X POST https://{YOUR_INSTANCE}.grafana-dev.net/api/admin/users \
-     -H "Content-Type: application/json" \
-     -H "Authorization: Bearer {ADMIN_SECRET}" \
-     -d '{
-       "name": "benchloadtester",
-       "email": "", 
-       "login": "benchloadtester", 
-       "password": "<YOURPASSWORD>"
-     }'
-   ```
-
-2. Grant admin permissions:
-
-   ```sh
-   curl -X PUT https://{YOUR_INSTANCE}.grafana-dev.net/api/admin/users/{USER_ID}/permissions \
-     -H "Content-Type: application/json" \
-     -H "Authorization: Bearer {ADMIN_SECRET}" \
-     -d '{"isGrafanaAdmin": true}'
-   ```
-
-3. Assign roles:
-
-   ```sh
-   curl -X PUT https://{YOUR_INSTANCE}.grafana-dev.net/api/access-control/users/{USER_ID}/roles?targetOrgId=1 \
-     -H "Content-Type: application/json" \
-     -H "Authorization: Bearer {ADMIN_SECRET}" \
-     -d '{"orgId": 1, "roleUids": []}'
-   ```
-
-## Populating your instance
+## Populating Your Instance
 
 The fake-user-generator tool in the simulation directory gives us two options for populating an instance:
 
-1. Using the API
-2. Creating SQL scripts and writing to disk
+1. **Using the API**
+2. **Creating SQL scripts and writing to disk**
 
 SQL is quite a bit faster, however, more difficult to push to an instance of Grafana. Currently we use the API as it's fast enough to populate an instance.
 
 ### Setup
 
-1. Navigate to the fake-user-generator directory:
-
+1. **Navigate to the fake-user-generator directory:**
    ```sh
    cd grafana-api-tests/simulation/fake-user-generator
    ```
 
-2. Install dependencies:
-
+2. **Install dependencies:**
    ```sh
    yarn install --immutable
    yarn add ts-node -D
    ```
 
-3. Create a config file:
-
+3. **Create a config file:**
    ```sh
    cp config.example.json config.json
    ```
 
-4. Edit `config.json` with your instance details:
-
+4. **Edit `config.json` with your instance details:**
    ```json
    {
      "grafanaUrl": "https://{YOUR_INSTANCE}.grafana-dev.net",
      "user": "benchloadtester",
-     "password": "<YOURPASSWORD>",
+     "password": "{YOUR_SECURE_PASSWORD}",
      "token": ""
    }
    ```
 
-5. Run the script:
-
+5. **Run the script:**
    ```sh
    ./generateNestedFolders.ts --scenario medium --timeout 10
    ```
 
-Available scenarios: `flat`, `tiny`, `small`, `medium`, `big`, `huge`
+**Available scenarios:** `flat`, `tiny`, `small`, `medium`, `big`, `huge`
 
-# Writing and running tests
+## Writing and Running Tests
 
-## Writing tests for your instance
+### Writing Tests for Your Instance
 
 The Grafana simulation suite provides a framework for writing load tests using k6. We use a shared library in `{root}/lib` to implement the Grafana API, with domain-specific tests organized in `simulation/src/{your_domain}`.
 
-### Getting started with the simulation suite
+### Getting Started with the Simulation Suite
 
 1. **Clone and setup the API tests repository:**
-
    ```sh
    git clone https://github.com/grafana/grafana-api-tests
    cd grafana-api-tests/simulation
@@ -315,14 +255,14 @@ The Grafana simulation suite provides a framework for writing load tests using k
    ```
 
 2. **Build the simulation suite:**
-
    ```sh
    yarn build:simulation
    ```
-
+   
    This compiles TypeScript to JavaScript in `simulation/dist`
 
 3. **Configure environment variables:**
+   
    Create a `.env.{yourinstance}` file:
 
    ```sh
@@ -338,15 +278,13 @@ The Grafana simulation suite provides a framework for writing load tests using k
    ```
 
 4. **Load environment variables:**
-
    ```sh
    source .env.{yourinstance}
    ```
 
-### Creating tests for your domain
+### Creating Tests for Your Domain
 
 1. **Create your domain directory:**
-
    ```sh
    mkdir simulation/src/{your_domain}
    ```
@@ -356,6 +294,7 @@ The Grafana simulation suite provides a framework for writing load tests using k
    - `simulation/src/unified_storage/` - Examples for unified storage testing
 
 3. **Create your test files:**
+   
    Follow the patterns in the existing examples to create your domain-specific load tests.
 
 ### Test execution patterns
