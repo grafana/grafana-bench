@@ -63,6 +63,8 @@ One of the key goals of Bench is to provide portability. We do this by making be
 1. [Configuring CI](github_actions.md)
 2. [Implementing a pipeline in Jsonnet](libsonnet.md)
 3. [Configuring slack notifications with Codeowners](notifications.md)
+4. [Configuring a hosted Grafana instance for e2e tests](configuring_an_instance.md)
+5. [Performing load testing on Grafana](load_testing.md)
 
 #### Deep Dive
 
