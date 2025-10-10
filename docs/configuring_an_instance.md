@@ -72,8 +72,5 @@ gcom-dev /instances/{STACK_SLUG}/config -d 'config[auth][disable_login_form]=fal
 
 > [!TIP]
 > You can monitor the progress of your restarts
-
-`kubectl get pods -n hosted-grafana --context={SLUG_REGION} -l slug={STACK_SLUG}`
-
-Refer to deployment_tools documentation for [setting up your kubernetes
-> config](<https://github.com/grafana/deployment_tools/?tab=readme-ov-file#accessing-kubernetes-clusters>)
+> `kubectl get pods -n hosted-grafana --context={SLUG_REGION} -l slug={STACK_SLUG}`
+> Refer to deployment_tools documentation for [setting up your kubernetes config](https://github.com/grafana/deployment_tools/?tab=readme-ov-file#accessing-kubernetes-clusters)
