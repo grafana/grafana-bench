@@ -1,12 +1,15 @@
 # Principles of Bench
-Bench is the glue that provides testing observability between local development, CI, and release pipelines. 
 
-## A simple idea
-At it's core, we wrap our testing tools and provide a standardized structured logging output for tests and test suites. The spec is in progress. 
+Bench is the glue that provides testing observability between local development, CI, and release pipelines.
 
-**Documentation coming soon
+## A Simple Idea
+
+At its core, we wrap our testing tools and provide a standardized structured logging output for tests and test suites. The spec is in progress.
+
+**Documentation coming soon**
 
 ## Versioning
+
 Since Bench runs in CI and as part of release pipelines we view it as critical software and thus follow a versioned release process. We DO NOT publish a `latest` package because we want users to be very aware of what version of Bench they are using when it is deployed and opt into upgrades manually.
 
 ## Table of Contents
@@ -19,23 +22,31 @@ Since Bench runs in CI and as part of release pipelines we view it as critical s
 3. [Log output and formatting](#log-output)
 
 ## The Bench Value Proposition
-1. Conventions for passing a Grafana credentials to a test as environment variables
-3. Consistent structured output for results
-4. Conventions for linking test results to products, pipelines, and test suites for analysis
+
+1. Conventions for passing Grafana credentials to a test as environment variables
+2. Consistent structured output for results
+3. Conventions for linking test results to products, pipelines, and test suites for analysis
 
 ## Project Values
+
 * Aim for simplicity
-* Stay out of the developers way
+* Stay out of the developer's way
 * Ensure portability
 
-## How Bench Works 
-Bench works by wrapping a testing tool, parsing it's output, and producing structured logs that meet our [log format](#log-format)
+## How Bench Works
+
+Bench works by wrapping a testing tool, parsing its output, and producing structured logs that meet our [log format](#log-format).
 
 ## Test Executors
-Bench 
+
+**Documentation coming soon**
 
 ## Passing Variables
 
+**Documentation coming soon**
+
 ## Log Format
+
+**Documentation coming soon**
 
 

@@ -1,10 +1,14 @@
-# Configuring notifications with Bench
+# Configuring Notifications with Bench
 
-COMING SOON
+You can configure notifications for Slack anywhere, including rolling release channels. In order to support large repos and provide flexibility we use a combination of GitHub CODEOWNERS file for the team and a codeowners mapping for the Slack channel.
 
-In rolling release channels you can configure notifications for slack. In order to support large repos and provide flexibility we use a combination of github CODEOWNERS file for the team and a codeowners mapping for the slack channel.
+## Prerequisites
 
-Format for codeowners
+To enable notifications, you'll need:
+- A Slack token set as the `SLACK_TOKEN` environment variable
+- Use the `--slack-notifications` flag when running bench commands
+
+## CODEOWNERS Format
 
 ```yaml
 # .github/CODEOWNERS
