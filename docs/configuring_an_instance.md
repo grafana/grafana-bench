@@ -3,13 +3,16 @@
 In order to run e2e tests against an instance in hosted grafana, we need to enable auth.
 You'll use scripts in the deployment_tools repo.
 
-1. Connect to hg sql instance (use prod if your instance is in prod)
+1. set your stack url as an environment variable
+`export STACK_SLUG={YOUR_STACK_SLUG}`
+
+2. Connect to the hosted grafana sql instance where the stack is located. (hg-dev, hg-ops, hg for prod)
 
 ```sh
 scripts/hg/hg-mysql-dev dev-us-central-0 hosted_grafana
 ```
 
-2. Fetch the secret based on the slug name
+3. Fetch the secret based on the slug name
 
 ```sql
 MySQL [hosted_grafana]> select root_url,secret from instances where slug='{STACK_SLUG}';
@@ -20,7 +23,7 @@ MySQL [hosted_grafana]> select root_url,secret from instances where slug='{STACK
 +----------------------------------------+------------------------------------------+
 ```
 
-3. Create your test user
+4. Create your test user
 You'll use the password fetched in the previous step along with the 'admin' user
 as credentials in the curl command.
 
@@ -39,7 +42,7 @@ curl -X POST https://admin:abcxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx123@{STACK_SLUG}
 
 Take note of the ID returned ^^ for below commands:
 
-4. Set your user as an admin (if necessary)
+5. Set your user as an admin (if necessary)
 
 ```sh
 curl -X PUT https://admin:abcxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx123@{STACK_SLUG}.grafana-dev.net/api/admin/users/{USER_ID}/permissions \
@@ -47,7 +50,7 @@ curl -X PUT https://admin:abcxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx123@{STACK_SLUG}.
   -d '{"isGrafanaAdmin": true}'
 ```
 
-5. Ensure your user has org permissions
+6. Ensure your user has org permissions
 
 ```
 curl -X PUT https://admin:abcxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx123@{STACK_SLUG}.grafana-dev.net/api/access-control/users/{USER_ID}/roles\?targetOrgId=1 \
@@ -55,10 +58,13 @@ curl -X PUT https://admin:abcxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx123@{STACK_SLUG}.
   -d '{"orgId": 1, "roleUids": []}'
 ```
 
-6. By default, the login form is disabled for grafana-dev stacks. You can use the command below to enable the login form to allow login with username and password.  
+7. By default, the login form is disabled for hosted grafana stacks. Change the instance config to allow auth with username and password.
+
+`gcom-dev` script is available [here](https://github.com/grafana/deployment_tools/blob/master/scripts/gcom/gcom-dev).
+After making this change, you'll need to wait for the pod to reboot, so the changes will take a few minutes to show.
+
+**NOTE gcom command for the environment your stack is in. use gcom for prod, gcom-dev for dev, and gcom-ops for ops
 
 ```
 gcom-dev /instances/{STACK_SLUG}/config -d 'config[auth][disable_login_form]=false'
 ```
-Note: After making this change, the instance can take a while to update, so the changes could take a few minutes to show. 
-`gcom-dev` script is available [here](https://github.com/grafana/deployment_tools/blob/master/scripts/gcom/gcom-dev).
