@@ -63,7 +63,7 @@ curl -X PUT https://admin:abcxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx123@{STACK_SLUG}.
 `gcom-dev` script is available [here](https://github.com/grafana/deployment_tools/blob/master/scripts/gcom/gcom-dev).
 After making this change, you'll need to wait for the pod to reboot, so the changes will take a few minutes to show.
 
-**NOTE gcom command for the environment your stack is in. use gcom for prod, gcom-dev for dev, and gcom-ops for ops
+NOTE: gcom command for the environment your stack is in. use gcom for prod, gcom-dev for dev, and gcom-ops for ops
 
 ```
 gcom-dev /instances/{STACK_SLUG}/config -d 'config[auth][disable_login_form]=false'
