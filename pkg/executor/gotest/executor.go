@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 
 	"github.com/grafana/grafana-bench/pkg/executor"
+	"github.com/grafana/grafana-bench/pkg/metrics"
 )
 
 // GoExecutorOptions defines the options for a GoExecutor
@@ -68,6 +69,10 @@ func (e *GoExecutor) ExecTestSuite(
 		return executor.SuiteRunSummary{}, fmt.Errorf("failed to parse go test output %w", err)
 	}
 
+	if summary.Metrics == nil {
+		summary.Metrics = make([]metrics.Metric, 0)
+	}
+
 	if summary.TestsFailed > 0 && e.retries > 0 {
 		for i, t := range summary.TestRuns {
 			if t.Status != executor.TestFailed {
@@ -92,6 +97,16 @@ func (e *GoExecutor) ExecTestSuite(
 					summary.TestRuns[i].Status = executor.TestFlaky
 					summary.TestsFailed--
 					summary.TestsFlaky++
+
+					summary.Metrics = append(summary.Metrics, metrics.Metric{
+						Name:  "bench_test_run_flaky",
+						Value: 1,
+						Labels: map[string]string{
+							"test_file":   summary.TestRuns[i].TestFile,
+							"test_folder": summary.TestRuns[i].TestFolder,
+						},
+						Timestamp: summary.StartTime.UnixMilli(),
+					})
 
 					break
 				}
