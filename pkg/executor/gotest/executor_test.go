@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/grafana/grafana-bench/pkg/executor"
+	"github.com/grafana/grafana-bench/pkg/metrics"
 	"github.com/grafana/grafana-bench/pkg/utils/test/assert"
 	"github.com/grafana/grafana-bench/pkg/utils/test/sort"
 )
@@ -149,6 +150,15 @@ func TestFlakyTest(t *testing.T) {
 				TestRuns: []executor.TestRunSummary{
 					{TestFile: "TestFlaky", Status: executor.TestFlaky},
 				},
+				Metrics: []metrics.Metric{
+					{
+						Name:  "bench_test_run_flaky",
+						Value: 1,
+						Labels: map[string]string{
+							"test_full_path": "github.com/grafana/grafana-bench/pkg/executor/gotest/flaky/TestFlaky",
+						},
+					},
+				},
 			},
 		},
 	}
@@ -188,7 +198,16 @@ func TestFlakyTest(t *testing.T) {
 			for i, tr := range tc.expect.TestRuns {
 				assert.Equal(t, "test file", tr.TestFile, summary.TestRuns[i].TestFile)
 				assert.Equal(t, "test status", tr.Status, summary.TestRuns[i].Status)
+			}
 
+			// assert metrics
+			assert.Equal(t, "metrics len", len(tc.expect.Metrics), len(summary.Metrics))
+			for i, m := range tc.expect.Metrics {
+				assert.Equal(t, "metric name", m.Name, summary.Metrics[i].Name)
+				assert.Equal(t, "metric value", m.Value, summary.Metrics[i].Value)
+				for k, v := range m.Labels {
+					assert.Equal(t, "metric label: "+k, v, summary.Metrics[i].Labels[k])
+				}
 			}
 		})
 	}
