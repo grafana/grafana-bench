@@ -102,8 +102,7 @@ func (e *GoExecutor) ExecTestSuite(
 						Name:  "bench_test_run_flaky",
 						Value: 1,
 						Labels: map[string]string{
-							"test_file":   summary.TestRuns[i].TestFile,
-							"test_folder": summary.TestRuns[i].TestFolder,
+							"test_full_path": summary.TestRuns[i].TestFolder + "/" + summary.TestRuns[i].TestFile,
 						},
 						Timestamp: summary.StartTime.UnixMilli(),
 					})

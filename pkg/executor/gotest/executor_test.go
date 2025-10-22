@@ -155,8 +155,7 @@ func TestFlakyTest(t *testing.T) {
 						Name:  "bench_test_run_flaky",
 						Value: 1,
 						Labels: map[string]string{
-							"test_file":   "TestFlaky",
-							"test_folder": "github.com/grafana/grafana-bench/pkg/executor/gotest/flaky",
+							"test_full_path": "github.com/grafana/grafana-bench/pkg/executor/gotest/flaky/TestFlaky",
 						},
 					},
 				},
