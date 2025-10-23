@@ -117,14 +117,20 @@ func getLatestBenchTag(repoPath string) (string, error) {
 }
 
 func buildDocVersionRegex() *regexp.Regexp {
-	// add prefix
-	regexStr := `(Latest Version: |grafana-bench:|benchRevision: |bench:)\s*`
-	// add optional quotes
-	regexStr += "('|\"|`)?"
-	// add semver
-	regexStr += `v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?`
-	// add optional quote match
-	regexStr += "('|\"|`)?"
+	// Define semver pattern
+	semverPattern := `v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?`
+	
+	// Create regex that matches either:
+	// 1. Prefix patterns: Latest Version: v1.2.3, grafana-bench:v1.2.3, etc.
+	// 2. Backtick pattern: `v1.2.3`
+	regexStr := `(?:` +
+		// Prefix patterns with optional quotes
+		`(Latest Version: |grafana-bench:|benchRevision: |bench:|version: )\s*('|\"|\x60)?` + semverPattern + `('|\"|\x60)?` +
+		`|` +
+		// Standalone backtick pattern
+		`\x60` + semverPattern + `\x60` +
+		`)`
+	
 	return regexp.MustCompile(regexStr)
 }
 
@@ -144,13 +150,20 @@ func updateSemverInMarkdown(dirPath string, newVersion string) error {
 		// grafana-bench:v1.1.1
 		// benchRevision: 'v1.1.1'
 		// bench:v1.1.1
+		// `v1.1.1`
+		// version: 'v1.1.1'
 		{
 			Pattern: buildDocVersionRegex(),
 			ReplaceFunc: func(matched string) string {
-				// Find the index where the prefix ends (after the colon and whitespace)
+				// Handle backtick pattern: `v1.2.3`
+				if strings.HasPrefix(matched, "`") && strings.HasSuffix(matched, "`") {
+					return "`" + newVersion + "`"
+				}
+
+				// Handle prefix patterns: Latest Version: v1.2.3, grafana-bench:v1.2.3, etc.
 				prefixEnd := strings.Index(matched, ":")
-				// Should never happen since regex matches :
 				if prefixEnd == -1 {
+					// Fallback: if no colon found, return original
 					return matched
 				}
 
@@ -163,7 +176,7 @@ func updateSemverInMarkdown(dirPath string, newVersion string) error {
 				}
 
 				// If we have a quote add that back
-				for i := prefixEnd + 2; i < len(matched); i++ {
+				for i := prefixEnd + 1; i < len(matched); i++ {
 					if matched[i] == '\'' || matched[i] == '"' || matched[i] == '`' {
 						// returns `prefix: "v1.1.1"` with proper surrounding quote
 						return prefix + string(matched[i]) + newVersion + string(matched[i])
