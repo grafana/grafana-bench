@@ -49,6 +49,13 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
+# Enable corepack and install pnpm (Node.js already included in Playwright base image)
+RUN npm uninstall -g yarn pnpm # remove default yarn and pnpm
+RUN npm install -g corepack@latest
+RUN corepack enable # enable corepack
+# install corepack packagemanagers
+RUN corepack install -g npm@latest yarn@latest pnpm@latest
+
 # Use existing pwuser from Playwright base image instead of creating bench user
 
 # Copy binaries
