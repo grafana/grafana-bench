@@ -29,7 +29,7 @@ jobs:
       - name: Setup Grafana Bench
         uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@v1
         with:
-          version: 'v0.6.1'
+          version: 'v0.6.4'
       
       - name: Run K6 API Tests
         run: |
@@ -53,11 +53,12 @@ jobs:
 
 | Input | Description | Required | Default |
 |-------|-------------|----------|---------|
-| `version` | Version to install (e.g., `v0.6.1`) | Yes | N/A |
+| `version` | Version to install (e.g., `v0.6.4`) | Yes | N/A |
 
 ### Platform Support
 
 The action automatically detects your platform and installs the appropriate binary:
+
 - **Linux**: amd64, arm64
 - **macOS**: amd64, arm64  
 - **Windows**: amd64
@@ -77,22 +78,25 @@ This allows your CI workflows to handle test failures differently from internal 
 ### When to Use Setup Action vs Docker
 
 **Use the Setup Action when:**
+
 - Running Go tests (`go test`)
 - Using bench for reporting only
 - You want to manage dependencies yourself (K6, Playwright, etc.)
 - Faster startup time is preferred
 
 **Use Docker when:**
+
 - You need pre-installed dependencies (K6, Playwright, browsers)
 - You want a consistent, isolated environment
 - Your tests require specific system dependencies
 
 **Setup Action Example (for Go tests/reporting):**
+
 ```yaml
 - name: Setup Grafana Bench
   uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@v1
   with:
-    version: 'v0.6.1'
+    version: 'v0.6.4'
 
 - name: Run Go tests with bench reporter
   run: |
@@ -103,19 +107,20 @@ This allows your CI workflows to handle test failures differently from internal 
 ```
 
 **Docker Example (with pre-installed dependencies):**
+
 ```yaml
 - name: Run Playwright tests with Docker
   run: |
     docker run --rm \
       --network=host \
-      --volume="./:/home/bench/tests/" \
+      --volume="./:/tests/" \
       us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.6.4 test \
       --test-runner playwright \
-      --test-suite-base "/home/bench/tests/" \
       --grafana-url "http://localhost:3000"
 ```
 
 ## Docker-based CI Example
+
 This is an abreviated version of the [CI used for Bench](../.github/workflows/ci.yaml).
 
 ```yaml
@@ -144,15 +149,15 @@ jobs:
         run: |
           docker run --rm \
             --network=host \
-            --volume="./CI/:/home/bench/tests/CI/" \
+            --volume="./CI/:/tests/CI/" \
 
             us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.6.4 test \
             --grafana-url "http://localhost:3000" \
             --grafana-admin-user "admin" \
             --grafana-admin-password "admin" \
-            --test-suite-base "/home/bench/tests/CI/plugin-e2e"  \
+            --test-suite-base "/tests/CI/plugin-e2e"  \
             --test-runner "playwright" \
-            --pw-prepare-cmd "yarn install; yarn playwright install" \
+            --pw-prepare-cmd "yarn install; playwright install chromium" \
             --pw-execute-cmd "yarn run test" \
             --log-level DEBUG
       - name: archive screenshots
@@ -162,10 +167,9 @@ jobs:
           path: screenshots
 ```
 
-
 ## Datasource workflow example
-This is a live example of a workflow from the [clickhouse datasource](https://github.com/grafana/clickhouse-datasource/blob/main/.github/workflows/grafana-bench.yml).
 
+This is a live example of a workflow from the [clickhouse datasource](https://github.com/grafana/clickhouse-datasource/blob/main/.github/workflows/grafana-bench.yml).
 
 ```yaml
 name: Grafana Bench
@@ -219,18 +223,19 @@ jobs:
         run: |
           docker run --rm \
             --network=host \
-            --volume="./:/home/bench/tests/" \
+            --volume="./:/tests/" \
             us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.6.4 test \
             --test-runner "playwright" \
-            --test-suite-base "/home/bench/tests/" \
+            --test-suite-base "/tests/" \
             --grafana-url "http://localhost:3000" \
-            --pw-prepare-cmd "yarn install --frozen-lockfile; yarn playwright install" \
+            --pw-prepare-cmd "yarn install --frozen-lockfile; playwright install chromium" \
             --pw-execute-cmd "yarn e2e" \
-            --test-env-vars "CI=true" \
+            --test-env "CI=true" \
             --log-level DEBUG 
 ```
 
 ### Workflow Breakdown
+
 We configure the tests to run on every PR and merge to Main. This gives us early and often feedback.
 
 ```yaml
@@ -242,6 +247,7 @@ on:
 ```
 
 This workflow first configures the plugin:
+
 1. checkout the code
 2. install node
 3. install go
@@ -255,4 +261,5 @@ Then we run Bench:
 8. invoke bench against the container
 
 ## Exporting logs to centralized loki database
+
 In development

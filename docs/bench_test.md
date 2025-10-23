@@ -206,7 +206,7 @@ bench test  \
   --grafana-url "http://host.docker.internal:3000" \
   --suite-path grafana-plugin-tests \
   --test-runner playwright \
-  --pw-prepare "yarn install" \
+  --pw-prepare "yarn install; playwright install chromium" \
   --pw-execute "yarn test" \
 
 # run go test

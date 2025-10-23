@@ -42,7 +42,7 @@ This is a minimal package.json to init your project. The important bits are the 
   "author": "Author Name<author.email@domain.com>",
   "license": "MIT",
   "scripts": {
-    "setup": "yarn install && playwright:install"
+    "setup": "yarn install && playwright install chromium"
     "e2e": "playwright test",
   },
   "dependencies": {
@@ -116,9 +116,7 @@ export default defineConfig<PluginOptions>({
 
 ## A note on auth with plugin-e2e
 
-plugin-e2e sets an auth
-
-## Adding to an existing project
+plugin-e2e sets an auth token
 
 ### Add playwright
 
@@ -142,16 +140,18 @@ Check to verify that the plugin can be navigated to and we see the correct title
 
 ```typescript
 // mssql.spec.ts
-
 import { test, expect } from '@grafana/plugin-e2e';
 
-test('Smoke test: decoupled frontend plugin loads', async ({ createDataSourceConfigPage, page }) => {
+test('Smoke test: decoupled frontend plugin loads', { tag: '@grafana-bench' },  async ({ createDataSourceConfigPage, page }) => {
   await createDataSourceConfigPage({ type: 'mssql' });
 
   await expect(await page.getByText('Type: Microsoft SQL Server', { exact: true })).toBeVisible();
   await expect(await page.getByRole('heading', { name: 'Connection', exact: true })).toBeVisible();
 });
 ```
+
+Note the tag we set. This allows us selectively run tests based on the tag.
+In this example we can run just our bench tests with `playwright test --grep @grafana-bench`
 
 Register the test in the playwright.config.ts
 
@@ -220,14 +220,13 @@ Bench assumes the following defaults for specifying the grafana instance, so we 
 ```sh
 docker run --rm \
   --network=host \
-  --volume="./:/home/bench/tests/" \
+  --volume="./:/tests/" \
   us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.6.4 test \
   --test-runner "playwright" \
-  --test-suite-base "/home/bench/tests/" \
   --grafana-url "http://localhost:3000" \
-  --pw-prepare-cmd "yarn install --frozen-lockfile; yarn playwright install" \
+  --pw-prepare-cmd "yarn install --frozen-lockfile; yarn playwright install chromium" \
   --pw-execute-cmd "yarn e2e" \
-  --test-env-vars "CI=true" \
+  --test-env "CI=true" \
     --verbose
 ```
 
@@ -235,11 +234,10 @@ docker run --rm \
 
 1. `docker run --rm` invokes docker. `--rm` tells docker to remove the container when we're done
 2. `--network=host` connects the docker container to the same network that the host is on. This is important as the the docker-compose file in the previous step mounts the grafana container to port 3000. So to make grafana accessible from the bench container, we need to connect the bench container to the same network.
-3. `--volume="./:/home/bench/tests/"` mounts the current directory of the host machine inside the bench container. In this case, the checkout command from step 1 in the workflow grabs all of the plugin code and puts it in the current directory. So we're mounting everything inside the container in the `/home/bench/tests` directory
+3. `--volume="./:/tests/"` mounts the current directory of the host machine inside the bench container. In this case, the checkout command from step 1 in the workflow grabs all of the plugin code and puts it in the current directory. So we're mounting everything inside the container in the `/tests` directory
 4. `us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.6.4 test` says use the bench container tagged with bench:`v0.6.4`. The container specificies the bench binary as the default execution script, so `test` the subcommand and effectively runs `grafana-bench test`
 5. `--test-runner "playwright"` tells the test command to use the playwright executor
-6. `--test-suite-base "/home/bench/tests/"` specifies the directory we mounted the code in as the directory to execute the test runner from
 7. `--pw-prepare-cmd "yarn install --frozen-lockfile; yarn playwright install"` specifies the two commands necessary to configure the e2e tests separated by a `;`. We do not currently support the `&&` operator, so you must use `;`. The first command installs yarn dependencies. The second installs playwright and dependencies
 8. `--pw-execute-cmd "yarn e2e"` specifies the command to run the e2e tests.
-9. `--test-env-vars "CI=true"` sets an environment variable to be passed to the test executor. Effectively `CI=true grafana-bench test ...`. It is common convention with playwright tests to use the `CI=true` flag
+9. `--test-env "CI=true"` sets an environment variable to be passed to the test executor. Effectively `CI=true grafana-bench test ...`. It is common convention with playwright tests to use the `CI=true` flag
 10. `--log-level DEBUG` sets the log level
