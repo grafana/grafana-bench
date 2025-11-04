@@ -125,7 +125,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			var suiteRunSummary executor.SuiteRunSummary
 			switch benchConfig.Report.Input {
 			case "playwright":
-				suiteRunSummary, err = playwright.ParseJsonOutput(input)
+				suiteRunSummary, err = playwright.ParseJsonOutput(log, input)
 				if err != nil {
 					return fmt.Errorf("parsing playwright json input %w", err)
 				}
