@@ -1,6 +1,7 @@
 package playwright
 
 import (
+	"log/slog"
 	"os"
 	"testing"
 	"time"
@@ -308,7 +309,7 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 				t.Fatalf("failed reading file: %s", err)
 			}
 
-			summary, err := ParseJsonOutput(file)
+			summary, err := ParseJsonOutput(&slog.Logger{}, file)
 			if err != nil {
 				t.Fatalf("failed parsing json file: %s", err)
 			}

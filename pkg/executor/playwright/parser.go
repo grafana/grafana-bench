@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"path"
 	"strings"
 	"time"
@@ -15,7 +16,7 @@ import (
 
 // ParseJsonOutput parses the json output from playwright --report json and returns a slice of RunSummary
 // this will work if only one test is run and the output but will also work for if this contains an entire suite
-func ParseJsonOutput(report io.Reader) (executor.SuiteRunSummary, error) {
+func ParseJsonOutput(log *slog.Logger, report io.Reader) (executor.SuiteRunSummary, error) {
 	output := PlaywrightJsonOutput{}
 
 	buf, err := io.ReadAll(report)
@@ -25,6 +26,7 @@ func ParseJsonOutput(report io.Reader) (executor.SuiteRunSummary, error) {
 
 	err = json.Unmarshal(buf, &output)
 	if err != nil {
+		log.Error("invalid json output", "jsonOutput", string(buf))
 		return executor.SuiteRunSummary{}, fmt.Errorf("parsing Playwright json summary output: %w", err)
 	}
 
@@ -37,7 +39,7 @@ func ParseJsonOutput(report io.Reader) (executor.SuiteRunSummary, error) {
 	testRuns := parseSuites(output.Suites, testDirs, nil)
 
 	totalTestAmount := int32(output.Stats.Unexpected) + int32(output.Stats.Expected)
-	var suiteStatus executor.SuiteStatus = executor.SuitePassed
+	suiteStatus := executor.SuitePassed
 	if output.Stats.Unexpected > 0 {
 		suiteStatus = executor.SuiteFailed
 	}

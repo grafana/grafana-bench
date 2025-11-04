@@ -281,7 +281,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				testEnvVars,
 			)
 			if err != nil {
-				return fmt.Errorf("executing test suite run %w", err)
+				return fmt.Errorf("executing test suite run: %w", err)
 			}
 
 			runMetrics, err := benchConfig.GetRunMetrics(log)
