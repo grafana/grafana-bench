@@ -29,7 +29,7 @@ jobs:
       - name: Setup Grafana Bench
         uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@v1
         with:
-          version: 'v0.6.4'
+          version: 'v0.6.5'
       
       - name: Run K6 API Tests
         run: |
@@ -53,7 +53,7 @@ jobs:
 
 | Input | Description | Required | Default |
 |-------|-------------|----------|---------|
-| `version` | Version to install (e.g., `v0.6.4`) | Yes | N/A |
+| `version` | Version to install (e.g., `v0.6.5`) | Yes | N/A |
 
 ### Platform Support
 
@@ -96,7 +96,7 @@ This allows your CI workflows to handle test failures differently from internal 
 - name: Setup Grafana Bench
   uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@v1
   with:
-    version: 'v0.6.4'
+    version: 'v0.6.5'
 
 - name: Run Go tests with bench reporter
   run: |
@@ -114,7 +114,7 @@ This allows your CI workflows to handle test failures differently from internal 
     docker run --rm \
       --network=host \
       --volume="./:/tests/" \
-      us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.6.4 test \
+      us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.6.5 test \
       --test-runner playwright \
       --grafana-url "http://localhost:3000"
 ```
@@ -151,7 +151,7 @@ jobs:
             --network=host \
             --volume="./CI/:/tests/CI/" \
 
-            us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.6.4 test \
+            us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.6.5 test \
             --grafana-url "http://localhost:3000" \
             --grafana-admin-user "admin" \
             --grafana-admin-password "admin" \
@@ -224,7 +224,7 @@ jobs:
           docker run --rm \
             --network=host \
             --volume="./:/tests/" \
-            us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.6.4 test \
+            us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.6.5 test \
             --test-runner "playwright" \
             --test-suite-base "/tests/" \
             --grafana-url "http://localhost:3000" \
