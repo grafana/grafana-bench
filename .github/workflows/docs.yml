@@ -34,7 +34,7 @@ jobs:
           go-version-file: go.mod
 
       - name: Generate documentation
-        run: go run ./gendoc -o docs
+        run: go run ./generators/doc -o docs
 
       - name: Create suggestions
         id: create-suggestions
@@ -86,7 +86,7 @@ jobs:
               "Changes to `cmd/` require documentation updates. Please run:",
               "",
               "```bash",
-              "go run ./gendoc -o docs",
+              "go run ./generators/doc -o docs",
               "```",
               "",
               "<details>",
@@ -112,7 +112,7 @@ jobs:
         id: check-docs
         if: steps.create-suggestions.outputs.docs-needed == 'true'
         run: |
-          echo "Documentation update required. Please run: go run ./gendoc -o docs"
+          echo "Documentation update required. Please run: go run ./generators/doc -o docs"
           exit 1
 
   publish-to-enghub:

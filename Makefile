@@ -10,7 +10,7 @@ SLIM_PROD_TAG = grafana-bench:$(BENCH_REVISION)
 PLAYWRIGHT_DEV_TAG = grafana-bench-playwright:dev-$(BENCH_REVISION)
 PLAYWRIGHT_PROD_TAG = grafana-bench-playwright:$(BENCH_REVISION)
 
-.PHONY: build-all build-slim-dev build-slim-prod build-playwright-dev build-playwright-prod test docs clean help
+.PHONY: build-all build-slim-dev build-slim-prod build-playwright-dev build-playwright-prod test docs libsonnet clean help
 
 # Build all images
 build-all: build-slim-dev build-slim-prod build-playwright-dev build-playwright-prod
@@ -48,7 +48,12 @@ test:
 # Generate documentation
 docs:
 	@echo "📚 Generating documentation..."
-	go run ./gendoc -o docs
+	go run ./generators/doc -o docs
+
+# Generate libsonnet library
+libsonnet:
+	@echo "🔧 Generating libsonnet library..."
+	go run ./generators/libsonnet -o libsonnet
 
 # Clean up all built images
 clean:
@@ -79,6 +84,7 @@ help:
 	@echo "  build-playwright-prod - Build playwright production image"
 	@echo "  test                - Run all tests including integration tests"
 	@echo "  docs                - Generate documentation"
+	@echo "  libsonnet           - Generate libsonnet library"
 	@echo "  sizes               - Show image sizes"
 	@echo "  list                - List all built images"
 	@echo "  clean               - Remove all built images"

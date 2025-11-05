@@ -45,6 +45,10 @@ terraform/
 
 # don't add app-sdk generated
 local/generated
+
+# generated libsonnet files
+generated/
+libsonnet/
 vendor/
 plugin/node_modules/
 

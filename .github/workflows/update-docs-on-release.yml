@@ -24,16 +24,19 @@ jobs:
           cache: false
 
       - name: Generate updated documentation
-        run: go run ./gendoc -o docs
+        run: go run ./generators/doc -o docs
+
+      - name: Generate libsonnet library
+        run: go run ./generators/libsonnet -o libsonnet
 
       - name: Check for changes
         id: check-changes
         run: |
-          if git diff --quiet docs/; then
-            echo "No documentation changes needed"
+          if git diff --quiet docs/ libsonnet/; then
+            echo "No documentation or libsonnet changes needed"
             echo "has_changes=false" >> $GITHUB_OUTPUT
           else
-            echo "Documentation changes detected"
+            echo "Documentation or libsonnet changes detected"
             echo "has_changes=true" >> $GITHUB_OUTPUT
           fi
 
@@ -91,19 +94,22 @@ jobs:
         with:
           base: main
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "docs: update documentation for ${{ steps.get-info.outputs.version }}"
-          title: "📚 Update documentation for ${{ steps.get-info.outputs.version }}"
+          commit-message: "docs: update documentation and libsonnet for ${{ steps.get-info.outputs.version }}"
+          title: "📚 Update documentation and libsonnet for ${{ steps.get-info.outputs.version }}"
           body: |
-            ## 📚 Documentation Update for ${{ steps.get-info.outputs.version }}
+            ## 📚 Documentation and Libsonnet Update for ${{ steps.get-info.outputs.version }}
             
-            This PR updates the documentation to reflect the new version ${{ steps.get-info.outputs.version }}.
+            This PR updates the documentation and generates the libsonnet library for the new version ${{ steps.get-info.outputs.version }}.
             
             ### Changes
             - Updated CLI command documentation
             - Updated version references across all docs
             - Updated Docker image tags in examples
+            - Generated versioned libsonnet library for deployment_tools
             
-            Generated automatically by `go run ./gendoc -o docs`
+            Generated automatically by:
+            - `go run ./generators/doc -o docs`
+            - `go run ./generators/libsonnet -o libsonnet`
             
             🤖 This PR was created automatically when version ${{ steps.get-info.outputs.version }} was released.
             
