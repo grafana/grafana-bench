@@ -23,8 +23,8 @@ local base = (import './_base.libsonnet');
 local templates = (import '../utils/templates.libsonnet');
 local versionComparisons = import '../../infra-utils/version_comparisons.libsonnet';
 local url = import 'github.com/jsonnet-libs/xtd/url.libsonnet';
-local benchImage = 'us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench';
-local benchPlaywrightImage = 'us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench-playwright';
+local benchImage = '{{.BaseImageURL}}';
+local benchPlaywrightImage = '{{.PlaywrightImageURL}}';
 
 // Generated from bench {{.Version}} CLI flags
 function(name) base(name, templates.bench_test.name) {
@@ -103,17 +103,23 @@ type FlagInfo struct {
 }
 
 type TemplateData struct {
-	Version      string
-	SuiteOptions string
-	ScriptFlags  string
+	Version            string
+	SuiteOptions       string
+	ScriptFlags        string
+	BaseImageURL       string
+	PlaywrightImageURL string
 }
 
 func main() {
 	var outputPath string
 	var version string
+	var baseImageURL string
+	var playwrightImageURL string
 	
 	flag.StringVar(&outputPath, "o", "", "output directory for generated libsonnet")
 	flag.StringVar(&version, "version", "", "version to pin in the generated library")
+	flag.StringVar(&baseImageURL, "base-image", "us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench", "base bench image URL")
+	flag.StringVar(&playwrightImageURL, "playwright-image", "us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench-playwright", "playwright bench image URL")
 	flag.Parse()
 
 	if outputPath == "" {
@@ -147,9 +153,11 @@ func main() {
 	
 	// Generate template data
 	data := TemplateData{
-		Version:      version,
-		SuiteOptions: generateSuiteOptions(flags),
-		ScriptFlags:  generateScriptFlags(flags),
+		Version:            version,
+		SuiteOptions:       generateSuiteOptions(flags),
+		ScriptFlags:        generateScriptFlags(flags),
+		BaseImageURL:       baseImageURL,
+		PlaywrightImageURL: playwrightImageURL,
 	}
 	
 	// Generate libsonnet

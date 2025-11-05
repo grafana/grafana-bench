@@ -184,13 +184,15 @@ jobs:
       id-token: write
     uses: ./.github/workflows/update-libsonnet.yml
     with:
-      version: "experimental"
+      version: "dev-latest"
       target_dir: "bench/experimental"
       branch_prefix: "bench-libsonnet-experimental"
       pr_title: "[Experimental] Update experimental bench libsonnet"
       pr_message: "Update experimental bench libsonnet from main branch\\n\\nThis PR updates the experimental bench libsonnet library with the latest changes from the main branch.\\n\\nChanges:\\n- Update ksonnet/lib/argo-workflows-util/common-steps/bench/experimental/bench.libsonnet\\n\\n⚠️ This is an experimental version - use for testing only.\\n\\nImport with:\\n```jsonnet\\nlocal bench = import 'argo-workflows-util/common-steps/bench/experimental/bench.libsonnet';\\n```"
       commit_message: "Update bench experimental libsonnet from main\\n\\nThis commit updates the experimental bench libsonnet library with the latest changes.\\n\\nGenerated automatically from bench CLI flags."
       download_url: "https://raw.githubusercontent.com/grafana/grafana-bench/main/libsonnet/bench.libsonnet"
+      base_image_url: "us-docker.pkg.dev/grafanalabs-dev/docker-grafana-bench-dev/grafana-bench"
+      playwright_image_url: "us-docker.pkg.dev/grafanalabs-dev/docker-grafana-bench-dev/grafana-bench-playwright"
 
   update-versioned-libsonnet:
     needs: [build-base-image, build-playwright-image]
