@@ -90,7 +90,9 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 	// e.g yarn run test --reporter json tests/
 	// set the output
 	playwrightEnv["PLAYWRIGHT_JSON_OUTPUT_NAME"] = jsonOutput.Name()
+	t.Log.Debug("playwright output file", "PLAYWRIGHT_JSON_OUTPUT_NAME", jsonOutput.Name())
 	executeCmd := fmt.Sprintf("%s --reporter=json %s", t.ExecuteCmd, suite.Path)
+	t.Log.Debug("playwright command", "cmd", executeCmd)
 
 	if err := t.executeCommand(filepath.Join(suite.BaseDir, suite.Path), playwrightEnv, executeCmd); err != nil {
 		// we can't tell if there was a error executing the test or the test command was wrong (e.g. misspelled)
@@ -100,6 +102,11 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 		if errStat != nil || reportInfo.Size() == 0 {
 			return executor.SuiteRunSummary{}, fmt.Errorf("error executing tests: %w", err)
 		}
+	}
+
+	if t.Log.Enabled(context.TODO(), slog.LevelDebug) {
+		reportInfo, errStat := os.Stat(jsonOutput.Name())
+		t.Log.Debug("playwright file size", "name", reportInfo.Name, "fileSizeBytes", reportInfo.Size(), "errStat", errStat)
 	}
 
 	//parse output or report any problem
