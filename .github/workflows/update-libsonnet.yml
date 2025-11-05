@@ -49,9 +49,11 @@ jobs:
           cache: false
 
       - name: Generate libsonnet
+        env:
+          VERSION: ${{ inputs.version }}
         run: |
-          go run ./generators/libsonnet -version ${{ inputs.version }} -o libsonnet
-          echo "Generated libsonnet for version ${{ inputs.version }}"
+          go run ./generators/libsonnet -version "${VERSION}" -o libsonnet
+          echo "Generated libsonnet for version ${VERSION}"
 
       - name: Get Vault secrets for deployment_tools access
         uses: grafana/shared-workflows/actions/get-vault-secrets@ae92934a14a48b94494dbc06d74a81d47fe08a40
@@ -67,33 +69,41 @@ jobs:
           environment: prod
 
       - name: Update deployment_tools with libsonnet
+        env:
+          VERSION: ${{ inputs.version }}
+          TARGET_DIR: ${{ inputs.target_dir }}
+          BRANCH_PREFIX: ${{ inputs.branch_prefix }}
+          PR_TITLE: ${{ inputs.pr_title }}
+          PR_MESSAGE: ${{ inputs.pr_message }}
+          COMMIT_MESSAGE: ${{ inputs.commit_message }}
+          DOWNLOAD_URL: ${{ inputs.download_url }}
         run: |
           set -euo pipefail
           
           # Pull the updater Docker image
           docker pull us-docker.pkg.dev/grafanalabs-global/docker-deployment-tools-prod/updater
           
-          # Create config.json for libsonnet update
+          # Create config.json for libsonnet update using environment variables
           cat << EOF > config.json
           {
             "repo_owner": "grafana",
             "repo_name": "deployment_tools", 
             "destination_branch": "master",
             "pull_request_enabled": true,
-            "pull_request_branch_prefix": "${{ inputs.branch_prefix }}",
+            "pull_request_branch_prefix": "${BRANCH_PREFIX}",
             "pull_request_existing_strategy": "ignore",
-            "pull_request_title": "${{ inputs.pr_title }}",
-            "pull_request_message": "${{ inputs.pr_message }}",
+            "pull_request_title": "${PR_TITLE}",
+            "pull_request_message": "${PR_MESSAGE}",
             "pull_request_reviewers": [],
-            "commit_message": "${{ inputs.commit_message }}",
+            "commit_message": "${COMMIT_MESSAGE}",
             "pre_update_commands": [
               {
                 "description": "Create directory structure for bench libsonnet",
-                "command": "mkdir -p ksonnet/lib/argo-workflows-util/common-steps/${{ inputs.target_dir }}"
+                "command": "mkdir -p ksonnet/lib/argo-workflows-util/common-steps/${TARGET_DIR}"
               },
               {
                 "description": "Download generated libsonnet from bench repo",
-                "command": "curl -f -L -o ksonnet/lib/argo-workflows-util/common-steps/${{ inputs.target_dir }}/bench.libsonnet '${{ inputs.download_url }}'"
+                "command": "curl -f -L -o ksonnet/lib/argo-workflows-util/common-steps/${TARGET_DIR}/bench.libsonnet '${DOWNLOAD_URL}'"
               }
             ]
           }
@@ -107,4 +117,4 @@ jobs:
             -e CONFIG_JSON="$(cat config.json)" \
             us-docker.pkg.dev/grafanalabs-global/docker-deployment-tools-prod/updater |& tee updater-output.log
 
-          echo "Libsonnet update completed for ${{ inputs.version }}!"
+          echo "Libsonnet update completed for ${VERSION}!"
