@@ -1,0 +1,132 @@
+name: Update bench libsonnet
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: 'Version to use ("experimental" for main branch or actual version like "v1.2.3")'
+        required: true
+        type: string
+      target_dir:
+        description: 'Target directory in deployment_tools (e.g. "bench/v1.2.3" or "bench/experimental")'
+        required: true
+        type: string
+      branch_prefix:
+        description: 'PR branch prefix'
+        required: true
+        type: string
+      pr_title:
+        description: 'Pull request title'
+        required: true
+        type: string
+      pr_message:
+        description: 'Pull request message'
+        required: true
+        type: string
+      commit_message:
+        description: 'Commit message'
+        required: true
+        type: string
+      download_url:
+        description: 'URL to download libsonnet from'
+        required: true
+        type: string
+      base_image_url:
+        description: 'Base bench image URL'
+        required: false
+        type: string
+        default: 'us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench'
+      playwright_image_url:
+        description: 'Playwright bench image URL'
+        required: false
+        type: string
+        default: 'us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench-playwright'
+
+jobs:
+  update-libsonnet:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Generate libsonnet
+        env:
+          VERSION: ${{ inputs.version }}
+          BASE_IMAGE_URL: ${{ inputs.base_image_url || 'us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench' }}
+          PLAYWRIGHT_IMAGE_URL: ${{ inputs.playwright_image_url || 'us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench-playwright' }}
+        run: |
+          go run ./generators/libsonnet -version "${VERSION}" -base-image "${BASE_IMAGE_URL}" -playwright-image "${PLAYWRIGHT_IMAGE_URL}" -o libsonnet
+          echo "Generated libsonnet for version ${VERSION}"
+
+      - name: Get Vault secrets for deployment_tools access
+        uses: grafana/shared-workflows/actions/get-vault-secrets@ae92934a14a48b94494dbc06d74a81d47fe08a40
+        with:
+          common_secrets: |
+            GITHUB_APP_ID=updater-app:app-id
+            GITHUB_APP_INSTALLATION_ID=updater-app:app-installation-id
+            GITHUB_APP_PRIVATE_KEY=updater-app:private-key
+
+      - name: Authenticate with GAR for updater Docker image
+        uses: grafana/shared-workflows/actions/login-to-gar@ae92934a14a48b94494dbc06d74a81d47fe08a40
+        with:
+          environment: prod
+
+      - name: Update deployment_tools with libsonnet
+        env:
+          VERSION: ${{ inputs.version }}
+          TARGET_DIR: ${{ inputs.target_dir }}
+          BRANCH_PREFIX: ${{ inputs.branch_prefix }}
+          PR_TITLE: ${{ inputs.pr_title }}
+          PR_MESSAGE: ${{ inputs.pr_message }}
+          COMMIT_MESSAGE: ${{ inputs.commit_message }}
+          DOWNLOAD_URL: ${{ inputs.download_url }}
+        run: |
+          set -euo pipefail
+          
+          # Pull the updater Docker image
+          docker pull us-docker.pkg.dev/grafanalabs-global/docker-deployment-tools-prod/updater
+          
+          # Create config.json for libsonnet update using environment variables
+          cat << EOF > config.json
+          {
+            "repo_owner": "grafana",
+            "repo_name": "deployment_tools", 
+            "destination_branch": "master",
+            "pull_request_enabled": true,
+            "pull_request_branch_prefix": "${BRANCH_PREFIX}",
+            "pull_request_existing_strategy": "ignore",
+            "pull_request_title": "${PR_TITLE}",
+            "pull_request_message": "${PR_MESSAGE}",
+            "pull_request_reviewers": [],
+            "commit_message": "${COMMIT_MESSAGE}",
+            "pre_update_commands": [
+              {
+                "description": "Create directory structure for bench libsonnet",
+                "command": "mkdir -p ksonnet/lib/argo-workflows-util/common-steps/${TARGET_DIR}"
+              },
+              {
+                "description": "Download generated libsonnet from bench repo",
+                "command": "curl -f -L -o ksonnet/lib/argo-workflows-util/common-steps/${TARGET_DIR}/bench.libsonnet '${DOWNLOAD_URL}'"
+              }
+            ]
+          }
+          EOF
+
+          # Run the Docker-based updater tool
+          docker run --rm \
+            -e GITHUB_APP_ID="$GITHUB_APP_ID" \
+            -e GITHUB_APP_INSTALLATION_ID="$GITHUB_APP_INSTALLATION_ID" \
+            -e GITHUB_APP_PRIVATE_KEY="$GITHUB_APP_PRIVATE_KEY" \
+            -e CONFIG_JSON="$(cat config.json)" \
+            us-docker.pkg.dev/grafanalabs-global/docker-deployment-tools-prod/updater |& tee updater-output.log
+
+          echo "Libsonnet update completed for ${VERSION}!"

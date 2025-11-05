@@ -1,13 +1,7 @@
 # ignore directory where we're doing all the work and setting stuff up
-!work/grafanaTemplate/
-work
-creds/*
-scratch
-grafana-bench.tar.gz
 .env*
 .DS_Store
-test-repo/**
-infra_back
+scratch/
 
 CI/**/test-results
 CI/**/node_modules
@@ -27,24 +21,9 @@ CI/playwright/playwright
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
-# Dependency directories (remove the comment below to include it)
-# vendor/
-
-# don't keep GCP keys
-creds/**
-infra/simulation_service_account_key.json
-GCP-*
-custom.ini
-
-# don't keep anything in the test results output
-summary/*
-*.tfstate
-*.tfstate.backup
-infra/.terraform/providers
-terraform/
-
-# don't add app-sdk generated
-local/generated
+# generated libsonnet files
+libsonnet/
+!generators/**
 vendor/
 plugin/node_modules/
 
