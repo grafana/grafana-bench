@@ -10,7 +10,7 @@ SLIM_PROD_TAG = grafana-bench:$(BENCH_REVISION)
 PLAYWRIGHT_DEV_TAG = grafana-bench-playwright:dev-$(BENCH_REVISION)
 PLAYWRIGHT_PROD_TAG = grafana-bench-playwright:$(BENCH_REVISION)
 
-.PHONY: build-all build-slim-dev build-slim-prod build-playwright-dev build-playwright-prod test docs libsonnet clean help
+.PHONY: build-all build-slim-dev build-slim-prod build-playwright-dev build-playwright-prod test docs libsonnet install-deps clean help
 
 # Build all images
 build-all: build-slim-dev build-slim-prod build-playwright-dev build-playwright-prod
@@ -55,6 +55,23 @@ libsonnet:
 	@echo "🔧 Generating libsonnet library..."
 	go run ./generators/libsonnet -o libsonnet
 
+# Install development dependencies
+install-deps:
+	@echo "📦 Installing development dependencies..."
+	@echo "Installing jsonnetfmt..."
+	@if ! command -v jsonnetfmt >/dev/null 2>&1; then \
+		if command -v go >/dev/null 2>&1; then \
+			echo "  Installing via go install..."; \
+			go install github.com/google/go-jsonnet/cmd/jsonnetfmt@latest; \
+		else \
+			echo "❌ Go not found. Please install Go first or install jsonnetfmt manually."; \
+			exit 1; \
+		fi; \
+	else \
+		echo "✅ jsonnetfmt already installed"; \
+	fi
+	@echo "✅ All dependencies installed"
+
 # Clean up all built images
 clean:
 	@echo "🧹 Cleaning up images..."
@@ -85,6 +102,7 @@ help:
 	@echo "  test                - Run all tests including integration tests"
 	@echo "  docs                - Generate documentation"
 	@echo "  libsonnet           - Generate libsonnet library"
+	@echo "  install-deps        - Install development dependencies (jsonnetfmt, etc.)"
 	@echo "  sizes               - Show image sizes"
 	@echo "  list                - List all built images"
 	@echo "  clean               - Remove all built images"
