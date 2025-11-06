@@ -77,8 +77,6 @@ jobs:
 
       - name: Authenticate with GAR for updater Docker image
         uses: grafana/shared-workflows/actions/login-to-gar@ae92934a14a48b94494dbc06d74a81d47fe08a40
-        with:
-          environment: prod
 
       - name: Update deployment_tools with libsonnet
         env:
