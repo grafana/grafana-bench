@@ -104,7 +104,7 @@ jobs:
             "pull_request_existing_strategy": "ignore",
             "pull_request_title": "${PR_TITLE}",
             "pull_request_message": "${PR_MESSAGE}",
-            "pull_request_reviewers": [],
+            "pull_request_reviewers": ["@grafana/grafana-developer-enablement-squad"],
             "commit_message": "${COMMIT_MESSAGE}",
             "pre_update_commands": [
               {
