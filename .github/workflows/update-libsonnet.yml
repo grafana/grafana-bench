@@ -109,6 +109,7 @@ jobs:
           PR_MESSAGE: ${{ inputs.pr_message }}
           COMMIT_MESSAGE: ${{ inputs.commit_message }}
           DOWNLOAD_URL: ${{ inputs.download_url }}
+          PR_REVIEWER: ${{ github.actor }}
         run: |
           set -euo pipefail
           
@@ -126,7 +127,7 @@ jobs:
             "pull_request_existing_strategy": "ignore",
             "pull_request_title": "${PR_TITLE}",
             "pull_request_message": "${PR_MESSAGE}",
-            "pull_request_reviewers": ["${{ github.actor }}"],
+            "pull_request_reviewers": ["${PR_REVIEWER}"],
             "commit_message": "${COMMIT_MESSAGE}",
             "pre_update_commands": [
               {
