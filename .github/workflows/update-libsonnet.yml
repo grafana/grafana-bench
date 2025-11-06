@@ -116,7 +116,7 @@ jobs:
               },
               {
                 "description": "Download generated libsonnet from bench repo",
-                "command": "curl -f -L -o ksonnet/lib/argo-workflows-util/common-steps/${TARGET_DIR}/bench.libsonnet '${DOWNLOAD_URL}'"
+                "command": "wget -O ksonnet/lib/argo-workflows-util/common-steps/${TARGET_DIR}/bench.libsonnet '${DOWNLOAD_URL}'"
               }
             ]
           }
