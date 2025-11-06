@@ -474,9 +474,7 @@ func formatLibsonnet(filename string) error {
 	// Check if jsonnetfmt is available
 	_, err := exec.LookPath("jsonnetfmt")
 	if err != nil {
-		fmt.Printf("Warning: jsonnetfmt not available, skipping formatting: %v\n", err)
-		fmt.Printf("To install jsonnetfmt, run: make install-deps\n")
-		return nil // Don't fail if formatter is not available
+		return fmt.Errorf("jsonnetfmt not found: %w\n\nTo install jsonnetfmt, run: make install-deps", err)
 	}
 	
 	// Use jsonnetfmt -i to format in place, same as deployment_tools
