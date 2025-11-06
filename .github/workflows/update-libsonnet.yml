@@ -116,6 +116,13 @@ jobs:
           # Pull the updater Docker image
           docker pull us-docker.pkg.dev/grafanalabs-global/docker-deployment-tools-prod/updater
           
+          # Debug environment variables
+          echo "=== Debug Information ==="
+          echo "PR_REVIEWER: ${PR_REVIEWER}"
+          echo "VERSION: ${VERSION}"
+          echo "TARGET_DIR: ${TARGET_DIR}"
+          echo "=========================="
+          
           # Create config.json for libsonnet update using environment variables
           cat << EOF > config.json
           {
@@ -142,6 +149,11 @@ jobs:
             ]
           }
           EOF
+          
+          # Show the generated config for debugging
+          echo "=== Generated config.json ==="
+          cat config.json
+          echo "============================="
 
           # Run the Docker-based updater tool
           docker run --rm \
