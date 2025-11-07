@@ -21,7 +21,6 @@ import (
 const libsonnetTemplate = `local argo_workflows = (import 'argo-workflows-libsonnet/main.libsonnet').workflow.v1alpha1;
 local base = (import './_base.libsonnet');
 local templates = (import '../utils/templates.libsonnet');
-local versionComparisons = import '../../infra-utils/version_comparisons.libsonnet';
 local url = import 'github.com/jsonnet-libs/xtd/url.libsonnet';
 local benchImage = '{{.BaseImageURL}}';
 local benchPlaywrightImage = '{{.PlaywrightImageURL}}';
@@ -72,19 +71,12 @@ function(name) base(name, templates.bench_test.name) {
     local script = [
 {{.ScriptFlags}}
 
-    // Helper function to select the appropriate image based on version and test runner
+    // Helper function to select the appropriate image based on test runner
     local selectedImage =
-      local cleanVersion = if std.startsWith(bench_options.benchRevision, 'v')
-      then std.substr(bench_options.benchRevision, 1, std.length(bench_options.benchRevision) - 1)
-      else bench_options.benchRevision;
-
-      if versionComparisons.majorMinor.lessThan(cleanVersion, '0.6.0') then
-        benchImage
+      if bench_options.testRunner == 'playwright' then
+        benchPlaywrightImage
       else
-        if bench_options.testRunner == 'playwright' then
-          benchPlaywrightImage
-        else
-          benchImage,
+        benchImage,
 
     parameters+: {
       script: std.join(' ', script),
@@ -474,9 +466,7 @@ func formatLibsonnet(filename string) error {
 	// Check if jsonnetfmt is available
 	_, err := exec.LookPath("jsonnetfmt")
 	if err != nil {
-		fmt.Printf("Warning: jsonnetfmt not available, skipping formatting: %v\n", err)
-		fmt.Printf("To install jsonnetfmt, run: make install-deps\n")
-		return nil // Don't fail if formatter is not available
+		return fmt.Errorf("jsonnetfmt not found: %w\n\nTo install jsonnetfmt, run: make install-deps", err)
 	}
 	
 	// Use jsonnetfmt -i to format in place, same as deployment_tools

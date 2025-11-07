@@ -58,6 +58,10 @@ jobs:
           go-version-file: go.mod
           cache: false
 
+      - name: Install jsonnetfmt
+        run: |
+          go install github.com/google/go-jsonnet/cmd/jsonnetfmt@latest
+
       - name: Generate libsonnet
         env:
           VERSION: ${{ inputs.version }}
@@ -66,6 +70,21 @@ jobs:
         run: |
           go run ./generators/libsonnet -version "${VERSION}" -base-image "${BASE_IMAGE_URL}" -playwright-image "${PLAYWRIGHT_IMAGE_URL}" -o libsonnet
           echo "Generated libsonnet for version ${VERSION}"
+
+      - name: Prepare libsonnet for deployment
+        env:
+          VERSION: ${{ inputs.version }}
+          DOWNLOAD_URL: ${{ inputs.download_url }}
+        run: |
+          mkdir -p deployment-libsonnet
+          if [ "${VERSION}" = "experimental" ] || [ "${VERSION}" = "dev-latest" ]; then
+            echo "Using locally generated libsonnet"
+            cp libsonnet/bench.libsonnet deployment-libsonnet/bench.libsonnet
+          else
+            echo "Downloading libsonnet from: ${DOWNLOAD_URL}"
+            curl -f -L -o deployment-libsonnet/bench.libsonnet "${DOWNLOAD_URL}"
+          fi
+          echo "Libsonnet ready for deployment"
 
       - name: Get Vault secrets for deployment_tools access
         uses: grafana/shared-workflows/actions/get-vault-secrets@ae92934a14a48b94494dbc06d74a81d47fe08a40
@@ -78,7 +97,7 @@ jobs:
       - name: Authenticate with GAR for updater Docker image
         uses: grafana/shared-workflows/actions/login-to-gar@ae92934a14a48b94494dbc06d74a81d47fe08a40
         with:
-          environment: prod
+          registry: us-docker.pkg.dev
 
       - name: Update deployment_tools with libsonnet
         env:
@@ -89,6 +108,7 @@ jobs:
           PR_MESSAGE: ${{ inputs.pr_message }}
           COMMIT_MESSAGE: ${{ inputs.commit_message }}
           DOWNLOAD_URL: ${{ inputs.download_url }}
+          PR_REVIEWER: ${{ github.actor }}
         run: |
           set -euo pipefail
           
@@ -106,7 +126,8 @@ jobs:
             "pull_request_existing_strategy": "ignore",
             "pull_request_title": "${PR_TITLE}",
             "pull_request_message": "${PR_MESSAGE}",
-            "pull_request_reviewers": [],
+            "pull_request_reviewers": ["${PR_REVIEWER}"],
+            "pull_request_assignees": ["${PR_REVIEWER}"],
             "commit_message": "${COMMIT_MESSAGE}",
             "pre_update_commands": [
               {
@@ -114,8 +135,8 @@ jobs:
                 "command": "mkdir -p ksonnet/lib/argo-workflows-util/common-steps/${TARGET_DIR}"
               },
               {
-                "description": "Download generated libsonnet from bench repo",
-                "command": "curl -f -L -o ksonnet/lib/argo-workflows-util/common-steps/${TARGET_DIR}/bench.libsonnet '${DOWNLOAD_URL}'"
+                "description": "Copy libsonnet from mounted volume",
+                "command": "cp /workspace/libsonnet/bench.libsonnet ksonnet/lib/argo-workflows-util/common-steps/${TARGET_DIR}/bench.libsonnet"
               }
             ]
           }
@@ -123,6 +144,7 @@ jobs:
 
           # Run the Docker-based updater tool
           docker run --rm \
+            -v "$(pwd)/deployment-libsonnet:/workspace/libsonnet:ro" \
             -e GITHUB_APP_ID="$GITHUB_APP_ID" \
             -e GITHUB_APP_INSTALLATION_ID="$GITHUB_APP_INSTALLATION_ID" \
             -e GITHUB_APP_PRIVATE_KEY="$GITHUB_APP_PRIVATE_KEY" \
