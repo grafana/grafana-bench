@@ -72,6 +72,9 @@ jobs:
       - name: Build bench
         run: go build -o bench bench.go
 
+      - name: Install development dependencies
+        run: make install-deps
+
       - name: Wait for Grafana to be ready
         run: |
           echo "Waiting for Grafana to be fully ready..."
