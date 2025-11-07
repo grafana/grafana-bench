@@ -61,9 +61,9 @@ func TestLibsonnetConversion(t *testing.T) {
 }
 
 func generateLibsonnet(outputPath string) error {
-	// Run the main libsonnet generator with custom output path
+	// Run the main libsonnet generator with custom output path and test version
 	outputDir := filepath.Dir(outputPath)
-	cmd := exec.Command("go", "run", "main.go", "-o", outputDir)
+	cmd := exec.Command("go", "run", "main.go", "-o", outputDir, "-version", "v1.0.0-test")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("libsonnet generation failed: %v\nOutput: %s", err, string(output))
