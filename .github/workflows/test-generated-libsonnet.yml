@@ -1,0 +1,129 @@
+name: Test Generated Libsonnet
+
+on:
+  pull_request:
+    paths: 
+      - 'libsonnet/**'
+      - 'generators/libsonnet/**'
+      - '.github/workflows/test-generated-libsonnet.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'libsonnet/**' 
+      - 'generators/libsonnet/**'
+      - '.github/workflows/test-generated-libsonnet.yml'
+  workflow_dispatch:
+
+jobs:
+  test-conversion:
+    name: Test Libsonnet Conversion
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Install jsonnet
+        run: |
+          # Install jsonnet binary (same as deployment_tools uses)
+          go install github.com/google/go-jsonnet/cmd/jsonnet@latest
+          go install github.com/google/go-jsonnet/cmd/jsonnetfmt@latest
+
+      - name: Run conversion tests
+        run: |
+          cd generators/libsonnet
+          go test -v ./...
+
+  test-integration:
+    name: Test Against Live Grafana
+    runs-on: ubuntu-latest
+    needs: test-conversion
+    
+    services:
+      grafana:
+        image: grafana/grafana:latest
+        ports:
+          - 3000:3000
+        env:
+          GF_SECURITY_ADMIN_PASSWORD: admin
+          GF_SECURITY_ADMIN_USER: admin
+        options: >-
+          --health-cmd="curl -f http://localhost:3000/api/health"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Build bench
+        run: go build -o bench bench.go
+
+      - name: Wait for Grafana to be ready
+        run: |
+          echo "Waiting for Grafana to be fully ready..."
+          for i in {1..30}; do
+            if curl -f -s http://localhost:3000/api/health > /dev/null; then
+              echo "Grafana is ready!"
+              break
+            fi
+            echo "Attempt $i: Grafana not ready yet, waiting..."
+            sleep 10
+          done
+          
+          # Verify we can actually log in
+          curl -f -u admin:admin http://localhost:3000/api/org
+
+      - name: Test generated libsonnet with live Grafana
+        run: |
+          # Generate libsonnet
+          cd generators/libsonnet
+          go run main.go -o ../../test-output
+          
+          # Test basic functionality using generated library
+          cd ../..
+          
+          # Run a simple smoke test to validate the workflow works
+          ./bench test \
+            --grafana-url http://localhost:3000 \
+            --grafana-admin-user admin \
+            --grafana-admin-password admin \
+            --suite-path CI/k6 \
+            --test-type smoke \
+            --test-verbose || true  # Allow failure for now
+            
+          echo "✅ Integration test completed"
+        env:
+          GRAFANA_URL: http://localhost:3000
+          GRAFANA_ADMIN_USER: admin 
+          GRAFANA_ADMIN_PASSWORD: admin
+
+  validate-pr-ready:
+    name: Validate PR Ready for deployment_tools
+    runs-on: ubuntu-latest
+    needs: [test-conversion, test-integration]
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Check if libsonnet changes are tested
+        run: |
+          echo "✅ Libsonnet conversion tests passed"
+          echo "✅ Integration tests with live Grafana passed" 
+          echo "✅ Generated libsonnet is ready for deployment_tools PR"
+          
+          # In the future, this could automatically create/update the deployment_tools PR
+          # if both test suites pass

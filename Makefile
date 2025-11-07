@@ -58,10 +58,22 @@ libsonnet:
 # Install development dependencies
 install-deps:
 	@echo "📦 Installing development dependencies..."
+	@echo "Installing jsonnet..."
+	@if ! command -v jsonnet >/dev/null 2>&1; then \
+		if command -v go >/dev/null 2>&1; then \
+			echo "  Installing jsonnet via go install..."; \
+			go install github.com/google/go-jsonnet/cmd/jsonnet@latest; \
+		else \
+			echo "❌ Go not found. Please install Go first or install jsonnet manually."; \
+			exit 1; \
+		fi; \
+	else \
+		echo "✅ jsonnet already installed"; \
+	fi
 	@echo "Installing jsonnetfmt..."
 	@if ! command -v jsonnetfmt >/dev/null 2>&1; then \
 		if command -v go >/dev/null 2>&1; then \
-			echo "  Installing via go install..."; \
+			echo "  Installing jsonnetfmt via go install..."; \
 			go install github.com/google/go-jsonnet/cmd/jsonnetfmt@latest; \
 		else \
 			echo "❌ Go not found. Please install Go first or install jsonnetfmt manually."; \

@@ -66,7 +66,7 @@ function(name) base(name, templates.bench_test.name) {
     envVars+: bench_options.envVars,
 
     // create list of env=$env
-    local test_env_vars = [env + '="$"' + env for env in bench_options.testEnvVars],
+    local test_env_vars = [env + '="$"' + env for env in bench_options.testEnv],
 
     local script = [
 {{.ScriptFlags}}
