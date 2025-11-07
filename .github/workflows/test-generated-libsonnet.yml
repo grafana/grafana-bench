@@ -89,9 +89,9 @@ jobs:
 
       - name: Test generated libsonnet with live Grafana
         run: |
-          # Generate libsonnet
+          # Generate libsonnet with test version
           cd generators/libsonnet
-          go run main.go -o ../../test-output
+          go run main.go -o ../../test-output -version v1.0.0-test
           
           # Test basic functionality using generated library
           cd ../..
