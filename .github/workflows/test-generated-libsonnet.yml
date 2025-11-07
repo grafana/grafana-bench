@@ -46,7 +46,7 @@ jobs:
     
     services:
       grafana:
-        image: grafana/grafana:latest
+        image: grafana/grafana:12.2.1
         ports:
           - 3000:3000
         env:
