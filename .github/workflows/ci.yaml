@@ -25,6 +25,9 @@ jobs:
 
       - uses: ./.github/actions/setup-k6
 
+      - name: Install development dependencies
+        run: make install-deps
+
       - name: Test
         run: go test -v ./...
 
