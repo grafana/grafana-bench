@@ -1,4 +1,6 @@
 name: Test Generated Libsonnet
+permissions:
+  contents: read
 
 on:
   pull_request:
