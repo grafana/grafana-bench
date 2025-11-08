@@ -106,10 +106,21 @@ jobs:
           cd generators/libsonnet
           go run main.go -o ../../test-output -version v1.0.0-test
           
-          # Copy test dependencies to test-output directory so imports work
-          echo "📋 Copying dependencies for generated libsonnet..."
+          # Copy test dependencies and fix import paths
+          echo "📋 Copying dependencies and fixing import paths..."
           cp -r deps ../../test-output/
           cd ../..
+          
+          # Rewrite import paths in the generated libsonnet to use our copied dependencies
+          sed -i "s|import '\\./_base\\.libsonnet'|import 'deps/_base.libsonnet'|g" test-output/bench.libsonnet
+          sed -i "s|import '\\.\\./utils/templates\\.libsonnet'|import 'deps/utils/templates.libsonnet'|g" test-output/bench.libsonnet
+          sed -i "s|import '\\.\\./\\.\\./infra-utils/version_comparisons\\.libsonnet'|import 'deps/infra-utils/version_comparisons.libsonnet'|g" test-output/bench.libsonnet
+          sed -i "s|import 'argo-workflows-libsonnet/main\\.libsonnet'|import 'deps/vendor/argo-workflows-libsonnet/main.libsonnet'|g" test-output/bench.libsonnet
+          sed -i "s|import 'github\\.com/jsonnet-libs/xtd/url\\.libsonnet'|import 'deps/vendor/github.com/jsonnet-libs/xtd/url.libsonnet'|g" test-output/bench.libsonnet
+          
+          # Show the rewritten imports for debugging
+          echo "🔍 Rewritten imports in generated libsonnet:"
+          head -10 test-output/bench.libsonnet
           
           # Create a test jsonnet file that uses the generated libsonnet
           echo "📝 Creating test workflow using generated libsonnet..."
