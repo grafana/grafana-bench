@@ -105,6 +105,10 @@ jobs:
           echo "🔧 Generating libsonnet..."
           cd generators/libsonnet
           go run main.go -o ../../test-output -version v1.0.0-test
+          
+          # Copy test dependencies to test-output directory so imports work
+          echo "📋 Copying dependencies for generated libsonnet..."
+          cp -r deps ../../test-output/
           cd ../..
           
           # Create a test jsonnet file that uses the generated libsonnet
