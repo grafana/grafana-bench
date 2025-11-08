@@ -3,38 +3,35 @@
 function(name, template='') {
   local this = self,
   
-  // Return a basic Argo workflow template structure
-  {
-    // Template name is required by Argo
-    name: name,
-    
-    // Use container template as default
-    container: {
-      image: '',
-      command: ['sh', '-c'],
-      args: ['echo "placeholder"'],
-    },
-    
-    // Hidden fields that generated libsonnet can access
-    template:: template,
-    
-    // Base parameters structure that matches what the generated libsonnet expects
-    parameters: {
-      script: '',
-      image: '',
-      container_patch: '{}',
-    },
-    
-    // Base environment variables array
-    envVars: [],
-    
-    // Helper methods that the generated libsonnet may call
-    withEnvVars(envVars):: self {
-      envVars+: envVars,
-    },
-    
-    withContainerImage(image):: self {
-      image: image,
-    },
-  }
+  // Template name is required by Argo
+  name: name,
+  
+  // Use container template as default
+  container: {
+    image: '',
+    command: ['sh', '-c'],
+    args: ['echo "placeholder"'],
+  },
+  
+  // Hidden fields that generated libsonnet can access
+  template:: template,
+  
+  // Base parameters structure that matches what the generated libsonnet expects
+  parameters: {
+    script: '',
+    image: '',
+    container_patch: '{}',
+  },
+  
+  // Base environment variables array
+  envVars: [],
+  
+  // Helper methods that the generated libsonnet may call
+  withEnvVars(envVars):: self {
+    envVars+: envVars,
+  },
+  
+  withContainerImage(image):: self {
+    image: image,
+  },
 }
