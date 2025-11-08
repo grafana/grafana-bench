@@ -133,7 +133,7 @@ jobs:
               namespace: 'default',
             },
             spec: {
-              entrypoint: 'bench-test',
+              entrypoint: 'bench-step',
               templates: [
                 bench('bench-step').withBenchTest('http://localhost:3000', {
                   testRunner: 'k6',
