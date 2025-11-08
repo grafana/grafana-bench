@@ -90,25 +90,62 @@ jobs:
           # Verify we can actually log in
           curl -f -u admin:admin http://localhost:3000/api/org
 
-      - name: Test generated libsonnet with live Grafana
+      - name: Test generated libsonnet end-to-end with Argo workflow validation
         run: |
+          # Install Argo Workflows CLI
+          echo "📦 Installing Argo Workflows CLI..."
+          ARGO_VERSION="v3.7.3"
+          curl -sLO "https://github.com/argoproj/argo-workflows/releases/download/${ARGO_VERSION}/argo-linux-amd64.gz"
+          gunzip argo-linux-amd64.gz
+          chmod +x argo-linux-amd64
+          sudo mv argo-linux-amd64 /usr/local/bin/argo
+          argo version --short
+          
           # Generate libsonnet with test version
+          echo "🔧 Generating libsonnet..."
           cd generators/libsonnet
           go run main.go -o ../../test-output -version v1.0.0-test
-          
-          # Test basic functionality using generated library
           cd ../..
           
-          # Run a simple smoke test to validate the workflow works
-          ./bench test \
-            --grafana-url http://localhost:3000 \
-            --grafana-admin-user admin \
-            --grafana-admin-password admin \
-            --suite-path CI/k6 \
-            --test-type smoke \
-            --test-verbose || true  # Allow failure for now
-            
-          echo "✅ Integration test completed"
+          # Create a test jsonnet file that uses the generated libsonnet
+          echo "📝 Creating test workflow using generated libsonnet..."
+          cat > test-workflow.jsonnet << 'EOF'
+          local bench = import 'test-output/bench.libsonnet';
+          
+          // Create an Argo workflow that uses the bench libsonnet
+          {
+            apiVersion: 'argoproj.io/v1alpha1',
+            kind: 'Workflow',
+            metadata: {
+              name: 'bench-smoke-test',
+              namespace: 'default',
+            },
+            spec: {
+              entrypoint: 'bench-test',
+              templates: [
+                bench('bench-step').withBenchTest('http://localhost:3000', {
+                  testRunner: 'k6',
+                  path: 'CI/k6',
+                  type: 'smoke',
+                })
+              ]
+            }
+          }
+          EOF
+          
+          # Generate Argo workflow YAML using jsonnet
+          echo "⚙️  Generating Argo workflow YAML..."
+          jsonnet -J . test-workflow.jsonnet > generated-workflow.yaml
+          
+          # Display the generated workflow for debugging
+          echo "📄 Generated workflow:"
+          cat generated-workflow.yaml
+          
+          # Validate the generated YAML with Argo CLI
+          echo "✅ Validating workflow with Argo CLI..."
+          argo lint --offline --strict --kinds=workflows generated-workflow.yaml
+          
+          echo "🎉 End-to-end Argo workflow validation completed successfully!"
         env:
           GRAFANA_URL: http://localhost:3000
           GRAFANA_ADMIN_USER: admin 
