@@ -1,0 +1,26 @@
+{
+   "apiVersion": "argoproj.io/v1alpha1",
+   "kind": "Workflow",
+   "metadata": {
+      "name": "bench-smoke-test",
+      "namespace": "default"
+   },
+   "spec": {
+      "entrypoint": "bench-step",
+      "templates": [
+         {
+            "container": {
+               "args": [
+                  "echo \"placeholder\""
+               ],
+               "command": [
+                  "sh",
+                  "-c"
+               ],
+               "image": "alpine:latest"
+            },
+            "name": "bench-step"
+         }
+      ]
+   }
+}

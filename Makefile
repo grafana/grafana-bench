@@ -10,7 +10,7 @@ SLIM_PROD_TAG = grafana-bench:$(BENCH_REVISION)
 PLAYWRIGHT_DEV_TAG = grafana-bench-playwright:dev-$(BENCH_REVISION)
 PLAYWRIGHT_PROD_TAG = grafana-bench-playwright:$(BENCH_REVISION)
 
-.PHONY: build-all build-slim-dev build-slim-prod build-playwright-dev build-playwright-prod test docs libsonnet install-deps clean help
+.PHONY: build-all build-slim-dev build-slim-prod build-playwright-dev build-playwright-prod test docs libsonnet install-deps test-argo-local clean help
 
 # Build all images
 build-all: build-slim-dev build-slim-prod build-playwright-dev build-playwright-prod
@@ -54,6 +54,11 @@ docs:
 libsonnet:
 	@echo "🔧 Generating libsonnet library..."
 	go run ./generators/libsonnet -o libsonnet
+
+# Test Argo workflow validation locally
+test-argo-local: install-deps
+	@echo "🧪 Testing Argo workflow validation locally..."
+	./scripts/test-argo-local.sh
 
 # Install development dependencies
 install-deps:
@@ -115,6 +120,7 @@ help:
 	@echo "  docs                - Generate documentation"
 	@echo "  libsonnet           - Generate libsonnet library"
 	@echo "  install-deps        - Install development dependencies (jsonnetfmt, etc.)"
+	@echo "  test-argo-local     - Test Argo workflow validation locally"
 	@echo "  sizes               - Show image sizes"
 	@echo "  list                - List all built images"
 	@echo "  clean               - Remove all built images"
