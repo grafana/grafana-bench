@@ -52,10 +52,6 @@ jobs:
       - name: Run tests
         run: go test -v ./...
 
-      - name: Generate libsonnet library
-        run: |
-          go run ./generators/libsonnet -version ${{ steps.get-tag.outputs.tag_name }} -o libsonnet
-          
       - name: Build binaries
         run: |
           # Build for multiple platforms
@@ -76,7 +72,6 @@ jobs:
           files: |
             grafana-bench-*
             checksums.txt
-            libsonnet/bench.libsonnet
           generate_release_notes: true
           draft: false
           prerelease: false

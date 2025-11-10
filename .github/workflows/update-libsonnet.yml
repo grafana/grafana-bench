@@ -58,18 +58,10 @@ jobs:
           go-version-file: go.mod
           cache: false
 
-      - name: Install jsonnetfmt
-        run: |
-          go install github.com/google/go-jsonnet/cmd/jsonnetfmt@latest
-
       - name: Generate libsonnet
-        env:
-          VERSION: ${{ inputs.version }}
-          BASE_IMAGE_URL: ${{ inputs.base_image_url || 'us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench' }}
-          PLAYWRIGHT_IMAGE_URL: ${{ inputs.playwright_image_url || 'us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench-playwright' }}
         run: |
-          go run ./generators/libsonnet -version "${VERSION}" -base-image "${BASE_IMAGE_URL}" -playwright-image "${PLAYWRIGHT_IMAGE_URL}" -o libsonnet
-          echo "Generated libsonnet for version ${VERSION}"
+          # Generate all three libsonnet files with unit tests using make
+          make libsonnet-release VERSION=${{ inputs.version }}
 
       - name: Prepare libsonnet for deployment
         env:

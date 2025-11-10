@@ -57,6 +57,13 @@ libsonnet: install-deps
 	@echo "🧪 Testing generated libsonnet functions..."
 	@cd libsonnet && jsonnet bench_functions_test.jsonnet | grep -q '"allTestsPassed": true' && echo "✅ All libsonnet function tests passed" || (echo "❌ Libsonnet function tests failed" && exit 1)
 
+# Generate libsonnet library with specific version (for releases)
+libsonnet-release: install-deps
+	@echo "🔧 Generating libsonnet library for version $(VERSION)..."
+	@go run ./generators/libsonnet -version $(VERSION) -o libsonnet
+	@echo "🧪 Testing generated libsonnet functions..."
+	@cd libsonnet && jsonnet bench_functions_test.jsonnet | grep -q '"allTestsPassed": true' && echo "✅ All libsonnet function tests passed" || (echo "❌ Libsonnet function tests failed" && exit 1)
+
 # Test Argo workflow validation locally
 test-argo-local: install-deps
 	@echo "🧪 Testing Argo workflow validation locally..."
