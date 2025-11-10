@@ -71,23 +71,45 @@ test-argo-local: install-deps
 
 # Install development dependencies
 install-deps:
+	@echo "🔍 Debugging Go environment:"
+	@echo "GOPATH: $$(go env GOPATH)"
+	@echo "GOBIN: $$(go env GOBIN)"  
+	@echo "PATH: $$PATH"
+	@echo "🔍 Checking for jsonnet..."
 	@if ! command -v jsonnet >/dev/null 2>&1; then \
 		echo "📦 Installing jsonnet..."; \
 		if command -v go >/dev/null 2>&1; then \
 			go install github.com/google/go-jsonnet/cmd/jsonnet@latest; \
+			export PATH="$$(go env GOPATH)/bin:$$PATH"; \
+			if command -v jsonnet >/dev/null 2>&1; then \
+				echo "✅ jsonnet installed at $$(which jsonnet)"; \
+			else \
+				echo "⚠️ jsonnet installed but not found in PATH. Check: $$(go env GOPATH)/bin/jsonnet"; \
+			fi; \
 		else \
 			echo "❌ Go not found. Please install Go first or install jsonnet manually."; \
 			exit 1; \
 		fi; \
+	else \
+		echo "✅ jsonnet already installed at $$(which jsonnet)"; \
 	fi
+	@echo "🔍 Checking for jsonnetfmt..."
 	@if ! command -v jsonnetfmt >/dev/null 2>&1; then \
 		echo "📦 Installing jsonnetfmt..."; \
 		if command -v go >/dev/null 2>&1; then \
 			go install github.com/google/go-jsonnet/cmd/jsonnetfmt@latest; \
+			export PATH="$$(go env GOPATH)/bin:$$PATH"; \
+			if command -v jsonnetfmt >/dev/null 2>&1; then \
+				echo "✅ jsonnetfmt installed at $$(which jsonnetfmt)"; \
+			else \
+				echo "⚠️ jsonnetfmt installed but not found in PATH. Check: $$(go env GOPATH)/bin/jsonnetfmt"; \
+			fi; \
 		else \
 			echo "❌ Go not found. Please install Go first or install jsonnetfmt manually."; \
 			exit 1; \
 		fi; \
+	else \
+		echo "✅ jsonnetfmt already installed at $$(which jsonnetfmt)"; \
 	fi
 
 # Clean up all built images

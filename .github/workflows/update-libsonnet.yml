@@ -60,6 +60,12 @@ jobs:
 
       - name: Generate libsonnet
         run: |
+          # Debug: Check what's available
+          echo "🔍 Checking Go and PATH:"
+          which go || echo "Go not found"
+          go version || echo "Go version failed"
+          echo "PATH: $PATH"
+          
           # Generate all three libsonnet files with unit tests using make
           make libsonnet-release VERSION=${{ inputs.version }}
 
