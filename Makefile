@@ -51,9 +51,11 @@ docs:
 	go run ./generators/doc -o docs
 
 # Generate libsonnet library
-libsonnet:
+libsonnet: install-deps
 	@echo "🔧 Generating libsonnet library..."
-	go run ./generators/libsonnet -o libsonnet
+	@go run ./generators/libsonnet -o libsonnet
+	@echo "🧪 Testing generated libsonnet functions..."
+	@cd libsonnet && jsonnet bench_functions_test.jsonnet | grep -q '"allTestsPassed": true' && echo "✅ All libsonnet function tests passed" || (echo "❌ Libsonnet function tests failed" && exit 1)
 
 # Test Argo workflow validation locally
 test-argo-local: install-deps
@@ -62,32 +64,24 @@ test-argo-local: install-deps
 
 # Install development dependencies
 install-deps:
-	@echo "📦 Installing development dependencies..."
-	@echo "Installing jsonnet..."
 	@if ! command -v jsonnet >/dev/null 2>&1; then \
+		echo "📦 Installing jsonnet..."; \
 		if command -v go >/dev/null 2>&1; then \
-			echo "  Installing jsonnet via go install..."; \
 			go install github.com/google/go-jsonnet/cmd/jsonnet@latest; \
 		else \
 			echo "❌ Go not found. Please install Go first or install jsonnet manually."; \
 			exit 1; \
 		fi; \
-	else \
-		echo "✅ jsonnet already installed"; \
 	fi
-	@echo "Installing jsonnetfmt..."
 	@if ! command -v jsonnetfmt >/dev/null 2>&1; then \
+		echo "📦 Installing jsonnetfmt..."; \
 		if command -v go >/dev/null 2>&1; then \
-			echo "  Installing jsonnetfmt via go install..."; \
 			go install github.com/google/go-jsonnet/cmd/jsonnetfmt@latest; \
 		else \
 			echo "❌ Go not found. Please install Go first or install jsonnetfmt manually."; \
 			exit 1; \
 		fi; \
-	else \
-		echo "✅ jsonnetfmt already installed"; \
 	fi
-	@echo "✅ All dependencies installed"
 
 # Clean up all built images
 clean:

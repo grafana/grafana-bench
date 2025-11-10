@@ -731,3 +731,4 @@ func formatLibsonnet(filename string) error {
 	fmt.Printf("Formatted libsonnet with jsonnetfmt\n")
 	return nil
 }
+
