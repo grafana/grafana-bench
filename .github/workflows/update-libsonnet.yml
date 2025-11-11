@@ -76,11 +76,15 @@ jobs:
         run: |
           mkdir -p deployment-libsonnet
           if [ "${VERSION}" = "experimental" ] || [ "${VERSION}" = "dev-latest" ]; then
-            echo "Using locally generated libsonnet"
+            echo "Using locally generated libsonnet files"
             cp libsonnet/bench.libsonnet deployment-libsonnet/bench.libsonnet
+            cp libsonnet/bench_functions.libsonnet deployment-libsonnet/bench_functions.libsonnet
+            cp libsonnet/bench_functions_test.jsonnet deployment-libsonnet/bench_functions_test.jsonnet
           else
             echo "Downloading libsonnet from: ${DOWNLOAD_URL}"
             curl -f -L -o deployment-libsonnet/bench.libsonnet "${DOWNLOAD_URL}"
+            # Note: For releases, only bench.libsonnet is currently published
+            # TODO: Consider publishing all three files for releases
           fi
           echo "Libsonnet ready for deployment"
 
@@ -133,8 +137,16 @@ jobs:
                 "command": "mkdir -p ksonnet/lib/argo-workflows-util/common-steps/${TARGET_DIR}"
               },
               {
-                "description": "Copy libsonnet from mounted volume",
+                "description": "Copy all libsonnet files from mounted volume",
                 "command": "cp /workspace/libsonnet/bench.libsonnet ksonnet/lib/argo-workflows-util/common-steps/${TARGET_DIR}/bench.libsonnet"
+              },
+              {
+                "description": "Copy libsonnet functions file",
+                "command": "cp /workspace/libsonnet/bench_functions.libsonnet ksonnet/lib/argo-workflows-util/common-steps/${TARGET_DIR}/bench_functions.libsonnet"
+              },
+              {
+                "description": "Copy libsonnet test file",
+                "command": "cp /workspace/libsonnet/bench_functions_test.jsonnet ksonnet/lib/argo-workflows-util/common-steps/${TARGET_DIR}/bench_functions_test.jsonnet"
               }
             ]
           }
