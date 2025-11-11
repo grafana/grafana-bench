@@ -30,6 +30,9 @@ jobs:
         with:
           go-version-file: 'go.mod'
 
+      - name: Install dependencies
+        run: make install-deps
+
       - name: Test libsonnet generator Go code
         run: |
           cd generators/libsonnet
