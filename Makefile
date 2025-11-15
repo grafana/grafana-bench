@@ -71,10 +71,6 @@ test-argo-local: install-deps
 
 # Install development dependencies
 install-deps:
-	@echo "🔍 Debugging Go environment:"
-	@echo "GOPATH: $$(go env GOPATH)"
-	@echo "GOBIN: $$(go env GOBIN)"  
-	@echo "PATH: $$PATH"
 	@echo "🔍 Checking for jsonnet..."
 	@if ! command -v jsonnet >/dev/null 2>&1; then \
 		echo "📦 Installing jsonnet..."; \
