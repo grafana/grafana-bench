@@ -348,10 +348,6 @@ func main() {
 		log.Fatalf("Failed to parse pure functions template: %v", err)
 	}
 	
-	libsonnetTmpl, err := template.New("libsonnet").Parse(libsonnetTemplate)
-	if err != nil {
-		log.Fatalf("Failed to parse libsonnet template: %v", err)
-	}
 	
 	testTmpl, err := template.New("test").Parse(testTemplate)
 	if err != nil {
@@ -378,19 +374,6 @@ func main() {
 	}
 	file.Close()
 	
-	// Write libsonnet file
-	libsonnetFile := filepath.Join(outputPath, "bench.libsonnet")
-	libFile, err := os.Create(libsonnetFile)
-	if err != nil {
-		log.Fatalf("Failed to create libsonnet file: %v", err)
-	}
-	defer libFile.Close()
-	
-	err = libsonnetTmpl.Execute(libFile, data)
-	if err != nil {
-		log.Fatalf("Failed to execute libsonnet template: %v", err)
-	}
-	libFile.Close()
 	
 	// Write test file
 	testFile := filepath.Join(outputPath, "bench_functions_test.jsonnet")
@@ -409,11 +392,6 @@ func main() {
 	// Format the generated files with jsonnetfmt
 	err = formatLibsonnet(pureFuncFile)
 	if err != nil {
-		log.Fatalf("Failed to format pure functions: %v", err)
-	}
-	
-	err = formatLibsonnet(libsonnetFile)
-	if err != nil {
 		log.Fatalf("Failed to format libsonnet: %v", err)
 	}
 	
@@ -423,7 +401,6 @@ func main() {
 	}
 	
 	fmt.Printf("Generated pure functions for version %s at %s\n", version, pureFuncFile)
-	fmt.Printf("Generated libsonnet for version %s at %s\n", version, libsonnetFile)
 	fmt.Printf("Generated unit tests at %s\n", testFile)
 }
 
