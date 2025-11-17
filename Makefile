@@ -64,11 +64,6 @@ libsonnet-release: install-deps
 	@echo "🧪 Testing generated libsonnet functions..."
 	@cd libsonnet && jsonnet bench_functions_test.jsonnet | grep -q '"allTestsPassed": true' && echo "✅ All libsonnet function tests passed" || (echo "❌ Libsonnet function tests failed" && exit 1)
 
-# Test Argo workflow validation locally
-test-argo-local: install-deps
-	@echo "🧪 Testing Argo workflow validation locally..."
-	./scripts/test-argo-local.sh
-
 # Install development dependencies
 install-deps:
 	@echo "🔍 Checking for jsonnet..."
@@ -139,7 +134,6 @@ help:
 	@echo "  docs                - Generate documentation"
 	@echo "  libsonnet           - Generate libsonnet library"
 	@echo "  install-deps        - Install development dependencies (jsonnetfmt, etc.)"
-	@echo "  test-argo-local     - Test Argo workflow validation locally"
 	@echo "  sizes               - Show image sizes"
 	@echo "  list                - List all built images"
 	@echo "  clean               - Remove all built images"
