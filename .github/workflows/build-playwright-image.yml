@@ -5,7 +5,7 @@ on:
 
 jobs:
   test-container-playwright:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-x64-2xlarge
 
     # run local registry that buildx can push to
     services:
@@ -46,6 +46,9 @@ jobs:
           id
           echo "=== CI directory ownership ==="
           stat ./CI/
+          echo "=== Host user UID/GID ==="
+          echo "UID: $(id -u)"
+          echo "GID: $(id -g)"
 
       - name: check Grafana instance
         run: |
@@ -62,7 +65,10 @@ jobs:
         env:
           TEST_SUITE_REPO_TOKEN: ${{ github.token }}
         run: |
+          # Run as host user to avoid volume mount permission issues on large runners
           docker run --rm --network=host --volume="./CI/:/tests/CI/" \
+             --user "$(id -u):$(id -g)" \
+             --env "HOME=/tmp" \
              localhost:5000/grafana-bench-test-playwright-dev:latest test \
               --log-level debug \
               --pw-prepare "yarn install; yarn playwright install" \
@@ -108,7 +114,7 @@ jobs:
   publish-dev-playwright:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [test-container-playwright]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-x64-2xlarge
     permissions:
       contents: read
       packages: write
@@ -154,7 +160,7 @@ jobs:
   publish-prod-playwright:
     if: ${{ startsWith(github.ref, 'refs/tags/v') }}
     needs: [test-container-playwright]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-x64-2xlarge
     permissions:
       contents: read
       packages: write
