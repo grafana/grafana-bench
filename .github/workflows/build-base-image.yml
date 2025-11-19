@@ -101,7 +101,7 @@ jobs:
           GAR_IMAGE=$(echo "${{ steps.push-to-gar-dev.outputs.tags }}" | head -n1)
           echo "GAR_IMAGE=$GAR_IMAGE"
 
-          GHCR_IMAGE=ghcr.io/grafana/grafana-bench:dev-${{ steps.push-to-gar-dev.outputs.version }}
+          GHCR_IMAGE=ghcr.io/grafana/grafana-bench:${{ steps.push-to-gar-dev.outputs.version }}
           echo "GHCR_IMAGE=$GHCR_IMAGE"
 
           docker buildx imagetools create \

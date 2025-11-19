@@ -92,3 +92,23 @@ func GetLatestBenchTag(repoPath string) (string, error) {
 	// Return error if no semantic version tags found
 	return "", fmt.Errorf("no tags that meet semantic versioning standards found in repo")
 }
+
+// GetShortCommitSHA returns the short SHA of the current git commit
+func GetShortCommitSHA(repoPath string) (string, error) {
+	repo, err := git.PlainOpenWithOptions(
+		repoPath,
+		&git.PlainOpenOptions{DetectDotGit: true},
+	)
+	if err != nil {
+		return "", fmt.Errorf("failed to open git repository: %w", err)
+	}
+
+	ref, err := repo.Head()
+	if err != nil {
+		return "", fmt.Errorf("failed to get HEAD reference: %w", err)
+	}
+
+	// Get short SHA (first 7 characters)
+	shortSHA := ref.Hash().String()[:7]
+	return shortSHA, nil
+}

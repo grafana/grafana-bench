@@ -25,6 +25,9 @@ jobs:
 
       - uses: ./.github/actions/setup-k6
 
+      - name: Install development dependencies
+        run: make install-deps
+
       - name: Test
         run: go test -v ./...
 
@@ -79,6 +82,44 @@ jobs:
             --test-suite-base /tmp/grafana-bench \
             --test-trigger grafana-bench-ci \
             --slack-notifications
+
+  test-libsonnet:
+    name: Test Libsonnet Generation and Functions
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-tags: true
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          cache: false
+
+      - name: Install dependencies
+        run: make install-deps
+
+      - name: Generate libsonnet and run function tests
+        run: |
+          make libsonnet
+
+      - name: Verify generated files
+        run: |
+          echo "📋 Checking generated files:"
+          ls -la libsonnet/
+          
+          test -f libsonnet/bench_functions.libsonnet  
+          test -f libsonnet/bench_functions_test.jsonnet
+          
+          echo "✅ Pure function libsonnet files generated successfully"
+
+      - name: Show test results summary
+        run: |
+          echo "🧪 Libsonnet function test results:"
+          cd libsonnet && jsonnet bench_functions_test.jsonnet | jq '.summary'
 
   test-validate:
     runs-on: ubuntu-latest
@@ -143,7 +184,7 @@ jobs:
           fi
 
   build-base-image:
-    needs: [test-go, test-binary, test-validate]
+    needs: [test-go, test-libsonnet, test-binary, test-validate]
     permissions:
       contents: read
       packages: write
@@ -153,7 +194,7 @@ jobs:
       TEST_SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-playwright-image:
-    needs: [test-go, test-binary, test-validate]
+    needs: [test-go, test-libsonnet, test-binary, test-validate]
     permissions:
       contents: read
       packages: write
@@ -184,13 +225,12 @@ jobs:
       id-token: write
     uses: ./.github/workflows/update-libsonnet.yml
     with:
-      version: "dev-latest"
+      version: "experimental"
       target_dir: "bench/experimental"
       branch_prefix: "bench-libsonnet-experimental"
       pr_title: "[Experimental] Update experimental bench libsonnet"
-      pr_message: "Update experimental bench libsonnet from main branch\\n\\nThis PR updates the experimental bench libsonnet library with the latest changes from the main branch.\\n\\nChanges:\\n- Update ksonnet/lib/argo-workflows-util/common-steps/bench/experimental/bench.libsonnet\\n\\n⚠️ This is an experimental version - use for testing only.\\n\\nImport with:\\n```jsonnet\\nlocal bench = import 'argo-workflows-util/common-steps/bench/experimental/bench.libsonnet';\\n```"
+      pr_message: "Update experimental bench libsonnet from main branch\\n\\nThis PR updates the experimental bench libsonnet library with the latest changes from the main branch.\\n\\nChanges:\\n- Update ksonnet/lib/bench/experimental/main.libsonnet\\n- Update ksonnet/lib/bench/experimental/main_test.jsonnet\\n- Update ksonnet/lib/bench/versions.libsonnet\\n\\n⚠️ This is an experimental version - use for testing only.\\n\\nImport with:\\n```jsonnet\\nlocal benchVersions = import 'bench/versions.libsonnet';\\nlocal benchFunctions = benchVersions.getBenchFunctions('experimental');\\n```"
       commit_message: "Update bench experimental libsonnet from main\\n\\nThis commit updates the experimental bench libsonnet library with the latest changes.\\n\\nGenerated automatically from bench CLI flags."
-      download_url: "https://raw.githubusercontent.com/grafana/grafana-bench/main/libsonnet/bench.libsonnet"
       base_image_url: "us-docker.pkg.dev/grafanalabs-dev/docker-grafana-bench-dev/grafana-bench"
       playwright_image_url: "us-docker.pkg.dev/grafanalabs-dev/docker-grafana-bench-dev/grafana-bench-playwright"
 
@@ -205,7 +245,6 @@ jobs:
       version: ${{ github.ref_name }}
       target_dir: "bench/${{ github.ref_name }}"
       branch_prefix: "bench-libsonnet-release"
-      pr_title: "Add bench libsonnet ${{ github.ref_name }}"
-      pr_message: "Add bench libsonnet ${{ github.ref_name }}\\n\\nThis PR adds the versioned libsonnet library for bench ${{ github.ref_name }}, generated automatically from the CLI flags.\\n\\nChanges:\\n- Add ksonnet/lib/argo-workflows-util/common-steps/bench/${{ github.ref_name }}/bench.libsonnet\\n\\nOnce this is merged, users can import the versioned library with:\\n```jsonnet\\nlocal bench = import 'argo-workflows-util/common-steps/bench/${{ github.ref_name }}/bench.libsonnet';\\n```"
-      commit_message: "Add bench libsonnet ${{ github.ref_name }}\\n\\nThis commit adds the versioned bench libsonnet library.\\n\\nGenerated automatically from bench CLI flags."
-      download_url: "https://github.com/grafana/grafana-bench/releases/download/${{ github.ref_name }}/bench.libsonnet"
+      pr_title: "Add bench libsonnet (versioned release)"
+      pr_message: "Add bench libsonnet versioned release\\n\\nThis PR adds the versioned libsonnet library for bench, generated automatically from the CLI flags.\\n\\nChanges:\\n- Add ksonnet/lib/bench/[version]/main.libsonnet\\n- Add ksonnet/lib/bench/[version]/main_test.jsonnet\\n- Update ksonnet/lib/bench/versions.libsonnet to include version\\n\\nOnce this is merged, users can import the versioned library with:\\n```jsonnet\\nlocal benchVersions = import 'bench/versions.libsonnet';\\nlocal benchFunctions = benchVersions.getBenchFunctions('[version]');\\n```"
+      commit_message: "Add bench libsonnet versioned release\\n\\nThis commit adds the versioned bench libsonnet library.\\n\\nGenerated automatically from bench CLI flags."

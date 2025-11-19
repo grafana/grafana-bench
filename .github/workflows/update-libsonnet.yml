@@ -27,10 +27,6 @@ on:
         description: 'Commit message'
         required: true
         type: string
-      download_url:
-        description: 'URL to download libsonnet from'
-        required: true
-        type: string
       base_image_url:
         description: 'Base bench image URL'
         required: false
@@ -58,33 +54,70 @@ jobs:
           go-version-file: go.mod
           cache: false
 
-      - name: Install jsonnetfmt
-        run: |
-          go install github.com/google/go-jsonnet/cmd/jsonnetfmt@latest
-
       - name: Generate libsonnet
         env:
           VERSION: ${{ inputs.version }}
-          BASE_IMAGE_URL: ${{ inputs.base_image_url || 'us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench' }}
-          PLAYWRIGHT_IMAGE_URL: ${{ inputs.playwright_image_url || 'us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench-playwright' }}
         run: |
-          go run ./generators/libsonnet -version "${VERSION}" -base-image "${BASE_IMAGE_URL}" -playwright-image "${PLAYWRIGHT_IMAGE_URL}" -o libsonnet
-          echo "Generated libsonnet for version ${VERSION}"
+          # Debug: Check what's available
+          echo "🔍 Checking Go and PATH:"
+          which go || echo "Go not found"
+          go version || echo "Go version failed"
+          echo "PATH: $PATH"
+          
+          # Generate all three libsonnet files with unit tests using make
+          make libsonnet-release VERSION="$VERSION"
 
       - name: Prepare libsonnet for deployment
         env:
           VERSION: ${{ inputs.version }}
-          DOWNLOAD_URL: ${{ inputs.download_url }}
+          TARGET_DIR: ${{ inputs.target_dir }}
         run: |
           mkdir -p deployment-libsonnet
-          if [ "${VERSION}" = "experimental" ] || [ "${VERSION}" = "dev-latest" ]; then
-            echo "Using locally generated libsonnet"
-            cp libsonnet/bench.libsonnet deployment-libsonnet/bench.libsonnet
+          
+          echo "📋 Copying libsonnet function files..."
+          cp libsonnet/bench_functions.libsonnet deployment-libsonnet/bench_functions.libsonnet
+          cp libsonnet/bench_functions_test.jsonnet deployment-libsonnet/bench_functions_test.jsonnet
+          
+          echo "📝 Generating bench_versions.libsonnet..."
+          
+          # Logic depends on whether this is experimental or a versioned release
+          if [ "$VERSION" = "experimental" ]; then
+            echo "Creating bench_versions.libsonnet for experimental deployment..."
+            cat > deployment-libsonnet/bench_versions.libsonnet << 'EOF'
+          // Static version mapping with imports
+          local versions = {
+            'experimental': import 'experimental/main.libsonnet',
+          };
+          
+          {
+            getBenchFunctions(version)::
+              if std.objectHas(versions, version) then
+                versions[version]
+              else
+                error 'Unknown bench version: ' + version + '. Available: ' + std.join(', ', std.objectFields(versions)),
+          }
+          EOF
           else
-            echo "Downloading libsonnet from: ${DOWNLOAD_URL}"
-            curl -f -L -o deployment-libsonnet/bench.libsonnet "${DOWNLOAD_URL}"
+            echo "Creating bench_versions.libsonnet for versioned release $VERSION..."
+            cat > deployment-libsonnet/bench_versions.libsonnet << EOF
+          // Static version mapping with imports
+          // This file will be updated by the updater to add the new version
+          local versions = {
+            'experimental': import 'experimental/main.libsonnet',
+            '$VERSION': import '$VERSION/main.libsonnet',
+          };
+          
+          {
+            getBenchFunctions(version)::
+              if std.objectHas(versions, version) then
+                versions[version]
+              else
+                error 'Unknown bench version: ' + version + '. Available: ' + std.join(', ', std.objectFields(versions)),
+          }
+          EOF
           fi
-          echo "Libsonnet ready for deployment"
+          
+          echo "✅ Libsonnet function files ready for deployment to ${TARGET_DIR}"
 
       - name: Get Vault secrets for deployment_tools access
         uses: grafana/shared-workflows/actions/get-vault-secrets@ae92934a14a48b94494dbc06d74a81d47fe08a40
@@ -107,7 +140,6 @@ jobs:
           PR_TITLE: ${{ inputs.pr_title }}
           PR_MESSAGE: ${{ inputs.pr_message }}
           COMMIT_MESSAGE: ${{ inputs.commit_message }}
-          DOWNLOAD_URL: ${{ inputs.download_url }}
           PR_REVIEWER: ${{ github.actor }}
         run: |
           set -euo pipefail
@@ -132,11 +164,19 @@ jobs:
             "pre_update_commands": [
               {
                 "description": "Create directory structure for bench libsonnet",
-                "command": "mkdir -p ksonnet/lib/argo-workflows-util/common-steps/${TARGET_DIR}"
+                "command": "mkdir -p ksonnet/lib/bench/${TARGET_DIR}"
               },
               {
-                "description": "Copy libsonnet from mounted volume",
-                "command": "cp /workspace/libsonnet/bench.libsonnet ksonnet/lib/argo-workflows-util/common-steps/${TARGET_DIR}/bench.libsonnet"
+                "description": "Copy libsonnet functions file",
+                "command": "cp /workspace/libsonnet/bench_functions.libsonnet ksonnet/lib/bench/${TARGET_DIR}/main.libsonnet"
+              },
+              {
+                "description": "Copy libsonnet test file", 
+                "command": "cp /workspace/libsonnet/bench_functions_test.jsonnet ksonnet/lib/bench/${TARGET_DIR}/main_test.jsonnet"
+              },
+              {
+                "description": "Update bench versions mapping",
+                "command": "cp /workspace/libsonnet/bench_versions.libsonnet ksonnet/lib/bench/versions.libsonnet"
               }
             ]
           }

@@ -101,6 +101,18 @@ See [documentation online](https://github.com/grafana/grafana-bench/blob/main/do
 
 ## Contributing
 
+### Setup development dependencies
+
+Before running tests or generating libsonnet libraries, install the required development dependencies:
+
+```sh
+make install-deps
+```
+
+This installs:
+- `jsonnet` - Required for libsonnet generation and testing
+- `jsonnetfmt` - Required for formatting generated libsonnet files
+
 ### Updating docs
 
 `go run ./gendoc -o docs`

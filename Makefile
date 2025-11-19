@@ -10,7 +10,7 @@ SLIM_PROD_TAG = grafana-bench:$(BENCH_REVISION)
 PLAYWRIGHT_DEV_TAG = grafana-bench-playwright:dev-$(BENCH_REVISION)
 PLAYWRIGHT_PROD_TAG = grafana-bench-playwright:$(BENCH_REVISION)
 
-.PHONY: build-all build-slim-dev build-slim-prod build-playwright-dev build-playwright-prod test docs libsonnet install-deps clean help
+.PHONY: build-all build-slim-dev build-slim-prod build-playwright-dev build-playwright-prod test docs libsonnet install-deps test-argo-local clean help
 
 # Build all images
 build-all: build-slim-dev build-slim-prod build-playwright-dev build-playwright-prod
@@ -51,26 +51,57 @@ docs:
 	go run ./generators/doc -o docs
 
 # Generate libsonnet library
-libsonnet:
+libsonnet: install-deps
 	@echo "🔧 Generating libsonnet library..."
-	go run ./generators/libsonnet -o libsonnet
+	@go run ./generators/libsonnet -o libsonnet
+	@echo "🧪 Testing generated libsonnet functions..."
+	@cd libsonnet && jsonnet bench_functions_test.jsonnet | grep -q '"allTestsPassed": true' && echo "✅ All libsonnet function tests passed" || (echo "❌ Libsonnet function tests failed" && exit 1)
+
+# Generate libsonnet library with specific version (for releases)
+libsonnet-release: install-deps
+	@echo "🔧 Generating libsonnet library for version $(VERSION)..."
+	@go run ./generators/libsonnet -version $(VERSION) -o libsonnet
+	@echo "🧪 Testing generated libsonnet functions..."
+	@cd libsonnet && jsonnet bench_functions_test.jsonnet | grep -q '"allTestsPassed": true' && echo "✅ All libsonnet function tests passed" || (echo "❌ Libsonnet function tests failed" && exit 1)
 
 # Install development dependencies
 install-deps:
-	@echo "📦 Installing development dependencies..."
-	@echo "Installing jsonnetfmt..."
-	@if ! command -v jsonnetfmt >/dev/null 2>&1; then \
+	@echo "🔍 Checking for jsonnet..."
+	@if ! command -v jsonnet >/dev/null 2>&1; then \
+		echo "📦 Installing jsonnet..."; \
 		if command -v go >/dev/null 2>&1; then \
-			echo "  Installing via go install..."; \
+			go install github.com/google/go-jsonnet/cmd/jsonnet@latest; \
+			export PATH="$$(go env GOPATH)/bin:$$PATH"; \
+			if command -v jsonnet >/dev/null 2>&1; then \
+				echo "✅ jsonnet installed at $$(which jsonnet)"; \
+			else \
+				echo "⚠️ jsonnet installed but not found in PATH. Check: $$(go env GOPATH)/bin/jsonnet"; \
+			fi; \
+		else \
+			echo "❌ Go not found. Please install Go first or install jsonnet manually."; \
+			exit 1; \
+		fi; \
+	else \
+		echo "✅ jsonnet already installed at $$(which jsonnet)"; \
+	fi
+	@echo "🔍 Checking for jsonnetfmt..."
+	@if ! command -v jsonnetfmt >/dev/null 2>&1; then \
+		echo "📦 Installing jsonnetfmt..."; \
+		if command -v go >/dev/null 2>&1; then \
 			go install github.com/google/go-jsonnet/cmd/jsonnetfmt@latest; \
+			export PATH="$$(go env GOPATH)/bin:$$PATH"; \
+			if command -v jsonnetfmt >/dev/null 2>&1; then \
+				echo "✅ jsonnetfmt installed at $$(which jsonnetfmt)"; \
+			else \
+				echo "⚠️ jsonnetfmt installed but not found in PATH. Check: $$(go env GOPATH)/bin/jsonnetfmt"; \
+			fi; \
 		else \
 			echo "❌ Go not found. Please install Go first or install jsonnetfmt manually."; \
 			exit 1; \
 		fi; \
 	else \
-		echo "✅ jsonnetfmt already installed"; \
+		echo "✅ jsonnetfmt already installed at $$(which jsonnetfmt)"; \
 	fi
-	@echo "✅ All dependencies installed"
 
 # Clean up all built images
 clean:
