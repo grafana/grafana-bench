@@ -59,19 +59,64 @@ to access the repo with tests
 
 If you're running local tests, mount the volume inside the container.
 
+### For Local Development (Linux/macOS)
+
+Use the built-in `fixuid` for seamless file permission handling:
+
 ```sh
-    docker run --rm --network=host --volume="./CI/:/home/pwuser/tests/CI/" \
+    docker run --rm --network=host --volume="./CI/:/tests/CI/" \
+     us-docker.pkg.dev/grafanalabs-dev/docker-grafana-bench-playwright/grafana-bench-playwright:dev-latest test \
+      --log-level debug \
+      --pw-prepare "yarn install; yarn playwright install" \
+      --pw-execute "yarn playwright test --grep-invert @performance" \
+      --report-format log \
+      --run-trigger grafana-bench-ci \
+      --suite-path ./CI/playwright \
+      --suite-revision main \
+      --suite-name grafana-bench-dev/ci/playwright \
+      --test-report-format text \
+      --test-runner playwright \
+      --test-type smoke
+```
+
+### For CI/GitHub Runners (Linux)
+
+Use explicit user mapping to avoid permission issues on large runners:
+
+```sh
+    docker run --rm --network=host --volume="./CI/:/tests/CI/" \
+     --user "$(id -u):$(id -g)" --env "HOME=/tmp" \
      localhost:5000/grafana-bench-test-playwright-dev:latest test \
       --log-level debug \
       --pw-prepare "yarn install; yarn playwright install" \
       --pw-execute "yarn playwright test --grep-invert @performance" \
       --report-format log \
       --run-trigger grafana-bench-ci \
-      --suite-path tests/CI/plugin-e2e \
-      --suite-revision ${{ github.sha }}\
-      --suite-name grafana-bench-dev/ci/plugin-e2e \
+      --suite-path ./CI/playwright \
+      --suite-revision ${{ github.sha }} \
+      --suite-name grafana-bench-dev/ci/playwright \
       --test-report-format text \
       --test-runner playwright \
+      --test-type smoke
+```
+
+### For Windows Development
+
+Docker Desktop handles permissions automatically:
+
+```powershell
+    docker run --rm --network=host --volume="./CI/:/tests/CI/" `
+     us-docker.pkg.dev/grafanalabs-dev/docker-grafana-bench-playwright/grafana-bench-playwright:dev-latest test `
+      --log-level debug `
+      --pw-prepare "yarn install; yarn playwright install" `
+      --pw-execute "yarn playwright test --grep-invert @performance" `
+      --report-format log `
+      --run-trigger grafana-bench-ci `
+      --suite-path ./CI/playwright `
+      --suite-revision main `
+      --suite-name grafana-bench-dev/ci/playwright `
+      --test-report-format text `
+      --test-runner playwright `
       --test-type smoke
 ```
 
