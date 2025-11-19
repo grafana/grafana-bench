@@ -317,10 +317,18 @@ func main() {
 
 		version, err = utils.GetLatestBenchTag(workDir)
 		if err != nil {
-			log.Fatalf("Failed to get latest bench tag: %v", err)
+			// Fallback to "dev-{shortSHA}" if no tags found - this matches dev image tagging
+			shortSHA, shaErr := utils.GetShortCommitSHA(workDir)
+			if shaErr != nil {
+				version = "dev-latest"
+				fmt.Printf("No git tags found and unable to get commit SHA, using fallback version: %s\n", version)
+			} else {
+				version = fmt.Sprintf("dev-%s", shortSHA)
+				fmt.Printf("No git tags found, using fallback version: %s\n", version)
+			}
+		} else {
+			fmt.Printf("Using latest tag: %s\n", version)
 		}
-		
-		fmt.Printf("Using latest tag: %s\n", version)
 	}
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
