@@ -54,6 +54,9 @@ jobs:
           go-version-file: go.mod
           cache: false
 
+      - name: Install development dependencies
+        run: make install-deps
+
       - name: Generate libsonnet
         env:
           VERSION: ${{ inputs.version }}
@@ -116,6 +119,9 @@ jobs:
           }
           EOF
           fi
+          
+          echo "🔧 Formatting bench_versions.libsonnet with jsonnetfmt..."
+          jsonnetfmt -i deployment-libsonnet/bench_versions.libsonnet
           
           echo "✅ Libsonnet function files ready for deployment to ${TARGET_DIR}"
 

@@ -5,7 +5,7 @@ on:
 
 jobs:
   test-container-playwright:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-x64-2xlarge
 
     # run local registry that buildx can push to
     services:
@@ -108,7 +108,7 @@ jobs:
   publish-dev-playwright:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [test-container-playwright]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-x64-2xlarge
     permissions:
       contents: read
       packages: write
@@ -154,7 +154,7 @@ jobs:
   publish-prod-playwright:
     if: ${{ startsWith(github.ref, 'refs/tags/v') }}
     needs: [test-container-playwright]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-x64-2xlarge
     permissions:
       contents: read
       packages: write
