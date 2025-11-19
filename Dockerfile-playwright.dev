@@ -70,10 +70,9 @@ RUN mkdir -p /etc/fixuid && \
   chown root:root /usr/local/bin/fixuid && \
   chmod 4755 /usr/local/bin/fixuid
 
-# Create /tests directory as default test location
-RUN mkdir -p /tests && chown -R pwuser:pwuser /tests
-## playwright cache (should already exist, but ensure ownership)
-RUN mkdir -p /home/pwuser/.cache && chown -R pwuser:pwuser /home/pwuser/.cache
+# Create /tests directory as default test location and ensure proper permissions
+RUN mkdir -p /tests /home/pwuser/.cache && \
+  chown -R pwuser:pwuser /tests /home/pwuser/.cache
 
 WORKDIR /tests
 

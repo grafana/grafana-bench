@@ -46,6 +46,9 @@ jobs:
           id
           echo "=== CI directory ownership ==="
           stat ./CI/
+          echo "=== Host user UID/GID ==="
+          echo "UID: $(id -u)"
+          echo "GID: $(id -g)"
 
       - name: check Grafana instance
         run: |
@@ -62,7 +65,9 @@ jobs:
         env:
           TEST_SUITE_REPO_TOKEN: ${{ github.token }}
         run: |
+          # Pass host UID/GID to fixuid for proper volume mount permissions
           docker run --rm --network=host --volume="./CI/:/tests/CI/" \
+             --env "FIXUID=$(id -u)" --env "FIXGID=$(id -g)" \
              localhost:5000/grafana-bench-test-playwright-dev:latest test \
               --log-level debug \
               --pw-prepare "yarn install; yarn playwright install" \
