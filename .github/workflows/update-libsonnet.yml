@@ -55,6 +55,8 @@ jobs:
           cache: false
 
       - name: Generate libsonnet
+        env:
+          VERSION: ${{ inputs.version }}
         run: |
           # Debug: Check what's available
           echo "🔍 Checking Go and PATH:"
@@ -63,7 +65,7 @@ jobs:
           echo "PATH: $PATH"
           
           # Generate all three libsonnet files with unit tests using make
-          make libsonnet-release VERSION=${{ inputs.version }}
+          make libsonnet-release VERSION="$VERSION"
 
       - name: Prepare libsonnet for deployment
         env:
