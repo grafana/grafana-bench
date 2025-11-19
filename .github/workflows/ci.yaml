@@ -237,11 +237,13 @@ jobs:
     permissions:
       contents: read
       id-token: write
+    env:
+      VERSION_TAG: ${{ github.ref_name }}
     uses: ./.github/workflows/update-libsonnet.yml
     with:
       version: ${{ github.ref_name }}
       target_dir: "bench/${{ github.ref_name }}"
       branch_prefix: "bench-libsonnet-release"
-      pr_title: "Add bench libsonnet ${{ github.ref_name }}"
-      pr_message: "Add bench libsonnet ${{ github.ref_name }}\\n\\nThis PR adds the versioned libsonnet library for bench ${{ github.ref_name }}, generated automatically from the CLI flags.\\n\\nChanges:\\n- Add ksonnet/lib/argo-workflows-util/common-steps/bench/${{ github.ref_name }}/bench_functions.libsonnet\\n- Add ksonnet/lib/argo-workflows-util/common-steps/bench/${{ github.ref_name }}/bench_functions_test.jsonnet\\n- Update ksonnet/lib/argo-workflows-util/common-steps/templates/bench_versions.libsonnet to include ${{ github.ref_name }}\\n\\nOnce this is merged, users can import the versioned library with:\\n```jsonnet\\nlocal benchVersions = import 'argo-workflows-util/common-steps/templates/bench_versions.libsonnet';\\nlocal benchFunctions = benchVersions.getBenchFunctions('${{ github.ref_name }}');\\n```"
-      commit_message: "Add bench libsonnet ${{ github.ref_name }}\\n\\nThis commit adds the versioned bench libsonnet library.\\n\\nGenerated automatically from bench CLI flags."
+      pr_title: "Add bench libsonnet $VERSION_TAG"
+      pr_message: "Add bench libsonnet $VERSION_TAG\\n\\nThis PR adds the versioned libsonnet library for bench $VERSION_TAG, generated automatically from the CLI flags.\\n\\nChanges:\\n- Add ksonnet/lib/argo-workflows-util/common-steps/bench/$VERSION_TAG/bench_functions.libsonnet\\n- Add ksonnet/lib/argo-workflows-util/common-steps/bench/$VERSION_TAG/bench_functions_test.jsonnet\\n- Update ksonnet/lib/argo-workflows-util/common-steps/templates/bench_versions.libsonnet to include $VERSION_TAG\\n\\nOnce this is merged, users can import the versioned library with:\\n```jsonnet\\nlocal benchVersions = import 'argo-workflows-util/common-steps/templates/bench_versions.libsonnet';\\nlocal benchFunctions = benchVersions.getBenchFunctions('$VERSION_TAG');\\n```"
+      commit_message: "Add bench libsonnet $VERSION_TAG\\n\\nThis commit adds the versioned bench libsonnet library.\\n\\nGenerated automatically from bench CLI flags."
