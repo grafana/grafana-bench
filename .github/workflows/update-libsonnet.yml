@@ -27,10 +27,6 @@ on:
         description: 'Commit message'
         required: true
         type: string
-      download_url:
-        description: 'URL to download libsonnet from'
-        required: true
-        type: string
       base_image_url:
         description: 'Base bench image URL'
         required: false
@@ -81,11 +77,14 @@ jobs:
           cp libsonnet/bench_functions_test.jsonnet deployment-libsonnet/bench_functions_test.jsonnet
           
           echo "📝 Generating bench_versions.libsonnet..."
-          # Create version mapping file that will be updated
-          cat > deployment-libsonnet/bench_versions.libsonnet << 'EOF'
+          
+          # Logic depends on whether this is experimental or a versioned release
+          if [ "$VERSION" = "experimental" ]; then
+            echo "Creating bench_versions.libsonnet for experimental deployment..."
+            cat > deployment-libsonnet/bench_versions.libsonnet << 'EOF'
           // Static version mapping with imports
           local versions = {
-            'experimental': import '../bench/experimental/bench_functions.libsonnet',
+            'experimental': import 'experimental/main.libsonnet',
           };
           
           {
@@ -96,6 +95,25 @@ jobs:
                 error 'Unknown bench version: ' + version + '. Available: ' + std.join(', ', std.objectFields(versions)),
           }
           EOF
+          else
+            echo "Creating bench_versions.libsonnet for versioned release $VERSION..."
+            cat > deployment-libsonnet/bench_versions.libsonnet << EOF
+          // Static version mapping with imports
+          // This file will be updated by the updater to add the new version
+          local versions = {
+            'experimental': import 'experimental/main.libsonnet',
+            '$VERSION': import '$VERSION/main.libsonnet',
+          };
+          
+          {
+            getBenchFunctions(version)::
+              if std.objectHas(versions, version) then
+                versions[version]
+              else
+                error 'Unknown bench version: ' + version + '. Available: ' + std.join(', ', std.objectFields(versions)),
+          }
+          EOF
+          fi
           
           echo "✅ Libsonnet function files ready for deployment to ${TARGET_DIR}"
 
@@ -120,7 +138,6 @@ jobs:
           PR_TITLE: ${{ inputs.pr_title }}
           PR_MESSAGE: ${{ inputs.pr_message }}
           COMMIT_MESSAGE: ${{ inputs.commit_message }}
-          DOWNLOAD_URL: ${{ inputs.download_url }}
           PR_REVIEWER: ${{ github.actor }}
         run: |
           set -euo pipefail
@@ -145,19 +162,19 @@ jobs:
             "pre_update_commands": [
               {
                 "description": "Create directory structure for bench libsonnet",
-                "command": "mkdir -p ksonnet/lib/argo-workflows-util/common-steps/${TARGET_DIR}"
+                "command": "mkdir -p ksonnet/lib/bench/${TARGET_DIR}"
               },
               {
                 "description": "Copy libsonnet functions file",
-                "command": "cp /workspace/libsonnet/bench_functions.libsonnet ksonnet/lib/argo-workflows-util/common-steps/${TARGET_DIR}/bench_functions.libsonnet"
+                "command": "cp /workspace/libsonnet/bench_functions.libsonnet ksonnet/lib/bench/${TARGET_DIR}/main.libsonnet"
               },
               {
-                "description": "Copy libsonnet test file",
-                "command": "cp /workspace/libsonnet/bench_functions_test.jsonnet ksonnet/lib/argo-workflows-util/common-steps/${TARGET_DIR}/bench_functions_test.jsonnet"
+                "description": "Copy libsonnet test file", 
+                "command": "cp /workspace/libsonnet/bench_functions_test.jsonnet ksonnet/lib/bench/${TARGET_DIR}/main_test.jsonnet"
               },
               {
                 "description": "Update bench versions mapping",
-                "command": "cp /workspace/libsonnet/bench_versions.libsonnet ksonnet/lib/argo-workflows-util/common-steps/templates/bench_versions.libsonnet"
+                "command": "cp /workspace/libsonnet/bench_versions.libsonnet ksonnet/lib/bench/versions.libsonnet"
               }
             ]
           }

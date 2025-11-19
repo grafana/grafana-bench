@@ -32,9 +32,8 @@ jobs:
       target_dir: "bench/experimental"
       branch_prefix: "bench-libsonnet-experimental"
       pr_title: "[Experimental] Update experimental bench libsonnet (manual)"
-      pr_message: "Manual update of experimental bench libsonnet from main branch\\n\\nThis PR updates the experimental bench libsonnet library with the latest changes from the main branch.\\n\\nChanges:\\n- Update ksonnet/lib/argo-workflows-util/common-steps/bench/experimental/bench.libsonnet\\n\\n⚠️ This is an experimental version - use for testing only.\\n\\nImport with:\\n```jsonnet\\nlocal bench = import 'argo-workflows-util/common-steps/bench/experimental/bench.libsonnet';\\n```"
+      pr_message: "Manual update of experimental bench libsonnet from main branch\\n\\nThis PR updates the experimental bench libsonnet library with the latest changes from the main branch.\\n\\nChanges:\\n- Update ksonnet/lib/argo-workflows-util/common-steps/bench/experimental/bench_functions.libsonnet\\n- Update ksonnet/lib/argo-workflows-util/common-steps/bench/experimental/bench_functions_test.jsonnet\\n- Update ksonnet/lib/argo-workflows-util/common-steps/templates/bench_versions.libsonnet\\n\\n⚠️ This is an experimental version - use for testing only.\\n\\nImport with:\\n```jsonnet\\nlocal benchVersions = import 'argo-workflows-util/common-steps/templates/bench_versions.libsonnet';\\nlocal benchFunctions = benchVersions.getBenchFunctions('experimental');\\n```"
       commit_message: "Manual update of bench experimental libsonnet\\n\\nThis commit manually updates the experimental bench libsonnet library.\\n\\nGenerated automatically from bench CLI flags."
-      download_url: "https://raw.githubusercontent.com/grafana/grafana-bench/main/libsonnet/bench.libsonnet"
 
   deploy-custom:
     if: inputs.deployment_type == 'custom'
@@ -47,6 +46,5 @@ jobs:
       target_dir: ${{ inputs.custom_target_dir }}
       branch_prefix: "bench-libsonnet-custom"
       pr_title: "Custom bench libsonnet deployment: ${{ inputs.custom_version }}"
-      pr_message: "Custom deployment of bench libsonnet ${{ inputs.custom_version }}\\n\\nThis is a custom/manual deployment.\\n\\nChanges:\\n- Add/update ksonnet/lib/argo-workflows-util/common-steps/${{ inputs.custom_target_dir }}/bench.libsonnet"
+      pr_message: "Custom deployment of bench libsonnet ${{ inputs.custom_version }}\\n\\nThis is a custom/manual deployment.\\n\\nChanges:\\n- Add/update ksonnet/lib/argo-workflows-util/common-steps/${{ inputs.custom_target_dir }}/bench_functions.libsonnet\\n- Add/update ksonnet/lib/argo-workflows-util/common-steps/${{ inputs.custom_target_dir }}/bench_functions_test.jsonnet"
       commit_message: "Custom deployment of bench libsonnet ${{ inputs.custom_version }}"
-      download_url: "https://raw.githubusercontent.com/grafana/grafana-bench/main/libsonnet/bench.libsonnet"

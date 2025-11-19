@@ -103,16 +103,15 @@ jobs:
         run: |
           make libsonnet
 
-      - name: Verify all three files are generated
+      - name: Verify generated files
         run: |
           echo "📋 Checking generated files:"
           ls -la libsonnet/
           
-          test -f libsonnet/bench.libsonnet
           test -f libsonnet/bench_functions.libsonnet  
           test -f libsonnet/bench_functions_test.jsonnet
           
-          echo "✅ All three libsonnet files generated successfully"
+          echo "✅ Pure function libsonnet files generated successfully"
 
       - name: Show test results summary
         run: |
@@ -223,13 +222,12 @@ jobs:
       id-token: write
     uses: ./.github/workflows/update-libsonnet.yml
     with:
-      version: "dev-latest"
+      version: "experimental"
       target_dir: "bench/experimental"
       branch_prefix: "bench-libsonnet-experimental"
       pr_title: "[Experimental] Update experimental bench libsonnet"
-      pr_message: "Update experimental bench libsonnet from main branch\\n\\nThis PR updates the experimental bench libsonnet library with the latest changes from the main branch.\\n\\nChanges:\\n- Update ksonnet/lib/argo-workflows-util/common-steps/bench/experimental/bench.libsonnet\\n\\n⚠️ This is an experimental version - use for testing only.\\n\\nImport with:\\n```jsonnet\\nlocal bench = import 'argo-workflows-util/common-steps/bench/experimental/bench.libsonnet';\\n```"
+      pr_message: "Update experimental bench libsonnet from main branch\\n\\nThis PR updates the experimental bench libsonnet library with the latest changes from the main branch.\\n\\nChanges:\\n- Update ksonnet/lib/argo-workflows-util/common-steps/bench/experimental/bench_functions.libsonnet\\n- Update ksonnet/lib/argo-workflows-util/common-steps/bench/experimental/bench_functions_test.jsonnet\\n- Update ksonnet/lib/argo-workflows-util/common-steps/templates/bench_versions.libsonnet\\n\\n⚠️ This is an experimental version - use for testing only.\\n\\nImport with:\\n```jsonnet\\nlocal benchVersions = import 'argo-workflows-util/common-steps/templates/bench_versions.libsonnet';\\nlocal benchFunctions = benchVersions.getBenchFunctions('experimental');\\n```"
       commit_message: "Update bench experimental libsonnet from main\\n\\nThis commit updates the experimental bench libsonnet library with the latest changes.\\n\\nGenerated automatically from bench CLI flags."
-      download_url: "https://raw.githubusercontent.com/grafana/grafana-bench/main/libsonnet/bench.libsonnet"
       base_image_url: "us-docker.pkg.dev/grafanalabs-dev/docker-grafana-bench-dev/grafana-bench"
       playwright_image_url: "us-docker.pkg.dev/grafanalabs-dev/docker-grafana-bench-dev/grafana-bench-playwright"
 
@@ -245,6 +243,5 @@ jobs:
       target_dir: "bench/${{ github.ref_name }}"
       branch_prefix: "bench-libsonnet-release"
       pr_title: "Add bench libsonnet ${{ github.ref_name }}"
-      pr_message: "Add bench libsonnet ${{ github.ref_name }}\\n\\nThis PR adds the versioned libsonnet library for bench ${{ github.ref_name }}, generated automatically from the CLI flags.\\n\\nChanges:\\n- Add ksonnet/lib/argo-workflows-util/common-steps/bench/${{ github.ref_name }}/bench.libsonnet\\n\\nOnce this is merged, users can import the versioned library with:\\n```jsonnet\\nlocal bench = import 'argo-workflows-util/common-steps/bench/${{ github.ref_name }}/bench.libsonnet';\\n```"
+      pr_message: "Add bench libsonnet ${{ github.ref_name }}\\n\\nThis PR adds the versioned libsonnet library for bench ${{ github.ref_name }}, generated automatically from the CLI flags.\\n\\nChanges:\\n- Add ksonnet/lib/argo-workflows-util/common-steps/bench/${{ github.ref_name }}/bench_functions.libsonnet\\n- Add ksonnet/lib/argo-workflows-util/common-steps/bench/${{ github.ref_name }}/bench_functions_test.jsonnet\\n- Update ksonnet/lib/argo-workflows-util/common-steps/templates/bench_versions.libsonnet to include ${{ github.ref_name }}\\n\\nOnce this is merged, users can import the versioned library with:\\n```jsonnet\\nlocal benchVersions = import 'argo-workflows-util/common-steps/templates/bench_versions.libsonnet';\\nlocal benchFunctions = benchVersions.getBenchFunctions('${{ github.ref_name }}');\\n```"
       commit_message: "Add bench libsonnet ${{ github.ref_name }}\\n\\nThis commit adds the versioned bench libsonnet library.\\n\\nGenerated automatically from bench CLI flags."
-      download_url: "https://github.com/grafana/grafana-bench/releases/download/${{ github.ref_name }}/bench.libsonnet"
