@@ -69,12 +69,13 @@ libsonnet-test-versions: install-deps
 	@echo "🔧 Testing versions subcommand..."
 	@rm -rf /tmp/bench-versions-test
 	@mkdir -p /tmp/bench-versions-test/experimental /tmp/bench-versions-test/v1.0.0 /tmp/bench-versions-test/v1.1.0
-	@echo "function(name) { name: name }" > /tmp/bench-versions-test/experimental/main.libsonnet
-	@echo "function(name) { name: name }" > /tmp/bench-versions-test/v1.0.0/main.libsonnet  
-	@echo "function(name) { name: name }" > /tmp/bench-versions-test/v1.1.0/main.libsonnet
+	@echo "{ mapOptions(suite):: {}, selectImage(runner):: 'test', buildScript(url, opts):: [] }" > /tmp/bench-versions-test/experimental/main.libsonnet
+	@echo "{ mapOptions(suite):: {}, selectImage(runner):: 'test', buildScript(url, opts):: [] }" > /tmp/bench-versions-test/v1.0.0/main.libsonnet  
+	@echo "{ mapOptions(suite):: {}, selectImage(runner):: 'test', buildScript(url, opts):: [] }" > /tmp/bench-versions-test/v1.1.0/main.libsonnet
 	@go run ./generators/libsonnet versions --versions "experimental,v1.0.0,v1.1.0" -o /tmp/bench-versions-test >/dev/null 2>&1
 	@cd /tmp/bench-versions-test && jsonnet-lint versions.libsonnet >/dev/null && jsonnet-lint versions_test.jsonnet >/dev/null && echo "✅ Generated versions files passed linting"
 	@cd /tmp/bench-versions-test && jsonnet versions_test.jsonnet | grep -q '"allTestsPassed": true' && echo "✅ All versions tests passed" || (echo "❌ Versions tests failed" && exit 1)
+	@rm -rf /tmp/bench-versions-test
 
 # Install development dependencies
 install-deps:
