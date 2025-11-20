@@ -51,29 +51,40 @@ docs:
 	go run ./generators/doc -o docs
 
 # Generate libsonnet library
-libsonnet: install-deps
-	@echo "🔧 Generating libsonnet library..."
-	@go run ./generators/libsonnet -o libsonnet
-	@echo "🧪 Testing generated libsonnet functions..."
-	@cd libsonnet && jsonnet bench_functions_test.jsonnet | grep -q '"allTestsPassed": true' && echo "✅ All libsonnet function tests passed" || (echo "❌ Libsonnet function tests failed" && exit 1)
+libsonnet: install-deps libsonnet-test-versions
+	@echo "🔧 Generating main libsonnet library..."
+	@go run ./generators/libsonnet generate -o libsonnet >/dev/null 2>&1
+	@cd libsonnet && jsonnet-lint main.libsonnet >/dev/null && jsonnet-lint main_test.jsonnet >/dev/null && echo "✅ Generated main libsonnet files passed linting"
+	@cd libsonnet && jsonnet main_test.jsonnet | grep -q '"allTestsPassed": true' && echo "✅ All libsonnet function tests passed" || (echo "❌ Libsonnet function tests failed" && exit 1)
 
 # Generate libsonnet library with specific version (for releases)
 libsonnet-release: install-deps
 	@echo "🔧 Generating libsonnet library for version $(VERSION)..."
-	@go run ./generators/libsonnet -version $(VERSION) -o libsonnet
-	@echo "🧪 Testing generated libsonnet functions..."
-	@cd libsonnet && jsonnet bench_functions_test.jsonnet | grep -q '"allTestsPassed": true' && echo "✅ All libsonnet function tests passed" || (echo "❌ Libsonnet function tests failed" && exit 1)
+	@go run ./generators/libsonnet generate -version $(VERSION) -o libsonnet >/dev/null 2>&1
+	@cd libsonnet && jsonnet-lint main.libsonnet >/dev/null && jsonnet-lint main_test.jsonnet >/dev/null && echo "✅ Generated libsonnet files passed linting"
+	@cd libsonnet && jsonnet main_test.jsonnet | grep -q '"allTestsPassed": true' && echo "✅ All libsonnet function tests passed" || (echo "❌ Libsonnet function tests failed" && exit 1)
+
+# Test versions subcommand with sample versions
+libsonnet-test-versions: install-deps
+	@echo "🔧 Testing versions subcommand..."
+	@rm -rf /tmp/bench-versions-test
+	@mkdir -p /tmp/bench-versions-test/experimental /tmp/bench-versions-test/v1.0.0 /tmp/bench-versions-test/v1.1.0
+	@echo "function(name) { name: name }" > /tmp/bench-versions-test/experimental/main.libsonnet
+	@echo "function(name) { name: name }" > /tmp/bench-versions-test/v1.0.0/main.libsonnet  
+	@echo "function(name) { name: name }" > /tmp/bench-versions-test/v1.1.0/main.libsonnet
+	@go run ./generators/libsonnet versions --versions "experimental,v1.0.0,v1.1.0" -o /tmp/bench-versions-test >/dev/null 2>&1
+	@cd /tmp/bench-versions-test && jsonnet-lint versions.libsonnet >/dev/null && jsonnet-lint versions_test.jsonnet >/dev/null && echo "✅ Generated versions files passed linting"
+	@cd /tmp/bench-versions-test && jsonnet versions_test.jsonnet | grep -q '"allTestsPassed": true' && echo "✅ All versions tests passed" || (echo "❌ Versions tests failed" && exit 1)
 
 # Install development dependencies
 install-deps:
-	@echo "🔍 Checking for jsonnet..."
 	@if ! command -v jsonnet >/dev/null 2>&1; then \
 		echo "📦 Installing jsonnet..."; \
 		if command -v go >/dev/null 2>&1; then \
 			go install github.com/google/go-jsonnet/cmd/jsonnet@latest; \
 			export PATH="$$(go env GOPATH)/bin:$$PATH"; \
 			if command -v jsonnet >/dev/null 2>&1; then \
-				echo "✅ jsonnet installed at $$(which jsonnet)"; \
+				echo "✅ jsonnet installed"; \
 			else \
 				echo "⚠️ jsonnet installed but not found in PATH. Check: $$(go env GOPATH)/bin/jsonnet"; \
 			fi; \
@@ -81,17 +92,14 @@ install-deps:
 			echo "❌ Go not found. Please install Go first or install jsonnet manually."; \
 			exit 1; \
 		fi; \
-	else \
-		echo "✅ jsonnet already installed at $$(which jsonnet)"; \
 	fi
-	@echo "🔍 Checking for jsonnetfmt..."
 	@if ! command -v jsonnetfmt >/dev/null 2>&1; then \
 		echo "📦 Installing jsonnetfmt..."; \
 		if command -v go >/dev/null 2>&1; then \
 			go install github.com/google/go-jsonnet/cmd/jsonnetfmt@latest; \
 			export PATH="$$(go env GOPATH)/bin:$$PATH"; \
 			if command -v jsonnetfmt >/dev/null 2>&1; then \
-				echo "✅ jsonnetfmt installed at $$(which jsonnetfmt)"; \
+				echo "✅ jsonnetfmt installed"; \
 			else \
 				echo "⚠️ jsonnetfmt installed but not found in PATH. Check: $$(go env GOPATH)/bin/jsonnetfmt"; \
 			fi; \
@@ -99,8 +107,21 @@ install-deps:
 			echo "❌ Go not found. Please install Go first or install jsonnetfmt manually."; \
 			exit 1; \
 		fi; \
-	else \
-		echo "✅ jsonnetfmt already installed at $$(which jsonnetfmt)"; \
+	fi
+	@if ! command -v jsonnet-lint >/dev/null 2>&1; then \
+		echo "📦 Installing jsonnet-lint..."; \
+		if command -v go >/dev/null 2>&1; then \
+			go install github.com/google/go-jsonnet/cmd/jsonnet-lint@latest; \
+			export PATH="$$(go env GOPATH)/bin:$$PATH"; \
+			if command -v jsonnet-lint >/dev/null 2>&1; then \
+				echo "✅ jsonnet-lint installed"; \
+			else \
+				echo "⚠️ jsonnet-lint installed but not found in PATH. Check: $$(go env GOPATH)/bin/jsonnet-lint"; \
+			fi; \
+		else \
+			echo "❌ Go not found. Please install Go first or install jsonnet-lint manually."; \
+			exit 1; \
+		fi; \
 	fi
 
 # Clean up all built images
