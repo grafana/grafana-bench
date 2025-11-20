@@ -4,8 +4,11 @@
 // To regenerate, run: go run generators/libsonnet generate -o <output-dir> -version <version>
 
 // Pure functions library with no external dependencies for grafana-bench libsonnet
-// These functions contain the core business logic and can be tested independently.
+// These functions contain the core business logic and are intended to be imported
+// when building argo workflow templates. To use this library, import import the specific
+// version of bench you would like to use via ksonnet/lib/bench/versions.libsonnet
 
+// Version: {{.Version}}
 local benchImage = '{{.BaseImageURL}}';
 local benchPlaywrightImage = '{{.PlaywrightImageURL}}';
 
@@ -20,8 +23,6 @@ local benchPlaywrightImage = '{{.PlaywrightImageURL}}';
   
   // Helper function to map suite options with defaults
   mapOptions(suite):: {
-    // bench image revision - pinned to this version
-    benchRevision: '{{.Version}}',
 {{.SuiteOptions}}
     // suite execution options
     options: {
