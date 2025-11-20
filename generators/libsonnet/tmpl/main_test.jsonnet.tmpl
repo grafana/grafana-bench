@@ -32,58 +32,91 @@ local complexSuite = {
 
 // Unit tests using std.assertEqual
 local tests = {
-  // Test 1: Basic bench function creation
-  testBenchFunctionCreation: std.assertEqual(
-    std.type(benchFunctions('test')),
-    'object'
+  // Test 1: Basic image selection
+  testImageSelectionK6: std.assertEqual(
+    benchFunctions.selectImage('k6'),
+    '{{.BaseImageURL}}'
   ),
 
-  // Test 2: Basic withBenchTest functionality
-  testWithBenchTest: std.assertEqual(
-    std.type(benchFunctions('test').withBenchTest('http://grafana:3000', basicSuite)),
-    'object'
+  testImageSelectionPlaywright: std.assertEqual(
+    benchFunctions.selectImage('playwright'),
+    '{{.PlaywrightImageURL}}'
   ),
 
-  // Test 3: Environment variable handling
-  testEnvironmentVariables: std.assertEqual(
-    benchFunctions('test').withEnvVars(['TEST_VAR=value']).envVars,
-    ['TEST_VAR=value']
+  // Test 2: Basic option mapping
+  testBasicOptions: (
+    local options = benchFunctions.mapOptions(basicSuite);
+    std.assertEqual(options.suitePath, 'CI/k6') &&
+    std.assertEqual(options.testRunner, 'k6') &&
+    std.assertEqual(options.testType, 'smoke') &&
+    std.assertEqual(options.benchRevision, '{{.Version}}')
   ),
 
-  // Test 4: Container image handling
-  testContainerImage: std.assertEqual(
-    benchFunctions('test').withContainerImage('custom:latest').image,
-    'custom:latest'
+  // Test 3: Option override behavior
+  testOptionOverrides: (
+    local options = benchFunctions.mapOptions(playwrightSuite);
+    std.assertEqual(options.testRunner, 'playwright') &&
+    std.assertEqual(options.pwExecute, 'npm test') &&
+    std.assertEqual(options.pwPrepare, 'npm install')
   ),
 
-  // Test 5: Basic suite configuration
-  testBasicSuite: (
-    local result = benchFunctions('basic-test').withBenchTest('http://grafana:3000', basicSuite);
-    std.objectHas(result.parameters, 'script') &&
-    std.objectHas(result.parameters, 'image') &&
-    std.type(result.parameters.script) == 'string' &&
-    std.type(result.parameters.image) == 'string'
+  // Test 4: Basic script generation
+  testBasicScriptGeneration: (
+    local options = benchFunctions.mapOptions(basicSuite);
+    local script = benchFunctions.buildScript('http://grafana:3000', options);
+    
+    // Check that required elements are present
+    std.member(script, 'grafana-bench') &&
+    std.member(script, 'test') &&
+    std.member(script, '--grafana-url') &&
+    std.member(script, 'http://grafana:3000') &&
+    std.member(script, '--suite-path') &&
+    std.member(script, 'CI/k6') &&
+    std.member(script, '--test-runner') &&
+    std.member(script, 'k6')
   ),
 
-  // Test 6: Playwright suite configuration  
-  testPlaywrightSuite: (
-    local result = benchFunctions('playwright-test').withBenchTest('http://grafana:3000', playwrightSuite);
-    std.objectHas(result.parameters, 'script') &&
-    std.objectHas(result.parameters, 'image') &&
-    std.member(result.parameters.image, 'playwright')
+  // Test 5: Script generation with optional flags
+  testScriptWithOptionalFlags: (
+    local options = benchFunctions.mapOptions(complexSuite);
+    local script = benchFunctions.buildScript('http://grafana:3000', options);
+    
+    // Check that optional flags are included when enabled
+    std.member(script, '--prometheus-metrics') &&
+    std.member(script, '--prometheus-url') &&
+    std.member(script, 'http://prometheus:9090') &&
+    std.member(script, '--slack-notifications') &&
+    std.member(script, '--slack-token') &&
+    std.member(script, 'test-token')
   ),
 
-  // Test 7: Complex suite with optional flags
-  testComplexSuite: (
-    local result = benchFunctions('complex-test').withBenchTest('http://grafana:3000', complexSuite);
-    std.objectHas(result.parameters, 'script') &&
-    std.objectHas(result.parameters, 'image')
+  // Test 6: Environment variable handling
+  testEnvironmentVariables: (
+    local options = benchFunctions.mapOptions(complexSuite);
+    local script = benchFunctions.buildScript('http://grafana:3000', options);
+    
+    // Check that test-env flag is properly formatted
+    std.member(script, '--test-env') &&
+    std.member(script, 'VAR1="$"VAR1,VAR2="$"VAR2')
   ),
 
-  // Test 8: Version pinning
-  testVersionPinning: (
-    local result = benchFunctions('version-test').withBenchTest('http://grafana:3000', basicSuite);
-    std.member(result.parameters.image, '{{.Version}}')
+  // Test 7: Script generation excludes noFail when false
+  testScriptNoFailFalse: (
+    local options = benchFunctions.mapOptions(basicSuite);
+    local script = benchFunctions.buildScript('http://grafana:3000', options);
+    
+    // Check that || true is NOT included when noFail is false
+    !std.member(script, '|| true')
+  ),
+
+  // Test 8: Script generation includes noFail when true
+  testScriptNoFailTrue: (
+    local suiteWithNoFail = basicSuite + { options: { noFail: true } };
+    local options = benchFunctions.mapOptions(suiteWithNoFail);
+    local script = benchFunctions.buildScript('http://grafana:3000', options);
+    
+    // Check that || true IS included when noFail is true
+    std.member(script, '|| true')
   ),
 };
 
