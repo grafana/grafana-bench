@@ -15,10 +15,6 @@ on:
         description: 'PR branch prefix'
         required: true
         type: string
-      pr_title:
-        description: 'Pull request title'
-        required: true
-        type: string
       pr_message:
         description: 'Pull request message'
         required: true
@@ -120,7 +116,6 @@ jobs:
           VERSION: ${{ inputs.version }}
           TARGET_DIR: ${{ inputs.target_dir }}
           BRANCH_PREFIX: ${{ inputs.branch_prefix }}
-          PR_TITLE: ${{ inputs.pr_title }}
           PR_MESSAGE: ${{ inputs.pr_message }}
           COMMIT_MESSAGE: ${{ inputs.commit_message }}
           PR_REVIEWER: ${{ github.actor }}

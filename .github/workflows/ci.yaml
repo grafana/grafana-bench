@@ -212,7 +212,6 @@ jobs:
       version: "experimental"
       target_dir: "experimental"
       branch_prefix: "bench-libsonnet-experimental"
-      pr_title: "Update experimental bench libsonnet"
       pr_message: "Update experimental bench libsonnet from main branch\\n\\nThis PR updates the experimental bench libsonnet library with the latest changes from the main branch.\\n\\nChanges:\\n- Update ksonnet/lib/bench/experimental/main.libsonnet\\n- Update ksonnet/lib/bench/experimental/main_test.jsonnet\\n- Update ksonnet/lib/bench/versions.libsonnet\\n\\n⚠️ This is an experimental version - use for testing only.\\n\\nImport with:\\n```jsonnet\\nlocal benchVersions = import 'bench/versions.libsonnet';\\nlocal benchFunctions = benchVersions.getBenchFunctions('experimental');\\n```"
       commit_message: "Update bench experimental libsonnet from main\\n\\nThis commit updates the experimental bench libsonnet library with the latest changes.\\n\\nGenerated automatically from bench CLI flags."
       base_image_url: "us-docker.pkg.dev/grafanalabs-dev/docker-grafana-bench-dev/grafana-bench"
@@ -229,6 +228,5 @@ jobs:
       version: ${{ github.ref_name }}
       target_dir: "${{ github.ref_name }}"
       branch_prefix: "bench-libsonnet-release"
-      pr_title: "Add bench libsonnet (versioned release)"
       pr_message: "Add bench libsonnet versioned release\\n\\nThis PR adds the versioned libsonnet library for bench, generated automatically from the CLI flags.\\n\\nChanges:\\n- Add ksonnet/lib/bench/[version]/main.libsonnet\\n- Add ksonnet/lib/bench/[version]/main_test.jsonnet\\n- Update ksonnet/lib/bench/versions.libsonnet to include version\\n\\nOnce this is merged, users can import the versioned library with:\\n```jsonnet\\nlocal benchVersions = import 'bench/versions.libsonnet';\\nlocal benchFunctions = benchVersions.getBenchFunctions('[version]');\\n```"
       commit_message: "Add bench libsonnet versioned release\\n\\nThis commit adds the versioned bench libsonnet library.\\n\\nGenerated automatically from bench CLI flags."
