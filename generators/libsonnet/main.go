@@ -77,8 +77,6 @@ func printHelp() {
 func generateMain() {
 	var outputPath string
 	var version string
-	var baseImageURL string
-	var playwrightImageURL string
 	
 	// Parse args starting from index 2 if first arg is "generate"
 	var args []string
@@ -92,8 +90,7 @@ func generateMain() {
 	fs := flag.NewFlagSet("generate", flag.ExitOnError)
 	fs.StringVar(&outputPath, "o", "", "output directory for generated libsonnet")
 	fs.StringVar(&version, "version", "", "version to pin in the generated library")
-	fs.StringVar(&baseImageURL, "base-image", "us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench", "base bench image URL")
-	fs.StringVar(&playwrightImageURL, "playwright-image", "us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench-playwright", "playwright bench image URL")
+	// Image URLs are auto-detected based on version (experimental = dev, releases = prod)
 	fs.Parse(args)
 
 	if outputPath == "" {
@@ -121,6 +118,29 @@ func generateMain() {
 		} else {
 			fmt.Printf("Using latest tag: %s\n", version)
 		}
+	}
+
+	// Determine image URLs based on version
+	var baseImageURL, playwrightImageURL string
+	
+	if version == "experimental" {
+		// For experimental versions, use dev images with dev-{shortSha} tag
+		workDir, err := os.Getwd()
+		if err != nil {
+			log.Fatalf("Failed to get working directory: %v", err)
+		}
+		
+		shortSHA, err := utils.GetShortCommitSHA(workDir)
+		if err != nil {
+			log.Fatalf("Failed to get commit SHA for experimental version: %v", err)
+		}
+		
+		baseImageURL = fmt.Sprintf("us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-dev/grafana-bench:dev-%s", shortSHA)
+		playwrightImageURL = fmt.Sprintf("us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-dev/grafana-bench-playwright:dev-%s", shortSHA)
+	} else {
+		// For release versions, use prod images with version tag
+		baseImageURL = fmt.Sprintf("us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:%s", version)
+		playwrightImageURL = fmt.Sprintf("us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench-playwright:%s", version)
 	}
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
