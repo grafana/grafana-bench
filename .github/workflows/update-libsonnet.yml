@@ -61,42 +61,22 @@ jobs:
         env:
           VERSION: ${{ inputs.version }}
         run: |
-          # Debug: Check what's available
-          echo "🔍 Checking Go and PATH:"
-          which go || echo "Go not found"
-          go version || echo "Go version failed"
-          echo "PATH: $PATH"
-          
           # Generate main libsonnet files with unit tests using make
           make libsonnet-release VERSION="$VERSION"
 
-      - name: Prepare libsonnet for deployment
+      - name: Generate versions files for deployment
         env:
           VERSION: ${{ inputs.version }}
-          TARGET_DIR: ${{ inputs.target_dir }}
         run: |
-          mkdir -p deployment-libsonnet
-          
-          echo "📋 Copying libsonnet function files..."
-          cp libsonnet/main.libsonnet deployment-libsonnet/main.libsonnet
-          cp libsonnet/main_test.jsonnet deployment-libsonnet/main_test.jsonnet
-          
-          echo "📝 Generating versions.libsonnet dynamically..."
-          
-          # Use the versions subcommand to generate versions.libsonnet
-          # First, discover existing versions in deployment_tools (this will be done by the updater)
-          # For now, we'll generate a basic versions file and let the deployment script update it
-          
+          # Generate initial versions.libsonnet and versions_test.jsonnet 
+          # This creates a baseline - the updater will regenerate with discovered versions
           if [ "$VERSION" = "experimental" ]; then
-            echo "Creating versions.libsonnet for experimental deployment..."
-            go run ./generators/libsonnet versions --versions "experimental" -o deployment-libsonnet
+            echo "Creating initial versions.libsonnet for experimental deployment..."
+            go run ./generators/libsonnet versions --versions "experimental" -o libsonnet
           else
-            echo "Creating versions.libsonnet for versioned release $VERSION..."  
-            # Include both experimental and the new version
-            go run ./generators/libsonnet versions --versions "experimental,$VERSION" -o deployment-libsonnet
+            echo "Creating initial versions.libsonnet for versioned release $VERSION..."  
+            go run ./generators/libsonnet versions --versions "experimental,$VERSION" -o libsonnet
           fi
-          
-          echo "✅ Libsonnet function files ready for deployment to ${TARGET_DIR}"
 
       - name: Get Vault secrets for deployment_tools access
         uses: grafana/shared-workflows/actions/get-vault-secrets@ae92934a14a48b94494dbc06d74a81d47fe08a40
@@ -122,15 +102,15 @@ jobs:
           PR_REVIEWER: ${{ github.actor }}
         run: |
           set -euo pipefail
-          
+
           # Pull the updater Docker image
           docker pull us-docker.pkg.dev/grafanalabs-global/docker-deployment-tools-prod/updater
-          
+
           # Create config.json for libsonnet update using environment variables
           cat << EOF > config.json
           {
             "repo_owner": "grafana",
-            "repo_name": "deployment_tools", 
+            "repo_name": "deployment_tools",
             "destination_branch": "master",
             "pull_request_enabled": true,
             "pull_request_branch_prefix": "${BRANCH_PREFIX}",
@@ -150,12 +130,12 @@ jobs:
                 "command": "cp /workspace/libsonnet/main.libsonnet ksonnet/lib/bench/${TARGET_DIR}/main.libsonnet"
               },
               {
-                "description": "Copy libsonnet test file", 
+                "description": "Copy libsonnet test file",
                 "command": "cp /workspace/libsonnet/main_test.jsonnet ksonnet/lib/bench/${TARGET_DIR}/main_test.jsonnet"
               },
               {
-                "description": "Dynamically discover existing versions and generate versions.libsonnet",
-                "command": "cd ksonnet/lib/bench && existing_versions=$(find . -maxdepth 1 -type d -not -name '.' | sed 's|./||' | sort | paste -sd,) && if [ '${VERSION}' != 'experimental' ]; then if [ -z \"$existing_versions\" ]; then all_versions='${VERSION}'; else all_versions=\"$existing_versions,${VERSION}\"; fi; else all_versions=\"$existing_versions\"; fi && echo \"Discovered versions: $all_versions\" && cp /workspace/libsonnet/versions.libsonnet versions.libsonnet && cp /workspace/libsonnet/versions_test.jsonnet versions_test.jsonnet"
+                "description": "Copy pre-generated versions files (will be regenerated with discovered versions)",
+                "command": "cp /workspace/libsonnet/versions.libsonnet ksonnet/lib/bench/versions.libsonnet && cp /workspace/libsonnet/versions_test.jsonnet ksonnet/lib/bench/versions_test.jsonnet"
               }
             ]
           }
@@ -163,7 +143,7 @@ jobs:
 
           # Run the Docker-based updater tool
           docker run --rm \
-            -v "$(pwd)/deployment-libsonnet:/workspace/libsonnet:ro" \
+            -v "$(pwd):/workspace:ro" \
             -e GITHUB_APP_ID="$GITHUB_APP_ID" \
             -e GITHUB_APP_INSTALLATION_ID="$GITHUB_APP_INSTALLATION_ID" \
             -e GITHUB_APP_PRIVATE_KEY="$GITHUB_APP_PRIVATE_KEY" \
