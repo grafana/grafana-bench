@@ -61,69 +61,20 @@ jobs:
         env:
           VERSION: ${{ inputs.version }}
         run: |
-          # Debug: Check what's available
-          echo "🔍 Checking Go and PATH:"
-          which go || echo "Go not found"
-          go version || echo "Go version failed"
-          echo "PATH: $PATH"
-          
-          # Generate all three libsonnet files with unit tests using make
+          # Generate main libsonnet files with unit tests using make
           make libsonnet-release VERSION="$VERSION"
 
-      - name: Prepare libsonnet for deployment
+      - name: Generate versions files for deployment
         env:
           VERSION: ${{ inputs.version }}
-          TARGET_DIR: ${{ inputs.target_dir }}
         run: |
-          mkdir -p deployment-libsonnet
-          
-          echo "📋 Copying libsonnet function files..."
-          cp libsonnet/bench_functions.libsonnet deployment-libsonnet/bench_functions.libsonnet
-          cp libsonnet/bench_functions_test.jsonnet deployment-libsonnet/bench_functions_test.jsonnet
-          
-          echo "📝 Generating bench_versions.libsonnet..."
-          
-          # Logic depends on whether this is experimental or a versioned release
-          if [ "$VERSION" = "experimental" ]; then
-            echo "Creating bench_versions.libsonnet for experimental deployment..."
-            cat > deployment-libsonnet/bench_versions.libsonnet << 'EOF'
-          // Static version mapping with imports
-          local versions = {
-            'experimental': import 'experimental/main.libsonnet',
-          };
-          
-          {
-            getBenchFunctions(version)::
-              if std.objectHas(versions, version) then
-                versions[version]
-              else
-                error 'Unknown bench version: ' + version + '. Available: ' + std.join(', ', std.objectFields(versions)),
-          }
-          EOF
+          # Only generate versions files for actual version releases, not experimental
+          if [ "$VERSION" != "experimental" ]; then
+            echo "Creating versions.libsonnet for versioned release $VERSION..."  
+            go run ./generators/libsonnet versions --versions "experimental,$VERSION" -o libsonnet
           else
-            echo "Creating bench_versions.libsonnet for versioned release $VERSION..."
-            cat > deployment-libsonnet/bench_versions.libsonnet << EOF
-          // Static version mapping with imports
-          // This file will be updated by the updater to add the new version
-          local versions = {
-            'experimental': import 'experimental/main.libsonnet',
-            '$VERSION': import '$VERSION/main.libsonnet',
-          };
-          
-          {
-            getBenchFunctions(version)::
-              if std.objectHas(versions, version) then
-                versions[version]
-              else
-                error 'Unknown bench version: ' + version + '. Available: ' + std.join(', ', std.objectFields(versions)),
-          }
-          EOF
+            echo "Skipping versions file generation for experimental release (no new version added)"
           fi
-          
-          echo "🔧 Formatting bench_versions.libsonnet with jsonnetfmt..."
-          jsonnetfmt -i deployment-libsonnet/bench_versions.libsonnet
-          
-          echo "✅ Libsonnet function files ready for deployment to ${TARGET_DIR}"
 
       - name: Get Vault secrets for deployment_tools access
         uses: grafana/shared-workflows/actions/get-vault-secrets@ae92934a14a48b94494dbc06d74a81d47fe08a40
@@ -149,15 +100,15 @@ jobs:
           PR_REVIEWER: ${{ github.actor }}
         run: |
           set -euo pipefail
-          
+
           # Pull the updater Docker image
           docker pull us-docker.pkg.dev/grafanalabs-global/docker-deployment-tools-prod/updater
-          
+
           # Create config.json for libsonnet update using environment variables
           cat << EOF > config.json
           {
             "repo_owner": "grafana",
-            "repo_name": "deployment_tools", 
+            "repo_name": "deployment_tools",
             "destination_branch": "master",
             "pull_request_enabled": true,
             "pull_request_branch_prefix": "${BRANCH_PREFIX}",
@@ -173,16 +124,16 @@ jobs:
                 "command": "mkdir -p ksonnet/lib/bench/${TARGET_DIR}"
               },
               {
-                "description": "Copy libsonnet functions file",
-                "command": "cp /workspace/libsonnet/bench_functions.libsonnet ksonnet/lib/bench/${TARGET_DIR}/main.libsonnet"
+                "description": "Copy libsonnet main function file",
+                "command": "cp /workspace/libsonnet/main.libsonnet ksonnet/lib/bench/${TARGET_DIR}/main.libsonnet"
               },
               {
-                "description": "Copy libsonnet test file", 
-                "command": "cp /workspace/libsonnet/bench_functions_test.jsonnet ksonnet/lib/bench/${TARGET_DIR}/main_test.jsonnet"
+                "description": "Copy libsonnet test file",
+                "command": "cp /workspace/libsonnet/main_test.jsonnet ksonnet/lib/bench/${TARGET_DIR}/main_test.jsonnet"
               },
               {
-                "description": "Update bench versions mapping",
-                "command": "cp /workspace/libsonnet/bench_versions.libsonnet ksonnet/lib/bench/versions.libsonnet"
+                "description": "Copy or regenerate versions files",
+                "command": "if [ -f /workspace/libsonnet/versions.libsonnet ]; then cp /workspace/libsonnet/versions.libsonnet ksonnet/lib/bench/versions.libsonnet && cp /workspace/libsonnet/versions_test.jsonnet ksonnet/lib/bench/versions_test.jsonnet && echo 'Copied pre-generated versions files'; else echo 'No pre-generated versions files (experimental release - versions file unchanged)'; fi"
               }
             ]
           }
@@ -190,7 +141,7 @@ jobs:
 
           # Run the Docker-based updater tool
           docker run --rm \
-            -v "$(pwd)/deployment-libsonnet:/workspace/libsonnet:ro" \
+            -v "$(pwd):/workspace:ro" \
             -e GITHUB_APP_ID="$GITHUB_APP_ID" \
             -e GITHUB_APP_INSTALLATION_ID="$GITHUB_APP_INSTALLATION_ID" \
             -e GITHUB_APP_PRIVATE_KEY="$GITHUB_APP_PRIVATE_KEY" \

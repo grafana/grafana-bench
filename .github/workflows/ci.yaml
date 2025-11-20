@@ -84,9 +84,8 @@ jobs:
             --slack-notifications
 
   test-libsonnet:
-    name: Test Libsonnet Generation and Functions
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -105,21 +104,6 @@ jobs:
       - name: Generate libsonnet and run function tests
         run: |
           make libsonnet
-
-      - name: Verify generated files
-        run: |
-          echo "📋 Checking generated files:"
-          ls -la libsonnet/
-          
-          test -f libsonnet/bench_functions.libsonnet  
-          test -f libsonnet/bench_functions_test.jsonnet
-          
-          echo "✅ Pure function libsonnet files generated successfully"
-
-      - name: Show test results summary
-        run: |
-          echo "🧪 Libsonnet function test results:"
-          cd libsonnet && jsonnet bench_functions_test.jsonnet | jq '.summary'
 
   test-validate:
     runs-on: ubuntu-latest
