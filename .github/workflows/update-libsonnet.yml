@@ -68,14 +68,12 @@ jobs:
         env:
           VERSION: ${{ inputs.version }}
         run: |
-          # Generate initial versions.libsonnet and versions_test.jsonnet 
-          # This creates a baseline - the updater will regenerate with discovered versions
-          if [ "$VERSION" = "experimental" ]; then
-            echo "Creating initial versions.libsonnet for experimental deployment..."
-            go run ./generators/libsonnet versions --versions "experimental" -o libsonnet
-          else
-            echo "Creating initial versions.libsonnet for versioned release $VERSION..."  
+          # Only generate versions files for actual version releases, not experimental
+          if [ "$VERSION" != "experimental" ]; then
+            echo "Creating versions.libsonnet for versioned release $VERSION..."  
             go run ./generators/libsonnet versions --versions "experimental,$VERSION" -o libsonnet
+          else
+            echo "Skipping versions file generation for experimental release (no new version added)"
           fi
 
       - name: Get Vault secrets for deployment_tools access
@@ -134,8 +132,8 @@ jobs:
                 "command": "cp /workspace/libsonnet/main_test.jsonnet ksonnet/lib/bench/${TARGET_DIR}/main_test.jsonnet"
               },
               {
-                "description": "Copy pre-generated versions files (will be regenerated with discovered versions)",
-                "command": "cp /workspace/libsonnet/versions.libsonnet ksonnet/lib/bench/versions.libsonnet && cp /workspace/libsonnet/versions_test.jsonnet ksonnet/lib/bench/versions_test.jsonnet"
+                "description": "Copy or regenerate versions files",
+                "command": "if [ -f /workspace/libsonnet/versions.libsonnet ]; then cp /workspace/libsonnet/versions.libsonnet ksonnet/lib/bench/versions.libsonnet && cp /workspace/libsonnet/versions_test.jsonnet ksonnet/lib/bench/versions_test.jsonnet && echo 'Copied pre-generated versions files'; else echo 'No pre-generated versions files (experimental release - versions file unchanged)'; fi"
               }
             ]
           }
