@@ -15,10 +15,6 @@ on:
         description: 'PR branch prefix'
         required: true
         type: string
-      pr_title:
-        description: 'Pull request title'
-        required: true
-        type: string
       pr_message:
         description: 'Pull request message'
         required: true
@@ -76,6 +72,37 @@ jobs:
             echo "Skipping versions file generation for experimental release (no new version added)"
           fi
 
+      - name: Authenticate with GAR
+        uses: grafana/shared-workflows/actions/login-to-gar@ae92934a14a48b94494dbc06d74a81d47fe08a40
+        with:
+          registry: us-docker.pkg.dev
+
+      - name: Validate generated images exist
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          echo "🔍 Validating that generated libsonnet images exist in repositories..."
+          
+          # Extract image URLs from the generated libsonnet
+          BASE_IMAGE=$(jsonnet -e "local lib = import 'libsonnet/main.libsonnet'; lib.selectImage('k6')")
+          PLAYWRIGHT_IMAGE=$(jsonnet -e "local lib = import 'libsonnet/main.libsonnet'; lib.selectImage('playwright')")
+          
+          echo "Checking base image: $BASE_IMAGE"
+          docker manifest inspect "$BASE_IMAGE" > /dev/null || {
+            echo "❌ Base image not found: $BASE_IMAGE"
+            exit 1
+          }
+          echo "✅ Base image exists: $BASE_IMAGE"
+          
+          echo "Checking playwright image: $PLAYWRIGHT_IMAGE"  
+          docker manifest inspect "$PLAYWRIGHT_IMAGE" > /dev/null || {
+            echo "❌ Playwright image not found: $PLAYWRIGHT_IMAGE"
+            exit 1
+          }
+          echo "✅ Playwright image exists: $PLAYWRIGHT_IMAGE"
+          
+          echo "🎉 All generated images validated successfully!"
+
       - name: Get Vault secrets for deployment_tools access
         uses: grafana/shared-workflows/actions/get-vault-secrets@ae92934a14a48b94494dbc06d74a81d47fe08a40
         with:
@@ -84,22 +111,27 @@ jobs:
             GITHUB_APP_INSTALLATION_ID=updater-app:app-installation-id
             GITHUB_APP_PRIVATE_KEY=updater-app:private-key
 
-      - name: Authenticate with GAR for updater Docker image
-        uses: grafana/shared-workflows/actions/login-to-gar@ae92934a14a48b94494dbc06d74a81d47fe08a40
-        with:
-          registry: us-docker.pkg.dev
-
       - name: Update deployment_tools with libsonnet
         env:
           VERSION: ${{ inputs.version }}
           TARGET_DIR: ${{ inputs.target_dir }}
           BRANCH_PREFIX: ${{ inputs.branch_prefix }}
-          PR_TITLE: ${{ inputs.pr_title }}
           PR_MESSAGE: ${{ inputs.pr_message }}
           COMMIT_MESSAGE: ${{ inputs.commit_message }}
           PR_REVIEWER: ${{ github.actor }}
         run: |
           set -euo pipefail
+
+          # Create PR title based on version type
+          if [ "$VERSION" == "experimental" ]; then
+            # Get short SHA for experimental releases
+            SHORT_SHA=$(git rev-parse --short HEAD)
+            PR_TITLE="[CI/CD] Update experimental($SHORT_SHA) bench libsonnet"
+          else
+            # Use version for releases
+            PR_TITLE="Release $VERSION bench libsonnet"
+          fi
+          echo "Using PR title: $PR_TITLE"
 
           # Pull the updater Docker image
           docker pull us-docker.pkg.dev/grafanalabs-global/docker-deployment-tools-prod/updater
