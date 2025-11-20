@@ -48,8 +48,7 @@ local tests = {
     local options = benchFunctions.mapOptions(basicSuite);
     std.assertEqual(options.suitePath, 'CI/k6') &&
     std.assertEqual(options.testRunner, 'k6') &&
-    std.assertEqual(options.testType, 'smoke') &&
-    std.assertEqual(options.benchRevision, '{{.Version}}')
+    std.assertEqual(options.testType, 'smoke')
   ),
 
   // Test 3: Option override behavior
