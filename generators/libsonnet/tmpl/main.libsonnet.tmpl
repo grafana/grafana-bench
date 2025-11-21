@@ -21,17 +21,21 @@ local benchPlaywrightImage = '{{.PlaywrightImageURL}}';
     std.join('', std.map(escapeChar, std.stringChars(str)))
   ),
   
-  // Helper function to map suite options with defaults
-  mapOptions(suite):: {
+  // Suite template with version-specific defaults and documentation
+  // Users can extend this template: local mySuite = benchFunctions.Suite + { suitePath: 'my/tests' };
+  Suite:: {
 {{.SuiteOptions}}
-    // suite execution options
+    // Suite execution options
     options: {
-      // prevent the workflow step to fail if the test suite fails
+      // Prevent the workflow step from failing if the test suite fails
       noFail: false,
     },
-    // environment variables to be passed to the test step in the workflow
+    // Environment variables to be passed to the test step in the workflow
     envVars: [],
-  } + suite,
+  },
+
+  // Helper function to map suite options with defaults
+  mapOptions(suite):: self.Suite + suite,
 
   // Helper function to select the appropriate image based on test runner
   selectImage(testRunner)::
