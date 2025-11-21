@@ -3,6 +3,7 @@ package compile
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"log/slog"
 	"testing"
 
@@ -55,28 +56,32 @@ func Test_Compiler(t *testing.T) {
 		},
 	}
 
-	for _, tc := range testCases {
-		tc := tc
+	drivers := []string{"nonogit", "gogit"}
+	for _, driver := range drivers {
+		for _, tc := range testCases {
+			tc := tc
+			name := fmt.Sprintf("%s with %s", tc.name, driver)
+			t.Run(name, func(t *testing.T) {
+				logBuffer := bytes.Buffer{}
+				log := slog.New(slog.NewTextHandler(&logBuffer, nil))
 
-		t.Run(tc.name, func(t *testing.T) {
-			logBuffer := bytes.Buffer{}
-			log := slog.New(slog.NewTextHandler(&logBuffer, nil))
+				compiler := NewTestCompiler(
+					log,
+					driver,
+					t.TempDir(),
+					testRepo.URL,
+					[]string{},
+					testRepo.Token,
+					"master",
+					tc.prepareCmd,
+				)
 
-			compiler := NewTestCompiler(
-				log,
-				t.TempDir(),
-				testRepo.URL,
-				[]string{},
-				testRepo.Token,
-				"master",
-				tc.prepareCmd,
-			)
-
-			_, err := compiler.CompileTestSuite(context.TODO())
-			if err != nil && !tc.expectErr {
-				t.Fatalf("compiling test: %v", err)
-			}
-		})
+				_, err := compiler.CompileTestSuite(context.TODO())
+				if err != nil && !tc.expectErr {
+					t.Fatalf("compiling test: %v", err)
+				}
+			})
+		}
 	}
 
 }
