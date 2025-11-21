@@ -13,6 +13,11 @@ import (
 	"github.com/grafana/nanogit/protocol/hash"
 )
 
+const (
+	defaultBatch       = 100
+	defaultConcurrency = 10
+)
+
 // gitRegRegexp matches the usual git reference patterns
 var (
 	gitRefRegexp = regexp.MustCompile(`^(heads/[^/]+|refs/heads/[^/]+|refs/tags/[^/]+)$`)
@@ -23,8 +28,10 @@ var (
 )
 
 type NanogitRepo struct {
-	repo   string
-	client nanogit.Client
+	repo        string
+	client      nanogit.Client
+	batch       int
+	concurrency int
 }
 
 // NewSource returns a new GitRepo instance.
@@ -44,8 +51,10 @@ func NewSource(
 	}
 
 	return &NanogitRepo{
-		repo:   repo,
-		client: client,
+		repo:        repo,
+		client:      client,
+		batch:       defaultBatch,
+		concurrency: defaultConcurrency,
 	}, nil
 }
 
@@ -120,8 +129,10 @@ func (g *NanogitRepo) clone(ctx context.Context, targetDir string, commitHash ha
 
 	// Prepare clone options
 	cloneOpts := nanogit.CloneOptions{
-		Path: targetDir,
-		Hash: commitHash,
+		Path:        targetDir,
+		Hash:        commitHash,
+		BatchSize:   g.batch,
+		Concurrency: g.concurrency,
 	}
 
 	// Handle checkout directories (path filtering)
