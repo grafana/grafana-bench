@@ -135,8 +135,8 @@ func generateMain() {
 			log.Fatalf("Failed to get commit SHA for experimental version: %v", err)
 		}
 		
-		baseImageURL = fmt.Sprintf("us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-dev/grafana-bench:dev-%s", shortSHA)
-		playwrightImageURL = fmt.Sprintf("us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-dev/grafana-bench-playwright:dev-%s", shortSHA)
+		baseImageURL = fmt.Sprintf("us-docker.pkg.dev/grafanalabs-dev/docker-grafana-bench-dev/grafana-bench:dev-%s", shortSHA)
+		playwrightImageURL = fmt.Sprintf("us-docker.pkg.dev/grafanalabs-dev/docker-grafana-bench-dev/grafana-bench-playwright:dev-%s", shortSHA)
 	} else {
 		// For release versions, use prod images with version tag
 		baseImageURL = fmt.Sprintf("us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:%s", version)
