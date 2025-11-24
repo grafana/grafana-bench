@@ -56,7 +56,7 @@ func Test_Compiler(t *testing.T) {
 		},
 	}
 
-	drivers := []string{"nonogit", "gogit"}
+	drivers := []string{"nanogit", "gogit"}
 	for _, driver := range drivers {
 		for _, tc := range testCases {
 			tc := tc
