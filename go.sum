@@ -1,7 +1,7 @@
-buf.build/gen/go/gogo/protobuf/protocolbuffers/go v1.36.9-20240617172848-e1dbca2775a7.1 h1:5Enm+oOFwSMFeoPY4IVvL3gVRns8eGOA0i1G2r1zwhw=
-buf.build/gen/go/gogo/protobuf/protocolbuffers/go v1.36.9-20240617172848-e1dbca2775a7.1/go.mod h1:F0KwUAacZIzNs5pTQTrgNH1J1elk/NeH6kH/sNZIUPo=
-buf.build/gen/go/prometheus/prometheus/protocolbuffers/go v1.36.9-20250320161912-af2aab87b1b3.1 h1:zhxWlRu98rrQNylXNGNArDfu1sRn4FPHRphZgRTvRks=
-buf.build/gen/go/prometheus/prometheus/protocolbuffers/go v1.36.9-20250320161912-af2aab87b1b3.1/go.mod h1:wzeTMMtM4lMP5/Ldm5Z7C8DdO45fb32zt8zeBYsNJb8=
+buf.build/gen/go/gogo/protobuf/protocolbuffers/go v1.36.10-20240617172848-e1dbca2775a7.1 h1:A0G7t6KDoDJ7GuAU+ALdp8fCfTlx87ImTx69fXYN3X8=
+buf.build/gen/go/gogo/protobuf/protocolbuffers/go v1.36.10-20240617172848-e1dbca2775a7.1/go.mod h1:3ddKE6u98YQFS1jpuYmVEmU1fdAiHqB5Re6S3E16/mI=
+buf.build/gen/go/prometheus/prometheus/protocolbuffers/go v1.36.10-20251118093737-4105057cc7d4.1 h1:aKwzrmsRDQkiEzGmjiMVjyYfwHHsFFm7tmQgVA2vyOM=
+buf.build/gen/go/prometheus/prometheus/protocolbuffers/go v1.36.10-20251118093737-4105057cc7d4.1/go.mod h1:BdURQlk1lXab5ov60A7yLZZONSP0Cho+RkOntf+FZF8=
 dario.cat/mergo v1.0.1 h1:Ra4+bf83h2ztPIQYNP99R6m+Y7KfnARDfID+a+vLl4s=
 dario.cat/mergo v1.0.1/go.mod h1:uNxQE+84aUszobStD9th8a29P2fMDhsBdgRYvZOxGmk=
 github.com/AdaLogics/go-fuzz-headers v0.0.0-20240806141605-e8a1dd7889d6 h1:He8afgbRMd7mFxO99hRNu+6tazq8nFF9lIwo9JFroBk=
