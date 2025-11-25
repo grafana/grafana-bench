@@ -259,8 +259,11 @@ jobs:
           
           # Verify checkout was successful and contains the specific folder
           [ -f /tmp/checkout-test-folder/CI/k6/api_test.ts ] || { echo "Failed to checkout specific folder"; exit 1; }
-          [ -f /tmp/checkout-test-folder/bench.go ] || { echo "Failed to checkout full repo for folder test"; exit 1; }
-          echo "✓ Successfully checked out repository with specific folder"
+          
+          # Verify that root files are NOT present (sparse checkout should only include CI/k6)
+          [ ! -f /tmp/checkout-test-folder/bench.go ] || { echo "Unexpected: bench.go should not be present in sparse checkout"; exit 1; }
+          
+          echo "✓ Successfully checked out repository with specific folder (sparse checkout)"
 
   build-base-image:
     needs: [test-go, test-libsonnet, test-binary, test-validate, test-checkout]
