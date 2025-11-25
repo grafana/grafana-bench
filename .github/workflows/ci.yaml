@@ -203,7 +203,6 @@ jobs:
         env:
           TEST_SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          mkdir -p /tmp/checkout-test-commit
           grafana-bench checkout \
             --suite-repo-url https://github.com/grafana/grafana-bench.git \
             --suite-base /tmp/checkout-test-commit \
@@ -228,7 +227,6 @@ jobs:
         env:
           TEST_SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          mkdir -p /tmp/checkout-test-release
           grafana-bench checkout \
             --suite-repo-url https://github.com/grafana/grafana-bench.git \
             --suite-base /tmp/checkout-test-release \
@@ -253,12 +251,11 @@ jobs:
         env:
           TEST_SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          mkdir -p /tmp/checkout-test-folder
           grafana-bench checkout \
             --suite-repo-url https://github.com/grafana/grafana-bench.git \
             --suite-base /tmp/checkout-test-folder \
             --suite-revision ${{ github.sha }} \
-            --suite-path CI/k6
+            --suite-repo-dirs CI/k6
           
           # Verify checkout was successful and contains the specific folder
           [ -f /tmp/checkout-test-folder/CI/k6/api_test.ts ] || { echo "Failed to checkout specific folder"; exit 1; }
