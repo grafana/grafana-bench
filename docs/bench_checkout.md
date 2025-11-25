@@ -30,7 +30,7 @@ bench checkout \
       --git-driver string              git driver used for downloading the test suite repo ('nanogit', 'gogit'). (default "nanogit")
   -h, --help                           help for checkout
       --suite-base string              base directory for searching test suites. Defaults to current directory
-                                       If specified, it is prefixed to the --suite-path.
+                                       If specified, it is prefixed to the --suite-path. (default ".")
       --suite-repo-dirs strings        Directories to checkout from test suite repo. If omitted, all folders will be checkout
       --suite-repo-token string        authentication token for the test suite repository. 
                                        If not set SUITE_REPO_TOKEN environment variable is used.

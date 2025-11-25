@@ -437,7 +437,7 @@ func AddSuitePathFlags(fs *pflag.FlagSet, config *TestSuiteConfig) {
 	fs.StringVar(
 		&config.BaseDir,
 		"suite-base",
-		"./",
+		".",
 		"base directory for searching test suites. Defaults to current directory"+
 			"\nIf specified, it is prefixed to the --suite-path.",
 	)
