@@ -8,84 +8,46 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/grafana/grafana-bench/internal/testutils/gittest"
+	"github.com/grafana/grafana-bench/pkg/git/gogit"
 )
 
-
-var repoFiles = map[string]string{
-	"directory/file": "file",
-	"anotherDir/another_file": "another file",
+var repoFiles = map[string][]byte{
+	"directory/file":          []byte("file"),
+	"anotherDir/another_file": []byte("another file"),
 }
 
 func TestGitSource(t *testing.T) {
-	// test setup
 
-	// 1. create a test git repository (will have a master branch by default)
-	repoDir := t.TempDir()
-	repo, err := git.PlainInit(repoDir, false)
+	testRepo, err := gittest.SetupTestRepo(t.Context(), t.TempDir())
 	if err != nil {
-		t.Fatalf("initializing repository: %v", err)
+		t.Fatalf("setting up test repo")
 	}
 
-	wt, err := repo.Worktree()
+	// initialize repo content
+	hash, err := testRepo.Commit("add test files", repoFiles)
 	if err != nil {
-		t.Fatalf("getting work tree: %v", err)
+		t.Fatalf("committing files %v", err)
 	}
 
-	wt.Checkout(&git.CheckoutOptions{
-		Create: false,
-		Force:  false,
-		Branch: plumbing.NewBranchReferenceName("master"),
-	})
-
-	// 2 create files in repository
-	for path, content := range repoFiles {
-		path = filepath.Join(repoDir, path)
-		err = os.MkdirAll(filepath.Dir(path), 0o755)
-		if err != nil {
-			t.Fatalf("creating directory in repository: %v", err)
-		}
-		err = os.WriteFile(path, []byte(content), 0o644)
-		if err != nil {
-			t.Fatalf("copying files to repository: %v", err)
-		}
+	// create tag
+	tagName := "v0.1.0"
+	err = testRepo.Tag(tagName, hash)
+	if err != nil {
+		t.Fatalf("creating tag %v", err)
 	}
 
-	// 3. commit files (path must be relative to repo's root)
-	_, err = wt.Add(".")
+	// create branch
+	branchName := "'test-branch'"
+	err = testRepo.CreateBranch(branchName)
 	if err != nil {
-		t.Fatalf("adding files to commit: %v", err)
+		t.Fatalf("creating tag %v", err)
 	}
 
-	commitHash, err := wt.Commit("add test files", &git.CommitOptions{
-		Author: &object.Signature{Name: "grafana bench", Email: "bench-testing@grafana.com"},
-	})
+	// push changes
+	err = testRepo.Push()
 	if err != nil {
-		t.Fatalf("committing files: %v", err)
-	}
-
-	// 4. create a branch 'test-branch'
-	branchName := "test-branch"
-	branchRef := plumbing.NewBranchReferenceName(branchName)
-	err = wt.Checkout(&git.CheckoutOptions{Create: true, Force: false, Branch: branchRef})
-	if err != nil {
-		t.Fatalf("creating branch: %v", err)
-	}
-
-	// 5. create a tag 'v0.0.0'
-	tagName := "v0.0.0"
-	_, err = repo.CreateTag(
-		tagName,
-		commitHash,
-		&git.CreateTagOptions{
-			Tagger:  &object.Signature{Name: "grafana bench", Email: "bench-testing@grafana.com"},
-			Message: "release v0.0.0",
-		},
-	)
-	if err != nil {
-		t.Fatalf("creating tag: %v", err)
+		t.Fatalf("pushing changes %v", err)
 	}
 
 	testCases := []struct {
@@ -101,7 +63,7 @@ func TestGitSource(t *testing.T) {
 		},
 		{
 			name:      "get master",
-			revision:  "master",
+			revision:  testRepo.Default,
 			expectErr: false,
 		},
 		{
@@ -116,7 +78,7 @@ func TestGitSource(t *testing.T) {
 		},
 		{
 			name:      "get hash",
-			revision:  commitHash.String(),
+			revision:  hash,
 			expectErr: false,
 		},
 		{
@@ -134,41 +96,31 @@ func TestGitSource(t *testing.T) {
 	for _, tc := range testCases {
 		tc := tc
 
-		// always start in "master" branch
-		wt.Checkout(&git.CheckoutOptions{
-			Create: false,
-			Force:  false,
-			Branch: plumbing.NewBranchReferenceName("master"),
-		})
-
 		t.Run(tc.name, func(t *testing.T) {
-			source := NewGitSource(repoDir,"")
+			source, err := gogit.NewSource(testRepo.URL, testRepo.Token)
+			if err != nil {
+				t.Fatalf("creating git source %v", err)
+			}
 
 			targetDir := path.Join(t.TempDir(), "repo")
-			_, err = source.Get(context.TODO(), targetDir,tc.revision)
+			_, err = source.Get(context.TODO(), targetDir, tc.revision)
 			if err != nil && !tc.expectErr {
 				t.Fatalf("getting source: %v", err)
 			}
 		})
 	}
 
-	t.Run("get into an existing repository", func(t *testing.T) {
-		clonedRepo := filepath.Join(t.TempDir(), "repo")
-		_, err = git.PlainClone(
-			clonedRepo,
-			false,
-			&git.CloneOptions{
-				URL: repoDir,
-			},
-		)
+	t.Run("get into a non empty repository", func(t *testing.T) {
+		targetDir := t.TempDir()
+		os.WriteFile(filepath.Join(targetDir, "file.tx"), []byte("file content"), 0x644)
+		
+
+		source, err := gogit.NewSource(testRepo.URL, testRepo.Token)
 		if err != nil {
-			t.Fatalf("cloning repo %v", err)
+				t.Fatalf("creating git source %v", err)
 		}
 
-		// get source again into cloned repository
-		source := NewGitSource(repoDir,"")
-
-		_, err = source.Get(context.TODO(), clonedRepo, "")
+		_, err = source.Get(context.TODO(), targetDir, "")
 		if err == nil {
 			t.Fatalf("should have failed")
 		}
@@ -199,7 +151,10 @@ func TestGitSource(t *testing.T) {
 				slices.Sort(dirs)
 
 				targetRepo := path.Join(t.TempDir(), "repo")
-				source := NewGitSource(repoDir, "")
+				source, err := gogit.NewSource(testRepo.URL, testRepo.Token)
+				if err != nil {
+					t.Fatalf("creating git source %v", err)
+				}
 
 				_, err = source.Get(context.TODO(), targetRepo, "", dirs...)
 				if err != nil && !tc.expectErr {

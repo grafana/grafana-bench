@@ -3,13 +3,11 @@ package compile
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"log/slog"
-	"os"
-	"path"
 	"testing"
 
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/grafana/grafana-bench/internal/testutils/gittest"
 )
 
 const makeFile = `
@@ -17,79 +15,73 @@ build:
 	echo "building"
 fail:
 	echo "failed"
-	/bin/true
+	/bin/false
 `
 
 func Test_Compiler(t *testing.T) {
-
-	repoDir := t.TempDir()
-	r, err := git.PlainInit(repoDir, false)
+	testRepo, err := gittest.SetupTestRepo(t.Context(), t.TempDir())
 	if err != nil {
-		t.Fatalf("initializing repository: %v", err)
+		t.Fatalf("setting up test repo")
 	}
 
-	// crate Makefile in repository
-	err = os.WriteFile(path.Join(repoDir, "Makefile"), []byte(makeFile), 0o644)
+	// initialize repo content
+	files := map[string][]byte{
+		"Makefile": []byte(makeFile),
+	}
+	_, err = testRepo.Commit("add test files", files)
 	if err != nil {
-		t.Fatalf("copying file to repository: %v", err)
+		t.Fatalf("committing files %v", err)
 	}
 
-	// 3. commit files (path must be relative to repo's root)
-	wt, _ := r.Worktree()
-	_, err = wt.Add(".")
+	// push changes
+	err = testRepo.Push()
 	if err != nil {
-		t.Fatalf("adding files to commit: %v", err)
-	}
-
-	_, err = wt.Commit("add test files", &git.CommitOptions{
-		Author: &object.Signature{Name: "grafana bench", Email: "bench-testing@grafana.com"},
-	})
-	if err != nil {
-		t.Fatalf("committing files: %v", err)
+		t.Fatalf("pushing changes %v", err)
 	}
 
 	testCases := []struct {
 		name       string
-		revision   string
 		prepareCmd []string
 		expectErr  bool
 	}{
 		{
 			name:       "execute prepare command",
-			revision:   "master",
 			expectErr:  false,
 			prepareCmd: []string{"make", "build"},
 		},
 		{
 			name:       "execute failing prepare command",
-			revision:   "master",
 			expectErr:  true,
 			prepareCmd: []string{"make", "fail"},
 		},
 	}
 
-	for _, tc := range testCases {
-		tc := tc
+	drivers := []string{"nanogit", "gogit"}
+	for _, driver := range drivers {
+		for _, tc := range testCases {
+			tc := tc
+			name := fmt.Sprintf("%s with %s", tc.name, driver)
+			t.Run(name, func(t *testing.T) {
+				logBuffer := bytes.Buffer{}
+				log := slog.New(slog.NewTextHandler(&logBuffer, nil))
 
-		t.Run(tc.name, func(t *testing.T) {
-			logBuffer := bytes.Buffer{}
-			log := slog.New(slog.NewTextHandler(&logBuffer, nil))
+				compiler := NewTestCompiler(
+					log,
+					driver,
+					t.TempDir(),
+					testRepo.URL,
+					[]string{},
+					testRepo.Token,
+					"master",
+					tc.prepareCmd,
+				)
 
-			compiler := NewTestCompiler(
-				log,
-				path.Join(t.TempDir(), "repo"),
-				repoDir,
-				[]string{},
-				"",
-				tc.revision,
-				tc.prepareCmd,
-			)
-
-			_, err := compiler.CompileTestSuite(context.TODO())
-			if err != nil && !tc.expectErr {
-				t.Fatalf("compiling test: %v", err)
-			}
-		})
+				_, err := compiler.CompileTestSuite(context.TODO())
+				if err != nil && !tc.expectErr {
+					t.Fatalf("compiling test: %v", err)
+				}
+			})
+		}
 	}
 
 }

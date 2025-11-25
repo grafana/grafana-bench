@@ -315,6 +315,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	config.AddSlackFlags(fs, &benchConfig.Slack)
 	config.AddReportOutputFlags(fs, &benchConfig.Report)
 	config.AddPrometheusFlags(fs, &benchConfig.Prometheus)
+	config.AddGitFlags(fs, &benchConfig.Git)
 
 	return &cmd
 }

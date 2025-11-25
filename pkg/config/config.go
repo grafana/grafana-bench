@@ -40,6 +40,7 @@ type BenchConfig struct {
 	Playwright PWConfig
 	Slack      SlackNotifierConfig
 	Prometheus Prometheus
+	Git        GitConfig
 }
 
 func AddBenchFlags(fs *pflag.FlagSet, config *BenchConfig) {
@@ -436,7 +437,7 @@ func AddSuitePathFlags(fs *pflag.FlagSet, config *TestSuiteConfig) {
 	fs.StringVar(
 		&config.BaseDir,
 		"suite-base",
-		"",
+		".",
 		"base directory for searching test suites. Defaults to current directory"+
 			"\nIf specified, it is prefixed to the --suite-path.",
 	)
@@ -624,6 +625,19 @@ func AddPrometheusFlags(fs *pflag.FlagSet, prometheus *Prometheus) {
 	)
 }
 
+type GitConfig struct {
+	Driver string
+}
+
+func AddGitFlags(fs *pflag.FlagSet, git *GitConfig) {
+	fs.StringVar(
+		&git.Driver,
+		"git-driver",
+		"nanogit",
+		"git driver used for downloading the test suite repo ('nanogit', 'gogit').",
+	)
+}
+
 func (config BenchConfig) BuildTestExecutor(
 	log *slog.Logger,
 	testExecutor string,
@@ -672,6 +686,7 @@ func (config *BenchConfig) BuildTestSuite(log *slog.Logger) (*executor.TestSuite
 
 		compiler := compile.NewTestCompiler(
 			log,
+			config.Git.Driver,
 			config.TestSuite.BaseDir,
 			config.TestSuite.Repo,
 			config.TestSuite.RepoDirs,
