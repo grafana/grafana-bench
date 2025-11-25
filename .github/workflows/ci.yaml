@@ -14,7 +14,7 @@ jobs:
   test-go:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           persist-credentials: false
 
@@ -45,7 +45,7 @@ jobs:
         ports:
           - 3000:3000
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           persist-credentials: false
 
@@ -88,7 +88,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-tags: true
 
@@ -117,7 +117,7 @@ jobs:
         ports:
           - 3000:3000
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           persist-credentials: false
 
@@ -172,7 +172,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           persist-credentials: false
           fetch-depth: 0
@@ -286,7 +286,7 @@ jobs:
   test-setup-action:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Test setup-grafana-bench action with go install fallback
         uses: ./.github/actions/setup-grafana-bench
