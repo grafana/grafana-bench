@@ -207,14 +207,14 @@ jobs:
           grafana-bench checkout \
             --suite-repo-url https://github.com/grafana/grafana-bench.git \
             --suite-base /tmp/checkout-test-commit \
-            --suite-revision 113615f
+            --suite-revision 113615fff7a435eccc04f670b22241c2bd104181
           
           # Verify checkout was successful and at correct commit
           [ -f /tmp/checkout-test-commit/bench.go ] || { echo "Failed to checkout specific commit"; exit 1; }
           cd /tmp/checkout-test-commit
           CURRENT_COMMIT=$(git rev-parse HEAD)
-          if [[ "$CURRENT_COMMIT" != 113615f* ]]; then
-            echo "Failed: Expected commit 113615f but got $CURRENT_COMMIT"
+          if [[ "$CURRENT_COMMIT" != "113615fff7a435eccc04f670b22241c2bd104181" ]]; then
+            echo "Failed: Expected commit 113615fff7a435eccc04f670b22241c2bd104181 but got $CURRENT_COMMIT"
             exit 1
           fi
           echo "✓ Successfully checked out specific commit"
