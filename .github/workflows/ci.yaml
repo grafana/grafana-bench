@@ -167,8 +167,96 @@ jobs:
             exit 1
           fi
 
+  test-checkout:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Install
+        run: go install
+
+      - name: Test checkout current repository
+        env:
+          TEST_SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p /tmp/checkout-test-current
+          grafana-bench checkout \
+            --suite-repo-url https://github.com/grafana/grafana-bench.git \
+            --suite-base /tmp/checkout-test-current \
+            --suite-revision ${{ github.sha }}
+          
+          # Verify checkout was successful
+          [ -f /tmp/checkout-test-current/bench.go ] || { echo "Failed to checkout current repo"; exit 1; }
+          echo "✓ Successfully checked out current repository"
+
+      - name: Test checkout specific commit
+        env:
+          TEST_SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p /tmp/checkout-test-commit
+          grafana-bench checkout \
+            --suite-repo-url https://github.com/grafana/grafana-bench.git \
+            --suite-base /tmp/checkout-test-commit \
+            --suite-revision 113615f
+          
+          # Verify checkout was successful and at correct commit
+          [ -f /tmp/checkout-test-commit/bench.go ] || { echo "Failed to checkout specific commit"; exit 1; }
+          cd /tmp/checkout-test-commit
+          CURRENT_COMMIT=$(git rev-parse HEAD)
+          if [[ "$CURRENT_COMMIT" != 113615f* ]]; then
+            echo "Failed: Expected commit 113615f but got $CURRENT_COMMIT"
+            exit 1
+          fi
+          echo "✓ Successfully checked out specific commit"
+
+      - name: Test checkout release tag
+        env:
+          TEST_SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p /tmp/checkout-test-release
+          grafana-bench checkout \
+            --suite-repo-url https://github.com/grafana/grafana-bench.git \
+            --suite-base /tmp/checkout-test-release \
+            --suite-revision v0.1.0
+          
+          # Verify checkout was successful and at correct tag
+          [ -f /tmp/checkout-test-release/bench.go ] || { echo "Failed to checkout release"; exit 1; }
+          cd /tmp/checkout-test-release
+          CURRENT_TAG=$(git describe --tags --exact-match HEAD 2>/dev/null || echo "no-tag")
+          if [[ "$CURRENT_TAG" != "v0.1.0" ]]; then
+            echo "Failed: Expected tag v0.1.0 but got $CURRENT_TAG"
+            exit 1
+          fi
+          echo "✓ Successfully checked out release tag"
+
+      - name: Test checkout specific folder
+        env:
+          TEST_SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p /tmp/checkout-test-folder
+          grafana-bench checkout \
+            --suite-repo-url https://github.com/grafana/grafana-bench.git \
+            --suite-base /tmp/checkout-test-folder \
+            --suite-revision ${{ github.sha }} \
+            --suite-path CI/k6
+          
+          # Verify checkout was successful and contains the specific folder
+          [ -f /tmp/checkout-test-folder/CI/k6/api_test.ts ] || { echo "Failed to checkout specific folder"; exit 1; }
+          [ -f /tmp/checkout-test-folder/bench.go ] || { echo "Failed to checkout full repo for folder test"; exit 1; }
+          echo "✓ Successfully checked out repository with specific folder"
+
   build-base-image:
-    needs: [test-go, test-libsonnet, test-binary, test-validate]
+    needs: [test-go, test-libsonnet, test-binary, test-validate, test-checkout]
     permissions:
       contents: read
       packages: write
@@ -178,7 +266,7 @@ jobs:
       TEST_SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-playwright-image:
-    needs: [test-go, test-libsonnet, test-binary, test-validate]
+    needs: [test-go, test-libsonnet, test-binary, test-validate, test-checkout]
     permissions:
       contents: read
       packages: write
