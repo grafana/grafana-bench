@@ -52,7 +52,7 @@ func NewTestCompiler(
 func (tc *TestCompiler) CompileTestSuite(ctx context.Context) (string, error) {
 	var (
 		gitSource git.GitSource
-		err error
+		err       error
 	)
 
 	switch tc.Driver {

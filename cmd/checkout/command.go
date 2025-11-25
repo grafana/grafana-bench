@@ -55,7 +55,6 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 
 			return nil
 		},
-
 	}
 
 	fs := cmd.Flags()

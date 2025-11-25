@@ -437,7 +437,7 @@ func AddSuitePathFlags(fs *pflag.FlagSet, config *TestSuiteConfig) {
 	fs.StringVar(
 		&config.BaseDir,
 		"suite-base",
-		"",
+		"./",
 		"base directory for searching test suites. Defaults to current directory"+
 			"\nIf specified, it is prefixed to the --suite-path.",
 	)
@@ -624,7 +624,6 @@ func AddPrometheusFlags(fs *pflag.FlagSet, prometheus *Prometheus) {
 		"strict lint prometheus metrics. If set to true, will fail if metric does not pass linting",
 	)
 }
-
 
 type GitConfig struct {
 	Driver string
