@@ -66,7 +66,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	fs.StringVar(
 		&benchConfig.TestSuite.BaseDir,
 		"suite-base",
-		"",
+		".",
 		"base directory for searching test suites. Defaults to current directory"+
 			"\nIf specified, it is prefixed to the --suite-path.",
 	)
