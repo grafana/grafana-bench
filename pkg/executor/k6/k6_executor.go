@@ -121,6 +121,8 @@ func (t *K6TestExecutor) ExecTestSuite(
 
 	suiteSummary := executor.SuiteRunSummary{}
 	suiteSummary.StartTime = time.Now()
+	suiteSummary.SuiteName = suite.Name
+	suiteSummary.SuiteRevision = suite.Revision
 
 	// run the tests
 	for _, testFile := range tests {

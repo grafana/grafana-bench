@@ -68,6 +68,8 @@ func (e *GoExecutor) ExecTestSuite(
 	if err != nil {
 		return executor.SuiteRunSummary{}, fmt.Errorf("failed to parse go test output %w", err)
 	}
+	summary.SuiteName = suite.Name
+	summary.SuiteRevision = suite.Revision
 
 	if summary.Metrics == nil {
 		summary.Metrics = make([]metrics.Metric, 0)

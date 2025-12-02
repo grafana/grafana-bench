@@ -30,8 +30,6 @@ type SuiteRun struct {
 	Id             string
 	TestExecutor   string
 	RunStage       string
-	SuiteName      string
-	SuiteRevision  string
 	GrafanaVersion string
 	GrafanaURL     string
 	GrafanaSlug    string
@@ -55,6 +53,8 @@ type TestRunSummary struct {
 
 // TestSuiteSummary summarizes the execution of  a test suite
 type SuiteRunSummary struct {
+	SuiteName         string
+	SuiteRevision     string
 	StartTime         time.Time
 	Status            SuiteStatus
 	TestsExecuted     int32

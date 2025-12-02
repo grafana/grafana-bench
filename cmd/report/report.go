@@ -141,6 +141,8 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 					return fmt.Errorf("invalid input format %q", benchConfig.Report.Input)
 				}
 			}
+			suiteRunSummary.SuiteName = benchConfig.TestSuite.Name
+			suiteRunSummary.SuiteRevision = benchConfig.Revision
 
 			runMetrics, err := benchConfig.GetRunMetrics(log)
 			if err != nil {
