@@ -110,7 +110,14 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 	}
 
 	//parse output or report any problem
-	return ParseJsonOutput(t.Log, jsonOutput)
+	summary, err  := ParseJsonOutput(t.Log, jsonOutput)
+	if err != nil {
+		return executor.SuiteRunSummary{}, err
+	}
+	summary.SuiteName = suite.Name
+	summary.SuiteRevision = suite.Revision
+
+	return summary, nil
 }
 
 func (t *PlaywrightTestExecutor) executeCommand(execDir string, env map[string]string, cmd string) error {

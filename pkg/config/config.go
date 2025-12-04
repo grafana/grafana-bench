@@ -773,8 +773,6 @@ func (benchConfig *BenchConfig) BuildSuiteRun(log *slog.Logger) (executor.SuiteR
 		Id:             runId,
 		RunStage:       benchConfig.SuiteRun.RunStage,
 		TestExecutor:   benchConfig.Report.Input,
-		SuiteName:      benchConfig.TestSuite.Name,
-		SuiteRevision:  benchConfig.TestSuite.Revision,
 		Attributes:     attributes,
 		BenchRevision:  benchConfig.Revision,
 		GrafanaURL:     benchConfig.Grafana.Url,

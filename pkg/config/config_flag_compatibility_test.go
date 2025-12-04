@@ -22,8 +22,6 @@ func TestRunStageInLogOutput(t *testing.T) {
 		Id:             "test-run-123",
 		RunStage:       "ci-stage-test",
 		TestExecutor:   "k6",
-		SuiteName:      "smoke-tests",
-		SuiteRevision:  "main",
 		BenchRevision:  "v1.0.0",
 		GrafanaURL:     "http://localhost:3000",
 		GrafanaSlug:    "localhost",
