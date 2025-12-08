@@ -35,7 +35,7 @@ RUN CGO_ENABLED=0 go build \
 FROM grafana/k6:latest AS k6
 
 # Use Playwright base image which includes all browser dependencies
-FROM mcr.microsoft.com/playwright:v1.55.1-noble AS runtime
+FROM mcr.microsoft.com/playwright:v1.57.0-noble AS runtime
 
 USER root
 
