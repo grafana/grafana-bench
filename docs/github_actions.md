@@ -104,9 +104,9 @@ The action automatically uses the workflow's `GITHUB_TOKEN` to authenticate with
 
 #### Updating the Commit Reference
 
-The commit SHA references in this documentation are automatically updated when you run `make docs`. This ensures the examples always reference the latest version of the action.
+The commit SHA references in this documentation are automatically updated when you run `make docs`. The documentation always references the latest commit on the **main branch** that modified the action file, preventing circular updates during development.
 
-When the action is updated, run `make docs` to update all documentation references automatically. The CI workflow will also create a PR with updated documentation if changes are detected.
+When the action is updated and merged to main, run `make docs` to update all documentation references automatically. The CI workflow will also create a PR with updated documentation if changes are detected.
 
 ### Platform Support
 

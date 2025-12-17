@@ -172,3 +172,63 @@ func GetLatestCommitForFile(repoPath string, filePath string) (string, error) {
 
 	return latestSHA, nil
 }
+
+// GetLatestCommitForFileOnMain returns the full SHA of the latest commit on the main branch that modified a specific file
+func GetLatestCommitForFileOnMain(repoPath string, filePath string) (string, error) {
+	repo, err := git.PlainOpenWithOptions(
+		repoPath,
+		&git.PlainOpenOptions{DetectDotGit: true},
+	)
+	if err != nil {
+		return "", fmt.Errorf("failed to open git repository: %w", err)
+	}
+
+	// Get the main branch reference
+	mainRef, err := repo.Reference(plumbing.NewBranchReferenceName("main"), true)
+	if err != nil {
+		// Try "master" if "main" doesn't exist
+		mainRef, err = repo.Reference(plumbing.NewBranchReferenceName("master"), true)
+		if err != nil {
+			return "", fmt.Errorf("failed to get main/master branch reference: %w", err)
+		}
+	}
+
+	// Get commit history from main branch
+	commitIter, err := repo.Log(&git.LogOptions{
+		From: mainRef.Hash(),
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to get commit history from main: %w", err)
+	}
+
+	// Find the latest commit that modified the specific file on main
+	var latestSHA string
+	err = commitIter.ForEach(func(commit *object.Commit) error {
+		// Get the file stats for this commit
+		stats, err := commit.Stats()
+		if err != nil {
+			// If we can't get stats, skip this commit
+			return nil
+		}
+
+		// Check if the file was modified in this commit
+		for _, stat := range stats {
+			if stat.Name == filePath {
+				latestSHA = commit.Hash.String()
+				return ErrFoundCommit // Found what we're looking for
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil && err != ErrFoundCommit {
+		return "", fmt.Errorf("failed to iterate commit history on main: %w", err)
+	}
+
+	if latestSHA == "" {
+		return "", fmt.Errorf("no commits found on main branch that modified file %s", filePath)
+	}
+
+	return latestSHA, nil
+}

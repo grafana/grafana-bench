@@ -161,15 +161,15 @@ func updateSemverInMarkdown(dirPath string, newVersion string) error {
 }
 
 // updateGitHubActionSHA updates GitHub Action commit SHA references in documentation
-// to point to the latest commit that modified the action file
+// to point to the latest commit that modified the action file on the main branch
 func updateGitHubActionSHA(dirPath string, workDir string) error {
-	// Get the latest commit SHA that modified the action file
-	latestSHA, err := utils.GetLatestCommitForFile(workDir, ".github/actions/setup-grafana-bench/action.yml")
+	// Get the latest commit SHA that modified the action file on the main branch
+	latestSHA, err := utils.GetLatestCommitForFileOnMain(workDir, ".github/actions/setup-grafana-bench/action.yml")
 	if err != nil {
-		return fmt.Errorf("failed to get latest commit SHA for action file: %w", err)
+		return fmt.Errorf("failed to get latest commit SHA for action file on main: %w", err)
 	}
 
-	fmt.Println("Latest action commit SHA:", latestSHA)
+	fmt.Println("Latest action commit SHA on main:", latestSHA)
 
 	// Regex to match GitHub Action references with commit SHAs
 	// Matches: uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@<40-character-SHA>
