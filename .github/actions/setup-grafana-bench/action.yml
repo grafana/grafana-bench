@@ -75,6 +75,11 @@ runs:
           # Configure git to use GitHub token for private repositories
           git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
           
+          # Set Go environment variables for private repositories
+          export GOPRIVATE="github.com/grafana/grafana-bench"
+          export GOPROXY="direct"
+          export GOSUMDB="off"
+          
           # Install using go install
           if go install "github.com/grafana/grafana-bench@${VERSION}"; then
             echo "Successfully installed grafana-bench using go install"
