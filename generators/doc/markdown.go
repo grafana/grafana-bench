@@ -31,7 +31,13 @@ func updateMarkdownDocs(dir string) error {
 
 	fmt.Println("Latest tag:", version)
 
-	return updateSemverInMarkdown(dir, version)
+	err = updateSemverInMarkdown(dir, version)
+	if err != nil {
+		return err
+	}
+
+	// Also update GitHub Action commit SHA references
+	return updateGitHubActionSHA(dir, workDir)
 }
 
 // GetLatestTag gets the latest tag from the repo. This is used for getting the latest tag for bench when updated docs
@@ -148,6 +154,59 @@ func updateSemverInMarkdown(dirPath string, newVersion string) error {
 			}
 
 			fmt.Printf("Updated versions in file: %s\n", path)
+		}
+
+		return nil
+	})
+}
+
+// updateGitHubActionSHA updates GitHub Action commit SHA references in documentation
+// to point to the latest commit that modified the action file on the main branch
+func updateGitHubActionSHA(dirPath string, workDir string) error {
+	// Get the latest commit SHA that modified the action file on the main branch
+	latestSHA, err := utils.GetLatestCommitForFileOnMain(workDir, ".github/actions/setup-grafana-bench/action.yml")
+	if err != nil {
+		return fmt.Errorf("failed to get latest commit SHA for action file on main: %w", err)
+	}
+
+	fmt.Println("Latest action commit SHA on main:", latestSHA)
+
+	// Regex to match GitHub Action references with commit SHAs
+	// Matches: uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@<40-character-SHA>
+	actionSHARegex := regexp.MustCompile(`(uses:\s+grafana/grafana-bench/\.github/actions/setup-grafana-bench@)[a-f0-9]{40}`)
+
+	return filepath.WalkDir(dirPath, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if d.IsDir() {
+			return nil
+		}
+
+		// Only process .md files, particularly github_actions.md
+		fileName := filepath.Base(path)
+		if !strings.HasSuffix(fileName, ".md") {
+			return nil
+		}
+
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("failed to read file %s: %w", path, err)
+		}
+
+		contentStr := string(content)
+
+		if actionSHARegex.MatchString(contentStr) {
+			// Replace all occurrences with the latest SHA
+			newContentStr := actionSHARegex.ReplaceAllString(contentStr, "${1}"+latestSHA)
+			
+			err = os.WriteFile(path, []byte(newContentStr), 0644)
+			if err != nil {
+				return fmt.Errorf("failed to write updated content to file %s: %w", path, err)
+			}
+
+			fmt.Printf("Updated GitHub Action SHA in file: %s\n", path)
 		}
 
 		return nil

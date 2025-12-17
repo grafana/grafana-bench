@@ -4,6 +4,10 @@ inputs:
   version:
     description: 'Version of grafana-bench to install (e.g., "v0.6.1")'
     required: true
+  setup-metrics:
+    description: 'Whether to setup prometheus metrics credentials'
+    required: false
+    default: 'false'
 runs:
   using: 'composite'
   steps:
@@ -17,6 +21,7 @@ runs:
       shell: bash
       env:
         VERSION: ${{ inputs.version }}
+        GITHUB_TOKEN: ${{ github.token }}
       run: |
         echo "Installing grafana-bench version: $VERSION"
         
@@ -38,19 +43,50 @@ runs:
         esac
         
         BINARY_NAME="grafana-bench-${PLATFORM}-${ARCH}"
-        DOWNLOAD_URL="https://github.com/grafana/grafana-bench/releases/download/${VERSION}/${BINARY_NAME}"
+        echo "Looking for binary: $BINARY_NAME"
         
-        echo "Downloading from: $DOWNLOAD_URL"
+        # Get release info from GitHub API
+        RELEASE_INFO=$(curl -fsSL \
+          -H "Authorization: token ${GITHUB_TOKEN}" \
+          -H "Accept: application/vnd.github+json" \
+          "https://api.github.com/repos/grafana/grafana-bench/releases/tags/${VERSION}")
         
-        # Download and install binary
-        if curl -fsSL "$DOWNLOAD_URL" -o grafana-bench; then
+        # Extract asset ID for the binary we need
+        ASSET_ID=$(echo "$RELEASE_INFO" | jq -r ".assets[] | select(.name == \"$BINARY_NAME\") | .id")
+        
+        if [ "$ASSET_ID" != "null" ] && [ -n "$ASSET_ID" ]; then
+          echo "Found asset ID: $ASSET_ID"
+          echo "Downloading $BINARY_NAME..."
+          
+          # Download using authenticated GitHub API
+          curl -fsSL \
+            -H "Authorization: token ${GITHUB_TOKEN}" \
+            -H "Accept: application/octet-stream" \
+            "https://api.github.com/repos/grafana/grafana-bench/releases/assets/${ASSET_ID}" \
+            -o grafana-bench
+          
           chmod +x grafana-bench
           sudo mv grafana-bench /usr/local/bin/
           grafana-bench version
         else
-          echo "Failed to download grafana-bench binary, falling back to local build"
-          # Build from the checked out source (since this is likely a private repo or no release exists)
-          go build -o grafana-bench .
-          sudo mv grafana-bench /usr/local/bin/
-          grafana-bench version
+          echo "Could not find binary $BINARY_NAME in release $VERSION"
+          echo "Falling back to go install with authentication..."
+          
+          # Configure git to use GitHub token for private repositories
+          git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
+          
+          # Set Go environment variables for private repositories
+          export GOPRIVATE="github.com/grafana/grafana-bench"
+          export GOPROXY="direct"
+          export GOSUMDB="off"
+          
+          # Install using go install
+          if go install "github.com/grafana/grafana-bench@${VERSION}"; then
+            echo "Successfully installed grafana-bench using go install"
+            grafana-bench version
+          else
+            echo "Failed to install grafana-bench using go install"
+            echo "Please ensure the version ${VERSION} exists and is accessible"
+            exit 1
+          fi
         fi
