@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@v5
       
       - name: Setup Grafana Bench
-        uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@v1
+        uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@339bd4f54dadc16432b1485dc3db733e34c72d27
         with:
           version: 'v0.6.6'
       
@@ -55,6 +55,59 @@ jobs:
 |-------|-------------|----------|---------|
 | `version` | Version to install (e.g., `v0.6.6`) | Yes | N/A |
 
+### Using from External Repositories
+
+Since grafana-bench is a private repository, there are specific requirements for external repositories to use this action:
+
+#### Prerequisites
+
+1. **Organization membership**: Your repository must be part of the `grafana` GitHub organization
+2. **Repository permissions**: The repository must have access to read from `grafana/grafana-bench`
+3. **Token permissions**: Ensure your workflow has appropriate `contents: read` permissions
+
+#### Setup
+
+Add the `contents: read` permission to your workflow:
+
+```yaml
+name: Test with Grafana Bench
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read  # Required for accessing private repositories
+
+jobs:
+  bench-test:
+    runs-on: ubuntu-latest
+    # ... rest of your workflow
+```
+
+#### Usage
+
+Reference the action using a specific commit hash (required for private repositories):
+
+```yaml
+- name: Setup Grafana Bench
+  uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@339bd4f54dadc16432b1485dc3db733e34c72d27
+  with:
+    version: 'v0.6.6'
+```
+
+The action automatically uses the workflow's `GITHUB_TOKEN` to authenticate with the GitHub API for downloading release binaries from the private repository. The token is passed implicitly via `${{ github.token }}` - no additional configuration is required for repositories within the Grafana organization.
+
+**Note**: If you encounter authentication issues, ensure your repository has the "Allow GitHub Actions to access other repositories in your organization" setting enabled in the repository settings under Actions > General.
+
+#### Updating the Commit Reference
+
+The commit SHA references in this documentation are automatically updated when you run `make docs`. This ensures the examples always reference the latest version of the action.
+
+When the action is updated, run `make docs` to update all documentation references automatically. The CI workflow will also create a PR with updated documentation if changes are detected.
+
 ### Platform Support
 
 The action automatically detects your platform and installs the appropriate binary:
@@ -63,7 +116,7 @@ The action automatically detects your platform and installs the appropriate bina
 - **macOS**: amd64, arm64  
 - **Windows**: amd64
 
-If binary download fails, it falls back to `go install github.com/grafana/grafana-bench@<version>`.
+The action uses GitHub's API with authentication to download binaries from private releases. If binary download fails, it falls back to `go install` with proper authentication for private repositories.
 
 ### Exit Codes for CI Integration
 
@@ -94,7 +147,7 @@ This allows your CI workflows to handle test failures differently from internal 
 
 ```yaml
 - name: Setup Grafana Bench
-  uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@v1
+  uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@339bd4f54dadc16432b1485dc3db733e34c72d27
   with:
     version: 'v0.6.6'
 
