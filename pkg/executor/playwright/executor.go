@@ -91,10 +91,11 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 	// set the output
 	playwrightEnv["PLAYWRIGHT_JSON_OUTPUT_NAME"] = jsonOutput.Name()
 	t.Log.Debug("playwright output file", "PLAYWRIGHT_JSON_OUTPUT_NAME", jsonOutput.Name())
-	executeCmd := fmt.Sprintf("%s --reporter=json %s", t.ExecuteCmd, suite.Path)
-	t.Log.Debug("playwright command", "cmd", executeCmd)
 
-	if err := t.executeCommand(filepath.Join(suite.BaseDir, suite.Path), playwrightEnv, executeCmd); err != nil {
+	execCmd := appendReporterToCommand(t.ExecuteCmd, suite.Path)
+	t.Log.Debug("playwright command", "cmd", execCmd)
+
+	if err := t.executeCommand(filepath.Join(suite.BaseDir, suite.Path), playwrightEnv, execCmd); err != nil {
 		// we can't tell if there was a error executing the test or the test command was wrong (e.g. misspelled)
 		// so we check if there's any report. If not, we assume the test was not executed and return
 		// otherwise we are trying to process the report with parseJsonOutput below
@@ -110,7 +111,7 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 	}
 
 	//parse output or report any problem
-	summary, err  := ParseJsonOutput(t.Log, jsonOutput)
+	summary, err := ParseJsonOutput(t.Log, jsonOutput)
 	if err != nil {
 		return executor.SuiteRunSummary{}, err
 	}
@@ -151,4 +152,12 @@ func (t *PlaywrightTestExecutor) executeCommand(execDir string, env map[string]s
 	}
 
 	return nil
+}
+
+func appendReporterToCommand(executeCmd string, suitePath string) string {
+	if strings.Contains(executeCmd, "npm run") {
+		return fmt.Sprintf("%s -- --reporter=json %s", executeCmd, suitePath)
+	}
+	// if using yarn/pnpm or others, just append normally
+	return fmt.Sprintf("%s --reporter=json %s", executeCmd, suitePath)
 }
