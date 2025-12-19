@@ -87,7 +87,7 @@ runs:
           fi
         fi
     - id: get-secrets
-      uses: grafana/shared-workflows/actions/get-vault-secrets@de81a07e6f6718fb289c7a4612c9c514c28bd798 #get-vault-secrets-v1.2.0
+      uses: grafana/shared-workflows/actions/get-vault-secrets@078c4a8af09e06d646077550f9e0f68171d5881e
       with:
         common_secrets: |
           PROMETHEUS_URL=grafana-bench:prometheus-url
