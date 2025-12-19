@@ -4,10 +4,6 @@ inputs:
   version:
     description: 'Version of grafana-bench to install (e.g., "v0.6.1")'
     required: true
-  setup-metrics:
-    description: 'Whether to setup prometheus metrics credentials'
-    required: false
-    default: 'false'
 runs:
   using: 'composite'
   steps:
@@ -90,3 +86,11 @@ runs:
             exit 1
           fi
         fi
+    - id: get-secrets
+      uses: grafana/shared-workflows/actions/get-vault-secrets@de81a07e6f6718fb289c7a4612c9c514c28bd798 #get-vault-secrets-v1.2.0
+      with:
+        common_secrets: |
+          PROMETHEUS_URL=grafana-bench:prometheus-url
+          PROMETHEUS_USER=grafana-bench:prometheus-user
+          PROMETHEUS_PASSWORD=grafana-bench:prometheus-token
+

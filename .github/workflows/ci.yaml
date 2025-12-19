@@ -271,7 +271,7 @@ jobs:
       contents: read
       packages: write
       id-token: write
-    uses: ./.github/workflows/build-base-image.yml
+    uses: ./.github/workflows/shared/build-base-image.yml
     secrets:
       TEST_SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -281,7 +281,7 @@ jobs:
       contents: read
       packages: write
       id-token: write
-    uses: ./.github/workflows/build-playwright-image.yml
+    uses: ./.github/workflows/shared/build-playwright-image.yml
 
   test-setup-action:
     runs-on: ubuntu-latest
@@ -298,6 +298,32 @@ jobs:
           grafana-bench version
           which grafana-bench
 
+      - name: Verify environment variables are set
+        run: |
+          echo "Checking Prometheus environment variables..."
+          if [ -z "$PROMETHEUS_URL" ]; then
+            echo "❌ PROMETHEUS_URL is not set"
+            exit 1
+          else
+            echo "✅ PROMETHEUS_URL is set"
+          fi
+          
+          if [ -z "$PROMETHEUS_USER" ]; then
+            echo "❌ PROMETHEUS_USER is not set"
+            exit 1
+          else
+            echo "✅ PROMETHEUS_USER is set"
+          fi
+          
+          if [ -z "$PROMETHEUS_PASSWORD" ]; then
+            echo "❌ PROMETHEUS_PASSWORD is not set"
+            exit 1
+          else
+            echo "✅ PROMETHEUS_PASSWORD is set"
+          fi
+          
+          echo "All Prometheus environment variables are properly set!"
+
   # Generate and publish libsonnet libraries  
   update-experimental-libsonnet:
     needs: [build-base-image, build-playwright-image]
@@ -305,7 +331,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    uses: ./.github/workflows/update-libsonnet.yml
+    uses: ./.github/workflows/shared/update-libsonnet.yml
     with:
       version: "experimental"
       target_dir: "experimental"
@@ -321,7 +347,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    uses: ./.github/workflows/update-libsonnet.yml
+    uses: ./.github/workflows/shared/update-libsonnet.yml
     with:
       version: ${{ github.ref_name }}
       target_dir: "${{ github.ref_name }}"
