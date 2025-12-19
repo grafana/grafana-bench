@@ -23,7 +23,7 @@ on:
 jobs:
   deploy-experimental:
     if: inputs.deployment_type == 'experimental'
-    uses: ./.github/workflows/shared/update-libsonnet.yml
+    uses: ./.github/workflows/update-libsonnet.yml
     permissions:
       contents: read
       id-token: write
@@ -36,7 +36,7 @@ jobs:
 
   deploy-custom:
     if: inputs.deployment_type == 'custom'
-    uses: ./.github/workflows/shared/update-libsonnet.yml
+    uses: ./.github/workflows/update-libsonnet.yml
     permissions:
       contents: read
       id-token: write

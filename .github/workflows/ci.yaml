@@ -312,7 +312,7 @@ jobs:
       contents: read
       packages: write
       id-token: write
-    uses: ./.github/workflows/shared/build-base-image.yml
+    uses: ./.github/workflows/build-base-image.yml
     secrets:
       TEST_SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -322,7 +322,7 @@ jobs:
       contents: read
       packages: write
       id-token: write
-    uses: ./.github/workflows/shared/build-playwright-image.yml
+    uses: ./.github/workflows/build-playwright-image.yml
 
 
   # Generate and publish libsonnet libraries  
@@ -332,7 +332,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    uses: ./.github/workflows/shared/update-libsonnet.yml
+    uses: ./.github/workflows/update-libsonnet.yml
     with:
       version: "experimental"
       target_dir: "experimental"
@@ -348,7 +348,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    uses: ./.github/workflows/shared/update-libsonnet.yml
+    uses: ./.github/workflows/update-libsonnet.yml
     with:
       version: ${{ github.ref_name }}
       target_dir: "${{ github.ref_name }}"
