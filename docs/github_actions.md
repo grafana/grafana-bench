@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@v5
       
       - name: Setup Grafana Bench
-        uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@339bd4f54dadc16432b1485dc3db733e34c72d27
+        uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@64d3b4dd3615765e23fe821593307aae07c048c1
         with:
           version: 'v0.6.6'
       
@@ -93,7 +93,7 @@ Reference the action using a specific commit hash (required for private reposito
 
 ```yaml
 - name: Setup Grafana Bench
-  uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@339bd4f54dadc16432b1485dc3db733e34c72d27
+  uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@64d3b4dd3615765e23fe821593307aae07c048c1
   with:
     version: 'v0.6.6'
 ```
@@ -147,7 +147,7 @@ This allows your CI workflows to handle test failures differently from internal 
 
 ```yaml
 - name: Setup Grafana Bench
-  uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@339bd4f54dadc16432b1485dc3db733e34c72d27
+  uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@64d3b4dd3615765e23fe821593307aae07c048c1
   with:
     version: 'v0.6.6'
 
