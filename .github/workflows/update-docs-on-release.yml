@@ -4,6 +4,10 @@ on:
   workflow_dispatch:
   release:
     types: [published]
+  push:
+    branches: [main]
+    paths:
+      - '.github/actions/setup-grafana-bench/action.yml'
 
 jobs:
   update-docs:
