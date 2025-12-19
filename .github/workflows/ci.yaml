@@ -265,24 +265,6 @@ jobs:
           
           echo "✓ Successfully checked out repository with specific folder (sparse checkout)"
 
-  build-base-image:
-    needs: [test-go, test-libsonnet, test-binary, test-validate, test-checkout]
-    permissions:
-      contents: read
-      packages: write
-      id-token: write
-    uses: ./.github/workflows/shared/build-base-image.yml
-    secrets:
-      TEST_SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  build-playwright-image:
-    needs: [test-go, test-libsonnet, test-binary, test-validate, test-checkout]
-    permissions:
-      contents: read
-      packages: write
-      id-token: write
-    uses: ./.github/workflows/shared/build-playwright-image.yml
-
   test-setup-action:
     runs-on: ubuntu-latest
     steps:
@@ -307,22 +289,41 @@ jobs:
           else
             echo "✅ PROMETHEUS_URL is set"
           fi
-          
+
           if [ -z "$PROMETHEUS_USER" ]; then
             echo "❌ PROMETHEUS_USER is not set"
             exit 1
           else
             echo "✅ PROMETHEUS_USER is set"
           fi
-          
+
           if [ -z "$PROMETHEUS_PASSWORD" ]; then
             echo "❌ PROMETHEUS_PASSWORD is not set"
             exit 1
           else
             echo "✅ PROMETHEUS_PASSWORD is set"
           fi
-          
+
           echo "All Prometheus environment variables are properly set!"
+
+  build-base-image:
+    needs: [test-go, test-libsonnet, test-binary, test-validate, test-checkout, test-setup-action]
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    uses: ./.github/workflows/shared/build-base-image.yml
+    secrets:
+      TEST_SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-playwright-image:
+    needs: [test-go, test-libsonnet, test-binary, test-validate, test-checkout, test-setup-action]
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    uses: ./.github/workflows/shared/build-playwright-image.yml
+
 
   # Generate and publish libsonnet libraries  
   update-experimental-libsonnet:
