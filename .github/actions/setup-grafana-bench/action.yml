@@ -90,7 +90,7 @@ runs:
       uses: grafana/shared-workflows/actions/get-vault-secrets@078c4a8af09e06d646077550f9e0f68171d5881e
       with:
         common_secrets: |
-          PROMETHEUS_URL=grafana-bench:prometheus-url
-          PROMETHEUS_USER=grafana-bench:prometheus-user
-          PROMETHEUS_PASSWORD=grafana-bench:prometheus-token
+          PROMETHEUS_URL=grafana-bench:prometheus_url
+          PROMETHEUS_USER=grafana-bench:prometheus_user
+          PROMETHEUS_PASSWORD=grafana-bench:prometheus_token
 

@@ -273,10 +273,10 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Test setup-grafana-bench action with go install fallback
+      - name: Test setup-grafana-bench action with known binary
         uses: ./.github/actions/setup-grafana-bench
         with:
-          version: 'v0.6.1'
+          version: 'v0.6.6'
 
       - name: Verify installation
         run: |
@@ -308,6 +308,12 @@ jobs:
           fi
 
           echo "All Prometheus environment variables are properly set!"
+
+      - name: Test setup-grafana-bench action with go install fallback (missing binary)
+        uses: ./.github/actions/setup-grafana-bench
+        with:
+          version: 'v0.6.1'
+
 
   build-base-image:
     needs: [test-go, test-libsonnet, test-binary, test-validate, test-checkout, test-setup-action]
