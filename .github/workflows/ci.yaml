@@ -194,7 +194,7 @@ jobs:
             --suite-repo-url https://github.com/grafana/grafana-bench.git \
             --suite-base /tmp/checkout-test-current \
             --suite-revision ${{ github.sha }}
-          
+
           # Verify checkout was successful
           [ -f /tmp/checkout-test-current/bench.go ] || { echo "Failed to checkout current repo"; exit 1; }
           echo "✓ Successfully checked out current repository"
@@ -207,10 +207,10 @@ jobs:
             --suite-repo-url https://github.com/grafana/grafana-bench.git \
             --suite-base /tmp/checkout-test-commit \
             --suite-revision a5f38ee99875d3b18d5ee83ce683cc70b1c0e0a8
-          
+
           # Verify checkout was successful
           [ -f /tmp/checkout-test-commit/bench.go ] || { echo "Failed to checkout specific commit"; exit 1; }
-          
+
           # Verify we have the specific content from commit a5f38ee (30-Sep-2024)
           # This commit should have the compile command docs with the specific date
           [ -f /tmp/checkout-test-commit/docs/bench_compile.md ] || { echo "Expected bench_compile.md file not found"; exit 1; }
@@ -231,10 +231,10 @@ jobs:
             --suite-repo-url https://github.com/grafana/grafana-bench.git \
             --suite-base /tmp/checkout-test-release \
             --suite-revision v0.6.0
-          
+
           # Verify checkout was successful
           [ -f /tmp/checkout-test-release/bench.go ] || { echo "Failed to checkout release"; exit 1; }
-          
+
           # Verify we have the specific content from v0.6.0 release
           # This release should have the docs with the 12-Jun-2025 date
           [ -f /tmp/checkout-test-release/docs/bench.md ] || { echo "Expected bench.md file not found"; exit 1; }
@@ -256,17 +256,67 @@ jobs:
             --suite-base /tmp/checkout-test-folder \
             --suite-revision ${{ github.sha }} \
             --suite-repo-dirs CI/k6
-          
+
           # Verify checkout was successful and contains the specific folder
           [ -f /tmp/checkout-test-folder/CI/k6/api_test.ts ] || { echo "Failed to checkout specific folder"; exit 1; }
-          
+
           # Verify that root files are NOT present (sparse checkout should only include CI/k6)
           [ ! -f /tmp/checkout-test-folder/bench.go ] || { echo "Unexpected: bench.go should not be present in sparse checkout"; exit 1; }
-          
+
           echo "✓ Successfully checked out repository with specific folder (sparse checkout)"
 
+  test-setup-action:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Test setup-grafana-bench action with known binary
+        uses: ./.github/actions/setup-grafana-bench
+        with:
+          version: 'v0.6.6'
+
+      - name: Verify installation
+        run: |
+          grafana-bench version
+          which grafana-bench
+
+      - name: Verify environment variables are set
+        run: |
+          echo "Checking Prometheus environment variables..."
+          if [ -z "$PROMETHEUS_URL" ]; then
+            echo "❌ PROMETHEUS_URL is not set"
+            exit 1
+          else
+            echo "✅ PROMETHEUS_URL is set"
+          fi
+
+          if [ -z "$PROMETHEUS_USER" ]; then
+            echo "❌ PROMETHEUS_USER is not set"
+            exit 1
+          else
+            echo "✅ PROMETHEUS_USER is set"
+          fi
+
+          if [ -z "$PROMETHEUS_PASSWORD" ]; then
+            echo "❌ PROMETHEUS_PASSWORD is not set"
+            exit 1
+          else
+            echo "✅ PROMETHEUS_PASSWORD is set"
+          fi
+
+          echo "All Prometheus environment variables are properly set!"
+
+      - name: Test setup-grafana-bench action with go install fallback (missing binary)
+        uses: ./.github/actions/setup-grafana-bench
+        with:
+          version: 'v0.6.1'
+
+
   build-base-image:
-    needs: [test-go, test-libsonnet, test-binary, test-validate, test-checkout]
+    needs: [test-go, test-libsonnet, test-binary, test-validate, test-checkout, test-setup-action]
     permissions:
       contents: read
       packages: write
@@ -276,27 +326,13 @@ jobs:
       TEST_SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-playwright-image:
-    needs: [test-go, test-libsonnet, test-binary, test-validate, test-checkout]
+    needs: [test-go, test-libsonnet, test-binary, test-validate, test-checkout, test-setup-action]
     permissions:
       contents: read
       packages: write
       id-token: write
     uses: ./.github/workflows/build-playwright-image.yml
 
-  test-setup-action:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Test setup-grafana-bench action with go install fallback
-        uses: ./.github/actions/setup-grafana-bench
-        with:
-          version: 'v0.6.1'
-
-      - name: Verify installation
-        run: |
-          grafana-bench version
-          which grafana-bench
 
   # Generate and publish libsonnet libraries  
   update-experimental-libsonnet:
