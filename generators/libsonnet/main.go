@@ -191,8 +191,15 @@ func generateMain() {
 		log.Fatalf("Failed to create output directory: %v", err)
 	}
 	
-	// Write main libsonnet file
-	mainFile := filepath.Join(outputPath, "main.libsonnet")
+	// Create version-specific subdirectory
+	versionDir := filepath.Join(outputPath, version)
+	err = os.MkdirAll(versionDir, 0755)
+	if err != nil {
+		log.Fatalf("Failed to create version directory: %v", err)
+	}
+	
+	// Write main libsonnet file in version subdirectory
+	mainFile := filepath.Join(versionDir, "main.libsonnet")
 	file, err := os.Create(mainFile)
 	if err != nil {
 		log.Fatalf("Failed to create main file: %v", err)
@@ -205,8 +212,8 @@ func generateMain() {
 	}
 	file.Close()
 	
-	// Write test file
-	testFile := filepath.Join(outputPath, "main_test.jsonnet")
+	// Write test file in version subdirectory
+	testFile := filepath.Join(versionDir, "main_test.jsonnet")
 	testFileHandle, err := os.Create(testFile)
 	if err != nil {
 		log.Fatalf("Failed to create test file: %v", err)
