@@ -25,9 +25,9 @@ local tests = {
     false
   ),
 
-  // Test 4: Check latestVersion is defined and is a string
+  // Test 4: Check latestVersionSha is defined and is a string
   testLatestVersionExists: std.assertEqual(
-    std.type(versions.latestVersion),
+    std.type(versions.latestVersionSha),
     'string'
   ),
 

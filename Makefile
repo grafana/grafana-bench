@@ -69,7 +69,12 @@ libsonnet: install-deps
 		go run ./generators/libsonnet versions --version "experimental" --latest-version-sha "$(shell git rev-parse HEAD)" -o libsonnet >/dev/null 2>&1; \
 	fi
 	@echo "✅ Libsonnet files generated with latest SHA (formatted with jsonnetfmt)"
-	@cd libsonnet && jsonnet main_test.jsonnet | grep -q '"allTestsPassed": true' && echo "✅ All libsonnet function tests passed" || echo "⚠️ Libsonnet tests skipped (may require external dependencies)"
+	@if [ "$(VERSION)" != "" ]; then \
+		cd libsonnet && jsonnet "$(VERSION)/main_test.jsonnet" | grep -q '"allTestsPassed": true' && echo "✅ All libsonnet function tests passed" || echo "⚠️ Libsonnet function tests skipped (may require external dependencies)"; \
+	else \
+		cd libsonnet && jsonnet "experimental/main_test.jsonnet" | grep -q '"allTestsPassed": true' && echo "✅ All libsonnet function tests passed" || echo "⚠️ Libsonnet function tests skipped (may require external dependencies)"; \
+	fi
+	@cd libsonnet && jsonnet versions_test.jsonnet | grep -q '"allTestsPassed": true' && echo "✅ All libsonnet versions tests passed" || echo "⚠️ Libsonnet versions tests skipped (may require external dependencies)"
 
 
 # Install development dependencies
