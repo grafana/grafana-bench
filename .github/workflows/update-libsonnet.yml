@@ -57,16 +57,25 @@ jobs:
         env:
           VERSION: ${{ inputs.version }}
         run: |
-          # Generate main libsonnet files with unit tests using make
+          # Generate main libsonnet files and versions.libsonnet using make
           make libsonnet VERSION="$VERSION"
 
-      - name: Generate versions files for deployment
-        env:
-          VERSION: ${{ inputs.version }}
+      - name: Validate generated versions.libsonnet
         run: |
           CURRENT_SHA=$(git rev-parse HEAD)
           echo "Current SHA: $CURRENT_SHA"
-          go run ./generators/libsonnet versions --version "experimental" --latest-version-sha "$CURRENT_SHA" -o libsonnet
+          
+          # Extract latestVersionSha from generated versions.libsonnet
+          GENERATED_SHA=$(jsonnet -e "local versions = import 'libsonnet/versions.libsonnet'; versions.latestVersionSha" | tr -d '"')
+          echo "Generated SHA in versions.libsonnet: $GENERATED_SHA"
+          
+          if [ "$CURRENT_SHA" != "$GENERATED_SHA" ]; then
+            echo "❌ SHA mismatch! Expected: $CURRENT_SHA, Got: $GENERATED_SHA"
+            echo "This indicates a problem with the libsonnet generation process."
+            exit 1
+          else
+            echo "✅ SHA validation passed: Generated libsonnet contains correct SHA"
+          fi
 
       - name: Authenticate with GAR
         uses: grafana/shared-workflows/actions/login-to-gar@ae92934a14a48b94494dbc06d74a81d47fe08a40
