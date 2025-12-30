@@ -7,10 +7,6 @@ on:
         description: 'Version to use ("experimental" for main branch or actual version like "v1.2.3")'
         required: true
         type: string
-      target_dir:
-        description: 'Target directory in deployment_tools (e.g. "bench/v1.2.3" or "bench/experimental")'
-        required: true
-        type: string
       branch_prefix:
         description: 'PR branch prefix'
         required: true
@@ -119,7 +115,6 @@ jobs:
       - name: Update deployment_tools with libsonnet
         env:
           VERSION: ${{ inputs.version }}
-          TARGET_DIR: ${{ inputs.target_dir }}
           BRANCH_PREFIX: ${{ inputs.branch_prefix }}
           PR_MESSAGE: ${{ inputs.pr_message }}
           COMMIT_MESSAGE: ${{ inputs.commit_message }}
@@ -158,15 +153,15 @@ jobs:
             "pre_update_commands": [
               {
                 "description": "Create directory structure for bench libsonnet",
-                "command": "mkdir -p ksonnet/lib/bench/${TARGET_DIR}"
+                "command": "mkdir -p ksonnet/lib/bench/${VERSION}"
               },
               {
                 "description": "Copy libsonnet main function file",
-                "command": "cp /workspace/libsonnet/main.libsonnet ksonnet/lib/bench/${TARGET_DIR}/main.libsonnet"
+                "command": "cp /workspace/libsonnet/${VERSION}/main.libsonnet ksonnet/lib/bench/${VERSION}/main.libsonnet"
               },
               {
                 "description": "Copy libsonnet test file",
-                "command": "cp /workspace/libsonnet/main_test.jsonnet ksonnet/lib/bench/${TARGET_DIR}/main_test.jsonnet"
+                "command": "cp /workspace/libsonnet/${VERSION}/main_test.jsonnet ksonnet/lib/bench/${VERSION}/main_test.jsonnet"
               },
               {
                 "description": "Copy or regenerate versions files",
