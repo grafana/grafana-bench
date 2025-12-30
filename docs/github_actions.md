@@ -27,9 +27,9 @@ jobs:
       - uses: actions/checkout@v5
       
       - name: Setup Grafana Bench
-        uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@64d3b4dd3615765e23fe821593307aae07c048c1
+        uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@057477c3d586996c1fc3f38772760c34a68d2859
         with:
-          version: 'v0.6.6'
+          version: 'v0.6.7'
       
       - name: Run K6 API Tests
         run: |
@@ -53,7 +53,7 @@ jobs:
 
 | Input | Description | Required | Default |
 |-------|-------------|----------|---------|
-| `version` | Version to install (e.g., `v0.6.6`) | Yes | N/A |
+| `version` | Version to install (e.g., `v0.6.7`) | Yes | N/A |
 
 ### Using from External Repositories
 
@@ -93,9 +93,9 @@ Reference the action using a specific commit hash (required for private reposito
 
 ```yaml
 - name: Setup Grafana Bench
-  uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@64d3b4dd3615765e23fe821593307aae07c048c1
+  uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@057477c3d586996c1fc3f38772760c34a68d2859
   with:
-    version: 'v0.6.6'
+    version: 'v0.6.7'
 ```
 
 The action automatically uses the workflow's `GITHUB_TOKEN` to authenticate with the GitHub API for downloading release binaries from the private repository. The token is passed implicitly via `${{ github.token }}` - no additional configuration is required for repositories within the Grafana organization.
@@ -147,9 +147,9 @@ This allows your CI workflows to handle test failures differently from internal 
 
 ```yaml
 - name: Setup Grafana Bench
-  uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@64d3b4dd3615765e23fe821593307aae07c048c1
+  uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@057477c3d586996c1fc3f38772760c34a68d2859
   with:
-    version: 'v0.6.6'
+    version: 'v0.6.7'
 
 - name: Run Go tests with bench reporter
   run: |
@@ -167,7 +167,7 @@ This allows your CI workflows to handle test failures differently from internal 
     docker run --rm \
       --network=host \
       --volume="./:/tests/" \
-      us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.6.6 test \
+      us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.6.7 test \
       --test-runner playwright \
       --grafana-url "http://localhost:3000"
 ```
@@ -204,7 +204,7 @@ jobs:
             --network=host \
             --volume="./CI/:/tests/CI/" \
 
-            us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.6.6 test \
+            us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.6.7 test \
             --grafana-url "http://localhost:3000" \
             --grafana-admin-user "admin" \
             --grafana-admin-password "admin" \
@@ -277,7 +277,7 @@ jobs:
           docker run --rm \
             --network=host \
             --volume="./:/tests/" \
-            us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.6.6 test \
+            us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.6.7 test \
             --test-runner "playwright" \
             --test-suite-base "/tests/" \
             --grafana-url "http://localhost:3000" \

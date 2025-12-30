@@ -23,12 +23,18 @@ type PrometheusConfig struct {
 }
 
 type PrometheusReporter struct {
+	name   string
 	client *prometheus.Client
 	prefix string
 }
 
+func (r PrometheusReporter) Name() string {
+	return r.name
+}
+
 func NewPrometheusReporter(config PrometheusConfig) *PrometheusReporter {
 	return &PrometheusReporter{
+		name:   "prometheusReporter",
 		prefix: config.Prefix,
 		client: prometheus.New(
 			config.URL,

@@ -25,7 +25,13 @@ local tests = {
     false
   ),
 
-  // Test 4: Verify getBenchFunctions returns object with pure functions
+  // Test 4: Check latestVersion is defined and is a string
+  testLatestVersionExists: std.assertEqual(
+    std.type(versions.latestVersion),
+    'string'
+  ),
+
+  // Test 5: Verify getBenchFunctions returns object with pure functions
 {{range $i, $version := .Versions}}  testGetBenchFunctions{{printf "%d" $i}}: std.assertEqual(
     std.type(versions.getBenchFunctions('{{$version}}')),
     'object'

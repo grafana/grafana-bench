@@ -35,7 +35,8 @@ type TemplateData struct {
 }
 
 type VersionsTemplateData struct {
-	Versions []string
+	Versions      []string
+	LatestVersion string
 }
 
 func main() {
@@ -236,6 +237,7 @@ func generateMain() {
 func generateVersions() {
 	var outputPath string
 	var versionsStr string
+	var latestVersion string
 	
 	// Parse args starting from index 2 since first arg is "versions"
 	args := os.Args[2:]
@@ -244,6 +246,7 @@ func generateVersions() {
 	fs := flag.NewFlagSet("versions", flag.ExitOnError)
 	fs.StringVar(&outputPath, "o", "", "output directory for generated libsonnet")
 	fs.StringVar(&versionsStr, "versions", "", "comma-separated list of versions")
+	fs.StringVar(&latestVersion, "latest-version", "", "latest git SHA or version identifier")
 	fs.Parse(args)
 
 	if outputPath == "" {
@@ -267,7 +270,8 @@ func generateVersions() {
 	
 	// Generate template data
 	data := VersionsTemplateData{
-		Versions: versions,
+		Versions:      versions,
+		LatestVersion: latestVersion,
 	}
 	
 	// Load template from file
