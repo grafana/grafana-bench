@@ -78,33 +78,6 @@ jobs:
         with:
           registry: us-docker.pkg.dev
 
-<<<<<<< Updated upstream
-      - name: Validate generated images exist
-        env:
-          VERSION: ${{ inputs.version }}
-        run: |
-          echo "🔍 Validating that generated libsonnet images exist in repositories..."
-          
-          # Extract image URLs from the generated libsonnet and strip quotes
-          BASE_IMAGE=$(jsonnet -e "local lib = import 'libsonnet/main.libsonnet'; lib.selectImage('k6')" | tr -d '"')
-          PLAYWRIGHT_IMAGE=$(jsonnet -e "local lib = import 'libsonnet/main.libsonnet'; lib.selectImage('playwright')" | tr -d '"')
-          
-          echo "Checking base image: $BASE_IMAGE"
-          docker manifest inspect "$BASE_IMAGE" > /dev/null || {
-            echo "❌ Base image not found: $BASE_IMAGE"
-            exit 1
-          }
-          echo "✅ Base image exists: $BASE_IMAGE"
-          
-          echo "Checking playwright image: $PLAYWRIGHT_IMAGE"  
-          docker manifest inspect "$PLAYWRIGHT_IMAGE" > /dev/null || {
-            echo "❌ Playwright image not found: $PLAYWRIGHT_IMAGE"
-            exit 1
-          }
-          echo "✅ Playwright image exists: $PLAYWRIGHT_IMAGE"
-          
-          echo "🎉 All generated images validated successfully!"
-=======
       # Temporarily disabled for testing - re-enable after verifying workflow changes
       # - name: Validate generated images exist
       #   env:
@@ -131,7 +104,6 @@ jobs:
       #     echo "✅ Playwright image exists: $PLAYWRIGHT_IMAGE"
       #     
       #     echo "🎉 All generated images validated successfully!"
->>>>>>> Stashed changes
 
       - name: Get Vault secrets for deployment_tools access
         uses: grafana/shared-workflows/actions/get-vault-secrets@ae92934a14a48b94494dbc06d74a81d47fe08a40
