@@ -68,11 +68,11 @@ func printHelp() {
 	fmt.Println()
 	fmt.Println("Commands:")
 	fmt.Println("  generate    Generate main libsonnet functions for a specific version")
-	fmt.Println("  versions    Generate versions mapping libsonnet from a list of versions")
+	fmt.Println("  versions    Generate versions mapping libsonnet for a single version")
 	fmt.Println()
 	fmt.Println("Examples:")
 	fmt.Println("  go run generators/libsonnet generate -o libsonnet -version v1.0.0")
-	fmt.Println("  go run generators/libsonnet versions --versions \"experimental,v1.0.0,v1.1.0\" -o libsonnet")
+	fmt.Println("  go run generators/libsonnet versions --version experimental --latest-version-sha abc123def -o libsonnet")
 }
 
 func generateMain() {
@@ -236,8 +236,8 @@ func generateMain() {
 
 func generateVersions() {
 	var outputPath string
-	var versionsStr string
-	var latestVersion string
+	var version string
+	var latestVersionSha string
 	
 	// Parse args starting from index 2 since first arg is "versions"
 	args := os.Args[2:]
@@ -245,33 +245,31 @@ func generateVersions() {
 	// Create a new FlagSet for parsing
 	fs := flag.NewFlagSet("versions", flag.ExitOnError)
 	fs.StringVar(&outputPath, "o", "", "output directory for generated libsonnet")
-	fs.StringVar(&versionsStr, "versions", "", "comma-separated list of versions")
-	fs.StringVar(&latestVersion, "latest-version", "", "latest git SHA or version identifier")
+	fs.StringVar(&version, "version", "", "version name (e.g., 'experimental')")
+	fs.StringVar(&latestVersionSha, "latest-version-sha", "", "git SHA for the version")
 	fs.Parse(args)
 
 	if outputPath == "" {
 		log.Fatal("output directory required (-o)")
 	}
 
-	if versionsStr == "" {
-		log.Fatal("versions list required (--versions)")
+	if version == "" {
+		log.Fatal("version name required (--version)")
 	}
 
-	// Parse versions
-	versions := strings.Split(versionsStr, ",")
-	for i, v := range versions {
-		versions[i] = strings.TrimSpace(v)
+	if latestVersionSha == "" {
+		log.Fatal("version SHA required (--latest-version-sha)")
 	}
 
-	// Sort versions
-	sort.Strings(versions)
+	// Single version list
+	versions := []string{version}
 	
-	fmt.Printf("Generating versions.libsonnet with %d versions: %s\n", len(versions), strings.Join(versions, ", "))
+	fmt.Printf("Generating versions.libsonnet with version: %s (SHA: %s)\n", version, latestVersionSha)
 	
 	// Generate template data
 	data := VersionsTemplateData{
 		Versions:      versions,
-		LatestVersion: latestVersion,
+		LatestVersion: latestVersionSha,
 	}
 	
 	// Load template from file
