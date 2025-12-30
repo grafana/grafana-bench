@@ -66,7 +66,7 @@ jobs:
         run: |
           CURRENT_SHA=$(git rev-parse HEAD)
           echo "Current SHA: $CURRENT_SHA"
-          go run ./generators/libsonnet versions --versions "experimental,$VERSION" --latest-version "$CURRENT_SHA" -o libsonnet
+          go run ./generators/libsonnet versions --version "experimental" --latest-version-sha "$CURRENT_SHA" -o libsonnet
 
       - name: Authenticate with GAR
         uses: grafana/shared-workflows/actions/login-to-gar@ae92934a14a48b94494dbc06d74a81d47fe08a40

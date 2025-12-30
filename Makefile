@@ -61,7 +61,7 @@ libsonnet: install-deps
 		go run ./generators/libsonnet generate -o libsonnet >/dev/null 2>&1; \
 	fi
 	@echo "🔧 Generating versions.libsonnet..."
-	@go run ./generators/libsonnet versions --versions "experimental" --latest-version "dev-local-$(shell git rev-parse --short HEAD)" -o libsonnet >/dev/null 2>&1
+	@go run ./generators/libsonnet versions --version "experimental" --latest-version-sha "$(shell git rev-parse HEAD)" -o libsonnet >/dev/null 2>&1
 	@echo "✅ Libsonnet files generated with latest SHA (formatted with jsonnetfmt)"
 	@cd libsonnet && jsonnet main_test.jsonnet | grep -q '"allTestsPassed": true' && echo "✅ All libsonnet function tests passed" || echo "⚠️ Libsonnet tests skipped (may require external dependencies)"
 
