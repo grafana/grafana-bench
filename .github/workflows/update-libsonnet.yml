@@ -85,8 +85,8 @@ jobs:
           echo "🔍 Validating that generated libsonnet images exist in repositories..."
           
           # Extract image URLs from the generated libsonnet and strip quotes
-          BASE_IMAGE=$(jsonnet -e "local lib = import 'libsonnet/main.libsonnet'; lib.selectImage('k6')" | tr -d '"')
-          PLAYWRIGHT_IMAGE=$(jsonnet -e "local lib = import 'libsonnet/main.libsonnet'; lib.selectImage('playwright')" | tr -d '"')
+          BASE_IMAGE=$(jsonnet -e "local lib = import 'libsonnet/${VERSION}/main.libsonnet'; lib.selectImage('k6')" | tr -d '"')
+          PLAYWRIGHT_IMAGE=$(jsonnet -e "local lib = import 'libsonnet/${VERSION}/main.libsonnet'; lib.selectImage('playwright')" | tr -d '"')
           
           echo "Checking base image: $BASE_IMAGE"
           docker manifest inspect "$BASE_IMAGE" > /dev/null || {
