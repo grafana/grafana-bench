@@ -94,6 +94,7 @@ jobs:
 
       - name: Create Pull Request
         if: steps.check-changes.outputs.has_changes == 'true'
+        id: create-pr
         uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # v7.0.8
         with:
           base: main
@@ -125,3 +126,22 @@ jobs:
           labels: |
             documentation
             automated
+
+      - name: Auto-approve and merge PR
+        if: steps.check-changes.outputs.has_changes == 'true' && steps.create-pr.outputs.pull-request-number
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ steps.create-pr.outputs.pull-request-number }}
+        run: |
+          echo "Auto-approving and merging PR #$PR_NUMBER"
+          
+          # Approve the PR
+          gh pr review $PR_NUMBER --approve --body "🤖 Auto-approved: Documentation updates are safe to merge automatically."
+          
+          # Wait a moment for the approval to register
+          sleep 2
+          
+          # Merge the PR using squash merge
+          gh pr merge $PR_NUMBER --squash --delete-branch
+          
+          echo "✅ PR #$PR_NUMBER has been approved and merged"
