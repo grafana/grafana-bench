@@ -19,4 +19,7 @@ local versions = {
   
   // Check if version exists
   hasVersion(version):: std.objectHas(versions, version),
+  
+  // Get the latest version SHA
+  latestVersion:: '{{.LatestVersion}}',
 }

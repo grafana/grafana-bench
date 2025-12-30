@@ -58,19 +58,15 @@ jobs:
           VERSION: ${{ inputs.version }}
         run: |
           # Generate main libsonnet files with unit tests using make
-          make libsonnet-release VERSION="$VERSION"
+          make libsonnet VERSION="$VERSION"
 
       - name: Generate versions files for deployment
         env:
           VERSION: ${{ inputs.version }}
         run: |
-          # Only generate versions files for actual version releases, not experimental
-          if [ "$VERSION" != "experimental" ]; then
-            echo "Creating versions.libsonnet for versioned release $VERSION..."  
-            go run ./generators/libsonnet versions --versions "experimental,$VERSION" -o libsonnet
-          else
-            echo "Skipping versions file generation for experimental release (no new version added)"
-          fi
+          CURRENT_SHA=$(git rev-parse HEAD)
+          echo "Current SHA: $CURRENT_SHA"
+          go run ./generators/libsonnet versions --versions "experimental,$VERSION" --latest-version "$CURRENT_SHA" -o libsonnet
 
       - name: Authenticate with GAR
         uses: grafana/shared-workflows/actions/login-to-gar@ae92934a14a48b94494dbc06d74a81d47fe08a40
