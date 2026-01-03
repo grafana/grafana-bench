@@ -29,6 +29,10 @@ on:
         required: false
         type: string
         default: 'us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench-playwright'
+      test_version_sha:
+        description: 'Override version SHA to check for in metrics (for testing - defaults to current commit)'
+        required: false
+        type: string
 
 jobs:
   update-libsonnet:
@@ -182,3 +186,126 @@ jobs:
             us-docker.pkg.dev/grafanalabs-global/docker-deployment-tools-prod/updater |& tee updater-output.log
 
           echo "Libsonnet update completed for ${VERSION}!"
+
+      - name: Get Vault secrets for Prometheus monitoring  
+        uses: grafana/shared-workflows/actions/get-vault-secrets@ae92934a14a48b94494dbc06d74a81d47fe08a40
+        with:
+          common_secrets: |
+            PROMETHEUS_URL=prometheus_url:prometheus_url
+            PROMETHEUS_USER=prometheus_user:prometheus_user
+            PROMETHEUS_TOKEN=prometheus_token:prometheus_token
+
+      - name: Wait for deployment metrics to appear
+        env:
+          VERSION: ${{ inputs.version }}
+          TEST_VERSION_SHA: ${{ inputs.test_version_sha }}
+        run: |
+          set -euo pipefail
+          
+          echo "🔍 Waiting for deployment metrics to appear in Prometheus..."
+          
+          # Use test version SHA if provided, otherwise use current commit
+          if [ -n "$TEST_VERSION_SHA" ]; then
+            TARGET_SHA="$TEST_VERSION_SHA"
+            echo "Using test version SHA: $TARGET_SHA"
+          else
+            TARGET_SHA=$(git rev-parse HEAD)
+            echo "Using current commit SHA: $TARGET_SHA"
+          fi
+          
+          echo "Waiting for metrics with version SHA: $TARGET_SHA"
+          
+          # Prometheus query to check for the specific version
+          QUERY="argo_resource_info{exported_namespace=\"grafana-bench-cd\", version=\"$TARGET_SHA\"}"
+          
+          # Wait up to 30 minutes for the metric to appear
+          TIMEOUT_SECONDS=1800  # 30 minutes
+          POLL_INTERVAL=10      # 10 seconds
+          ELAPSED=0
+          
+          echo "Polling Prometheus every ${POLL_INTERVAL}s for up to ${TIMEOUT_SECONDS}s..."
+          echo "Query: $QUERY"
+          
+          while [ $ELAPSED -lt $TIMEOUT_SECONDS ]; do
+            echo "⏳ Attempt $(($ELAPSED / $POLL_INTERVAL + 1)): Checking for metrics..."
+            
+            # Query Prometheus
+            RESULT_COUNT=$(curl -s -G "$PROMETHEUS_URL/prometheus/api/v1/query" \
+              --data-urlencode "query=$QUERY" \
+              -u "$PROMETHEUS_USER:$PROMETHEUS_TOKEN" \
+              | jq -r '.data.result | length' 2>/dev/null || echo "0")
+            
+            if [ "$RESULT_COUNT" -gt "0" ]; then
+              echo "✅ Success! Found $RESULT_COUNT metric(s) with version $TARGET_SHA"
+              echo "🎉 Deployment has been detected in monitoring system"
+              exit 0
+            fi
+            
+            echo "   No metrics found yet (result count: $RESULT_COUNT)"
+            sleep $POLL_INTERVAL
+            ELAPSED=$(($ELAPSED + $POLL_INTERVAL))
+          done
+          
+          echo "❌ Timeout: No metrics found after ${TIMEOUT_SECONDS}s"
+          echo "This may indicate the deployment hasn't propagated to monitoring yet"
+          echo "Manual verification recommended using:"
+          echo "  Query: $QUERY"
+          echo "  URL: $PROMETHEUS_URL/prometheus/api/v1/query"
+          exit 1
+
+      - name: Get Vault secrets for Argo Workflows
+        uses: grafana/shared-workflows/actions/get-vault-secrets@ae92934a14a48b94494dbc06d74a81d47fe08a40
+        with:
+          common_secrets: |
+            ARGO_SERVER=argo-workflows:server
+            ARGO_TOKEN=argo-workflows:token
+
+      - name: Trigger grafana-bench-cd workflow
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          
+          echo "🚀 Triggering grafana-bench-cd Argo workflow..."
+          
+          # Get the current commit SHA and create commit link
+          CURRENT_SHA=$(git rev-parse HEAD)
+          COMMIT_LINK="https://github.com/grafana/grafana-bench/commit/$CURRENT_SHA"
+          
+          echo "Triggering workflow for:"
+          echo "  Version: $VERSION"
+          echo "  Commit SHA: $CURRENT_SHA"
+          echo "  Commit Link: $COMMIT_LINK"
+          
+          # Submit the workflow
+          WORKFLOW_NAME=$(argo submit \
+            -n grafana-bench-cd \
+            --from workflowtemplate/grafana-bench-cd \
+            --server-dry-run \
+            --output name 2>/dev/null | head -1)
+          
+          if [ -z "$WORKFLOW_NAME" ]; then
+            echo "❌ Failed to get workflow name from dry-run"
+            exit 1
+          fi
+          
+          echo "Generated workflow name: $WORKFLOW_NAME"
+          
+          # Submit the actual workflow
+          echo "📋 Submitting workflow..."
+          argo submit \
+            -n grafana-bench-cd \
+            --from workflowtemplate/grafana-bench-cd \
+            --wait \
+            --log
+          
+          SUBMIT_EXIT_CODE=$?
+          
+          if [ $SUBMIT_EXIT_CODE -eq 0 ]; then
+            echo "✅ grafana-bench-cd workflow completed successfully!"
+            echo "🎉 Bench testing completed for version $VERSION"
+          else
+            echo "❌ grafana-bench-cd workflow failed (exit code: $SUBMIT_EXIT_CODE)"
+            echo "Check the workflow logs above for details"
+            exit 1
+          fi
