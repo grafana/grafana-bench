@@ -117,6 +117,11 @@ func Test_GetGrafanaSession(t *testing.T) {
 			expectErr: InstanceNotAvailableError,
 		},
 		{
+			testCase:  "connection retry on unreachable server",
+			mock:      nil, // No server started - will cause connection refused
+			expectErr: InstanceNotAvailableError,
+		},
+		{
 			testCase:  "login disabled",
 			mock:      newGrafanaMock(WithResponse("POST", "/login", loginDisbledHandler)),
 			expectErr: LoginDisableError,
@@ -127,8 +132,18 @@ func Test_GetGrafanaSession(t *testing.T) {
 		tc := tc
 		t.Run(tc.testCase, func(t *testing.T) {
 			t.Parallel()
-			mockServer := httptest.NewServer(tc.mock)
-			instance, err := NewInstance(mockServer.URL, "admin", "admin", WithTimeout(time.Second*3))
+			
+			var instance GrafanaInstance
+			var err error
+			
+			if tc.mock == nil {
+				// Test connection refused - use invalid URL
+				instance, err = NewInstance("http://localhost:0", "admin", "admin", WithTimeout(time.Second*3))
+			} else {
+				mockServer := httptest.NewServer(tc.mock)
+				instance, err = NewInstance(mockServer.URL, "admin", "admin", WithTimeout(time.Second*3))
+			}
+			
 			if err != nil {
 				t.Fatalf("unexpected error in test setup %v", err)
 			}

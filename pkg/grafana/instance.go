@@ -226,7 +226,18 @@ func (g *grafanaInstance) getGrafanaSessionCookie() (*http.Cookie, error) {
 	for {
 		resp, err := client.Do(req)
 		if err != nil {
-			return nil, fmt.Errorf("request failed: %w", err)
+			// Check if we've exceeded the timeout
+			if time.Now().After(deadline) {
+				return nil, fmt.Errorf(
+					"%w timeout of '%.2fs' exceeded: request failed: %w",
+					InstanceNotAvailableError,
+					g.timeout.Seconds(),
+					err,
+				)
+			}
+			// Retry on connection errors (connection refused, etc.)
+			time.Sleep(g.backoff)
+			continue
 		}
 		defer resp.Body.Close()
 
