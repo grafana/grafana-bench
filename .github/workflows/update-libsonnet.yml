@@ -229,11 +229,18 @@ jobs:
           while [ $ELAPSED -lt $TIMEOUT_SECONDS ]; do
             echo "⏳ Attempt $(($ELAPSED / $POLL_INTERVAL + 1)): Checking for metrics..."
             
-            # Query Prometheus
-            RESULT_COUNT=$(curl -s -G "$PROMETHEUS_URL/prometheus/api/v1/query" \
+            # Query Prometheus with debug output
+            echo "🔍 Debug: Querying $PROMETHEUS_URL/prometheus/api/v1/query"
+            echo "🔍 Debug: Query = $QUERY"
+            
+            PROMETHEUS_RESPONSE=$(curl -s -G "$PROMETHEUS_URL/prometheus/api/v1/query" \
               --data-urlencode "query=$QUERY" \
-              -u "$PROMETHEUS_USER:$PROMETHEUS_TOKEN" \
-              | jq -r '.data.result | length' 2>/dev/null || echo "0")
+              -u "$PROMETHEUS_USER:$PROMETHEUS_TOKEN")
+            
+            echo "🔍 Debug: Raw Prometheus response:"
+            echo "$PROMETHEUS_RESPONSE" | jq '.' 2>/dev/null || echo "$PROMETHEUS_RESPONSE"
+            
+            RESULT_COUNT=$(echo "$PROMETHEUS_RESPONSE" | jq -r '.data.result | length' 2>/dev/null || echo "0")
             
             if [ "$RESULT_COUNT" -gt "0" ]; then
               echo "✅ Success! Found $RESULT_COUNT metric(s) with version $TARGET_SHA"

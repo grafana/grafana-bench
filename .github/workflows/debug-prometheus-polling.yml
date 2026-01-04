@@ -1,0 +1,184 @@
+name: Debug Prometheus Polling
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_sha:
+        description: 'SHA to look for in metrics (e.g., commit SHA)'
+        required: true
+        type: string
+      timeout_minutes:
+        description: 'Timeout in minutes (default: 5)'
+        required: false
+        type: number
+        default: 5
+      poll_interval_seconds:
+        description: 'Poll interval in seconds (default: 10)'
+        required: false
+        type: number
+        default: 10
+
+jobs:
+  debug-prometheus-polling:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Get Vault secrets for Prometheus monitoring  
+        uses: grafana/shared-workflows/actions/get-vault-secrets@ae92934a14a48b94494dbc06d74a81d47fe08a40
+        with:
+          repo_secrets: |
+            PROMETHEUS_URL=prometheus_url:prometheus_url
+            PROMETHEUS_USER=prometheus_user:prometheus_user
+            PROMETHEUS_TOKEN=prometheus_token:prometheus_token
+
+      - name: Debug Prometheus connection and query
+        env:
+          TARGET_SHA: ${{ inputs.target_sha }}
+          TIMEOUT_MINUTES: ${{ inputs.timeout_minutes }}
+          POLL_INTERVAL: ${{ inputs.poll_interval_seconds }}
+        run: |
+          set -euo pipefail
+          
+          echo "🔍 Debug Prometheus Polling Workflow"
+          echo "=================================="
+          echo "Target SHA: $TARGET_SHA"
+          echo "Timeout: ${TIMEOUT_MINUTES} minutes"
+          echo "Poll interval: ${POLL_INTERVAL} seconds"
+          echo ""
+          
+          # Convert timeout to seconds
+          TIMEOUT_SECONDS=$((TIMEOUT_MINUTES * 60))
+          
+          # Test basic connectivity first
+          echo "🌐 Testing basic Prometheus connectivity..."
+          echo "Prometheus URL: $PROMETHEUS_URL"
+          echo ""
+          
+          # Test if we can reach the health endpoint
+          echo "📡 Testing health endpoint..."
+          HEALTH_RESPONSE=$(curl -s -w "HTTP_STATUS:%{http_code}" \
+            "$PROMETHEUS_URL/prometheus/-/healthy" \
+            -u "$PROMETHEUS_USER:$PROMETHEUS_TOKEN" 2>&1 || echo "CURL_ERROR")
+          
+          echo "Health check response: $HEALTH_RESPONSE"
+          echo ""
+          
+          # Test a simple query first
+          echo "🧪 Testing simple query (up metric)..."
+          SIMPLE_QUERY="up"
+          SIMPLE_RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" \
+            -G "$PROMETHEUS_URL/prometheus/api/v1/query" \
+            --data-urlencode "query=$SIMPLE_QUERY" \
+            -u "$PROMETHEUS_USER:$PROMETHEUS_TOKEN" 2>&1 || echo "CURL_ERROR")
+          
+          echo "Simple query response:"
+          echo "$SIMPLE_RESPONSE"
+          echo ""
+          
+          # Now test our specific query
+          QUERY="argo_resource_info{exported_namespace=\"grafana-bench-cd\", version=\"$TARGET_SHA\"}"
+          echo "🎯 Testing target query..."
+          echo "Query: $QUERY"
+          echo ""
+          
+          # Test the query once to see structure
+          echo "📊 Single query test:"
+          TARGET_RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" \
+            -G "$PROMETHEUS_URL/prometheus/api/v1/query" \
+            --data-urlencode "query=$QUERY" \
+            -u "$PROMETHEUS_USER:$PROMETHEUS_TOKEN" 2>&1 || echo "CURL_ERROR")
+          
+          echo "Target query response:"
+          echo "$TARGET_RESPONSE"
+          echo ""
+          
+          # Parse the response for debugging
+          if echo "$TARGET_RESPONSE" | grep -q '"status":"success"'; then
+            echo "✅ Query executed successfully"
+            RESULT_COUNT=$(echo "$TARGET_RESPONSE" | jq -r '.data.result | length' 2>/dev/null || echo "0")
+            echo "📈 Result count: $RESULT_COUNT"
+            
+            if [ "$RESULT_COUNT" -gt "0" ]; then
+              echo "🎉 Found matching metrics! Details:"
+              echo "$TARGET_RESPONSE" | jq '.data.result[]' 2>/dev/null || echo "Could not parse results"
+              exit 0
+            fi
+          else
+            echo "❌ Query failed or returned error"
+            exit 1
+          fi
+          
+          # If no results found, start polling
+          echo ""
+          echo "🔄 Starting polling loop..."
+          echo "Will check every ${POLL_INTERVAL}s for up to ${TIMEOUT_SECONDS}s"
+          
+          ELAPSED=0
+          while [ $ELAPSED -lt $TIMEOUT_SECONDS ]; do
+            ATTEMPT_NUM=$(($ELAPSED / $POLL_INTERVAL + 1))
+            echo ""
+            echo "⏳ Attempt $ATTEMPT_NUM (${ELAPSED}s elapsed): Checking for metrics..."
+            
+            PROMETHEUS_RESPONSE=$(curl -s -G "$PROMETHEUS_URL/prometheus/api/v1/query" \
+              --data-urlencode "query=$QUERY" \
+              -u "$PROMETHEUS_USER:$PROMETHEUS_TOKEN")
+            
+            # Show abbreviated response
+            STATUS=$(echo "$PROMETHEUS_RESPONSE" | jq -r '.status' 2>/dev/null || echo "unknown")
+            RESULT_COUNT=$(echo "$PROMETHEUS_RESPONSE" | jq -r '.data.result | length' 2>/dev/null || echo "0")
+            
+            echo "   Status: $STATUS, Result count: $RESULT_COUNT"
+            
+            if [ "$RESULT_COUNT" -gt "0" ]; then
+              echo ""
+              echo "✅ Success! Found $RESULT_COUNT metric(s) with version $TARGET_SHA"
+              echo "🎉 Deployment has been detected in monitoring system"
+              echo ""
+              echo "📊 Metric details:"
+              echo "$PROMETHEUS_RESPONSE" | jq '.data.result[]' 2>/dev/null || echo "$PROMETHEUS_RESPONSE"
+              exit 0
+            fi
+            
+            # Show some context about available metrics every 5 attempts
+            if [ $(($ATTEMPT_NUM % 5)) -eq 0 ]; then
+              echo ""
+              echo "🔍 Checking for any argo_resource_info metrics in grafana-bench-cd namespace..."
+              NAMESPACE_QUERY="argo_resource_info{exported_namespace=\"grafana-bench-cd\"}"
+              NAMESPACE_RESPONSE=$(curl -s -G "$PROMETHEUS_URL/prometheus/api/v1/query" \
+                --data-urlencode "query=$NAMESPACE_QUERY" \
+                -u "$PROMETHEUS_USER:$PROMETHEUS_TOKEN")
+              
+              NAMESPACE_COUNT=$(echo "$NAMESPACE_RESPONSE" | jq -r '.data.result | length' 2>/dev/null || echo "0")
+              echo "   Found $NAMESPACE_COUNT total metrics in grafana-bench-cd namespace"
+              
+              if [ "$NAMESPACE_COUNT" -gt "0" ] && [ "$NAMESPACE_COUNT" -lt "10" ]; then
+                echo "   Available versions:"
+                echo "$NAMESPACE_RESPONSE" | jq -r '.data.result[].metric.version' 2>/dev/null | head -5 || echo "   Could not extract versions"
+              fi
+            fi
+            
+            sleep $POLL_INTERVAL
+            ELAPSED=$(($ELAPSED + $POLL_INTERVAL))
+          done
+          
+          echo ""
+          echo "❌ Timeout: No metrics found after ${TIMEOUT_SECONDS}s"
+          echo "🔍 Final debug info:"
+          echo "   Looking for SHA: $TARGET_SHA"
+          echo "   In namespace: grafana-bench-cd"
+          echo "   Query: $QUERY"
+          echo ""
+          echo "💡 Suggestions:"
+          echo "   1. Verify the SHA exists in your deployment"
+          echo "   2. Check if the metric name or namespace changed"
+          echo "   3. Try running this query locally:"
+          echo "      curl -s -G \"$PROMETHEUS_URL/prometheus/api/v1/query\" \\"
+          echo "        --data-urlencode \"query=$QUERY\" \\"
+          echo "        -u \"$PROMETHEUS_USER:$PROMETHEUS_TOKEN\""
+          
+          exit 1
