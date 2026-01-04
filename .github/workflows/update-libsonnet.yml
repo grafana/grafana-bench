@@ -190,7 +190,7 @@ jobs:
       - name: Get Vault secrets for Prometheus monitoring  
         uses: grafana/shared-workflows/actions/get-vault-secrets@ae92934a14a48b94494dbc06d74a81d47fe08a40
         with:
-          common_secrets: |
+          repo_secrets: |
             PROMETHEUS_URL=prometheus_url:prometheus_url
             PROMETHEUS_USER=prometheus_user:prometheus_user
             PROMETHEUS_TOKEN=prometheus_token:prometheus_token
