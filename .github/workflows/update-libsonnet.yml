@@ -1,4 +1,4 @@
-name: Update bench libsonnet
+name: update bench libsonnet
 
 on:
   workflow_call:
@@ -41,26 +41,26 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - name: Checkout code
+      - name: checkout code
         uses: actions/checkout@v5
 
-      - name: Setup Go
+      - name: setup go
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
           cache: false
 
-      - name: Install development dependencies
+      - name: install development dependencies
         run: make install-deps
 
-      - name: Generate libsonnet
+      - name: generate libsonnet
         env:
           VERSION: ${{ inputs.version }}
         run: |
           # Generate main libsonnet files and versions.libsonnet using make
           make libsonnet VERSION="$VERSION"
 
-      - name: Validate generated versions.libsonnet
+      - name: validate generated versions.libsonnet
         run: |
           CURRENT_SHA=$(git rev-parse HEAD)
           echo "Current SHA: $CURRENT_SHA"
@@ -77,7 +77,7 @@ jobs:
             echo "✅ SHA validation passed: Generated libsonnet contains correct SHA"
           fi
 
-      - name: Authenticate with GAR
+      - name: authenticate with gar
         uses: grafana/shared-workflows/actions/login-to-gar@ae92934a14a48b94494dbc06d74a81d47fe08a40
         with:
           registry: us-docker.pkg.dev
@@ -109,7 +109,7 @@ jobs:
       #     
       #     echo "🎉 All generated images validated successfully!"
 
-      - name: Get Vault secrets for deployment_tools access
+      - name: get vault secrets for deployment_tools access
         uses: grafana/shared-workflows/actions/get-vault-secrets@ae92934a14a48b94494dbc06d74a81d47fe08a40
         with:
           common_secrets: |
@@ -117,7 +117,7 @@ jobs:
             GITHUB_APP_INSTALLATION_ID=updater-app:app-installation-id
             GITHUB_APP_PRIVATE_KEY=updater-app:private-key
 
-      - name: Update deployment_tools with libsonnet
+      - name: update deployment_tools with libsonnet
         env:
           VERSION: ${{ inputs.version }}
           BRANCH_PREFIX: ${{ inputs.branch_prefix }}
@@ -187,7 +187,7 @@ jobs:
 
           echo "Libsonnet update completed for ${VERSION}!"
 
-      - name: Get Vault secrets for Prometheus monitoring  
+      - name: get vault secrets for prometheus monitoring
         uses: grafana/shared-workflows/actions/get-vault-secrets@ae92934a14a48b94494dbc06d74a81d47fe08a40
         with:
           repo_secrets: |
@@ -195,7 +195,7 @@ jobs:
             PROMETHEUS_USER=prometheus_user:prometheus_user
             PROMETHEUS_TOKEN=prometheus_token:prometheus_token
 
-      - name: Wait for deployment metrics to appear
+      - name: wait for deployment metrics to appear
         env:
           VERSION: ${{ inputs.version }}
           TEST_VERSION_SHA: ${{ inputs.test_version_sha }}
@@ -260,14 +260,14 @@ jobs:
           echo "  URL: $PROMETHEUS_URL/prometheus/api/v1/query"
           exit 1
 
-      - name: Get Vault secrets for Argo Workflows
+      - name: get vault secrets for argo workflows
         uses: grafana/shared-workflows/actions/get-vault-secrets@ae92934a14a48b94494dbc06d74a81d47fe08a40
         with:
           common_secrets: |
             ARGO_SERVER=argo-workflows:server
             ARGO_TOKEN=argo-workflows:token
 
-      - name: Trigger grafana-bench-cd workflow
+      - name: trigger grafana-bench-cd workflow
         env:
           VERSION: ${{ inputs.version }}
         run: |

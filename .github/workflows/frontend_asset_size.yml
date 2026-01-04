@@ -1,4 +1,4 @@
-name: Measure frontend asset size
+name: measure frontend asset size
 
 on:
   schedule:

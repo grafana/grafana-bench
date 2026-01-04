@@ -1,4 +1,4 @@
-name: Update docs on release
+name: update docs on release
 
 on:
   workflow_dispatch:

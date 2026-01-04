@@ -1,4 +1,4 @@
-name: Manual Argo Trigger
+name: manual argo trigger
 
 on:
   workflow_dispatch:
@@ -10,10 +10,10 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - name: Checkout code
+      - name: checkout code
         uses: actions/checkout@v5
 
-      - name: Trigger grafana-bench-cd workflow
+      - name: trigger grafana-bench-cd workflow
         uses: grafana/shared-workflows/actions/trigger-argo-workflow@ae92934a14a48b94494dbc06d74a81d47fe08a40
         with:
           instance: "ops"

@@ -1,4 +1,4 @@
-name: Manual Prometheus Poll
+name: manual prometheus poll
 
 on:
   workflow_dispatch:
@@ -19,16 +19,16 @@ on:
         default: 10
 
 jobs:
-  debug-prometheus-polling:
+  poll-prometheus-metrics:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
     steps:
-      - name: Checkout code
+      - name: checkout code
         uses: actions/checkout@v5
 
-      - name: Get Vault secrets for Prometheus monitoring  
+      - name: get vault secrets for prometheus monitoring  
         uses: grafana/shared-workflows/actions/get-vault-secrets@ae92934a14a48b94494dbc06d74a81d47fe08a40
         with:
           repo_secrets: |
@@ -36,7 +36,7 @@ jobs:
             PROMETHEUS_USER=prometheus_user:prometheus_user
             PROMETHEUS_TOKEN=prometheus_token:prometheus_token
 
-      - name: Poll for deployment metrics
+      - name: poll for deployment metrics
         env:
           TARGET_SHA: ${{ inputs.target_sha }}
           TIMEOUT_MINUTES: ${{ inputs.timeout_minutes }}

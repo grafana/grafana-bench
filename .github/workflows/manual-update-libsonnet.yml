@@ -1,4 +1,4 @@
-name: Manual libsonnet deployment
+name: manual libsonnet deployment
 
 on:
   workflow_dispatch:
