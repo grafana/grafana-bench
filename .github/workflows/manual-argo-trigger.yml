@@ -22,4 +22,4 @@ jobs:
           instance: "ops"
           namespace: "grafana-bench-cd"
           workflow_template: "grafana-bench-cd"
-          extra_args: "--wait"
+          extra_args: ""
