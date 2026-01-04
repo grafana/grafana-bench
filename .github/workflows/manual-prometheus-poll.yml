@@ -1,0 +1,95 @@
+name: Manual Prometheus Poll
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_sha:
+        description: 'SHA to look for in metrics (e.g., commit SHA)'
+        required: true
+        type: string
+      timeout_minutes:
+        description: 'Timeout in minutes (default: 5)'
+        required: false
+        type: number
+        default: 5
+      poll_interval_seconds:
+        description: 'Poll interval in seconds (default: 10)'
+        required: false
+        type: number
+        default: 10
+
+jobs:
+  debug-prometheus-polling:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Get Vault secrets for Prometheus monitoring  
+        uses: grafana/shared-workflows/actions/get-vault-secrets@ae92934a14a48b94494dbc06d74a81d47fe08a40
+        with:
+          repo_secrets: |
+            PROMETHEUS_URL=prometheus_url:prometheus_url
+            PROMETHEUS_USER=prometheus_user:prometheus_user
+            PROMETHEUS_TOKEN=prometheus_token:prometheus_token
+
+      - name: Poll for deployment metrics
+        env:
+          TARGET_SHA: ${{ inputs.target_sha }}
+          TIMEOUT_MINUTES: ${{ inputs.timeout_minutes }}
+          POLL_INTERVAL: ${{ inputs.poll_interval_seconds }}
+        run: |
+          set -euo pipefail
+          
+          # Convert timeout to seconds
+          TIMEOUT_SECONDS=$((TIMEOUT_MINUTES * 60))
+          
+          QUERY="argo_resource_info{exported_namespace=\"grafana-bench-cd\", version=\"$TARGET_SHA\"}"
+          
+          echo "🔍 Polling for deployment metrics"
+          echo "Target SHA: $TARGET_SHA"
+          echo "Query: $QUERY"
+          echo "Timeout: ${TIMEOUT_MINUTES} minutes, checking every ${POLL_INTERVAL}s"
+          echo ""
+          
+          # Test the query once first
+          PROMETHEUS_RESPONSE=$(curl -s -G "$PROMETHEUS_URL/prometheus/api/v1/query" \
+            --data-urlencode "query=$QUERY" \
+            -u "$PROMETHEUS_USER:$PROMETHEUS_TOKEN")
+          
+          RESULT_COUNT=$(echo "$PROMETHEUS_RESPONSE" | jq -r '.data.result | length' 2>/dev/null || echo "0")
+          
+          if [ "$RESULT_COUNT" -gt "0" ]; then
+            echo "✅ Success! Found $RESULT_COUNT metric(s) with version $TARGET_SHA"
+            echo "🎉 Deployment detected immediately"
+            exit 0
+          fi
+          
+          # Start polling
+          echo "🔄 Starting polling..."
+          ELAPSED=0
+          while [ $ELAPSED -lt $TIMEOUT_SECONDS ]; do
+            ATTEMPT_NUM=$(($ELAPSED / $POLL_INTERVAL + 1))
+            echo "⏳ Attempt $ATTEMPT_NUM (${ELAPSED}s elapsed)..."
+            
+            PROMETHEUS_RESPONSE=$(curl -s -G "$PROMETHEUS_URL/prometheus/api/v1/query" \
+              --data-urlencode "query=$QUERY" \
+              -u "$PROMETHEUS_USER:$PROMETHEUS_TOKEN")
+            
+            RESULT_COUNT=$(echo "$PROMETHEUS_RESPONSE" | jq -r '.data.result | length' 2>/dev/null || echo "0")
+            
+            if [ "$RESULT_COUNT" -gt "0" ]; then
+              echo "✅ Success! Found $RESULT_COUNT metric(s) with version $TARGET_SHA"
+              echo "🎉 Deployment detected after ${ELAPSED}s"
+              exit 0
+            fi
+            
+            sleep $POLL_INTERVAL
+            ELAPSED=$(($ELAPSED + $POLL_INTERVAL))
+          done
+          
+          echo "❌ Timeout: No metrics found after ${TIMEOUT_SECONDS}s"
+          exit 1
