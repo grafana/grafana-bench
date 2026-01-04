@@ -13,10 +13,33 @@ jobs:
       - name: checkout code
         uses: actions/checkout@v5
 
-      - name: trigger grafana-bench-cd workflow
-        uses: grafana/shared-workflows/actions/trigger-argo-workflow@ae92934a14a48b94494dbc06d74a81d47fe08a40
+      - name: get vault secrets for argo workflows
+        uses: grafana/shared-workflows/actions/get-vault-secrets@ae92934a14a48b94494dbc06d74a81d47fe08a40
         with:
-          instance: "ops"
-          namespace: "grafana-bench-cd"
-          workflow_template: "grafana-bench-cd"
-          extra_args: "--wait --log"
+          common_secrets: |
+            ARGO_SERVER=argo-workflows:server
+            ARGO_TOKEN=argo-workflows:token
+
+      - name: trigger grafana-bench-cd workflow
+        run: |
+          set -euo pipefail
+          
+          echo "🚀 Triggering grafana-bench-cd Argo workflow"
+          
+          # Get the current commit SHA
+          CURRENT_SHA=$(git rev-parse HEAD)
+          echo "Commit SHA: $CURRENT_SHA"
+          
+          # Submit the workflow
+          argo submit \
+            -n grafana-bench-cd \
+            --from workflowtemplate/grafana-bench-cd \
+            --wait \
+            --log
+          
+          if [ $? -eq 0 ]; then
+            echo "✅ grafana-bench-cd workflow completed successfully!"
+          else
+            echo "❌ grafana-bench-cd workflow failed"
+            exit 1
+          fi

@@ -213,51 +213,54 @@ jobs:
             echo "Using current commit SHA: $TARGET_SHA"
           fi
           
-          echo "Waiting for metrics with version SHA: $TARGET_SHA"
-          
-          # Prometheus query to check for the specific version
-          QUERY="argo_resource_info{exported_namespace=\"grafana-bench-cd\", version=\"$TARGET_SHA\"}"
-          
-          # Wait up to 30 minutes for the metric to appear
+          # Convert timeout to seconds
           TIMEOUT_SECONDS=1800  # 30 minutes
           POLL_INTERVAL=10      # 10 seconds
-          ELAPSED=0
           
-          echo "Polling Prometheus every ${POLL_INTERVAL}s for up to ${TIMEOUT_SECONDS}s..."
+          QUERY="argo_resource_info{exported_namespace=\"grafana-bench-cd\", version=\"$TARGET_SHA\"}"
+          
+          echo "Target SHA: $TARGET_SHA"
           echo "Query: $QUERY"
+          echo "Timeout: 30 minutes, checking every ${POLL_INTERVAL}s"
+          echo ""
           
+          # Test the query once first
+          PROMETHEUS_RESPONSE=$(curl -s -G "$PROMETHEUS_URL/prometheus/api/v1/query" \
+            --data-urlencode "query=$QUERY" \
+            -u "$PROMETHEUS_USER:$PROMETHEUS_TOKEN")
+          
+          RESULT_COUNT=$(echo "$PROMETHEUS_RESPONSE" | jq -r '.data.result | length' 2>/dev/null || echo "0")
+          
+          if [ "$RESULT_COUNT" -gt "0" ]; then
+            echo "✅ Success! Found $RESULT_COUNT metric(s) with version $TARGET_SHA"
+            echo "🎉 Deployment detected immediately"
+            exit 0
+          fi
+          
+          # Start polling
+          echo "🔄 Starting polling..."
+          ELAPSED=0
           while [ $ELAPSED -lt $TIMEOUT_SECONDS ]; do
-            echo "⏳ Attempt $(($ELAPSED / $POLL_INTERVAL + 1)): Checking for metrics..."
-            
-            # Query Prometheus with debug output
-            echo "🔍 Debug: Querying $PROMETHEUS_URL/prometheus/api/v1/query"
-            echo "🔍 Debug: Query = $QUERY"
+            ATTEMPT_NUM=$(($ELAPSED / $POLL_INTERVAL + 1))
+            echo "⏳ Attempt $ATTEMPT_NUM (${ELAPSED}s elapsed)..."
             
             PROMETHEUS_RESPONSE=$(curl -s -G "$PROMETHEUS_URL/prometheus/api/v1/query" \
               --data-urlencode "query=$QUERY" \
               -u "$PROMETHEUS_USER:$PROMETHEUS_TOKEN")
             
-            echo "🔍 Debug: Raw Prometheus response:"
-            echo "$PROMETHEUS_RESPONSE" | jq '.' 2>/dev/null || echo "$PROMETHEUS_RESPONSE"
-            
             RESULT_COUNT=$(echo "$PROMETHEUS_RESPONSE" | jq -r '.data.result | length' 2>/dev/null || echo "0")
             
             if [ "$RESULT_COUNT" -gt "0" ]; then
               echo "✅ Success! Found $RESULT_COUNT metric(s) with version $TARGET_SHA"
-              echo "🎉 Deployment has been detected in monitoring system"
+              echo "🎉 Deployment detected after ${ELAPSED}s"
               exit 0
             fi
             
-            echo "   No metrics found yet (result count: $RESULT_COUNT)"
             sleep $POLL_INTERVAL
             ELAPSED=$(($ELAPSED + $POLL_INTERVAL))
           done
           
           echo "❌ Timeout: No metrics found after ${TIMEOUT_SECONDS}s"
-          echo "This may indicate the deployment hasn't propagated to monitoring yet"
-          echo "Manual verification recommended using:"
-          echo "  Query: $QUERY"
-          echo "  URL: $PROMETHEUS_URL/prometheus/api/v1/query"
           exit 1
 
       - name: get vault secrets for argo workflows
