@@ -25,7 +25,7 @@ jobs:
       id-token: write
     with:
       version: "experimental"
-      branch_prefix: "bench-libsonnet-experimental"
+      branch_prefix: "automerge/bench-libsonnet-experimental"
       pr_message: "Manual update of experimental bench libsonnet from main branch\\n\\nThis PR updates the experimental bench libsonnet library with the latest changes from the main branch.\\n\\nChanges:\\n- Update ksonnet/lib/bench/experimental/main.libsonnet\\n- Update ksonnet/lib/bench/experimental/main_test.jsonnet\\n- Update ksonnet/lib/bench/versions.libsonnet\\n\\n⚠️ This is an experimental version - use for testing only.\\n\\nImport with:\\n```jsonnet\\nlocal benchVersions = import 'bench/versions.libsonnet';\\nlocal benchFunctions = benchVersions.getBenchFunctions('experimental');\\n```"
       commit_message: "Manual update of bench experimental libsonnet\\n\\nThis commit manually updates the experimental bench libsonnet library.\\n\\nGenerated automatically from bench CLI flags."
 
@@ -37,6 +37,6 @@ jobs:
       id-token: write
     with:
       version: ${{ inputs.custom_version }}
-      branch_prefix: "bench-libsonnet-custom"
+      branch_prefix: "auto-merge/bench-libsonnet-custom"
       pr_message: "Custom deployment of bench libsonnet ${{ inputs.custom_version }}\\n\\nThis is a custom/manual deployment.\\n\\nChanges:\\n- Add/update ksonnet/lib/bench/${{ inputs.custom_version }}/main.libsonnet\\n- Add/update ksonnet/lib/bench/${{ inputs.custom_version }}/main_test.jsonnet"
       commit_message: "Custom deployment of bench libsonnet ${{ inputs.custom_version }}"
