@@ -30,8 +30,8 @@ jobs:
           WORKFLOW_URI="${{ steps.trigger-workflow.outputs.uri }}"
           echo "Workflow URI: $WORKFLOW_URI"
           
-          # Extract workflow name from URI
-          WORKFLOW_NAME=$(echo "$WORKFLOW_URI" | sed 's/.*\/workflows\///' | cut -d'?' -f1)
+          # Extract workflow name from URI (remove namespace prefix)
+          WORKFLOW_NAME=$(echo "$WORKFLOW_URI" | sed 's/.*\/workflows\///' | cut -d'?' -f1 | sed 's/.*\///')
           echo "Monitoring workflow: $WORKFLOW_NAME"
           
           # Debug: Check if we have the token
