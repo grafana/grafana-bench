@@ -2,6 +2,8 @@ module github.com/grafana/grafana-bench
 
 go 1.24.2
 
+toolchain go1.24.11
+
 require (
 	buf.build/gen/go/prometheus/prometheus/protocolbuffers/go v1.36.9-20250320161912-af2aab87b1b3.1
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
