@@ -34,13 +34,47 @@ jobs:
           WORKFLOW_NAME=$(echo "$WORKFLOW_URI" | sed 's/.*\/workflows\///' | cut -d'?' -f1)
           echo "Monitoring workflow: $WORKFLOW_NAME"
           
+          # Debug: Check if we have the token
+          if [ -z "${{ env.ARGO_TOKEN }}" ]; then
+            echo "❌ ARGO_TOKEN is empty or not set"
+            exit 1
+          else
+            echo "✅ ARGO_TOKEN is available (length: ${#ARGO_TOKEN})"
+          fi
+          
+          # Test the API endpoint first
+          echo "🔍 Testing API endpoint..."
+          API_URL="https://argo-workflows.grafana.net/api/v1/workflows/grafana-bench-cd/$WORKFLOW_NAME"
+          echo "API URL: $API_URL"
+          
           # Poll workflow status until completion (30 minute timeout)
           for i in {1..60}; do
-            STATUS=$(curl -s -H "Authorization: Bearer ${{ env.ARGO_TOKEN }}" \
-              https://argo-workflows.grafana.net/api/v1/workflows/grafana-bench-cd/$WORKFLOW_NAME | \
-              jq -r '.status.phase // "Unknown"')
+            echo "--- Attempt $i ---"
             
-            echo "Attempt $i: $STATUS"
+            # Make the request and capture both response and HTTP status
+            RESPONSE=$(curl -s -w "HTTP_STATUS:%{http_code}" \
+              -H "Authorization: Bearer ${{ env.ARGO_TOKEN }}" \
+              "$API_URL")
+            
+            HTTP_STATUS=$(echo "$RESPONSE" | grep -o 'HTTP_STATUS:[0-9]*' | cut -d: -f2)
+            BODY=$(echo "$RESPONSE" | sed 's/HTTP_STATUS:[0-9]*$//')
+            
+            echo "HTTP Status: $HTTP_STATUS"
+            echo "Response body: $BODY"
+            
+            if [ "$HTTP_STATUS" != "200" ]; then
+              echo "❌ API request failed with status $HTTP_STATUS"
+              if [ $i -lt 5 ]; then
+                echo "⏳ Retrying in 30 seconds..."
+                sleep 30
+                continue
+              else
+                exit 1
+              fi
+            fi
+            
+            STATUS=$(echo "$BODY" | jq -r '.status.phase // "Unknown"')
+            echo "Workflow status: $STATUS"
             
             case "$STATUS" in
               "Succeeded")
