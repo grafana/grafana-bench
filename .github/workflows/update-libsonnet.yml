@@ -263,59 +263,74 @@ jobs:
           echo "❌ Timeout: No metrics found after ${TIMEOUT_SECONDS}s"
           exit 1
 
-      - name: get vault secrets for argo workflows
-        uses: grafana/shared-workflows/actions/get-vault-secrets@ae92934a14a48b94494dbc06d74a81d47fe08a40
-        with:
-          common_secrets: |
-            ARGO_SERVER=argo-workflows:server
-            ARGO_TOKEN=argo-workflows:token
+      - name: setup argo
+        uses: grafana/shared-workflows/actions/setup-argo@ae92934a14a48b94494dbc06d74a81d47fe08a40
 
       - name: trigger grafana-bench-cd workflow
+        id: trigger-workflow
         env:
           VERSION: ${{ inputs.version }}
+        uses: grafana/shared-workflows/actions/trigger-argo-workflow@ae92934a14a48b94494dbc06d74a81d47fe08a40
+        with:
+          instance: "ops"
+          namespace: "grafana-bench-cd"
+          workflow_template: "grafana-bench-cd"
+          parameters: |
+            commit=${{ github.sha }}
+            commit_link=https://github.com/grafana/grafana-bench/commit/${{ github.sha }}
+            branch=${{ github.ref_name }}
+            benchVersion=${{ inputs.version }}
+
+      - name: monitor workflow status
         run: |
-          set -euo pipefail
+          WORKFLOW_URI="${{ steps.trigger-workflow.outputs.uri }}"
+          echo "Workflow URI: $WORKFLOW_URI"
           
-          echo "🚀 Triggering grafana-bench-cd Argo workflow..."
+          # Extract workflow name from URI (remove namespace prefix)
+          WORKFLOW_NAME=$(echo "$WORKFLOW_URI" | sed 's/.*\/workflows\///' | cut -d'?' -f1 | sed 's/.*\///')
+          echo "Monitoring workflow: $WORKFLOW_NAME"
           
-          # Get the current commit SHA and create commit link
-          CURRENT_SHA=$(git rev-parse HEAD)
-          COMMIT_LINK="https://github.com/grafana/grafana-bench/commit/$CURRENT_SHA"
+          API_URL="https://argo-workflows.grafana.net/api/v1/workflows/grafana-bench-cd/$WORKFLOW_NAME"
           
-          echo "Triggering workflow for:"
-          echo "  Version: $VERSION"
-          echo "  Commit SHA: $CURRENT_SHA"
-          echo "  Commit Link: $COMMIT_LINK"
+          # Poll workflow status until completion (30 minute timeout)
+          for i in {1..60}; do
+            echo "Attempt $i: checking workflow status..."
+            
+            RESPONSE=$(curl -s -w "HTTP_STATUS:%{http_code}" \
+              -H "Authorization: Bearer ${{ env.ARGO_TOKEN }}" \
+              "$API_URL")
+            
+            HTTP_STATUS=$(echo "$RESPONSE" | grep -o 'HTTP_STATUS:[0-9]*' | cut -d: -f2)
+            BODY=$(echo "$RESPONSE" | sed 's/HTTP_STATUS:[0-9]*$//')
+            
+            if [ "$HTTP_STATUS" != "200" ]; then
+              echo "❌ API request failed with status $HTTP_STATUS"
+              exit 1
+            fi
+            
+            STATUS=$(echo "$BODY" | jq -r '.status.phase // "Unknown"')
+            echo "Status: $STATUS"
+            
+            case "$STATUS" in
+              "Succeeded")
+                echo "✅ grafana-bench-cd workflow completed successfully!"
+                echo "🎉 Bench testing completed for version ${{ inputs.version }}"
+                exit 0
+                ;;
+              "Failed"|"Error")
+                echo "❌ grafana-bench-cd workflow failed"
+                exit 1
+                ;;
+              "Running"|"Pending")
+                echo "⏳ Workflow still running, waiting 30 seconds..."
+                sleep 30
+                ;;
+              *)
+                echo "⚠️ Unknown status: $STATUS, waiting 30 seconds..."
+                sleep 30
+                ;;
+            esac
+          done
           
-          # Submit the workflow
-          WORKFLOW_NAME=$(argo submit \
-            -n grafana-bench-cd \
-            --from workflowtemplate/grafana-bench-cd \
-            --server-dry-run \
-            --output name 2>/dev/null | head -1)
-          
-          if [ -z "$WORKFLOW_NAME" ]; then
-            echo "❌ Failed to get workflow name from dry-run"
-            exit 1
-          fi
-          
-          echo "Generated workflow name: $WORKFLOW_NAME"
-          
-          # Submit the actual workflow
-          echo "📋 Submitting workflow..."
-          argo submit \
-            -n grafana-bench-cd \
-            --from workflowtemplate/grafana-bench-cd \
-            --wait \
-            --log
-          
-          SUBMIT_EXIT_CODE=$?
-          
-          if [ $SUBMIT_EXIT_CODE -eq 0 ]; then
-            echo "✅ grafana-bench-cd workflow completed successfully!"
-            echo "🎉 Bench testing completed for version $VERSION"
-          else
-            echo "❌ grafana-bench-cd workflow failed (exit code: $SUBMIT_EXIT_CODE)"
-            echo "Check the workflow logs above for details"
-            exit 1
-          fi
+          echo "⏰ Workflow monitoring timeout after 30 minutes"
+          exit 1
