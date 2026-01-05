@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -81,6 +82,11 @@ func NewGitServer(ctx context.Context, config GitServerConfig) (*GitServer, erro
 	port, err := container.MappedPort(ctx, "3000")
 	if err != nil {
 		return nil, fmt.Errorf("getting gitserver port %w", err)
+	}
+
+	// Add delay in CI to ensure Gitea is fully initialized before creating user
+	if os.Getenv("CI") == "true" {
+		time.Sleep(5 * time.Second)
 	}
 
 	// create user

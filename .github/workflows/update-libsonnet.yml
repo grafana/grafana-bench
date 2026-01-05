@@ -282,6 +282,8 @@ jobs:
             benchVersion=${{ inputs.version }}
 
       - name: monitor workflow status
+        env:
+          VERSION: ${{ inputs.version }}
         run: |
           WORKFLOW_URI="${{ steps.trigger-workflow.outputs.uri }}"
           echo "Workflow URI: $WORKFLOW_URI"
@@ -314,7 +316,7 @@ jobs:
             case "$STATUS" in
               "Succeeded")
                 echo "✅ grafana-bench-cd workflow completed successfully!"
-                echo "🎉 Bench testing completed for version ${{ inputs.version }}"
+                echo "🎉 Bench testing completed for version $VERSION"
                 exit 0
                 ;;
               "Failed"|"Error")
