@@ -54,10 +54,13 @@ jobs:
       - name: get version and author info
         if: steps.check-changes.outputs.has_changes == 'true'
         id: get-info
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          ACTOR: ${{ github.actor }}
         run: |
           # For release automation, use the tag name as version
-          VERSION="${{ github.ref_name }}"
-          AUTHOR="${{ github.actor }}"
+          VERSION="$REF_NAME"
+          AUTHOR="$ACTOR"
           
           # Sanitize version for branch name (remove invalid characters)
           SAFE_VERSION=$(echo "$VERSION" | sed 's/[^a-zA-Z0-9.-]/-/g')
