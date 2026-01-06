@@ -81,21 +81,15 @@ jobs:
             documentation
             automated
 
-      - name: Auto-approve and merge PR
+      - name: Auto-merge PR
         if: steps.create-pr.outputs.pull-request-number
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ steps.create-pr.outputs.pull-request-number }}
         run: |
-          echo "Auto-approving and merging PR #$PR_NUMBER"
+          echo "Auto-merging PR #$PR_NUMBER"
 
-          # Approve the PR
-          gh pr review $PR_NUMBER --approve --body "🤖 Auto-approved: Documentation updates are safe to merge automatically."
-
-          # Wait a moment for the approval to register
-          sleep 2
-
-          # Merge the PR using squash merge
+          # Try to merge the PR using squash merge
           gh pr merge $PR_NUMBER --squash --delete-branch
 
-          echo "✅ PR #$PR_NUMBER has been approved and merged"
+          echo "✅ PR #$PR_NUMBER has been merged"
