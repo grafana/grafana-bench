@@ -25,6 +25,9 @@ jobs:
 
       - name: check docs are up to date
         run: |
+          # Ensure Go tools are in PATH
+          export PATH="$(go env GOPATH)/bin:$PATH"
+          
           # Generate docs and libsonnet (make targets handle dependencies)
           make docs
           make libsonnet
