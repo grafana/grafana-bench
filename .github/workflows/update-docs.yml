@@ -22,37 +22,16 @@ jobs:
           cache: false
 
       - name: Generate updated documentation
+        env:
+          TZ: 'America/Anchorage'  # Set timezone to match local development
         run: make docs
 
       - name: Generate libsonnet library
+        env:
+          TZ: 'America/Anchorage'  # Set timezone to match local development
         run: make libsonnet
 
-      - name: Check for changes
-        id: check-changes
-        run: |
-          if git diff --quiet docs/ libsonnet/; then
-            echo "No documentation or libsonnet changes needed"
-            echo "has_changes=false" >> $GITHUB_OUTPUT
-          else
-            echo "Documentation or libsonnet changes detected"
-            echo "has_changes=true" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Debug trigger info
-        if: steps.check-changes.outputs.has_changes == 'true'
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          GITHUB_REF: ${{ github.ref }}
-          GITHUB_REF_NAME: ${{ github.ref_name }}
-          GITHUB_REF_TYPE: ${{ github.ref_type }}
-        run: |
-          echo "Event name: $EVENT_NAME"
-          echo "GitHub ref: $GITHUB_REF"
-          echo "GitHub ref name: $GITHUB_REF_NAME"
-          echo "GitHub ref type: $GITHUB_REF_TYPE"
-
       - name: get version and author info
-        if: steps.check-changes.outputs.has_changes == 'true'
         id: get-info
         env:
           REF_NAME: ${{ github.ref_name }}
@@ -70,7 +49,6 @@ jobs:
           echo "author=${AUTHOR}" >> $GITHUB_OUTPUT
 
       - name: Create Pull Request
-        if: steps.check-changes.outputs.has_changes == 'true'
         id: create-pr
         uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # v7.0.8
         with:
@@ -105,7 +83,7 @@ jobs:
             automated
 
       - name: Auto-approve and merge PR
-        if: steps.check-changes.outputs.has_changes == 'true' && steps.create-pr.outputs.pull-request-number
+        if: steps.create-pr.outputs.pull-request-number
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ steps.create-pr.outputs.pull-request-number }}
