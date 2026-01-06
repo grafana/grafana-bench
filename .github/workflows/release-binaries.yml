@@ -1,9 +1,8 @@
 name: release binaries
 
 on:
+  workflow_call:
   workflow_dispatch:
-  release:
-    types: [published]
 
 permissions:
   contents: write
@@ -16,8 +15,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: grafana/setup-k6-action@v1
-
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
@@ -28,11 +25,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           EVENT_NAME: ${{ github.event_name }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
         run: |
-          if [ "$EVENT_NAME" == "release" ]; then
-            # Running on release event
-            TAG_NAME="$RELEASE_TAG"
+          if [ "$EVENT_NAME" == "workflow_call" ]; then
+            # Called from CI - use the current ref name (should be the tag)
+            TAG_NAME="$GITHUB_REF_NAME"
           elif [ "$EVENT_NAME" == "workflow_dispatch" ]; then
             # Manual trigger - get the latest release tag
             LATEST_TAG=$(gh release list --limit 1 --json tagName --jq '.[0].tagName')
@@ -48,9 +45,6 @@ jobs:
           
           echo "tag_name=${TAG_NAME}" >> $GITHUB_OUTPUT
           echo "Using tag: ${TAG_NAME}"
-
-      - name: Run tests
-        run: go test -v ./...
 
       - name: Build binaries
         run: |
