@@ -1,13 +1,7 @@
 name: update docs on release
 
 on:
-  workflow_dispatch:
-  release:
-    types: [published]
-  push:
-    branches: [main]
-    paths:
-      - '.github/actions/setup-grafana-bench/action.yml'
+  workflow_call:
 
 jobs:
   update-docs:
@@ -57,47 +51,17 @@ jobs:
           echo "GitHub ref name: $GITHUB_REF_NAME"
           echo "GitHub ref type: $GITHUB_REF_TYPE"
 
-      - name: Get version and author info
+      - name: get version and author info
         if: steps.check-changes.outputs.has_changes == 'true'
         id: get-info
-        env:
-          GH_TOKEN: ${{ github.token }}
-          EVENT_NAME: ${{ github.event_name }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
-          RELEASE_AUTHOR: ${{ github.event.release.author.login }}
-          GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_REF: ${{ github.ref }}
         run: |
-          if [ "$EVENT_NAME" == "release" ]; then
-            VERSION="$RELEASE_TAG"
-            AUTHOR="$RELEASE_AUTHOR"
-          elif [ "$EVENT_NAME" == "workflow_dispatch" ]; then
-            # Get the latest release tag
-            LATEST_TAG=$(gh release list --limit 1 --json tagName --jq '.[0].tagName')
-            if [ -z "$LATEST_TAG" ] || [ "$LATEST_TAG" == "null" ]; then
-              echo "No releases found"
-              exit 1
-            fi
-            VERSION="$LATEST_TAG"
-            AUTHOR="$GITHUB_ACTOR"
-          elif [ "$EVENT_NAME" == "push" ]; then
-            # For action updates, get the latest release tag
-            LATEST_TAG=$(gh release list --limit 1 --json tagName --jq '.[0].tagName')
-            if [ -z "$LATEST_TAG" ] || [ "$LATEST_TAG" == "null" ]; then
-              echo "No releases found, using commit SHA"
-              VERSION="main-$(git rev-parse --short HEAD)"
-            else
-              VERSION="$LATEST_TAG"
-            fi
-            AUTHOR="$GITHUB_ACTOR"
-          else
-            echo "Unsupported event: $EVENT_NAME with ref: $GITHUB_REF"
-            exit 1
-          fi
-
+          # For release automation, use the tag name as version
+          VERSION="${{ github.ref_name }}"
+          AUTHOR="${{ github.actor }}"
+          
           # Sanitize version for branch name (remove invalid characters)
           SAFE_VERSION=$(echo "$VERSION" | sed 's/[^a-zA-Z0-9.-]/-/g')
-
+          
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "safe_version=${SAFE_VERSION}" >> $GITHUB_OUTPUT
           echo "author=${AUTHOR}" >> $GITHUB_OUTPUT
@@ -126,7 +90,7 @@ jobs:
             - `make docs`
             - `make libsonnet`
             
-            🤖 This PR was created automatically (triggered by: ${{ github.event_name }}).
+            🤖 This PR was created automatically after successful release build and will be auto-merged.
             
             /cc @${{ steps.get-info.outputs.author }}
           branch: docs/update-${{ steps.get-info.outputs.safe_version }}
