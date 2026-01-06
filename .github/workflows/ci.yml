@@ -24,6 +24,8 @@ jobs:
           cache: false
 
       - name: check docs are up to date
+        env:
+          TZ: 'America/Anchorage'  # Set timezone to match local development (-9 UTC)
         run: |
           make docs
           make libsonnet
