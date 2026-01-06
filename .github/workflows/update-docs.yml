@@ -21,15 +21,14 @@ jobs:
           go-version-file: go.mod
           cache: false
 
-      - name: Generate updated documentation
+      - name: Generate updated documentation and libsonnet
         env:
-          TZ: 'America/Anchorage'  # Set timezone to match local development
-        run: make docs
-
-      - name: Generate libsonnet library
-        env:
-          TZ: 'America/Anchorage'  # Set timezone to match local development
-        run: make libsonnet
+          # Set to Jeff's timezone otherwise development
+          # might straddle days on github actions and cause this step to fail
+          TZ: 'America/Anchorage'
+        run: |
+          make docs
+          make libsonnet
 
       - name: get version and author info
         id: get-info
@@ -40,10 +39,10 @@ jobs:
           # For release automation, use the tag name as version
           VERSION="$REF_NAME"
           AUTHOR="$ACTOR"
-          
+
           # Sanitize version for branch name (remove invalid characters)
           SAFE_VERSION=$(echo "$VERSION" | sed 's/[^a-zA-Z0-9.-]/-/g')
-          
+
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "safe_version=${SAFE_VERSION}" >> $GITHUB_OUTPUT
           echo "author=${AUTHOR}" >> $GITHUB_OUTPUT
@@ -58,21 +57,21 @@ jobs:
           title: "📚 Update documentation and libsonnet for ${{ steps.get-info.outputs.version }}"
           body: |
             ## 📚 Documentation and Libsonnet Update for ${{ steps.get-info.outputs.version }}
-            
+
             This PR updates the documentation and generates the libsonnet library for version ${{ steps.get-info.outputs.version }}.
-            
+
             ### Changes
             - Updated CLI command documentation
             - Updated version references across all docs
             - Updated Docker image tags in examples
             - Generated versioned libsonnet library for deployment_tools
-            
+
             Generated automatically by:
             - `make docs`
             - `make libsonnet`
-            
+
             🤖 This PR was created automatically after successful release build and will be auto-merged.
-            
+
             /cc @${{ steps.get-info.outputs.author }}
           branch: docs/update-${{ steps.get-info.outputs.safe_version }}
           branch-suffix: short-commit-hash
