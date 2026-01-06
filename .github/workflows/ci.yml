@@ -107,7 +107,7 @@ jobs:
         run: go install
 
       - id: get-secrets
-        uses: grafana/shared-workflows/actions/get-vault-secrets@de81a07e6f6718fb289c7a4612c9c514c28bd798 #get-vault-secrets-v1.2.0
+        uses: grafana/shared-workflows/actions/get-vault-secrets@a37de51f3d713a30a9e4b21bcdfbd38170020593 # get-vault-secrets/v1.3.0
         with:
           # Secrets placed in the ci/repo/grafana/<repo>/<path> path in Vault
           repo_secrets: |
@@ -186,7 +186,7 @@ jobs:
           fi
 
       - id: get-secrets
-        uses: grafana/shared-workflows/actions/get-vault-secrets@de81a07e6f6718fb289c7a4612c9c514c28bd798 #get-vault-secrets-v1.2.0
+        uses: grafana/shared-workflows/actions/get-vault-secrets@a37de51f3d713a30a9e4b21bcdfbd38170020593 # get-vault-secrets/v1.3.0
         with:
           # Secrets placed in the ci/repo/grafana/<repo>/<path> path in Vault
           repo_secrets: |
