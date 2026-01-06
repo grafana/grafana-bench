@@ -28,10 +28,10 @@ jobs:
           cache: false
 
       - name: Generate updated documentation
-        run: go run ./generators/doc -o docs
+        run: make docs
 
       - name: Generate libsonnet library
-        run: go run ./generators/libsonnet -o libsonnet
+        run: make libsonnet
 
       - name: Check for changes
         id: check-changes
@@ -94,10 +94,10 @@ jobs:
             echo "Unsupported event: $EVENT_NAME with ref: $GITHUB_REF"
             exit 1
           fi
-          
+
           # Sanitize version for branch name (remove invalid characters)
           SAFE_VERSION=$(echo "$VERSION" | sed 's/[^a-zA-Z0-9.-]/-/g')
-          
+
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "safe_version=${SAFE_VERSION}" >> $GITHUB_OUTPUT
           echo "author=${AUTHOR}" >> $GITHUB_OUTPUT
@@ -123,8 +123,8 @@ jobs:
             - Generated versioned libsonnet library for deployment_tools
             
             Generated automatically by:
-            - `go run ./generators/doc -o docs`
-            - `go run ./generators/libsonnet -o libsonnet`
+            - `make docs`
+            - `make libsonnet`
             
             🤖 This PR was created automatically (triggered by: ${{ github.event_name }}).
             
@@ -144,14 +144,14 @@ jobs:
           PR_NUMBER: ${{ steps.create-pr.outputs.pull-request-number }}
         run: |
           echo "Auto-approving and merging PR #$PR_NUMBER"
-          
+
           # Approve the PR
           gh pr review $PR_NUMBER --approve --body "🤖 Auto-approved: Documentation updates are safe to merge automatically."
-          
+
           # Wait a moment for the approval to register
           sleep 2
-          
+
           # Merge the PR using squash merge
           gh pr merge $PR_NUMBER --squash --delete-branch
-          
+
           echo "✅ PR #$PR_NUMBER has been approved and merged"
