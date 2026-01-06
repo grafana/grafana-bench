@@ -8,7 +8,9 @@
       "Bash(ls:*)",
       "Bash(find:*)",
       "Bash(gh run view:*)",
-      "Bash(git tag:*)"
+      "Bash(git tag:*)",
+      "Bash(make:*)",
+      "Bash(grep:*)"
     ],
     "deny": []
   }
