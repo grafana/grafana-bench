@@ -46,7 +46,7 @@ test:
 	go test ./...
 
 # Generate documentation
-docs:
+docs: install-deps
 	@echo "📚 Generating documentation..."
 	go run ./generators/doc -o docs
 
@@ -57,8 +57,8 @@ libsonnet: install-deps
 		echo "Using version: $(VERSION)"; \
 		go run ./generators/libsonnet generate -version $(VERSION) -o libsonnet >/dev/null 2>&1; \
 	else \
-		echo "Auto-detecting version from git"; \
-		go run ./generators/libsonnet generate -o libsonnet >/dev/null 2>&1; \
+		echo "Using experimental for main libsonnet"; \
+		go run ./generators/libsonnet generate -version experimental -o libsonnet >/dev/null 2>&1; \
 	fi
 	@echo "🔧 Generating versions.libsonnet..."
 	@if [ "$(VERSION)" != "" ]; then \
