@@ -25,11 +25,13 @@ jobs:
 
       - name: check docs are up to date
         env:
-          TZ: 'America/Anchorage'  # Set timezone to match local development (-9 UTC)
+          # Set to Jeff's timezone otherwise development
+          # might straddle days on github actions and cause this step to fail
+          TZ: 'America/Anchorage' 
         run: |
           make docs
           make libsonnet
-          
+
           # Check if anything changed
           if git diff --quiet docs/ libsonnet/; then
             echo "✅ Documentation and libsonnet are up to date"
