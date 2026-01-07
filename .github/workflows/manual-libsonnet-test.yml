@@ -1,4 +1,4 @@
-name: Test Libsonnet Generation
+name: manual libsonnet generation test
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ on:
         type: string
 
 jobs:
-  test-libsonnet:
+  test-libsonnet-generation:
     runs-on: ubuntu-latest
     permissions:
       contents: read
