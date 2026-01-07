@@ -40,12 +40,15 @@ jobs:
         echo "Found versions: $VERSIONS"
         
     - name: Generate jsonnet
+      env:
+        TARGET_VERSION: ${{ github.event.inputs.target_version }}
+        EXISTING_VERSIONS: ${{ steps.get_versions.outputs.versions }}
       run: |
         # Generate main.libsonnet for target version
-        go run generators/libsonnet/main.go generate --target-version "${{ github.event.inputs.target_version }}" -o libsonnet/${{ github.event.inputs.target_version }}
+        go run generators/libsonnet/main.go generate --target-version "$TARGET_VERSION" -o "libsonnet/$TARGET_VERSION"
         
         # Generate versions.libsonnet with all versions
-        go run generators/libsonnet/main.go versions --target-version "${{ github.event.inputs.target_version }}" --existing-versions "${{ steps.get_versions.outputs.versions }}" -o libsonnet
+        go run generators/libsonnet/main.go versions --target-version "$TARGET_VERSION" --existing-versions "$EXISTING_VERSIONS" -o libsonnet
         
         echo "Generated libsonnet files:"
         find libsonnet -name "*.libsonnet" -o -name "*.jsonnet" | head -10

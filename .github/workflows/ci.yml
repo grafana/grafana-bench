@@ -16,8 +16,10 @@ jobs:
     steps:
       - name: Skip docs check for releases
         if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          REF_NAME: ${{ github.ref_name }}
         run: |
-          echo "🚀 Skipping docs check for release ${{ github.ref_name }}"
+          echo "🚀 Skipping docs check for release $REF_NAME"
           echo "Docs will be updated automatically after release"
           
       - uses: actions/checkout@v5
