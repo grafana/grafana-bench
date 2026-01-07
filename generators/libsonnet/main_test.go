@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+	"text/template"
 
 	"github.com/grafana/grafana-bench/cmd/test"
 )
@@ -455,5 +458,215 @@ func BenchmarkExtractFlags(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		testCmd := test.NewCmd(logger)
 		extractFlags(testCmd)
+	}
+}
+
+func TestScanVersionDirectories(t *testing.T) {
+	// Create a temporary directory structure
+	tempDir := t.TempDir()
+	
+	// Create version directories
+	versionDirs := []string{"experimental", "legacy", "v1.0.0", "v0.6.10", "v2.1.3-alpha"}
+	for _, dir := range versionDirs {
+		err := os.MkdirAll(filepath.Join(tempDir, dir), 0755)
+		if err != nil {
+			t.Fatalf("Failed to create test directory %s: %v", dir, err)
+		}
+	}
+	
+	// Create non-version directories that should be ignored
+	ignoreDirs := []string{"README.md", "test", "docs", "other"}
+	for _, dir := range ignoreDirs {
+		err := os.MkdirAll(filepath.Join(tempDir, dir), 0755)
+		if err != nil {
+			t.Fatalf("Failed to create test directory %s: %v", dir, err)
+		}
+	}
+	
+	// Create a regular file that should be ignored
+	testFile := filepath.Join(tempDir, "versions.libsonnet")
+	err := os.WriteFile(testFile, []byte("test"), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+	
+	// Test the function
+	result, err := scanVersionDirectories(tempDir)
+	if err != nil {
+		t.Fatalf("scanVersionDirectories failed: %v", err)
+	}
+	
+	// Expected results (should be sorted)
+	expected := []string{"experimental", "legacy", "v0.6.10", "v1.0.0", "v2.1.3-alpha"}
+	
+	if len(result) != len(expected) {
+		t.Errorf("Expected %d versions, got %d: %v", len(expected), len(result), result)
+	}
+	
+	for i, expectedVersion := range expected {
+		if i >= len(result) || result[i] != expectedVersion {
+			t.Errorf("Expected versions %v, got %v", expected, result)
+			break
+		}
+	}
+	
+	// Verify ignored directories are not included
+	for _, ignored := range ignoreDirs {
+		for _, found := range result {
+			if found == ignored {
+				t.Errorf("Found ignored directory %s in results: %v", ignored, result)
+			}
+		}
+	}
+}
+
+func TestScanVersionDirectoriesEmpty(t *testing.T) {
+	// Create empty directory
+	tempDir := t.TempDir()
+	
+	result, err := scanVersionDirectories(tempDir)
+	if err != nil {
+		t.Fatalf("scanVersionDirectories failed: %v", err)
+	}
+	
+	if len(result) != 0 {
+		t.Errorf("Expected empty result for empty directory, got: %v", result)
+	}
+}
+
+func TestScanVersionDirectoriesNonexistent(t *testing.T) {
+	// Test with non-existent directory
+	result, err := scanVersionDirectories("/nonexistent/path")
+	if err == nil {
+		t.Errorf("Expected error for non-existent directory, got result: %v", result)
+	}
+}
+
+func TestVersionsTemplateGeneration(t *testing.T) {
+	// Test template data structure
+	data := VersionsTemplateData{
+		Versions:      []string{"experimental", "legacy", "v1.0.0"},
+		LatestVersion: "abc123",
+	}
+	
+	// Template content (simplified version of actual template)
+	templateContent := `// Generated versions
+local versions = {
+{{range .Versions}}  '{{.}}': import '{{.}}/main.libsonnet',
+{{end}}};
+
+{
+  getBenchFunctions(version):: versions[version],
+  latestVersionSha:: '{{.LatestVersion}}',
+}`
+	
+	// Parse template with helper functions
+	tmpl, err := template.New("test").Funcs(template.FuncMap{
+		"add": func(a, b int) int { return a + b },
+	}).Parse(templateContent)
+	if err != nil {
+		t.Fatalf("Failed to parse template: %v", err)
+	}
+	
+	// Execute template
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, data)
+	if err != nil {
+		t.Fatalf("Failed to execute template: %v", err)
+	}
+	
+	result := buf.String()
+	
+	// Check that all versions are included
+	for _, version := range data.Versions {
+		expectedLine := "  '" + version + "': import '" + version + "/main.libsonnet',"
+		if !strings.Contains(result, expectedLine) {
+			t.Errorf("Expected template to contain %q, got:\n%s", expectedLine, result)
+		}
+	}
+	
+	// Check that latestVersionSha is included
+	expectedSha := "latestVersionSha:: 'abc123',"
+	if !strings.Contains(result, expectedSha) {
+		t.Errorf("Expected template to contain %q, got:\n%s", expectedSha, result)
+	}
+}
+
+func TestVersionsTemplateGenerationEmpty(t *testing.T) {
+	// Test with empty versions list
+	data := VersionsTemplateData{
+		Versions:      []string{},
+		LatestVersion: "def456",
+	}
+	
+	templateContent := `local versions = {
+{{range .Versions}}  '{{.}}': import '{{.}}/main.libsonnet',
+{{end}}};`
+	
+	tmpl, err := template.New("test").Parse(templateContent)
+	if err != nil {
+		t.Fatalf("Failed to parse template: %v", err)
+	}
+	
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, data)
+	if err != nil {
+		t.Fatalf("Failed to execute template: %v", err)
+	}
+	
+	result := buf.String()
+	expected := `local versions = {
+};`
+	
+	if result != expected {
+		t.Errorf("Expected:\n%s\nGot:\n%s", expected, result)
+	}
+}
+
+func TestVersionsTestTemplateGeneration(t *testing.T) {
+	// Test the versions test template logic
+	data := VersionsTemplateData{
+		Versions:      []string{"experimental", "v1.0.0"},
+		LatestVersion: "abc123",
+	}
+	
+	// Simplified test template
+	templateContent := `local tests = {
+{{range $i, $version := .Versions}}  // Test {{add $i 2}}: Check version {{$version}} exists
+  testGetBenchFunctions{{$i}}: std.assertEqual(
+    std.type(versions.getBenchFunctions('{{$version}}')),
+    'object'
+  ),
+{{end}}};`
+	
+	tmpl, err := template.New("test").Funcs(template.FuncMap{
+		"add": func(a, b int) int { return a + b },
+	}).Parse(templateContent)
+	if err != nil {
+		t.Fatalf("Failed to parse template: %v", err)
+	}
+	
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, data)
+	if err != nil {
+		t.Fatalf("Failed to execute template: %v", err)
+	}
+	
+	result := buf.String()
+	
+	// Check that test functions are generated correctly
+	expectedTests := []string{
+		"// Test 2: Check version experimental exists",
+		"testGetBenchFunctions0:",
+		"versions.getBenchFunctions('experimental')",
+		"// Test 3: Check version v1.0.0 exists", 
+		"testGetBenchFunctions1:",
+		"versions.getBenchFunctions('v1.0.0')",
+	}
+	
+	for _, expected := range expectedTests {
+		if !strings.Contains(result, expected) {
+			t.Errorf("Expected template to contain %q, got:\n%s", expected, result)
+		}
 	}
 }

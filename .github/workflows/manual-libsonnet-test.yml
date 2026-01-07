@@ -1,0 +1,51 @@
+name: Test Libsonnet Generation
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_version:
+        description: 'Target version to generate'
+        required: true
+        type: string
+
+jobs:
+  test-libsonnet:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: go.mod
+        cache: false
+        
+    # TODO this is jalevin PAT. replace this with github app that can read deployment_tools repo
+    - name: Get secrets from vault
+      uses: grafana/shared-workflows/actions/get-vault-secrets@ae92934a14a48b94494dbc06d74a81d47fe08a40
+      with:
+        common_secrets: |
+          GITHUB_TOKEN=temporary-github-pat:temporary-github-pat
+          
+    - name: Get versions
+      id: get_versions
+      run: |
+        VERSIONS=$(go run generators/libsonnet/main.go fetchVersions --github-token "$GITHUB_TOKEN")
+        echo "versions=$VERSIONS" >> $GITHUB_OUTPUT
+        echo "Found versions: $VERSIONS"
+        
+    - name: Generate jsonnet
+      run: |
+        # Generate main.libsonnet for target version
+        go run generators/libsonnet/main.go generate --target-version "${{ github.event.inputs.target_version }}" -o libsonnet/${{ github.event.inputs.target_version }}
+        
+        # Generate versions.libsonnet with all versions
+        go run generators/libsonnet/main.go versions --target-version "${{ github.event.inputs.target_version }}" --existing-versions "${{ steps.get_versions.outputs.versions }}" -o libsonnet
+        
+        echo "Generated libsonnet files:"
+        find libsonnet -name "*.libsonnet" -o -name "*.jsonnet" | head -10

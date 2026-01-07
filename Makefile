@@ -55,18 +55,18 @@ libsonnet: install-deps
 	@echo "🔧 Generating main libsonnet library..."
 	@if [ "$(VERSION)" != "" ]; then \
 		echo "Using version: $(VERSION)"; \
-		go run ./generators/libsonnet generate -version $(VERSION) -o libsonnet >/dev/null 2>&1; \
+		go run ./generators/libsonnet generate --target-version $(VERSION) -o libsonnet >/dev/null 2>&1; \
 	else \
 		echo "Using experimental for main libsonnet"; \
-		go run ./generators/libsonnet generate -version experimental -o libsonnet >/dev/null 2>&1; \
+		go run ./generators/libsonnet generate --target-version experimental -o libsonnet >/dev/null 2>&1; \
 	fi
 	@echo "🔧 Generating versions.libsonnet..."
 	@if [ "$(VERSION)" != "" ]; then \
 		echo "Using version: $(VERSION) for versions.libsonnet"; \
-		go run ./generators/libsonnet versions --version "$(VERSION)" --latest-version-sha "$(shell git rev-parse HEAD)" -o libsonnet >/dev/null 2>&1; \
+		go run ./generators/libsonnet versions --target-version "$(VERSION)" --latest-version-sha "$(shell git rev-parse HEAD)" -o libsonnet >/dev/null 2>&1; \
 	else \
 		echo "Using experimental for versions.libsonnet"; \
-		go run ./generators/libsonnet versions --version "experimental" --latest-version-sha "$(shell git rev-parse HEAD)" -o libsonnet >/dev/null 2>&1; \
+		go run ./generators/libsonnet versions --target-version "experimental" --latest-version-sha "$(shell git rev-parse HEAD)" -o libsonnet >/dev/null 2>&1; \
 	fi
 	@echo "✅ Libsonnet files generated with latest SHA (formatted with jsonnetfmt)"
 	@if [ "$(VERSION)" != "" ]; then \
