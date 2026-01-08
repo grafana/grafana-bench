@@ -98,7 +98,7 @@ func printHelp() {
 func generateMain() {
 	var outputPath string
 	var targetVersion string
-	
+
 	// Parse args starting from index 2 if first arg is "generate"
 	var args []string
 	if len(os.Args) > 1 && os.Args[1] == "generate" {
@@ -106,7 +106,7 @@ func generateMain() {
 	} else {
 		args = os.Args[1:]
 	}
-	
+
 	// Create a new FlagSet for parsing
 	fs := flag.NewFlagSet("generate", flag.ExitOnError)
 	fs.StringVar(&outputPath, "o", "", "output directory for generated libsonnet")
@@ -143,19 +143,19 @@ func generateMain() {
 
 	// Determine image URLs based on version
 	var baseImageURL, playwrightImageURL string
-	
+
 	if targetVersion == "experimental" {
 		// For experimental versions, use dev images with dev-{shortSha} tag
 		workDir, err := os.Getwd()
 		if err != nil {
 			log.Fatalf("Failed to get working directory: %v", err)
 		}
-		
+
 		shortSHA, err := utils.GetShortCommitSHA(workDir)
 		if err != nil {
 			log.Fatalf("Failed to get commit SHA for experimental version: %v", err)
 		}
-		
+
 		baseImageURL = fmt.Sprintf("us-docker.pkg.dev/grafanalabs-dev/docker-grafana-bench-dev/grafana-bench:dev-%s", shortSHA)
 		playwrightImageURL = fmt.Sprintf("us-docker.pkg.dev/grafanalabs-dev/docker-grafana-bench-dev/grafana-bench-playwright:dev-%s", shortSHA)
 	} else {
@@ -165,15 +165,15 @@ func generateMain() {
 	}
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	
+
 	// Create test command to extract flags
 	testCmd := test.NewCmd(logger)
-	
+
 	// Extract flags information
 	flags := extractFlags(testCmd)
-	
+
 	fmt.Printf("Extracted %d non-deprecated flags\n", len(flags))
-	
+
 	// Generate template data
 	data := TemplateData{
 		Version:            targetVersion,
@@ -182,42 +182,42 @@ func generateMain() {
 		BaseImageURL:       baseImageURL,
 		PlaywrightImageURL: playwrightImageURL,
 	}
-	
+
 	// Load templates from files
 	mainTemplate, err := loadTemplate("main.libsonnet.tmpl")
 	if err != nil {
 		log.Fatalf("Failed to load main template: %v", err)
 	}
-	
-	testTemplate, err := loadTemplate("main_test.jsonnet.tmpl") 
+
+	testTemplate, err := loadTemplate("main_test.jsonnet.tmpl")
 	if err != nil {
 		log.Fatalf("Failed to load test template: %v", err)
 	}
-	
+
 	// Parse templates
 	mainTmpl, err := template.New("main").Parse(mainTemplate)
 	if err != nil {
 		log.Fatalf("Failed to parse main template: %v", err)
 	}
-	
+
 	testTmpl, err := template.New("test").Parse(testTemplate)
 	if err != nil {
 		log.Fatalf("Failed to parse test template: %v", err)
 	}
-	
+
 	// Ensure output directory exists
 	err = os.MkdirAll(outputPath, 0755)
 	if err != nil {
 		log.Fatalf("Failed to create output directory: %v", err)
 	}
-	
+
 	// Create version-specific subdirectory
 	versionDir := filepath.Join(outputPath, targetVersion)
 	err = os.MkdirAll(versionDir, 0755)
 	if err != nil {
 		log.Fatalf("Failed to create version directory: %v", err)
 	}
-	
+
 	// Write main libsonnet file in version subdirectory
 	mainFile := filepath.Join(versionDir, "main.libsonnet")
 	file, err := os.Create(mainFile)
@@ -225,13 +225,13 @@ func generateMain() {
 		log.Fatalf("Failed to create main file: %v", err)
 	}
 	defer file.Close()
-	
+
 	err = mainTmpl.Execute(file, data)
 	if err != nil {
 		log.Fatalf("Failed to execute main template: %v", err)
 	}
 	file.Close()
-	
+
 	// Write test file in version subdirectory
 	testFile := filepath.Join(versionDir, "main_test.jsonnet")
 	testFileHandle, err := os.Create(testFile)
@@ -239,24 +239,24 @@ func generateMain() {
 		log.Fatalf("Failed to create test file: %v", err)
 	}
 	defer testFileHandle.Close()
-	
+
 	err = testTmpl.Execute(testFileHandle, data)
 	if err != nil {
 		log.Fatalf("Failed to execute test template: %v", err)
 	}
 	testFileHandle.Close()
-	
+
 	// Format the generated files with jsonnetfmt
 	err = formatLibsonnet(mainFile)
 	if err != nil {
 		log.Fatalf("Failed to format main libsonnet: %v", err)
 	}
-	
+
 	err = formatLibsonnet(testFile)
 	if err != nil {
 		log.Fatalf("Failed to format test file: %v", err)
 	}
-	
+
 	fmt.Printf("Generated main.libsonnet for version %s at %s\n", targetVersion, mainFile)
 	fmt.Printf("Generated main_test.jsonnet at %s\n", testFile)
 }
@@ -266,10 +266,10 @@ func generateVersions() {
 	var targetVersion string
 	var existingVersions string
 	var latestVersionSha string
-	
+
 	// Parse args starting from index 2 since first arg is "versions"
 	args := os.Args[2:]
-	
+
 	// Create a new FlagSet for parsing
 	fs := flag.NewFlagSet("versions", flag.ExitOnError)
 	fs.StringVar(&outputPath, "o", "", "output directory for generated libsonnet")
@@ -302,27 +302,27 @@ func generateVersions() {
 
 	// Combine target + existing for complete list
 	allVersions := append([]string{targetVersion}, existingList...)
-	
+
 	if len(existingList) > 0 {
-		fmt.Printf("Generating versions.libsonnet with target version: %s, existing versions: %v (SHA: %s)\n", 
+		fmt.Printf("Generating versions.libsonnet with target version: %s, existing versions: %v (SHA: %s)\n",
 			targetVersion, existingList, latestVersionSha)
 	} else {
-		fmt.Printf("Generating versions.libsonnet with target version: %s (SHA: %s)\n", 
+		fmt.Printf("Generating versions.libsonnet with target version: %s (SHA: %s)\n",
 			targetVersion, latestVersionSha)
 	}
-	
+
 	// Generate template data
 	data := VersionsTemplateData{
 		Versions:      allVersions,
 		LatestVersion: latestVersionSha,
 	}
-	
+
 	// Load template from file
 	versionsTemplate, err := loadTemplate("versions.libsonnet.tmpl")
 	if err != nil {
 		log.Fatalf("Failed to load versions template: %v", err)
 	}
-	
+
 	// Parse template with helper functions
 	versionsTmpl, err := template.New("versions").Funcs(template.FuncMap{
 		"add": func(a, b int) int { return a + b },
@@ -330,13 +330,13 @@ func generateVersions() {
 	if err != nil {
 		log.Fatalf("Failed to parse versions template: %v", err)
 	}
-	
+
 	// Ensure output directory exists
 	err = os.MkdirAll(outputPath, 0755)
 	if err != nil {
 		log.Fatalf("Failed to create output directory: %v", err)
 	}
-	
+
 	// Write versions file
 	versionsFile := filepath.Join(outputPath, "versions.libsonnet")
 	file, err := os.Create(versionsFile)
@@ -344,50 +344,50 @@ func generateVersions() {
 		log.Fatalf("Failed to create versions file: %v", err)
 	}
 	defer file.Close()
-	
+
 	err = versionsTmpl.Execute(file, data)
 	if err != nil {
 		log.Fatalf("Failed to execute versions template: %v", err)
 	}
 	file.Close()
-	
+
 	// Generate versions test file
 	versionsTestTemplate, err := loadTemplate("versions_test.jsonnet.tmpl")
 	if err != nil {
 		log.Fatalf("Failed to load versions test template: %v", err)
 	}
-	
+
 	versionsTestTmpl, err := template.New("versions_test").Funcs(template.FuncMap{
 		"add": func(a, b int) int { return a + b },
 	}).Parse(versionsTestTemplate)
 	if err != nil {
 		log.Fatalf("Failed to parse versions test template: %v", err)
 	}
-	
+
 	versionsTestFile := filepath.Join(outputPath, "versions_test.jsonnet")
 	testFile, err := os.Create(versionsTestFile)
 	if err != nil {
 		log.Fatalf("Failed to create versions test file: %v", err)
 	}
 	defer testFile.Close()
-	
+
 	err = versionsTestTmpl.Execute(testFile, data)
 	if err != nil {
 		log.Fatalf("Failed to execute versions test template: %v", err)
 	}
 	testFile.Close()
-	
+
 	// Format the generated files with jsonnetfmt
 	err = formatLibsonnet(versionsFile)
 	if err != nil {
 		log.Fatalf("Failed to format versions libsonnet: %v", err)
 	}
-	
+
 	err = formatLibsonnet(versionsTestFile)
 	if err != nil {
 		log.Fatalf("Failed to format versions test file: %v", err)
 	}
-	
+
 	fmt.Printf("Generated versions.libsonnet at %s\n", versionsFile)
 	fmt.Printf("Generated versions_test.jsonnet at %s\n", versionsTestFile)
 }
@@ -403,15 +403,15 @@ func loadTemplate(filename string) (string, error) {
 
 func extractFlags(cmd *cobra.Command) []FlagInfo {
 	var flags []FlagInfo
-	
+
 	cmd.Flags().VisitAll(func(flag *pflag.Flag) {
 		// Skip flags that don't belong in the libsonnet
 		if shouldSkipFlag(flag.Name, flag.Usage) {
 			return
 		}
-		
+
 		deprecated := strings.Contains(flag.Usage, "deprecated")
-		
+
 		flags = append(flags, FlagInfo{
 			Name:         flag.Name,
 			DefaultValue: flag.DefValue,
@@ -420,12 +420,12 @@ func extractFlags(cmd *cobra.Command) []FlagInfo {
 			Deprecated:   deprecated,
 		})
 	})
-	
+
 	// Sort flags by name for consistent output
 	sort.Slice(flags, func(i, j int) bool {
 		return flags[i].Name < flags[j].Name
 	})
-	
+
 	return flags
 }
 
@@ -436,93 +436,93 @@ func shouldSkipFlag(name, usage string) bool {
 		"config":         true,
 		"bench-revision": true, // We handle this specially
 	}
-	
+
 	if skipFlags[name] {
 		return true
 	}
-	
+
 	// Skip deprecated flags (check both usage text and if name contains deprecated patterns)
 	if strings.Contains(usage, "deprecated") {
 		return true
 	}
-	
+
 	// Also skip flags that are clearly deprecated variants based on current libsonnet
 	deprecatedFlags := map[string]bool{
-		"test-suite":              true, // old form of suite-path
-		"test-suite-base":         true, // old form of suite-base
-		"test-suite-name":         true, // old form of suite-name
-		"test-suite-repo":         true, // old form of suite-repo-url
-		"test-suite-repo-dirs":    true, // old form of suite-repo-dirs
-		"test-suite-repo-token":   true, // old form of suite-repo-token
-		"test-suite-revision":     true, // old form of suite-revision
-		"test-env-vars":           true, // old form of test-env
-		"pw-execute-cmd":          true, // old form of pw-execute
-		"pw-prepare-cmd":          true, // old form of pw-prepare
-		"codeowners-mapping":      true, // old form of slack-codeowners-mapping
-		"dashboard":               true, // old form of run-dashboard
-		"format":                  true, // old form of report-output
-		"notify-passing":          true, // old form of slack-passing
-		"run-trigger":             true, // old form of run-stage
-		"test-trigger":            true, // old form of run-stage
-		"trigger":                 true, // old form of run-stage
-		"verbose":                 true, // old form of test-verbose
-		"k6-cloud-project-id":     true, // old form of k6-cloud-project
-		"report-format":           true, // old form of report-output
-		"test-report-format":      true, // old form of report-output
-		"suite-run-metrics":       true, // old form of run-metrics
+		"test-suite":               true, // old form of suite-path
+		"test-suite-base":          true, // old form of suite-base
+		"test-suite-name":          true, // old form of suite-name
+		"test-suite-repo":          true, // old form of suite-repo-url
+		"test-suite-repo-dirs":     true, // old form of suite-repo-dirs
+		"test-suite-repo-token":    true, // old form of suite-repo-token
+		"test-suite-revision":      true, // old form of suite-revision
+		"test-env-vars":            true, // old form of test-env
+		"pw-execute-cmd":           true, // old form of pw-execute
+		"pw-prepare-cmd":           true, // old form of pw-prepare
+		"codeowners-mapping":       true, // old form of slack-codeowners-mapping
+		"dashboard":                true, // old form of run-dashboard
+		"format":                   true, // old form of report-output
+		"notify-passing":           true, // old form of slack-passing
+		"run-trigger":              true, // old form of run-stage
+		"test-trigger":             true, // old form of run-stage
+		"trigger":                  true, // old form of run-stage
+		"verbose":                  true, // old form of test-verbose
+		"k6-cloud-project-id":      true, // old form of k6-cloud-project
+		"report-format":            true, // old form of report-output
+		"test-report-format":       true, // old form of report-output
+		"suite-run-metrics":        true, // old form of run-metrics
 		"suite-run-metrics-prefix": true, // old form of run-metrics-prefix
 	}
-	
+
 	// Skip go-test related flags since they're not relevant for libsonnet
 	goTestFlags := map[string]bool{
-		"go-args":         true, // arguments to go test command - not needed for libsonnet
-		"go-retries":      true, // number of retries for failed go tests - not needed for libsonnet
-		"go-test-args":    true, // arguments to go test using arg flag - not needed for libsonnet  
+		"go-args":          true, // arguments to go test command - not needed for libsonnet
+		"go-retries":       true, // number of retries for failed go tests - not needed for libsonnet
+		"go-test-args":     true, // arguments to go test using arg flag - not needed for libsonnet
 		"go-test-packages": true, // packages for go testing - not needed for libsonnet
 	}
-	
+
 	return deprecatedFlags[name] || goTestFlags[name]
 }
 
 func generateSuiteOptions(flags []FlagInfo) string {
 	var options []string
-	
+
 	for _, flag := range flags {
 		if flag.Deprecated {
 			continue
 		}
-		
+
 		// Convert CLI flag to libsonnet option
 		libsonnetOption := generateLibsonnetOption(flag)
 		if libsonnetOption != "" {
 			options = append(options, "      "+libsonnetOption+",")
 		}
 	}
-	
+
 	return strings.Join(options, "\n")
 }
 
 func generateLibsonnetOption(flag FlagInfo) string {
 	// Convert kebab-case to camelCase for libsonnet
 	camelCase := toCamelCase(flag.Name)
-	
+
 	// Determine default value based on flag type and current default
 	defaultValue := getLibsonnetDefaultValue(flag)
-	
+
 	// Add comment with original flag name and description
 	comment := fmt.Sprintf("// --%s: %s", flag.Name, cleanUsage(flag.Usage))
-	
+
 	return fmt.Sprintf("%s\n      %s: %s", comment, camelCase, defaultValue)
 }
 
 func generateScriptFlags(flags []FlagInfo) string {
 	var baseArrayParts []string
 	var concatenationParts []string
-	
+
 	// Always include basic required flags in the base array
 	baseArrayParts = append(baseArrayParts, "                     'grafana-bench',")
 	baseArrayParts = append(baseArrayParts, "                     'test',")
-	
+
 	// Add required string flags to base array
 	baseArrayParts = append(baseArrayParts, "                     '--grafana-url',")
 	baseArrayParts = append(baseArrayParts, "                     grafanaURL,")
@@ -534,41 +534,41 @@ func generateScriptFlags(flags []FlagInfo) string {
 		if flag.Deprecated {
 			continue
 		}
-		
+
 		// Skip required flags that are already in the base array
 		if isRequiredStringFlag(flag.Name) {
 			continue
 		}
-		
+
 		// Generate optional script flag for concatenation
 		scriptFlag := generateOptionalScriptFlag(flag)
 		if scriptFlag != "" {
 			concatenationParts = append(concatenationParts, scriptFlag)
 		}
 	}
-	
+
 	// Always include these required flags in base array
 	baseArrayParts = append(baseArrayParts, "                     '--log-level',")
 	baseArrayParts = append(baseArrayParts, "                     'info',")
 	baseArrayParts = append(baseArrayParts, "                     '--test-report-format',")
 	baseArrayParts = append(baseArrayParts, "                     'log',")
-	
+
 	// Join base array
 	baseArray := strings.Join(baseArrayParts, "\n")
-	
+
 	// Join with concatenations and add the final noFail option
 	result := baseArray + "\n                   ]"
 	if len(concatenationParts) > 0 {
 		result += " " + strings.Join(concatenationParts, "\n")
 	}
 	result += "\n                   + ([if bench_options.options.noFail then '|| true']),  // MUST be the last option"
-	
+
 	return result
 }
 
 func generateOptionalScriptFlag(flag FlagInfo) string {
 	camelCase := toCamelCase(flag.Name)
-	
+
 	switch flag.Type {
 	case "bool":
 		return fmt.Sprintf("+ (if bench_options.%s then ['--%s'] else [])", camelCase, flag.Name)
@@ -612,7 +612,7 @@ func toCamelCase(kebab string) string {
 	if len(parts) == 1 {
 		return parts[0]
 	}
-	
+
 	result := parts[0]
 	for i := 1; i < len(parts); i++ {
 		if len(parts[i]) > 0 {
@@ -690,15 +690,15 @@ func formatLibsonnet(filename string) error {
 	if err != nil {
 		return fmt.Errorf("jsonnetfmt not found: %w\n\nTo install jsonnetfmt, run: make install-deps", err)
 	}
-	
+
 	// Use jsonnetfmt -i to format in place, same as deployment_tools
 	cmd := exec.Command("jsonnetfmt", "-i", filename)
-	
+
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("formatting libsonnet with jsonnetfmt: %w\nOutput: %s", err, output)
 	}
-	
+
 	fmt.Printf("Formatted libsonnet with jsonnetfmt\n")
 	return nil
 }
@@ -749,7 +749,7 @@ func fetchVersionsMain() {
 	}
 
 	benchDir := filepath.Join(targetDir, "ksonnet", "lib", "bench")
-	_, err = gitSource.Get(ctx, targetDir, "main", "ksonnet/lib/bench")
+	_, err = gitSource.Get(ctx, targetDir, "master", "ksonnet/lib/bench")
 	if err != nil {
 		log.Fatalf("Failed to fetch ksonnet/lib/bench from repository: %v", err)
 	}
@@ -767,15 +767,15 @@ func fetchVersionsMain() {
 // scanVersionDirectories scans a bench directory and returns available version folders
 func scanVersionDirectories(benchDir string) ([]string, error) {
 	var versions []string
-	
+
 	entries, err := os.ReadDir(benchDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read bench directory %s: %w", benchDir, err)
 	}
-	
+
 	// Regex pattern for semantic version folders (e.g., v1.2.3, v0.6.10)
 	versionPattern := regexp.MustCompile(`^v\d+\.\d+\.\d+.*$`)
-	
+
 	for _, entry := range entries {
 		if entry.IsDir() {
 			name := entry.Name()
@@ -785,7 +785,7 @@ func scanVersionDirectories(benchDir string) ([]string, error) {
 			}
 		}
 	}
-	
+
 	// Sort versions consistently
 	sort.Strings(versions)
 	return versions, nil
