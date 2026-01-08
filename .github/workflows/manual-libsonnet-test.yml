@@ -63,3 +63,6 @@ jobs:
       run: |
         echo "Testing full make libsonnet workflow with VERSION=$VERSION"
         make libsonnet VERSION="$VERSION"
+        ls libsonnet
+        cat libsonnet/versions.libsonnet
+
