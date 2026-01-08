@@ -57,8 +57,8 @@ jobs:
         env:
           VERSION: ${{ inputs.version }}
         run: |
-          # Generate main libsonnet files and versions.libsonnet using make
-          make libsonnet VERSION="$VERSION"
+          # Generate main libsonnet files and versions.libsonnet using make (with remote fetching)
+          make libsonnet-fetch TARGET_VERSION="$VERSION"
 
       - name: validate generated versions.libsonnet
         run: |

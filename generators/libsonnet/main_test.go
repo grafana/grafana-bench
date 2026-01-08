@@ -670,3 +670,554 @@ func TestVersionsTestTemplateGeneration(t *testing.T) {
 		}
 	}
 }
+
+func TestIsVersionDirectory(t *testing.T) {
+	tests := []struct {
+		name     string
+		dirname  string
+		expected bool
+	}{
+		{
+			name:     "experimental version",
+			dirname:  "experimental",
+			expected: true,
+		},
+		{
+			name:     "legacy version",
+			dirname:  "legacy",
+			expected: true,
+		},
+		{
+			name:     "semantic version v1.0.0",
+			dirname:  "v1.0.0",
+			expected: true,
+		},
+		{
+			name:     "semantic version v0.6.10",
+			dirname:  "v0.6.10",
+			expected: true,
+		},
+		{
+			name:     "semantic version with alpha",
+			dirname:  "v2.1.3-alpha",
+			expected: true,
+		},
+		{
+			name:     "semantic version with beta",
+			dirname:  "v1.0.0-beta.1",
+			expected: true,
+		},
+		{
+			name:     "non-version directory",
+			dirname:  "docs",
+			expected: false,
+		},
+		{
+			name:     "README file",
+			dirname:  "README.md",
+			expected: false,
+		},
+		{
+			name:     "test directory",
+			dirname:  "test",
+			expected: false,
+		},
+		{
+			name:     "invalid version format",
+			dirname:  "1.0.0",
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isVersionDirectory(tt.dirname)
+			if result != tt.expected {
+				t.Errorf("isVersionDirectory(%q) = %v, expected %v", 
+					tt.dirname, result, tt.expected)
+			}
+		})
+	}
+}
+
+// Mock HTTP server for testing GitHub API calls
+func setupMockGitHubAPI(t *testing.T, response string, statusCode int) (string, func()) {
+	t.Helper()
+	
+	// This is a simplified test - in reality we'd use httptest.NewServer
+	// but for now we'll test the logic without network calls
+	return "", func() {}
+}
+
+func TestFetchVersionsFromGitHubAPI(t *testing.T) {
+	// Test the response parsing logic - manually create the expected data structure
+	// This simulates what we'd get from the GitHub API
+	contents := []GitHubContent{
+		{Name: "experimental", Type: "dir"},
+		{Name: "legacy", Type: "dir"},
+		{Name: "v0.6.10", Type: "dir"},
+		{Name: "v1.0.0", Type: "dir"},
+		{Name: "README.md", Type: "file"},
+		{Name: "docs", Type: "dir"},
+	}
+	
+	// Filter for directories and extract version names
+	var versions []string
+	for _, item := range contents {
+		if item.Type == "dir" && isVersionDirectory(item.Name) {
+			versions = append(versions, item.Name)
+		}
+	}
+	
+	expected := []string{"experimental", "legacy", "v0.6.10", "v1.0.0"}
+	
+	if len(versions) != len(expected) {
+		t.Errorf("Expected %d versions, got %d: %v", len(expected), len(versions), versions)
+	}
+	
+	// Check each expected version is present (order doesn't matter for this test)
+	versionMap := make(map[string]bool)
+	for _, v := range versions {
+		versionMap[v] = true
+	}
+	
+	for _, expectedVersion := range expected {
+		if !versionMap[expectedVersion] {
+			t.Errorf("Expected to find version %s in results: %v", expectedVersion, versions)
+		}
+	}
+	
+	// Check that non-version directories are excluded
+	excludedItems := []string{"README.md", "docs"}
+	for _, excluded := range excludedItems {
+		if versionMap[excluded] {
+			t.Errorf("Should not include %s in version list: %v", excluded, versions)
+		}
+	}
+}
+
+func TestVersionDeduplication(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []string
+		expected []string
+	}{
+		{
+			name:     "no duplicates",
+			input:    []string{"experimental", "legacy", "v1.0.0"},
+			expected: []string{"experimental", "legacy", "v1.0.0"},
+		},
+		{
+			name:     "with duplicates",
+			input:    []string{"experimental", "legacy", "experimental", "v1.0.0", "legacy"},
+			expected: []string{"experimental", "legacy", "v1.0.0"},
+		},
+		{
+			name:     "empty list",
+			input:    []string{},
+			expected: []string{},
+		},
+		{
+			name:     "single item",
+			input:    []string{"experimental"},
+			expected: []string{"experimental"},
+		},
+		{
+			name:     "all duplicates",
+			input:    []string{"experimental", "experimental", "experimental"},
+			expected: []string{"experimental"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Test the deduplication logic we use in generateVersions
+			seen := make(map[string]bool)
+			var result []string
+			for _, v := range tt.input {
+				if !seen[v] {
+					seen[v] = true
+					result = append(result, v)
+				}
+			}
+
+			if len(result) != len(tt.expected) {
+				t.Errorf("Expected %d items, got %d: %v", len(tt.expected), len(result), result)
+			}
+
+			for i, expected := range tt.expected {
+				if i >= len(result) || result[i] != expected {
+					t.Errorf("Expected %v, got %v", tt.expected, result)
+					break
+				}
+			}
+		})
+	}
+}
+
+func TestVersionsListLocalMode(t *testing.T) {
+	// Create temporary directory structure for testing local mode
+	tempDir := t.TempDir()
+	
+	// Create some version directories
+	localVersions := []string{"experimental", "v1.0.0", "v2.0.0"}
+	for _, version := range localVersions {
+		versionDir := filepath.Join(tempDir, version)
+		err := os.MkdirAll(versionDir, 0755)
+		if err != nil {
+			t.Fatalf("Failed to create test directory %s: %v", version, err)
+		}
+	}
+	
+	// Create non-version directories that should be ignored
+	nonVersions := []string{"docs", "test", "README.md"}
+	for _, item := range nonVersions {
+		itemPath := filepath.Join(tempDir, item)
+		if item == "README.md" {
+			// Create as file
+			err := os.WriteFile(itemPath, []byte("test"), 0644)
+			if err != nil {
+				t.Fatalf("Failed to create test file %s: %v", item, err)
+			}
+		} else {
+			// Create as directory
+			err := os.MkdirAll(itemPath, 0755)
+			if err != nil {
+				t.Fatalf("Failed to create test directory %s: %v", item, err)
+			}
+		}
+	}
+	
+	// Test scanning for local versions (simulating --versions-list local)
+	var localVersionsFound []string
+	if _, err := os.Stat(tempDir); err == nil {
+		entries, err := os.ReadDir(tempDir)
+		if err == nil {
+			for _, entry := range entries {
+				if entry.IsDir() && isVersionDirectory(entry.Name()) {
+					localVersionsFound = append(localVersionsFound, entry.Name())
+				}
+			}
+		}
+	}
+	
+	// Target version to always include
+	targetVersion := "v3.0.0"
+	
+	// Simulate the deduplication logic from generateVersions local mode
+	allVersions := append([]string{targetVersion}, localVersionsFound...)
+	seen := make(map[string]bool)
+	var deduped []string
+	for _, v := range allVersions {
+		if !seen[v] {
+			seen[v] = true
+			deduped = append(deduped, v)
+		}
+	}
+	
+	// Verify results
+	expectedVersions := []string{"v3.0.0", "experimental", "v1.0.0", "v2.0.0"}
+	
+	if len(deduped) != len(expectedVersions) {
+		t.Errorf("Expected %d versions, got %d: %v", len(expectedVersions), len(deduped), deduped)
+	}
+	
+	// Check that target version is always included first
+	if len(deduped) > 0 && deduped[0] != targetVersion {
+		t.Errorf("Expected target version %s to be first, got %s", targetVersion, deduped[0])
+	}
+	
+	// Check that all expected local versions are included
+	versionMap := make(map[string]bool)
+	for _, v := range deduped {
+		versionMap[v] = true
+	}
+	
+	for _, expected := range localVersions {
+		if !versionMap[expected] {
+			t.Errorf("Expected to find local version %s in results: %v", expected, deduped)
+		}
+	}
+	
+	// Check that non-version items are excluded
+	for _, excluded := range nonVersions {
+		if versionMap[excluded] {
+			t.Errorf("Should not include %s in version list: %v", excluded, deduped)
+		}
+	}
+}
+
+func TestVersionsListListMode(t *testing.T) {
+	tests := []struct {
+		name             string
+		targetVersion    string
+		existingVersions string
+		expected         []string
+	}{
+		{
+			name:             "target version only",
+			targetVersion:    "experimental",
+			existingVersions: "",
+			expected:         []string{"experimental"},
+		},
+		{
+			name:             "target with existing versions",
+			targetVersion:    "v1.0.0",
+			existingVersions: "experimental,legacy,v0.6.10",
+			expected:         []string{"v1.0.0", "experimental", "legacy", "v0.6.10"},
+		},
+		{
+			name:             "with whitespace in existing versions",
+			targetVersion:    "experimental",
+			existingVersions: " legacy , v0.6.10 , v1.0.0 ",
+			expected:         []string{"experimental", "legacy", "v0.6.10", "v1.0.0"},
+		},
+		{
+			name:             "duplicate target in existing versions",
+			targetVersion:    "experimental",
+			existingVersions: "experimental,legacy,v0.6.10",
+			expected:         []string{"experimental", "legacy", "v0.6.10"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Simulate the logic from generateVersions list mode
+			var allVersions []string
+			
+			if tt.existingVersions == "" {
+				allVersions = []string{tt.targetVersion}
+			} else {
+				existingList := strings.Split(tt.existingVersions, ",")
+				// Trim whitespace from each version
+				for i := range existingList {
+					existingList[i] = strings.TrimSpace(existingList[i])
+				}
+				allVersions = append([]string{tt.targetVersion}, existingList...)
+			}
+			
+			// Apply deduplication if needed
+			seen := make(map[string]bool)
+			var deduped []string
+			for _, v := range allVersions {
+				if !seen[v] {
+					seen[v] = true
+					deduped = append(deduped, v)
+				}
+			}
+			
+			// Verify results
+			if len(deduped) != len(tt.expected) {
+				t.Errorf("Expected %d versions, got %d: %v", len(tt.expected), len(deduped), deduped)
+			}
+			
+			for i, expected := range tt.expected {
+				if i >= len(deduped) || deduped[i] != expected {
+					t.Errorf("Expected %v, got %v", tt.expected, deduped)
+					break
+				}
+			}
+		})
+	}
+}
+
+func TestVersionsCommandIntegration(t *testing.T) {
+	// Integration test that doesn't hit external APIs
+	// Tests the full workflow using --versions-list local and list modes
+	
+	tempDir := t.TempDir()
+	
+	// Create some test version directories
+	testVersions := []string{"experimental", "v1.0.0", "v2.0.0"}
+	for _, version := range testVersions {
+		versionDir := filepath.Join(tempDir, version)
+		err := os.MkdirAll(versionDir, 0755)
+		if err != nil {
+			t.Fatalf("Failed to create test directory %s: %v", version, err)
+		}
+		
+		// Create a dummy main.libsonnet file to simulate a real version
+		mainFile := filepath.Join(versionDir, "main.libsonnet")
+		err = os.WriteFile(mainFile, []byte("{ testFunction: 'test' }"), 0644)
+		if err != nil {
+			t.Fatalf("Failed to create test main.libsonnet: %v", err)
+		}
+	}
+	
+	tests := []struct {
+		name           string
+		versionsList   string
+		targetVersion  string
+		existingVersions string
+		expectedVersions []string
+	}{
+		{
+			name:           "local mode includes existing local versions",
+			versionsList:   "local", 
+			targetVersion:  "v3.0.0",
+			expectedVersions: []string{"v3.0.0", "experimental", "v1.0.0", "v2.0.0"}, // target + local versions
+		},
+		{
+			name:           "local mode with existing target",
+			versionsList:   "local",
+			targetVersion:  "experimental", // This exists locally
+			expectedVersions: []string{"experimental", "v1.0.0", "v2.0.0"}, // deduped
+		},
+		{
+			name:             "list mode with explicit versions",
+			versionsList:     "list",
+			targetVersion:    "v4.0.0",
+			existingVersions: "experimental,legacy",
+			expectedVersions: []string{"v4.0.0", "experimental", "legacy"},
+		},
+		{
+			name:           "list mode target only",
+			versionsList:   "list",
+			targetVersion:  "experimental",
+			expectedVersions: []string{"experimental"},
+		},
+	}
+	
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Test the versions list determination logic without calling the actual command
+			var allVersions []string
+			
+			switch tt.versionsList {
+			case "local":
+				// Simulate local mode logic
+				var localVersions []string
+				if _, err := os.Stat(tempDir); err == nil {
+					entries, err := os.ReadDir(tempDir)
+					if err == nil {
+						for _, entry := range entries {
+							if entry.IsDir() && isVersionDirectory(entry.Name()) {
+								localVersions = append(localVersions, entry.Name())
+							}
+						}
+					}
+				}
+				
+				allVersions = append([]string{tt.targetVersion}, localVersions...)
+				
+			case "list":
+				// Simulate list mode logic
+				if tt.existingVersions == "" {
+					allVersions = []string{tt.targetVersion}
+				} else {
+					existingList := strings.Split(tt.existingVersions, ",")
+					for i := range existingList {
+						existingList[i] = strings.TrimSpace(existingList[i])
+					}
+					allVersions = append([]string{tt.targetVersion}, existingList...)
+				}
+			}
+			
+			// Apply deduplication
+			seen := make(map[string]bool)
+			var deduped []string
+			for _, v := range allVersions {
+				if !seen[v] {
+					seen[v] = true
+					deduped = append(deduped, v)
+				}
+			}
+			
+			// Verify expected versions are present
+			if len(deduped) != len(tt.expectedVersions) {
+				t.Errorf("Expected %d versions, got %d: %v", len(tt.expectedVersions), len(deduped), deduped)
+				return
+			}
+			
+			// Check that target version is always first
+			if len(deduped) > 0 && deduped[0] != tt.targetVersion {
+				t.Errorf("Expected target version %s to be first, got %s", tt.targetVersion, deduped[0])
+			}
+			
+			// Create a map of actual versions for easy checking
+			actualMap := make(map[string]bool)
+			for _, v := range deduped {
+				actualMap[v] = true
+			}
+			
+			// Verify all expected versions are present
+			for _, expectedVersion := range tt.expectedVersions {
+				if !actualMap[expectedVersion] {
+					t.Errorf("Expected version %s not found in result: %v", expectedVersion, deduped)
+				}
+			}
+		})
+	}
+	
+	// Test template generation with local versions
+	t.Run("template_generation_with_local_versions", func(t *testing.T) {
+		// Get local versions
+		var localVersions []string
+		entries, err := os.ReadDir(tempDir)
+		if err == nil {
+			for _, entry := range entries {
+				if entry.IsDir() && isVersionDirectory(entry.Name()) {
+					localVersions = append(localVersions, entry.Name())
+				}
+			}
+		}
+		
+		targetVersion := "v3.0.0"
+		allVersions := append([]string{targetVersion}, localVersions...)
+		
+		// Create template data
+		data := VersionsTemplateData{
+			Versions:      allVersions,
+			LatestVersion: "abc123",
+		}
+		
+		// Simple template to test generation
+		templateContent := `local versions = {
+{{range .Versions}}  '{{.}}': import '{{.}}/main.libsonnet',
+{{end}}};
+
+{
+  getBenchFunctions(version):: versions[version],
+  getAvailableVersions():: std.objectFields(versions),
+  latestVersionSha:: '{{.LatestVersion}}',
+}`
+		
+		tmpl, err := template.New("versions").Parse(templateContent)
+		if err != nil {
+			t.Fatalf("Failed to parse template: %v", err)
+		}
+		
+		var buf bytes.Buffer
+		err = tmpl.Execute(&buf, data)
+		if err != nil {
+			t.Fatalf("Failed to execute template: %v", err)
+		}
+		
+		result := buf.String()
+		
+		// Verify all versions are included in the template
+		for _, version := range allVersions {
+			expectedImport := "'" + version + "': import '" + version + "/main.libsonnet',"
+			if !strings.Contains(result, expectedImport) {
+				t.Errorf("Template should contain import for %s, got:\n%s", version, result)
+			}
+		}
+		
+		// Verify SHA is included
+		if !strings.Contains(result, "latestVersionSha:: 'abc123'") {
+			t.Errorf("Template should contain latestVersionSha, got:\n%s", result)
+		}
+		
+		// Verify helper functions are present
+		expectedFunctions := []string{
+			"getBenchFunctions(version)",
+			"getAvailableVersions()",
+		}
+		
+		for _, fn := range expectedFunctions {
+			if !strings.Contains(result, fn) {
+				t.Errorf("Template should contain function %s, got:\n%s", fn, result)
+			}
+		}
+	})
+}

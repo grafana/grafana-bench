@@ -97,8 +97,14 @@ func printHelp() {
 	fmt.Println("  # Generate version")
 	fmt.Println("  go run generators/libsonnet generate --target-version experimental --latest-version-sha abc123 -o /tmp/work")
 	fmt.Println()
-	fmt.Println("  # Generate versions mapping")
-	fmt.Println("  go run generators/libsonnet versions --target-version experimental --existing-versions \"legacy,v0.6.10\" --latest-version-sha abc123 -o /tmp/work")
+	fmt.Println("  # Generate versions mapping (fetch from remote)")
+	fmt.Println("  go run generators/libsonnet versions --target-version experimental --versions-list fetch --latest-version-sha abc123 -o /tmp/work")
+	fmt.Println()
+	fmt.Println("  # Generate versions mapping (local only - for testing)")
+	fmt.Println("  go run generators/libsonnet versions --target-version experimental --versions-list local --latest-version-sha abc123 -o /tmp/work")
+	fmt.Println()
+	fmt.Println("  # Generate versions mapping (explicit list)")
+	fmt.Println("  go run generators/libsonnet versions --target-version experimental --versions-list list --existing-versions \"legacy,v0.6.10\" --latest-version-sha abc123 -o /tmp/work")
 }
 
 func generateMain() {
@@ -272,6 +278,7 @@ func generateVersions() {
 	var targetVersion string
 	var existingVersions string
 	var latestVersionSha string
+	var versionsList string
 
 	// Parse args starting from index 2 since first arg is "versions"
 	args := os.Args[2:]
@@ -280,8 +287,9 @@ func generateVersions() {
 	fs := flag.NewFlagSet("versions", flag.ExitOnError)
 	fs.StringVar(&outputPath, "o", "", "output directory for generated libsonnet")
 	fs.StringVar(&targetVersion, "target-version", "", "version being created/updated (e.g., 'experimental', 'v1.2.3')")
-	fs.StringVar(&existingVersions, "existing-versions", "", "comma-separated list of existing versions to include (optional)")
+	fs.StringVar(&existingVersions, "existing-versions", "", "comma-separated list of existing versions to include (only used with --versions-list list)")
 	fs.StringVar(&latestVersionSha, "latest-version-sha", "", "git SHA for the target version")
+	fs.StringVar(&versionsList, "versions-list", "local", "how to determine versions list: fetch (from remote), local (only local versions), list (use --existing-versions)")
 	fs.Parse(args)
 
 	if outputPath == "" {
@@ -296,26 +304,88 @@ func generateVersions() {
 		log.Fatal("version SHA required (--latest-version-sha)")
 	}
 
-	// Parse existing versions list
-	var existingList []string
-	if existingVersions != "" {
-		existingList = strings.Split(existingVersions, ",")
-		// Trim whitespace from each version
-		for i := range existingList {
-			existingList[i] = strings.TrimSpace(existingList[i])
+	// Validate versions-list mode
+	if versionsList != "fetch" && versionsList != "local" && versionsList != "list" {
+		log.Fatal("--versions-list must be one of: fetch, local, list")
+	}
+
+	var allVersions []string
+
+	switch versionsList {
+	case "fetch":
+		// Fetch versions from GitHub API
+		token := os.Getenv("GITHUB_TOKEN")
+		if token == "" {
+			log.Fatal("GITHUB_TOKEN environment variable required when using --versions-list fetch")
 		}
+
+		fetchedVersions, err := fetchVersionsFromGitHubAPI("grafana", "deployment_tools", token)
+		if err != nil {
+			log.Fatalf("Failed to fetch versions from GitHub API: %v", err)
+		}
+
+		// Target version might not be in remote yet, so ensure it's included
+		allVersions = append([]string{targetVersion}, fetchedVersions...)
+		// Remove duplicates
+		seen := make(map[string]bool)
+		var deduped []string
+		for _, v := range allVersions {
+			if !seen[v] {
+				seen[v] = true
+				deduped = append(deduped, v)
+			}
+		}
+		allVersions = deduped
+
+		fmt.Printf("Fetched %d versions from remote, including target: %v\n", len(allVersions), allVersions)
+
+	case "local":
+		// Scan for locally available versions
+		var localVersions []string
+		if _, err := os.Stat(outputPath); err == nil {
+			// Check what version directories exist locally
+			entries, err := os.ReadDir(outputPath)
+			if err == nil {
+				for _, entry := range entries {
+					if entry.IsDir() && isVersionDirectory(entry.Name()) {
+						localVersions = append(localVersions, entry.Name())
+					}
+				}
+			}
+		}
+
+		// Always include target version
+		allVersions = append([]string{targetVersion}, localVersions...)
+		// Remove duplicates
+		seen := make(map[string]bool)
+		var deduped []string
+		for _, v := range allVersions {
+			if !seen[v] {
+				seen[v] = true
+				deduped = append(deduped, v)
+			}
+		}
+		allVersions = deduped
+
+		fmt.Printf("Using locally available versions: %v\n", allVersions)
+
+	case "list":
+		// Use explicit list from --existing-versions
+		if existingVersions == "" {
+			allVersions = []string{targetVersion}
+		} else {
+			existingList := strings.Split(existingVersions, ",")
+			// Trim whitespace from each version
+			for i := range existingList {
+				existingList[i] = strings.TrimSpace(existingList[i])
+			}
+			allVersions = append([]string{targetVersion}, existingList...)
+		}
+
+		fmt.Printf("Using explicit version list: %v\n", allVersions)
 	}
 
-	// Combine target + existing for complete list
-	allVersions := append([]string{targetVersion}, existingList...)
-
-	if len(existingList) > 0 {
-		fmt.Printf("Generating versions.libsonnet with target version: %s, existing versions: %v (SHA: %s)\n",
-			targetVersion, existingList, latestVersionSha)
-	} else {
-		fmt.Printf("Generating versions.libsonnet with target version: %s (SHA: %s)\n",
-			targetVersion, latestVersionSha)
-	}
+	fmt.Printf("Generating versions.libsonnet with versions: %v (SHA: %s)\n", allVersions, latestVersionSha)
 
 	// Generate template data
 	data := VersionsTemplateData{

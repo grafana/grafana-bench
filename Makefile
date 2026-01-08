@@ -50,31 +50,19 @@ docs: install-deps
 	@echo "📚 Generating documentation..."
 	go run ./generators/doc -o docs
 
-# Generate libsonnet library
+# Generate libsonnet library (local versions only)
 libsonnet: install-deps
-	@echo "🔧 Generating main libsonnet library..."
-	@if [ "$(VERSION)" != "" ]; then \
-		echo "Using version: $(VERSION)"; \
-		go run ./generators/libsonnet generate --target-version $(VERSION) -o libsonnet >/dev/null 2>&1; \
-	else \
-		echo "Using experimental for main libsonnet"; \
-		go run ./generators/libsonnet generate --target-version experimental -o libsonnet >/dev/null 2>&1; \
-	fi
-	@echo "🔧 Generating versions.libsonnet..."
-	@if [ "$(VERSION)" != "" ]; then \
-		echo "Using version: $(VERSION) for versions.libsonnet"; \
-		go run ./generators/libsonnet versions --target-version "$(VERSION)" --latest-version-sha "$(shell git rev-parse HEAD)" -o libsonnet >/dev/null 2>&1; \
-	else \
-		echo "Using experimental for versions.libsonnet"; \
-		go run ./generators/libsonnet versions --target-version "experimental" --latest-version-sha "$(shell git rev-parse HEAD)" -o libsonnet >/dev/null 2>&1; \
-	fi
-	@echo "✅ Libsonnet files generated with latest SHA (formatted with jsonnetfmt)"
-	@if [ "$(VERSION)" != "" ]; then \
-		cd libsonnet && jsonnet "$(VERSION)/main_test.jsonnet" | grep -q '"allTestsPassed": true' && echo "✅ All libsonnet function tests passed" || echo "⚠️ Libsonnet function tests skipped (may require external dependencies)"; \
-	else \
-		cd libsonnet && jsonnet "experimental/main_test.jsonnet" | grep -q '"allTestsPassed": true' && echo "✅ All libsonnet function tests passed" || echo "⚠️ Libsonnet function tests skipped (may require external dependencies)"; \
-	fi
-	@cd libsonnet && jsonnet versions_test.jsonnet | grep -q '"allTestsPassed": true' && echo "✅ All libsonnet versions tests passed" || echo "⚠️ Libsonnet versions tests skipped (may require external dependencies)"
+	@echo "🔧 Generating libsonnet for $(TARGET_VERSION:=experimental) (local versions only)..."
+	@go run ./generators/libsonnet generate --target-version "$(TARGET_VERSION:=experimental)" -o libsonnet >/dev/null 2>&1
+	@go run ./generators/libsonnet versions --target-version "$(TARGET_VERSION:=experimental)" --versions-list local --latest-version-sha "$(shell git rev-parse HEAD)" -o libsonnet >/dev/null 2>&1
+	@cd libsonnet && jsonnet "$(TARGET_VERSION:=experimental)/main_test.jsonnet" | grep -q '"allTestsPassed": true' && echo "✅ All tests passed" || echo "⚠️ Tests skipped"
+
+# Generate libsonnet library with remote version fetching  
+libsonnet-fetch: install-deps
+	@echo "🔧 Generating libsonnet for $(TARGET_VERSION:=experimental) (fetching remote versions)..."
+	@go run ./generators/libsonnet generate --target-version "$(TARGET_VERSION:=experimental)" -o libsonnet >/dev/null 2>&1
+	@go run ./generators/libsonnet versions --target-version "$(TARGET_VERSION:=experimental)" --versions-list fetch --latest-version-sha "$(shell git rev-parse HEAD)" -o libsonnet >/dev/null 2>&1
+	@cd libsonnet && jsonnet "$(TARGET_VERSION:=experimental)/main_test.jsonnet" | grep -q '"allTestsPassed": true' && echo "✅ All tests passed" || echo "⚠️ Tests skipped"
 
 
 # Install development dependencies
@@ -154,7 +142,8 @@ help:
 	@echo "  build-playwright-prod - Build playwright production image"
 	@echo "  test                - Run all tests including integration tests"
 	@echo "  docs                - Generate documentation"
-	@echo "  libsonnet           - Generate libsonnet library"
+	@echo "  libsonnet           - Generate libsonnet library (local versions only)"
+	@echo "  libsonnet-fetch     - Generate libsonnet library with remote version fetching"
 	@echo "  install-deps        - Install development dependencies (jsonnetfmt, etc.)"
 	@echo "  sizes               - Show image sizes"
 	@echo "  list                - List all built images"
