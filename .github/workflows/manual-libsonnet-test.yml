@@ -24,13 +24,16 @@ jobs:
       with:
         go-version-file: go.mod
         cache: false
-        
+
     # TODO this is jalevin PAT. replace this with github app that can read deployment_tools repo
     - name: Get secrets from vault
       uses: grafana/shared-workflows/actions/get-vault-secrets@ae92934a14a48b94494dbc06d74a81d47fe08a40
       with:
         repo_secrets: |
           DEPLOYMENT_TOOLS_TOKEN=temporary-github-pat:temporary-github-pat
+
+    - name: Install dependencies
+      run: make install-deps
           
     - name: Get versions
       id: get_versions
@@ -52,3 +55,11 @@ jobs:
         
         echo "Generated libsonnet files:"
         find libsonnet -name "*.libsonnet" -o -name "*.jsonnet" | head -10
+        
+    - name: Test full make libsonnet workflow
+      env:
+        VERSION: ${{ github.event.inputs.target_version }}
+        GITHUB_TOKEN: ${{ env.DEPLOYMENT_TOOLS_TOKEN }}
+      run: |
+        echo "Testing full make libsonnet workflow with VERSION=$VERSION"
+        make libsonnet VERSION="$VERSION"
