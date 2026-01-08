@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -8,12 +9,14 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"text/template"
 
 	"github.com/grafana/grafana-bench/cmd/test"
 	"github.com/grafana/grafana-bench/generators/utils"
+	"github.com/grafana/grafana-bench/pkg/git/nanogit"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -49,6 +52,9 @@ func main() {
 		case "versions":
 			generateVersions()
 			return
+		case "fetchVersions":
+			fetchVersionsMain()
+			return
 		case "help", "-h", "--help":
 			printHelp()
 			return
@@ -63,21 +69,35 @@ func printHelp() {
 	fmt.Println("Grafana Bench Libsonnet Generator")
 	fmt.Println()
 	fmt.Println("Usage:")
-	fmt.Println("  go run generators/libsonnet generate [flags]    Generate main.libsonnet and main_test.jsonnet")
-	fmt.Println("  go run generators/libsonnet versions [flags]    Generate versions.libsonnet")
+	fmt.Println("  go run generators/libsonnet fetchVersions [flags] Discover available versions from deployment_tools repo")
+	fmt.Println("  go run generators/libsonnet generate [flags]     Generate main.libsonnet and main_test.jsonnet")
+	fmt.Println("  go run generators/libsonnet versions [flags]     Generate versions.libsonnet")
 	fmt.Println()
 	fmt.Println("Commands:")
-	fmt.Println("  generate    Generate main libsonnet functions for a specific version")
-	fmt.Println("  versions    Generate versions mapping libsonnet for a single version")
+	fmt.Println("  fetchVersions    Discover available versions from deployment_tools repo")
+	fmt.Println("  generate         Generate main libsonnet functions for a specific version")
+	fmt.Println("  versions         Generate versions mapping libsonnet")
 	fmt.Println()
 	fmt.Println("Examples:")
-	fmt.Println("  go run generators/libsonnet generate -o libsonnet -version v1.0.0")
-	fmt.Println("  go run generators/libsonnet versions --version experimental --latest-version-sha abc123def -o libsonnet")
+	fmt.Println("  # Discover versions (uses temp dir, default repo, GITHUB_TOKEN env var)")
+	fmt.Println("  go run generators/libsonnet fetchVersions")
+	fmt.Println()
+	fmt.Println("  # Discover versions and checkout to directory")
+	fmt.Println("  go run generators/libsonnet fetchVersions -o /tmp/work")
+	fmt.Println()
+	fmt.Println("  # Discover versions with explicit token")
+	fmt.Println("  go run generators/libsonnet fetchVersions --github-token TOKEN -o /tmp/work")
+	fmt.Println()
+	fmt.Println("  # Generate version")
+	fmt.Println("  go run generators/libsonnet generate --target-version experimental --latest-version-sha abc123 -o /tmp/work")
+	fmt.Println()
+	fmt.Println("  # Generate versions mapping")
+	fmt.Println("  go run generators/libsonnet versions --target-version experimental --existing-versions \"legacy,v0.6.10\" --latest-version-sha abc123 -o /tmp/work")
 }
 
 func generateMain() {
 	var outputPath string
-	var version string
+	var targetVersion string
 	
 	// Parse args starting from index 2 if first arg is "generate"
 	var args []string
@@ -90,7 +110,7 @@ func generateMain() {
 	// Create a new FlagSet for parsing
 	fs := flag.NewFlagSet("generate", flag.ExitOnError)
 	fs.StringVar(&outputPath, "o", "", "output directory for generated libsonnet")
-	fs.StringVar(&version, "version", "", "version to pin in the generated library")
+	fs.StringVar(&targetVersion, "target-version", "", "version to pin in the generated library")
 	// Image URLs are auto-detected based on version (experimental = dev, releases = prod)
 	fs.Parse(args)
 
@@ -98,33 +118,33 @@ func generateMain() {
 		log.Fatal("output directory required (-o)")
 	}
 
-	if version == "" {
+	if targetVersion == "" {
 		// Get the latest git tag - same approach as gendoc
 		workDir, err := os.Getwd()
 		if err != nil {
 			log.Fatalf("Failed to get working directory: %v", err)
 		}
 
-		version, err = utils.GetLatestBenchTag(workDir)
+		targetVersion, err = utils.GetLatestBenchTag(workDir)
 		if err != nil {
 			// Fallback to "dev-{shortSHA}" if no tags found - this matches dev image tagging
 			shortSHA, shaErr := utils.GetShortCommitSHA(workDir)
 			if shaErr != nil {
-				version = "dev-latest"
-				fmt.Printf("No git tags found and unable to get commit SHA, using fallback version: %s\n", version)
+				targetVersion = "dev-latest"
+				fmt.Printf("No git tags found and unable to get commit SHA, using fallback version: %s\n", targetVersion)
 			} else {
-				version = fmt.Sprintf("dev-%s", shortSHA)
-				fmt.Printf("No git tags found, using fallback version: %s\n", version)
+				targetVersion = fmt.Sprintf("dev-%s", shortSHA)
+				fmt.Printf("No git tags found, using fallback version: %s\n", targetVersion)
 			}
 		} else {
-			fmt.Printf("Using latest tag: %s\n", version)
+			fmt.Printf("Using latest tag: %s\n", targetVersion)
 		}
 	}
 
 	// Determine image URLs based on version
 	var baseImageURL, playwrightImageURL string
 	
-	if version == "experimental" {
+	if targetVersion == "experimental" {
 		// For experimental versions, use dev images with dev-{shortSha} tag
 		workDir, err := os.Getwd()
 		if err != nil {
@@ -140,8 +160,8 @@ func generateMain() {
 		playwrightImageURL = fmt.Sprintf("us-docker.pkg.dev/grafanalabs-dev/docker-grafana-bench-dev/grafana-bench-playwright:dev-%s", shortSHA)
 	} else {
 		// For release versions, use prod images with version tag
-		baseImageURL = fmt.Sprintf("us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:%s", version)
-		playwrightImageURL = fmt.Sprintf("us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench-playwright:%s", version)
+		baseImageURL = fmt.Sprintf("us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:%s", targetVersion)
+		playwrightImageURL = fmt.Sprintf("us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench-playwright:%s", targetVersion)
 	}
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
@@ -156,7 +176,7 @@ func generateMain() {
 	
 	// Generate template data
 	data := TemplateData{
-		Version:            version,
+		Version:            targetVersion,
 		SuiteOptions:       generateSuiteOptions(flags),
 		ScriptFlags:        generateScriptFlags(flags),
 		BaseImageURL:       baseImageURL,
@@ -192,7 +212,7 @@ func generateMain() {
 	}
 	
 	// Create version-specific subdirectory
-	versionDir := filepath.Join(outputPath, version)
+	versionDir := filepath.Join(outputPath, targetVersion)
 	err = os.MkdirAll(versionDir, 0755)
 	if err != nil {
 		log.Fatalf("Failed to create version directory: %v", err)
@@ -237,13 +257,14 @@ func generateMain() {
 		log.Fatalf("Failed to format test file: %v", err)
 	}
 	
-	fmt.Printf("Generated main.libsonnet for version %s at %s\n", version, mainFile)
+	fmt.Printf("Generated main.libsonnet for version %s at %s\n", targetVersion, mainFile)
 	fmt.Printf("Generated main_test.jsonnet at %s\n", testFile)
 }
 
 func generateVersions() {
 	var outputPath string
-	var version string
+	var targetVersion string
+	var existingVersions string
 	var latestVersionSha string
 	
 	// Parse args starting from index 2 since first arg is "versions"
@@ -252,30 +273,47 @@ func generateVersions() {
 	// Create a new FlagSet for parsing
 	fs := flag.NewFlagSet("versions", flag.ExitOnError)
 	fs.StringVar(&outputPath, "o", "", "output directory for generated libsonnet")
-	fs.StringVar(&version, "version", "", "version name (e.g., 'experimental')")
-	fs.StringVar(&latestVersionSha, "latest-version-sha", "", "git SHA for the version")
+	fs.StringVar(&targetVersion, "target-version", "", "version being created/updated (e.g., 'experimental', 'v1.2.3')")
+	fs.StringVar(&existingVersions, "existing-versions", "", "comma-separated list of existing versions to include (optional)")
+	fs.StringVar(&latestVersionSha, "latest-version-sha", "", "git SHA for the target version")
 	fs.Parse(args)
 
 	if outputPath == "" {
 		log.Fatal("output directory required (-o)")
 	}
 
-	if version == "" {
-		log.Fatal("version name required (--version)")
+	if targetVersion == "" {
+		log.Fatal("target version required (--target-version)")
 	}
 
 	if latestVersionSha == "" {
 		log.Fatal("version SHA required (--latest-version-sha)")
 	}
 
-	// Single version list
-	versions := []string{version}
+	// Parse existing versions list
+	var existingList []string
+	if existingVersions != "" {
+		existingList = strings.Split(existingVersions, ",")
+		// Trim whitespace from each version
+		for i := range existingList {
+			existingList[i] = strings.TrimSpace(existingList[i])
+		}
+	}
+
+	// Combine target + existing for complete list
+	allVersions := append([]string{targetVersion}, existingList...)
 	
-	fmt.Printf("Generating versions.libsonnet with version: %s (SHA: %s)\n", version, latestVersionSha)
+	if len(existingList) > 0 {
+		fmt.Printf("Generating versions.libsonnet with target version: %s, existing versions: %v (SHA: %s)\n", 
+			targetVersion, existingList, latestVersionSha)
+	} else {
+		fmt.Printf("Generating versions.libsonnet with target version: %s (SHA: %s)\n", 
+			targetVersion, latestVersionSha)
+	}
 	
 	// Generate template data
 	data := VersionsTemplateData{
-		Versions:      versions,
+		Versions:      allVersions,
 		LatestVersion: latestVersionSha,
 	}
 	
@@ -285,8 +323,10 @@ func generateVersions() {
 		log.Fatalf("Failed to load versions template: %v", err)
 	}
 	
-	// Parse template
-	versionsTmpl, err := template.New("versions").Parse(versionsTemplate)
+	// Parse template with helper functions
+	versionsTmpl, err := template.New("versions").Funcs(template.FuncMap{
+		"add": func(a, b int) int { return a + b },
+	}).Parse(versionsTemplate)
 	if err != nil {
 		log.Fatalf("Failed to parse versions template: %v", err)
 	}
@@ -317,7 +357,9 @@ func generateVersions() {
 		log.Fatalf("Failed to load versions test template: %v", err)
 	}
 	
-	versionsTestTmpl, err := template.New("versions_test").Parse(versionsTestTemplate)
+	versionsTestTmpl, err := template.New("versions_test").Funcs(template.FuncMap{
+		"add": func(a, b int) int { return a + b },
+	}).Parse(versionsTestTemplate)
 	if err != nil {
 		log.Fatalf("Failed to parse versions test template: %v", err)
 	}
@@ -659,4 +701,92 @@ func formatLibsonnet(filename string) error {
 	
 	fmt.Printf("Formatted libsonnet with jsonnetfmt\n")
 	return nil
+}
+
+func fetchVersionsMain() {
+	var repoURL string
+	var token string
+	var outputDir string
+
+	// Parse args starting from index 2 since first arg is "fetchVersions"
+	args := os.Args[2:]
+
+	// Create a new FlagSet for parsing
+	fs := flag.NewFlagSet("fetchVersions", flag.ExitOnError)
+	fs.StringVar(&repoURL, "deployment-tools-repo", "https://github.com/grafana/deployment_tools.git", "URL to deployment_tools repository")
+	fs.StringVar(&token, "github-token", os.Getenv("GITHUB_TOKEN"), "GitHub authentication token (defaults to GITHUB_TOKEN env var)")
+	fs.StringVar(&outputDir, "o", "", "Directory to checkout to (optional, uses temp dir if not specified)")
+	fs.Parse(args)
+
+	if token == "" {
+		log.Fatal("GitHub token required (--github-token or GITHUB_TOKEN env var)")
+	}
+
+	ctx := context.Background()
+	var targetDir string
+
+	if outputDir != "" {
+		targetDir = outputDir
+		// Ensure output directory exists
+		err := os.MkdirAll(targetDir, 0755)
+		if err != nil {
+			log.Fatalf("Failed to create output directory: %v", err)
+		}
+	} else {
+		// Use temp directory
+		tempDir, err := os.MkdirTemp("", "bench-versions-*")
+		if err != nil {
+			log.Fatalf("Failed to create temp directory: %v", err)
+		}
+		targetDir = tempDir
+		defer os.RemoveAll(tempDir)
+	}
+
+	// Sparse checkout using nanogit
+	gitSource, err := nanogit.NewSource(repoURL, token)
+	if err != nil {
+		log.Fatalf("Failed to create nanogit source: %v", err)
+	}
+
+	benchDir := filepath.Join(targetDir, "ksonnet", "lib", "bench")
+	_, err = gitSource.Get(ctx, targetDir, "main", "ksonnet/lib/bench")
+	if err != nil {
+		log.Fatalf("Failed to fetch ksonnet/lib/bench from repository: %v", err)
+	}
+
+	// Scan for version directories
+	versions, err := scanVersionDirectories(benchDir)
+	if err != nil {
+		log.Fatalf("Failed to scan version directories: %v", err)
+	}
+
+	// Output comma-separated list to stdout
+	fmt.Print(strings.Join(versions, ","))
+}
+
+// scanVersionDirectories scans a bench directory and returns available version folders
+func scanVersionDirectories(benchDir string) ([]string, error) {
+	var versions []string
+	
+	entries, err := os.ReadDir(benchDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read bench directory %s: %w", benchDir, err)
+	}
+	
+	// Regex pattern for semantic version folders (e.g., v1.2.3, v0.6.10)
+	versionPattern := regexp.MustCompile(`^v\d+\.\d+\.\d+.*$`)
+	
+	for _, entry := range entries {
+		if entry.IsDir() {
+			name := entry.Name()
+			// Include: experimental, legacy, v*.*.* pattern
+			if name == "experimental" || name == "legacy" || versionPattern.MatchString(name) {
+				versions = append(versions, name)
+			}
+		}
+	}
+	
+	// Sort versions consistently
+	sort.Strings(versions)
+	return versions, nil
 }
