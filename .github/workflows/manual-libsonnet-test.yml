@@ -48,10 +48,10 @@ jobs:
         EXISTING_VERSIONS: ${{ steps.get_versions.outputs.versions }}
       run: |
         # Generate main.libsonnet for target version
-        go run generators/libsonnet/main.go generate --target-version "$TARGET_VERSION" -o "libsonnet/$TARGET_VERSION"
+        go run generators/libsonnet/main.go generate --target-version "$TARGET_VERSION" -o libsonnet
         
         # Generate versions.libsonnet with all versions
-        go run generators/libsonnet/main.go versions --target-version "$TARGET_VERSION" --existing-versions "$EXISTING_VERSIONS" -o libsonnet
+        go run generators/libsonnet/main.go versions --target-version "$TARGET_VERSION" --existing-versions "$EXISTING_VERSIONS" --latest-version-sha "$(git rev-parse HEAD)" -o libsonnet
         
         echo "Generated libsonnet files:"
         find libsonnet -name "*.libsonnet" -o -name "*.jsonnet" | head -10
