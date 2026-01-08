@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 	"text/template"
@@ -749,10 +750,18 @@ func fetchVersionsMain() {
 	}
 
 	benchDir := filepath.Join(targetDir, "ksonnet", "lib", "bench")
+	
+	log.Printf("DEBUG: About to fetch from %s to %s", repoURL, targetDir)
+	log.Printf("DEBUG: Using nanogit version, Go version: %s", runtime.Version())
+	
 	_, err = gitSource.Get(ctx, targetDir, "master", "ksonnet/lib/bench")
 	if err != nil {
+		log.Printf("DEBUG: Git fetch failed with detailed error: %v", err)
+		log.Printf("DEBUG: Error type: %T", err)
 		log.Fatalf("Failed to fetch ksonnet/lib/bench from repository: %v", err)
 	}
+	
+	log.Printf("DEBUG: Successfully fetched repository")
 
 	// Scan for version directories
 	versions, err := scanVersionDirectories(benchDir)
