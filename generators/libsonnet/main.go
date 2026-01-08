@@ -1,23 +1,23 @@
 package main
 
 import (
-	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"sort"
 	"strings"
 	"text/template"
 
 	"github.com/grafana/grafana-bench/cmd/test"
 	"github.com/grafana/grafana-bench/generators/utils"
-	"github.com/grafana/grafana-bench/pkg/git/nanogit"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -28,6 +28,11 @@ type FlagInfo struct {
 	Usage        string
 	Type         string
 	Deprecated   bool
+}
+
+type GitHubContent struct {
+	Name string `json:"name"`
+	Type string `json:"type"`
 }
 
 type TemplateData struct {
@@ -705,72 +710,88 @@ func formatLibsonnet(filename string) error {
 }
 
 func fetchVersionsMain() {
-	var repoURL string
+	var repoOwner string
+	var repoName string
 	var token string
-	var outputDir string
 
 	// Parse args starting from index 2 since first arg is "fetchVersions"
 	args := os.Args[2:]
 
 	// Create a new FlagSet for parsing
 	fs := flag.NewFlagSet("fetchVersions", flag.ExitOnError)
-	fs.StringVar(&repoURL, "deployment-tools-repo", "https://github.com/grafana/deployment_tools.git", "URL to deployment_tools repository")
+	fs.StringVar(&repoOwner, "deployment-tools-owner", "grafana", "GitHub repository owner")
+	fs.StringVar(&repoName, "deployment-tools-repo", "deployment_tools", "GitHub repository name")
 	fs.StringVar(&token, "github-token", os.Getenv("GITHUB_TOKEN"), "GitHub authentication token (defaults to GITHUB_TOKEN env var)")
-	fs.StringVar(&outputDir, "o", "", "Directory to checkout to (optional, uses temp dir if not specified)")
 	fs.Parse(args)
 
 	if token == "" {
 		log.Fatal("GitHub token required (--github-token or GITHUB_TOKEN env var)")
 	}
 
-	ctx := context.Background()
-	var targetDir string
-
-	if outputDir != "" {
-		targetDir = outputDir
-		// Ensure output directory exists
-		err := os.MkdirAll(targetDir, 0755)
-		if err != nil {
-			log.Fatalf("Failed to create output directory: %v", err)
-		}
-	} else {
-		// Use temp directory
-		tempDir, err := os.MkdirTemp("", "bench-versions-*")
-		if err != nil {
-			log.Fatalf("Failed to create temp directory: %v", err)
-		}
-		targetDir = tempDir
-		defer os.RemoveAll(tempDir)
-	}
-
-	// Sparse checkout using nanogit
-	gitSource, err := nanogit.NewSource(repoURL, token)
+	// Fetch directory contents using GitHub API
+	versions, err := fetchVersionsFromGitHubAPI(repoOwner, repoName, token)
 	if err != nil {
-		log.Fatalf("Failed to create nanogit source: %v", err)
-	}
-
-	benchDir := filepath.Join(targetDir, "ksonnet", "lib", "bench")
-	
-	log.Printf("DEBUG: About to fetch from %s to %s", repoURL, targetDir)
-	log.Printf("DEBUG: Using nanogit version, Go version: %s", runtime.Version())
-	
-	_, err = gitSource.Get(ctx, targetDir, "master", "ksonnet/lib/bench")
-	if err != nil {
-		log.Printf("DEBUG: Git fetch failed with detailed error: %v", err)
-		log.Printf("DEBUG: Error type: %T", err)
-		log.Fatalf("Failed to fetch ksonnet/lib/bench from repository: %v", err)
-	}
-	
-	log.Printf("DEBUG: Successfully fetched repository")
-
-	// Scan for version directories
-	versions, err := scanVersionDirectories(benchDir)
-	if err != nil {
-		log.Fatalf("Failed to scan version directories: %v", err)
+		log.Fatalf("Failed to fetch versions from GitHub API: %v", err)
 	}
 
 	// Output comma-separated list to stdout
 	fmt.Print(strings.Join(versions, ","))
+}
+
+func fetchVersionsFromGitHubAPI(owner, repo, token string) ([]string, error) {
+	// GitHub API URL for directory contents
+	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/contents/ksonnet/lib/bench", owner, repo)
+	
+	// Create HTTP request
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("creating request: %w", err)
+	}
+	
+	// Add authentication header
+	req.Header.Set("Authorization", "token "+token)
+	req.Header.Set("Accept", "application/vnd.github.v3+json")
+	
+	// Make the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("making request: %w", err)
+	}
+	defer resp.Body.Close()
+	
+	// Check response status
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("GitHub API request failed with status %d: %s", resp.StatusCode, string(body))
+	}
+	
+	// Parse JSON response
+	var contents []GitHubContent
+	if err := json.NewDecoder(resp.Body).Decode(&contents); err != nil {
+		return nil, fmt.Errorf("parsing JSON response: %w", err)
+	}
+	
+	// Filter for directories and extract version names
+	var versions []string
+	for _, item := range contents {
+		if item.Type == "dir" && isVersionDirectory(item.Name) {
+			versions = append(versions, item.Name)
+		}
+	}
+	
+	// Sort versions
+	sort.Strings(versions)
+	
+	return versions, nil
+}
+
+func isVersionDirectory(name string) bool {
+	// Regex pattern for semantic version folders (e.g., v1.2.3, v0.6.10)
+	versionPattern := regexp.MustCompile(`^v\d+\.\d+\.\d+.*$`)
+	
+	// Include: experimental, legacy, v*.*.* pattern
+	return name == "experimental" || name == "legacy" || versionPattern.MatchString(name)
 }
 
 // scanVersionDirectories scans a bench directory and returns available version folders
