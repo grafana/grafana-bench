@@ -52,17 +52,17 @@ docs: install-deps
 
 # Generate libsonnet library (local versions only)
 libsonnet: install-deps
-	@echo "🔧 Generating libsonnet for $(TARGET_VERSION:=experimental) (local versions only)..."
-	@go run ./generators/libsonnet generate --target-version "$(TARGET_VERSION:=experimental)" -o libsonnet >/dev/null 2>&1
-	@go run ./generators/libsonnet versions --target-version "$(TARGET_VERSION:=experimental)" --versions-list local --latest-version-sha "$(shell git rev-parse HEAD)" -o libsonnet >/dev/null 2>&1
-	@cd libsonnet && jsonnet "$(TARGET_VERSION:=experimental)/main_test.jsonnet" | grep -q '"allTestsPassed": true' && echo "✅ All tests passed" || echo "⚠️ Tests skipped"
+	@echo "🔧 Generating libsonnet for $(or $(TARGET_VERSION),experimental) (local versions only)..."
+	@go run ./generators/libsonnet generate --target-version "$(or $(TARGET_VERSION),experimental)" -o libsonnet >/dev/null 2>&1
+	@go run ./generators/libsonnet versions --target-version "$(or $(TARGET_VERSION),experimental)" --versions-list local --latest-version-sha "$(shell git rev-parse HEAD)" -o libsonnet >/dev/null 2>&1
+	@cd libsonnet && jsonnet "$(or $(TARGET_VERSION),experimental)/main_test.jsonnet" | grep -q '"allTestsPassed": true' && echo "✅ All tests passed" || echo "⚠️ Tests skipped"
 
 # Generate libsonnet library with remote version fetching  
 libsonnet-fetch: install-deps
-	@echo "🔧 Generating libsonnet for $(TARGET_VERSION:=experimental) (fetching remote versions)..."
-	@go run ./generators/libsonnet generate --target-version "$(TARGET_VERSION:=experimental)" -o libsonnet >/dev/null 2>&1
-	@go run ./generators/libsonnet versions --target-version "$(TARGET_VERSION:=experimental)" --versions-list fetch --latest-version-sha "$(shell git rev-parse HEAD)" -o libsonnet >/dev/null 2>&1
-	@cd libsonnet && jsonnet "$(TARGET_VERSION:=experimental)/main_test.jsonnet" | grep -q '"allTestsPassed": true' && echo "✅ All tests passed" || echo "⚠️ Tests skipped"
+	@echo "🔧 Generating libsonnet for $(or $(TARGET_VERSION),experimental) (fetching remote versions)..."
+	@go run ./generators/libsonnet generate --target-version "$(or $(TARGET_VERSION),experimental)" -o libsonnet >/dev/null 2>&1
+	@go run ./generators/libsonnet versions --target-version "$(or $(TARGET_VERSION),experimental)" --versions-list fetch --latest-version-sha "$(shell git rev-parse HEAD)" -o libsonnet >/dev/null 2>&1
+	@cd libsonnet && jsonnet "$(or $(TARGET_VERSION),experimental)/main_test.jsonnet" | grep -q '"allTestsPassed": true' && echo "✅ All tests passed" || echo "⚠️ Tests skipped"
 
 
 # Install development dependencies
