@@ -53,9 +53,17 @@ jobs:
       - name: install development dependencies
         run: make install-deps
 
+      # TODO this is jalevin PAT. replace this with github app that can read deployment_tools repo
+      - name: Get secrets from vault
+        uses: grafana/shared-workflows/actions/get-vault-secrets@ae92934a14a48b94494dbc06d74a81d47fe08a40
+        with:
+          repo_secrets: |
+            DEPLOYMENT_TOOLS_TOKEN=temporary-github-pat:temporary-github-pat
+
       - name: generate libsonnet
         env:
           VERSION: ${{ inputs.version }}
+          GITHUB_TOKEN: ${{ env.DEPLOYMENT_TOOLS_TOKEN }}
         run: |
           # Generate main libsonnet files and versions.libsonnet using make (with remote fetching)
           make libsonnet-fetch TARGET_VERSION="$VERSION"
