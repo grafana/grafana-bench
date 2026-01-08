@@ -30,12 +30,12 @@ jobs:
       uses: grafana/shared-workflows/actions/get-vault-secrets@ae92934a14a48b94494dbc06d74a81d47fe08a40
       with:
         repo_secrets: |
-          GITHUB_TOKEN=temporary-github-pat:temporary-github-pat
+          DEPLOYMENT_TOOLS_TOKEN=temporary-github-pat:temporary-github-pat
           
     - name: Get versions
       id: get_versions
       run: |
-        VERSIONS=$(go run generators/libsonnet/main.go fetchVersions --github-token "$GITHUB_TOKEN")
+        VERSIONS=$(go run generators/libsonnet/main.go fetchVersions --github-token "$DEPLOYMENT_TOOLS_TOKEN")
         echo "versions=$VERSIONS" >> $GITHUB_OUTPUT
         echo "Found versions: $VERSIONS"
         
