@@ -177,8 +177,12 @@ jobs:
                 "command": "cp /workspace/libsonnet/${VERSION}/main_test.jsonnet ksonnet/lib/bench/${VERSION}/main_test.jsonnet"
               },
               {
-                "description": "Copy or regenerate versions files",
-                "command": "if [ -f /workspace/libsonnet/versions.libsonnet ]; then cp /workspace/libsonnet/versions.libsonnet ksonnet/lib/bench/versions.libsonnet && cp /workspace/libsonnet/versions_test.jsonnet ksonnet/lib/bench/versions_test.jsonnet && echo 'Copied pre-generated versions files'; else echo 'No pre-generated versions files (experimental release - versions file unchanged)'; fi"
+                "description": "Copy versions.libsonnet file",
+                "command": "cp /workspace/libsonnet/versions.libsonnet ksonnet/lib/bench/versions.libsonnet"
+              },
+              {
+                "description": "Copy versions_test.jsonnet file",
+                "command": "cp /workspace/libsonnet/versions_test.jsonnet ksonnet/lib/bench/versions_test.jsonnet"
               }
             ]
           }
