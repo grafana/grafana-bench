@@ -86,7 +86,7 @@ func NewGitServer(ctx context.Context, config GitServerConfig) (*GitServer, erro
 
 	// Add delay in CI to ensure Gitea is fully initialized before creating user
 	if os.Getenv("CI") == "true" {
-		time.Sleep(5 * time.Second)
+		time.Sleep(10 * time.Second)
 	}
 
 	// create user
@@ -100,8 +100,16 @@ func NewGitServer(ctx context.Context, config GitServerConfig) (*GitServer, erro
 		return nil, fmt.Errorf("creating repo %w", err)
 	}
 
+	// Add additional delay in CI before token generation
+	if os.Getenv("CI") == "true" {
+		time.Sleep(3 * time.Second)
+	}
+
 	// generate access token for the user
 	token, err := generateToken(ctx, container, config.User)
+	if err != nil {
+		return nil, fmt.Errorf("generating token: %w", err)
+	}
 
 	return &GitServer{
 		URL:       fmt.Sprintf("http://%s:%s/%s/%s.git", host, port.Port(), config.User, config.RepoName),
@@ -150,22 +158,30 @@ func createGiteaRepo(ctx context.Context, container testcontainers.Container, us
 }
 
 func generateToken(ctx context.Context, container testcontainers.Container, user string) (string, error) {
-	token := ""
 	cmd := []string{
 		"su", "git", "-c", fmt.Sprintf("gitea admin user generate-access-token --username %s --token-name api-token --scopes write:repository,write:user --raw", user),
 	}
 	exitCode, reader, err := container.Exec(context.Background(), cmd, exec.Multiplexed())
 	if err != nil {
-		return "", fmt.Errorf("generating access token %w", err)
+		return "", fmt.Errorf("executing token generation command: %w", err)
 	}
 
-	// Read the token from the command output
-	// TODO: return error if command failed or did not return a token
-	if exitCode == 0 && reader != nil {
-		tokenBytes, err := io.ReadAll(reader)
-		if err == nil && len(tokenBytes) > 0 {
-			token = strings.TrimSpace(string(tokenBytes))
-		}
+	if exitCode != 0 {
+		return "", fmt.Errorf("token generation command failed with exit code %d", exitCode)
+	}
+
+	if reader == nil {
+		return "", fmt.Errorf("no output from token generation command")
+	}
+
+	tokenBytes, err := io.ReadAll(reader)
+	if err != nil {
+		return "", fmt.Errorf("reading token output: %w", err)
+	}
+
+	token := strings.TrimSpace(string(tokenBytes))
+	if len(token) == 0 {
+		return "", fmt.Errorf("token generation returned empty token")
 	}
 
 	return token, nil

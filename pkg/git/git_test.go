@@ -21,7 +21,7 @@ func TestGitSource(t *testing.T) {
 
 	testRepo, err := gittest.SetupTestRepo(t.Context(), t.TempDir())
 	if err != nil {
-		t.Fatalf("setting up test repo")
+		t.Fatalf("setting up test repo: %v", err)
 	}
 
 	// initialize repo content
