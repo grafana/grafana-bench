@@ -55,6 +55,52 @@ jobs:
 |-------|-------------|----------|---------|
 | `version` | Version to install (e.g., `v0.6.11`) | Yes | N/A |
 
+### Authentication and CI Tokens
+
+The `setup-grafana-bench` action automatically fetches shared CI tokens from Vault when it runs. These tokens enable optional features like Prometheus metrics reporting. This works whether you're using the bench binary directly or via Docker.
+
+#### Using Tokens with Direct Binary
+
+After the setup step completes, the tokens are available in your environment. Simply add the `--prometheus-metrics` flag to your bench commands:
+
+```yaml
+- name: Setup Grafana Bench
+  uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@057477c3d586996c1fc3f38772760c34a68d2859
+  with:
+    version: 'v0.6.11'
+
+- name: Run tests with Prometheus metrics
+  run: |
+    grafana-bench test \
+      --test-runner playwright \
+      --grafana-url http://localhost:3000 \
+      --prometheus-metrics
+```
+
+#### Using Tokens with Docker
+
+When using Docker, you need to explicitly pass the Prometheus environment variables to the container using `-e` flags:
+
+```yaml
+- name: Setup Grafana Bench
+  uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@057477c3d586996c1fc3f38772760c34a68d2859
+  with:
+    version: 'v0.6.11'
+
+- name: Run tests in Docker with Prometheus metrics
+  run: |
+    docker run --rm \
+      --network=host \
+      --volume="./:/tests/" \
+      -e PROMETHEUS_URL="${PROMETHEUS_URL}" \
+      -e PROMETHEUS_USER="${PROMETHEUS_USER}" \
+      -e PROMETHEUS_PASSWORD="${PROMETHEUS_PASSWORD}" \
+      us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.6.11 test \
+      --test-runner playwright \
+      --grafana-url "http://localhost:3000" \
+      --prometheus-metrics
+```
+
 ### Using from External Repositories
 
 Since grafana-bench is a private repository, there are specific requirements for external repositories to use this action:
