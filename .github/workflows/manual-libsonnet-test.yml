@@ -38,9 +38,10 @@ jobs:
     - name: Test full make libsonnet workflow
       env:
         GITHUB_TOKEN: ${{ env.DEPLOYMENT_TOOLS_TOKEN }}
+        TARGET_VERSION: ${{ github.event.inputs.target_version }}
       run: |
-        echo "Testing full make libsonnet-fetch workflow with TARGET_VERSION=${{ github.event.inputs.target_version }}"
-        make libsonnet-fetch TARGET_VERSION="${{ github.event.inputs.target_version }}"
+        echo "Testing full make libsonnet-fetch workflow with TARGET_VERSION=$TARGET_VERSION"
+        make libsonnet-fetch TARGET_VERSION="$TARGET_VERSION"
         ls libsonnet
         cat libsonnet/versions.libsonnet
 
