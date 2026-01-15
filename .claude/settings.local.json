@@ -10,7 +10,9 @@
       "Bash(gh run view:*)",
       "Bash(git tag:*)",
       "Bash(make:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(jq:*)",
+      "Bash(gh api:*)"
     ],
     "deny": []
   }
