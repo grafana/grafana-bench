@@ -108,16 +108,38 @@ cpu_usage_seconds_total 123.45
 
 ## Generating an ops metrics key
 
-1. Go to <https://grafana-ops.com/orgs/grafana/access-policies> (where the ops instance and its data sources live)
-2. Create a new Cloud Access Policy with metrics:write permissions on the ops stack
-3. Generate a CAP token for this policy
-4. Use the token as the PROMETHEUS_PASSWORD argument to bench
-    a. To add the token to vault for use in a workflow: VAULT_INSTANCE=prod ./vault-put ci/repo/grafana/{your-repo}/prometheus_token prometheus_token={token}
-5. These variables are also required:
-    a. PROMETHEUS_URL: <https://prometheus-ops-03-ops-eu-south-0.grafana-ops.net/api/prom/push>
-    b. PROMETHEUS_USER: 10428
-   
-<img width="1514" height="1398" alt="image" src="https://github.com/user-attachments/assets/8f12ccb7-ab8e-4558-968f-c55698b3a642" />
+### For GitHub Actions (Recommended)
+
+If you're running bench in a GitHub Actions workflow, use the `setup-grafana-bench` action which automatically fetches shared Prometheus secrets from Vault. See the [GitHub Actions documentation](github_actions.md#authentication-and-ci-tokens) for details.
+
+The action sets up these environment variables for you:
+- `PROMETHEUS_URL`: <https://prometheus-ops-03-ops-eu-south-0.grafana-ops.net/api/prom/push>
+- `PROMETHEUS_USER`: 10428
+- `PROMETHEUS_PASSWORD`: Fetched from shared Vault secret
+
+Simply add the `--prometheus-metrics` flag to your bench commands after the setup step if you're calling bench directly. If you are running the bench container, pass those in as environment variables to the docker command.
+
+### For Other Use Cases
+
+If you need to create your own token for local development or non-GitHub Action environments:
+
+1. Go to the Cloud Access Policy app: <https://ops.grafana-ops.net/a/grafana-auth-app>
+2. Create a new access policy with metrics:write permissions
+3. Name it after your app/domain/namespace
+4. Click create
+5. Create a token and copy it
+6. Add the token to vault (requires access to the deployment_tools repository):
+   ```bash
+   # From the root of the deployment_tools repository
+   # First, request timed access to vault
+   make timed-access-cli request-access
+
+   # Then add the token to vault
+   VAULT_INSTANCE=prod ./scripts/vault/vault-put secret/{namespace}/prometheus_token prometheus_token={token}
+   ```
+7. Use the token as the PROMETHEUS_PASSWORD environment variable with these additional settings:
+   - PROMETHEUS_URL: <https://prometheus-ops-03-ops-eu-south-0.grafana-ops.net/api/prom/push>
+   - PROMETHEUS_USER: 10428
 
 ## Complete example
 

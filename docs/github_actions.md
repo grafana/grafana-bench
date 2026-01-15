@@ -49,6 +49,8 @@ jobs:
             --pw-execute-cmd "npm run test"
 ```
 
+> **Note:** For Playwright troubleshooting (including common permission errors), see the [Playwright Troubleshooting Guide](writing_pw_tests.md#troubleshooting).
+
 ### Action Inputs
 
 | Input | Description | Required | Default |

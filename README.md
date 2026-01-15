@@ -57,6 +57,8 @@ to access the repo with tests
     --test-type smoke
 ```
 
+> **Note:** For Playwright troubleshooting (including permission errors with `--with-deps`), see [docs/writing_pw_tests.md#troubleshooting](docs/writing_pw_tests.md#troubleshooting)
+
 If you're running local tests, mount the volume inside the container.
 
 ### For Local Development (Linux/macOS)

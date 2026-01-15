@@ -238,6 +238,86 @@ docker run --rm \
 4. `us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.6.11 test` says use the bench container tagged with bench:`v0.6.11`. The container specificies the bench binary as the default execution script, so `test` the subcommand and effectively runs `grafana-bench test`
 5. `--test-runner "playwright"` tells the test command to use the playwright executor
 7. `--pw-prepare-cmd "yarn install --frozen-lockfile; yarn playwright install"` specifies the two commands necessary to configure the e2e tests separated by a `;`. We do not currently support the `&&` operator, so you must use `;`. The first command installs yarn dependencies. The second installs playwright and dependencies
+
+   > **WARNING:** Do NOT use `--with-deps` flag when running `playwright install --with-deps` in the Playwright Docker image. The flag requires root access to install system dependencies, but the container runs as a non-root user. The system dependencies are already included in the base image, so only the browser binaries need to be downloaded (which doesn't require root). See [Troubleshooting](#troubleshooting) for more details.
+
 8. `--pw-execute-cmd "yarn e2e"` specifies the command to run the e2e tests.
 9. `--test-env "CI=true"` sets an environment variable to be passed to the test executor. Effectively `CI=true grafana-bench test ...`. It is common convention with playwright tests to use the `CI=true` flag
 10. `--log-level DEBUG` sets the log level
+
+## Troubleshooting
+
+### "su: Authentication failure" / "Failed to install browsers"
+
+**Problem:** You see an error like:
+```
+Installing dependencies...
+Switching to root user to install dependencies...
+Password: su: Authentication failure
+Failed to install browsers
+Error: Installation process exited with code: 1
+```
+
+**Cause:** You're using the `--with-deps` flag with `playwright install` (e.g., `playwright install --with-deps chromium`). This flag attempts to install system dependencies using `apt-get`, which requires root access. The Playwright Docker container runs as a non-root user (`pwuser`) for security.
+
+**Solution:** Remove the `--with-deps` flag from your prepare command:
+
+```bash
+# ❌ BAD - Requires root access
+--pw-prepare-cmd "yarn install; yarn playwright install --with-deps chromium"
+
+# ✅ GOOD - Downloads browsers only, no root needed
+--pw-prepare-cmd "yarn install; yarn playwright install chromium"
+
+# ✅ ALSO GOOD - Downloads all browsers (if you need multiple)
+--pw-prepare-cmd "yarn install; yarn playwright install"
+```
+
+**Why this works:** The `mcr.microsoft.com/playwright` base image already includes all necessary system dependencies (libnss3, libgbm1, fonts, etc.). The `playwright install` command without `--with-deps` only downloads browser binaries to the user's cache directory (`~/.cache/ms-playwright`), which doesn't require elevated permissions.
+
+### Playwright Version Mismatches
+
+**Problem:** Tests fail with errors about browser versions not matching, or browsers are downloaded every time despite the Docker image including them.
+
+**Cause:** Your `package.json` specifies a different Playwright version than what's pre-installed in the Docker image. This is normal and expected since users bring their own test suites.
+
+**How it works:**
+1. The Docker image uses `mcr.microsoft.com/playwright:v1.55.1-noble` which includes browsers compatible with Playwright 1.55.x
+2. Your `package.json` might specify `"playwright": "^1.42.1"` or any other version
+3. When you run `yarn install`, it installs your specified version
+4. When you run `playwright install`, it downloads the browsers that match your npm package version to `~/.cache/ms-playwright`
+
+**Solution:** This is expected behavior. Just make sure you're running `playwright install` (without `--with-deps`) in your prepare command to download the correct browser versions.
+
+```bash
+# This handles version mismatches correctly
+--pw-prepare-cmd "yarn install; yarn playwright install chromium"
+```
+
+### Only Install Browsers You Need
+
+**Tip:** If you only use Chromium (most common), specify it explicitly to save time and disk space:
+
+```bash
+# Downloads only Chromium
+--pw-prepare-cmd "yarn install; yarn playwright install chromium"
+
+# Downloads all browsers (Chromium, Firefox, WebKit)
+--pw-prepare-cmd "yarn install; yarn playwright install"
+```
+
+Most Grafana tests only need Chromium, so the first option is recommended.
+
+### "Executable doesn't exist" errors
+
+**Problem:** Playwright can't find the browser executable.
+
+**Solution:** Make sure you're running `playwright install` in your prepare command. The browser binaries need to be downloaded even though system dependencies are pre-installed.
+
+### Permission Errors Writing to Cache
+
+**Problem:** Errors about not being able to write to `/home/pwuser/.cache` or similar.
+
+**Cause:** Volume mount permissions mismatch between your host user and the container's `pwuser`.
+
+**Solution:** The Playwright Docker image should handle this automatically. If you encounter this issue, ensure you're using the correct Playwright variant of the bench image (tagged with `-playwright` or using the Playwright-specific image).
