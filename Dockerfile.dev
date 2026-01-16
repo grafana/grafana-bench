@@ -34,7 +34,11 @@ RUN CGO_ENABLED=0 go build \
 RUN go get github.com/boxboat/fixuid@${FIXUID_VERSION} && \
   CGO_ENABLED=0 go build -o build/fixuid github.com/boxboat/fixuid
 
-FROM grafana/k6:latest AS k6
+FROM grafana/xk6:latest AS k6
+
+# update this tag to the appropriate desired plugin version
+RUN xk6 build --with github.com/grafana/xk6-grafana-alerting@a2ac37093f09d6bfc5c18202f9e15729584afce0
+
 FROM alpine:3.22 AS runtime
 
 USER root
@@ -45,7 +49,7 @@ RUN addgroup -g 127 bench && \
   adduser --disabled-password -u 1001 -G bench bench
 
 # Copy binaries
-COPY --from=k6 /usr/bin/k6 /usr/local/bin/k6
+COPY --from=k6 /xk6/k6 /usr/local/bin/k6
 COPY --from=builder /app/build/grafana-bench /usr/local/bin/grafana-bench
 COPY --from=builder /app/build/fixuid /usr/local/bin/fixuid
 COPY docker-entrypoint-dev.sh /usr/local/bin/entrypoint.sh
