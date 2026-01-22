@@ -668,9 +668,10 @@ func generateOptionalScriptFlag(flag FlagInfo) string {
 		}
 		return fmt.Sprintf("+ std.flattenArrays([['--%s', item] for item in bench_options.%s])", flag.Name, camelCase)
 	case "stringToString":
-		// Special handling for test-env which becomes test-env-vars in the CLI but testEnvVars in libsonnet
+		// Special handling for test-env: testEnv in libsonnet is an array of "key=value" strings for simplicity
+		// Users write: testEnv: ['CI=1', 'VAR=$ENV_VAR'] and we pass them directly to --test-env
 		if flag.Name == "test-env" {
-			return "+ (if test_env_vars != [] then ['--test-env', std.join(',', test_env_vars)] else [])"
+			return "+ (if bench_options.testEnv != [] then ['--test-env', std.join(',', bench_options.testEnv)] else [])"
 		}
 		return fmt.Sprintf("+ (if std.length(bench_options.%s) > 0 then ['--%s', std.join(',', [k + '=' + v for k, v in std.objectKeysValues(bench_options.%s)])] else [])", camelCase, flag.Name, camelCase)
 	case "int":
@@ -699,20 +700,53 @@ func toCamelCase(kebab string) string {
 }
 
 func getLibsonnetDefaultValue(flag FlagInfo) string {
+	// Production overrides: flags that should differ from CLI defaults in libsonnet
+	productionOverrides := map[string]string{
+		"report-output":          "'log'", // Production needs structured logs (CLI default is 'text')
+		"grafana-admin-user":     "''",    // Production uses GRAFANA_ADMIN_USER env var (CLI default is 'admin')
+		"grafana-admin-password": "''",    // Production uses GRAFANA_ADMIN_PASSWORD env var (CLI default is 'admin')
+	}
+
+	if override, exists := productionOverrides[flag.Name]; exists {
+		return override
+	}
+
+	// For flags with CLI defaults, return empty/zero so they don't add unnecessary CLI flags
+	// This keeps them discoverable in Suite but won't generate CLI flags when not overridden
+	hasCliDefault := false
 	switch flag.Type {
 	case "bool":
-		if flag.DefaultValue == "true" {
-			return "true"
+		hasCliDefault = flag.DefaultValue == "true" // false is the zero value, so only true counts as a default
+	case "string":
+		hasCliDefault = flag.DefaultValue != "" && !isRequiredStringFlag(flag.Name)
+	case "duration":
+		hasCliDefault = flag.DefaultValue != "" && flag.DefaultValue != "0s"
+	case "int":
+		hasCliDefault = flag.DefaultValue != "" && flag.DefaultValue != "0"
+	}
+
+	if hasCliDefault {
+		switch flag.Type {
+		case "bool":
+			return "false" // Return false so it won't add the flag
+		case "duration":
+			return "'0s'" // Return 0s so it won't add the flag
+		case "int":
+			return "0" // Return 0 so it won't add the flag
+		default:
+			return "''" // Return empty string so it won't add the flag
 		}
+	}
+
+	// Standard handling for flags without CLI defaults
+	switch flag.Type {
+	case "bool":
 		return "false"
 	case "string":
-		if flag.DefaultValue == "" {
-			if isRequiredStringFlag(flag.Name) {
-				return fmt.Sprintf("error 'must define %s'", strings.ReplaceAll(flag.Name, "-", " "))
-			}
-			return "''"
+		if isRequiredStringFlag(flag.Name) {
+			return fmt.Sprintf("error 'must define %s'", strings.ReplaceAll(flag.Name, "-", " "))
 		}
-		return fmt.Sprintf("'%s'", flag.DefaultValue)
+		return "''"
 	case "stringArray", "stringSlice":
 		return "[]"
 	case "stringToString":
@@ -722,20 +756,11 @@ func getLibsonnetDefaultValue(flag FlagInfo) string {
 		}
 		return "{}"
 	case "int":
-		if flag.DefaultValue == "" {
-			return "0"
-		}
-		return flag.DefaultValue
+		return "0"
 	case "duration":
-		if flag.DefaultValue == "" || flag.DefaultValue == "0s" {
-			return "'0s'"
-		}
-		return fmt.Sprintf("'%s'", flag.DefaultValue)
+		return "'0s'"
 	default:
-		if flag.DefaultValue == "" {
-			return "''"
-		}
-		return fmt.Sprintf("'%s'", flag.DefaultValue)
+		return "''"
 	}
 }
 
