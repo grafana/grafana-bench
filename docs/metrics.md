@@ -18,13 +18,13 @@ For example:
 This example uses the test runner with default metrics.
 
 ```sh
-PROMETHEUS_PASSWORD=MYSUPERSECRETPROMTOKEN grafana-bench test 
+PROMETHEUS_PASSWORD=MYSUPERSECRETPROMTOKEN grafana-bench test
 --test-runner k6 \
         --suite-path myMetricsTest.ts \
         --prometheus-metrics \
         --prometheus-strict-lint \
         --prometheus-url "https://prometheus-ops-03-ops-eu-south-0.grafana-ops.net/api/prom/push" \
-        --prometheus-user 10428 
+        --prometheus-user 10428
 ```
 
 ### Default Metrics
@@ -89,7 +89,7 @@ Bench handles injecting labels for grafana url, grafana version, and bench. You 
 own labels in the text exposition format, however, you should not override them yourself
 and should instead pass those to the bench CLI.
 
-## Passing cusstom metrics to bench
+## Passing custom metrics to bench
 
 To report custom metrics, first write them to a file in the text exposition format
 then pass them to the bench reporter.

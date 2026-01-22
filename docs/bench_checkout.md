@@ -20,7 +20,7 @@ bench checkout [flags]
 bench checkout \
   --suite-repo-url https://url/to/test-repo.git \
   --suite-base path/to/local/repo/directory \
-  --suite-revision my-branch 
+  --suite-revision my-branch
 
 ```
 
@@ -32,7 +32,7 @@ bench checkout \
       --suite-base string              base directory for searching test suites. Defaults to current directory
                                        If specified, it is prefixed to the --suite-path. (default ".")
       --suite-repo-dirs strings        Directories to checkout from test suite repo. If omitted, all folders will be checkout
-      --suite-repo-token string        authentication token for the test suite repository. 
+      --suite-repo-token string        authentication token for the test suite repository.
                                        If not set SUITE_REPO_TOKEN environment variable is used.
       --suite-repo-url string          url to the repository to get the test suite from. If not set SUITE_REPO_URL environment variable is used.
                                        If specified, the repo will be checkout into the --suite-base directory.

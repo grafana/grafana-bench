@@ -15,10 +15,42 @@ markdown_extensions:
           class: mermaid
           format: !!python/name:pymdownx.superfences.fence_code_format
 nav:
-  - bench.md
-  - bench_version.md
-  - bench_compile.md
-  - bench_test.md
+  - Home: index.md
+  - Getting Started:
+    - Quickstart: quickstart.md
+    - Installation: installation.md
+    - Your First Test: first-test.md
+    - Validation Guide: validation-guide.md
+  - Writing Tests:
+    - Overview: writing-tests-overview.md
+    - K6 API Tests: writing_k6_api_tests.md
+    - Playwright Browser Tests: writing_pw_tests.md
+    - Go Tests: writing_go_tests.md
+    - Templates: templates.md
+  - Configuration:
+    - Configuration Guide: configuration.md
+    - Configuration Reference: configuration-reference.md
+    - Environment Variables: environment-variables.md
+  - CI/CD Integration:
+    - GitHub Actions: github_actions.md
+    - Libsonnet Pipelines: libsonnet.md
+  - Features:
+    - Load Testing: load_testing.md
+    - Metrics: metrics.md
+    - Slack Notifications: notifications.md
+    - Hosted Grafana Setup: configuring_an_instance.md
+  - Reference:
+    - CLI Reference:
+      - bench: bench.md
+      - bench test: bench_test.md
+      - bench report: bench_report.md
+      - bench validate: bench_validate.md
+      - bench checkout: bench_checkout.md
+      - bench version: bench_version.md
+    - Troubleshooting: troubleshooting.md
+    - Glossary: glossary.md
+    - Cheat Sheet: cheat-sheet.md
+    - Style Guide: STYLE_GUIDE.md
 repo_url: https://github.com/grafana/grafana-bench
 site_name: Grafana Bench
 theme:

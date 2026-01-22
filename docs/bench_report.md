@@ -77,7 +77,7 @@ report:
 suite:
   name: "my-test-suite"
   revision: "main"
-  
+
 grafana:
   url: "http://localhost:3000"
   version: "v10.0.0"
