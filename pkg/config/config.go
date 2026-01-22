@@ -767,7 +767,6 @@ func (benchConfig *BenchConfig) BuildSuiteRun(log *slog.Logger) (executor.SuiteR
 	}
 
 	return executor.SuiteRun{
-		Name:           "", // Deprecated: Use TestSuite.Name or SuiteRunSummary.SuiteName instead
 		Id:             runId,
 		RunStage:       benchConfig.SuiteRun.RunStage,
 		TestExecutor:   benchConfig.Report.Input,

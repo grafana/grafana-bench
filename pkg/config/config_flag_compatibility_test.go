@@ -18,7 +18,6 @@ import (
 func TestRunStageInLogOutput(t *testing.T) {
 	// Create a SuiteRun with runStage set
 	suiteRun := executor.SuiteRun{
-		Name:           "test-suite",
 		Id:             "test-run-123",
 		RunStage:       "ci-stage-test",
 		TestExecutor:   "k6",
@@ -222,11 +221,6 @@ func TestRunStageIntegrationWithBuildSuiteRun(t *testing.T) {
 			// Verify RunStage is set correctly
 			if suiteRun.RunStage != tt.runStage {
 				t.Errorf("SuiteRun.RunStage = %q, want %q", suiteRun.RunStage, tt.runStage)
-			}
-
-			// Verify SuiteRun.Name is deprecated (empty)
-			if suiteRun.Name != "" {
-				t.Errorf("SuiteRun.Name = %q, should be empty (deprecated)", suiteRun.Name)
 			}
 
 			// Verify the new ID format includes stage and suite name
