@@ -97,7 +97,7 @@ jobs:
       contents: read
     services:
       grafana:
-        image: grafana/grafana:12.0.1
+        image: grafana/grafana:12.3.1@sha256:2175aaa91c96733d86d31cf270d5310b278654b03f5718c59de12a865380a31f
         ports:
           - 3000:3000
     steps:
@@ -169,7 +169,7 @@ jobs:
 
     services:
       grafana:
-        image: grafana/grafana:12.0.1
+        image: grafana/grafana:12.3.1@sha256:2175aaa91c96733d86d31cf270d5310b278654b03f5718c59de12a865380a31f
         ports:
           - 3000:3000
     steps:
