@@ -81,8 +81,11 @@ jobs:
       - name: install development dependencies
         run: make install-deps
 
+      - name: install gotestsum
+        run: go install gotest.tools/gotestsum@latest
+
       - name: test
-        run: go test -v ./...
+        run: gotestsum --format testname -- ./...
 
       - name: build
         run: go build -v ./...

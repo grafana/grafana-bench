@@ -139,7 +139,7 @@ func TestGetLibsonnetDefaultValue(t *testing.T) {
 				Type:         "bool",
 				DefaultValue: "true",
 			},
-			expected: "true",
+			expected: "false", // Returns false (zero value) to avoid generating CLI flag
 		},
 		{
 			name: "bool false",
@@ -157,7 +157,7 @@ func TestGetLibsonnetDefaultValue(t *testing.T) {
 				Type:         "string",
 				DefaultValue: "default-value",
 			},
-			expected: "'default-value'",
+			expected: "''", // Returns empty string (zero value) to avoid generating CLI flag
 		},
 		{
 			name: "required string (grafana-url)",
@@ -220,7 +220,7 @@ func TestGetLibsonnetDefaultValue(t *testing.T) {
 				Type:         "int",
 				DefaultValue: "3",
 			},
-			expected: "3",
+			expected: "0", // Returns 0 (zero value) to avoid generating CLI flag
 		},
 		{
 			name: "int empty",
@@ -301,7 +301,7 @@ func TestGenerateLibsonnetOption(t *testing.T) {
 				DefaultValue: "smoke",
 				Usage:        "test type. Allowed values: 'smoke', 'load'",
 			},
-			expected: "// --test-type: test type. Allowed values: 'smoke', 'load'\n      testType: 'smoke'",
+			expected: "// --test-type: test type. Allowed values: 'smoke', 'load'\n      testType: ''", // Returns empty to avoid generating CLI flag
 		},
 	}
 	

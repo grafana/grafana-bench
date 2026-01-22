@@ -12,7 +12,19 @@
       "Bash(make:*)",
       "Bash(grep:*)",
       "Bash(jq:*)",
-      "Bash(gh api:*)"
+      "Bash(gh api:*)",
+      "Bash(gh repo view:*)",
+      "Bash(claude config --help:*)",
+      "Bash(env)",
+      "Bash(gh project list:*)",
+      "Bash(gh issue list:*)",
+      "Bash(gh issue view:*)",
+      "Bash(git add:*)",
+      "Bash(bd create:*)",
+      "Bash(bd dep add:*)",
+      "Bash(bd list:*)",
+      "Bash(bd graph:*)",
+      "Bash(bd show:*)"
     ],
     "deny": []
   }
