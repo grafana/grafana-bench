@@ -26,7 +26,6 @@ const (
 )
 
 type SuiteRun struct {
-	Name           string
 	Id             string
 	TestExecutor   string
 	RunStage       string

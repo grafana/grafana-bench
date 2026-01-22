@@ -2,26 +2,28 @@ package id
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
-// Run returns an unique id for the run from the pipeline and current time
-// format: {trigger}-{year}{day of year}-{hour}{min}{second}
-// Example rrc-dev-fast-6-2024123-140035
-func Run(trigger string, time time.Time) string {
-	return fmt.Sprintf("%s-%d%d-%d%d%d",
-		trigger,
-		time.Year(),
-		time.YearDay(),
-		time.Hour(),
-		time.Minute(),
-		time.Second(),
-	)
-}
+// Run returns a unique id for the test suite run including stage, suite name, and timestamp
+// format: {stage}-{suiteName}-{year}{dayOfYear:03d}-{hour:02d}{min:02d}{sec:02d}
+// Example: rrc-grafana-api-tests-tests-2026022-140035
+// Example: local-grafana-api-tests-tests-2026022-140035
+//
+// The suiteName is normalized to remove slashes (replaced with hyphens) for better readability
+// and compatibility with various systems.
+func Run(stage string, suiteName string, t time.Time) string {
+	// Normalize suite name: replace slashes with hyphens
+	normalizedSuiteName := strings.ReplaceAll(suiteName, "/", "-")
 
-// SuiteRunName returns an unique id for the pipeline
-// format: {trigger}-{suite name}-{test type}
-// Example rrc-dev-fast-grafana/grafana-api-tests-load
-func SuiteRunName(trigger string, suiteName string, testType string) string {
-	return fmt.Sprintf("%s-%s-%s", trigger, suiteName, testType)
+	return fmt.Sprintf("%s-%s-%d%03d-%02d%02d%02d",
+		stage,
+		normalizedSuiteName,
+		t.Year(),
+		t.YearDay(),
+		t.Hour(),
+		t.Minute(),
+		t.Second(),
+	)
 }

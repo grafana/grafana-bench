@@ -57,8 +57,7 @@ func TestPrometheusReporter_Report_WithAttributes(t *testing.T) {
 
 			suiteRun := executor.SuiteRun{
 				Id:             "test-run-123",
-				Name:           "test-suite",
-				RunStage:       "local",
+					RunStage:       "local",
 				BenchRevision:  "abc123",
 				GrafanaVersion: "9.0.0",
 				Attributes:     tt.attributes,
@@ -112,7 +111,6 @@ func TestPrometheusReporter_Report_AttributesIntegration(t *testing.T) {
 
 	suiteRun := executor.SuiteRun{
 		Id:             "integration-test",
-		Name:           "integration-suite",
 		RunStage:       "ci",
 		BenchRevision:  "integration-abc123",
 		GrafanaVersion: "10.0.0",
@@ -180,7 +178,6 @@ func TestPrometheusReporter_Report_NilAttributesHandling(t *testing.T) {
 
 	suiteRun := executor.SuiteRun{
 		Id:             "nil-test",
-		Name:           "nil-test-suite",
 		GrafanaVersion: "9.0.0",
 		Attributes:     nil, // Explicitly test nil attributes
 	}

@@ -754,14 +754,12 @@ func (benchConfig *BenchConfig) BuildSuiteRun(log *slog.Logger) (executor.SuiteR
 	// get attributes of this test suite run using the test suite information from the config
 	runId := benchConfig.SuiteRun.Id
 	if runId == "" {
-		runId = id.Run(benchConfig.SuiteRun.RunStage, time.Now())
+		runId = id.Run(
+			benchConfig.SuiteRun.RunStage,
+			benchConfig.TestSuite.Name,
+			time.Now(),
+		)
 	}
-
-	suiteRunName := id.SuiteRunName(
-		benchConfig.SuiteRun.RunStage,
-		benchConfig.TestSuite.Name,
-		benchConfig.Test.Type,
-	)
 
 	attributes, err := parseAttributes(benchConfig.SuiteRun.Attributes, log)
 	if err != nil {
@@ -769,7 +767,7 @@ func (benchConfig *BenchConfig) BuildSuiteRun(log *slog.Logger) (executor.SuiteR
 	}
 
 	return executor.SuiteRun{
-		Name:           suiteRunName,
+		Name:           "", // Deprecated: Use TestSuite.Name or SuiteRunSummary.SuiteName instead
 		Id:             runId,
 		RunStage:       benchConfig.SuiteRun.RunStage,
 		TestExecutor:   benchConfig.Report.Input,

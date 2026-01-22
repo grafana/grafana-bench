@@ -21,7 +21,6 @@ func TestTextReporter_Report(t *testing.T) {
 			name: "basic summary output",
 			suiteRun: executor.SuiteRun{
 				Id:       "test-run-123",
-				Name:     "test-suite",
 				RunStage: "local",
 			},
 			summary: executor.SuiteRunSummary{
@@ -70,7 +69,6 @@ func TestTextReporter_Report(t *testing.T) {
 			name: "with custom attributes",
 			suiteRun: executor.SuiteRun{
 				Id:       "test-run-456",
-				Name:     "attributes-test",
 				RunStage: "local",
 				Attributes: map[string]string{
 					"environment": "staging",
@@ -102,7 +100,6 @@ func TestTextReporter_Report(t *testing.T) {
 			name: "no attributes section when empty",
 			suiteRun: executor.SuiteRun{
 				Id:       "test-run-789",
-				Name:     "no-attributes-test",
 				RunStage: "local",
 			},
 			summary: executor.SuiteRunSummary{
@@ -130,8 +127,7 @@ func TestTextReporter_Report(t *testing.T) {
 			if suiteRun.Id == "" {
 				suiteRun = executor.SuiteRun{
 					Id:       "test-run-123",
-					Name:     "test-suite",
-					RunStage: "local",
+						RunStage: "local",
 				}
 			}
 

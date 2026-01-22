@@ -224,10 +224,17 @@ func TestRunStageIntegrationWithBuildSuiteRun(t *testing.T) {
 				t.Errorf("SuiteRun.RunStage = %q, want %q", suiteRun.RunStage, tt.runStage)
 			}
 
-			// Verify it's used in the suite run name generation
-			expectedNamePrefix := tt.runStage + "-test-suite-smoke"
-			if !strings.HasPrefix(suiteRun.Name, expectedNamePrefix) {
-				t.Errorf("SuiteRun.Name = %q, should start with %q", suiteRun.Name, expectedNamePrefix)
+			// Verify SuiteRun.Name is deprecated (empty)
+			if suiteRun.Name != "" {
+				t.Errorf("SuiteRun.Name = %q, should be empty (deprecated)", suiteRun.Name)
+			}
+
+			// Verify the new ID format includes stage and suite name
+			// Format: {stage}-{suiteName}-{timestamp}
+			// Example: ci-test-suite-2026022-140035
+			expectedIdPrefix := tt.runStage + "-test-suite-"
+			if !strings.HasPrefix(suiteRun.Id, expectedIdPrefix) {
+				t.Errorf("SuiteRun.Id = %q, should start with %q", suiteRun.Id, expectedIdPrefix)
 			}
 		})
 	}

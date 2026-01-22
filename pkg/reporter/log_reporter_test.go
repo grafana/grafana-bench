@@ -22,7 +22,6 @@ func TestLogReporter_Report(t *testing.T) {
 		{
 			name: "complete suite run with all fields",
 			suiteRun: executor.SuiteRun{
-				Name:           "test-suite-smoke",
 				Id:             "test-run-123",
 				RunStage:       "local",
 				TestExecutor:   "k6",
@@ -53,7 +52,6 @@ func TestLogReporter_Report(t *testing.T) {
 			},
 			expected: map[string]any{
 				"runId":          "test-run-123",
-				"suiteRun":       "test-suite-smoke",
 				"suiteName":      "test-suite",
 				"suiteRevision":  "abc123",
 				"runStage":       "local",
@@ -67,7 +65,6 @@ func TestLogReporter_Report(t *testing.T) {
 		{
 			name: "suite run with empty optional fields",
 			suiteRun: executor.SuiteRun{
-				Name:           "empty-fields-test",
 				Id:             "test-run-456",
 				RunStage:       "ci",
 				TestExecutor:   "playwright",
@@ -89,7 +86,6 @@ func TestLogReporter_Report(t *testing.T) {
 			},
 			expected: map[string]any{
 				"runId":          "test-run-456",
-				"suiteRun":       "empty-fields-test",
 				"suiteName":      "",
 				"suiteRevision":  "",
 				"runStage":       "ci",
@@ -103,7 +99,6 @@ func TestLogReporter_Report(t *testing.T) {
 		{
 			name: "suite run with custom attributes",
 			suiteRun: executor.SuiteRun{
-				Name:           "attributes-test",
 				Id:             "test-run-789",
 				RunStage:       "local",
 				TestExecutor:   "k6",
@@ -140,7 +135,6 @@ func TestLogReporter_Report(t *testing.T) {
 			},
 			expected: map[string]any{
 				"runId":          "test-run-789",
-				"suiteRun":       "attributes-test",
 				"suiteName":      "smoke-tests",
 				"suiteRevision":  "main-branch",
 				"runStage":       "local",
