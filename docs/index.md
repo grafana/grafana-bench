@@ -45,7 +45,6 @@ Bench is simple: it wraps your testing tools and standardizes the output.
 **Architecture:**
 - **Test Executors** (K6, Playwright, Go) - Each executor includes a parser for that framework
 - **Reporters** - Output results via structured logs, Prometheus metrics, and Slack notifications
-- **That's it!**
 
 You either:
 1. **Let bench run your tests** - It executes and parses automatically
