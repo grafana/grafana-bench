@@ -71,6 +71,16 @@ func With503Response(delay time.Duration, method string, route string, handler h
 	}
 }
 
+// register a handler that always returns 503 (for testing timeout behavior)
+func WithAlways503Response(method string, route string) routerOption {
+	return func(m *httprouter.Router) {
+		m.HandlerFunc(method, route, func(rw http.ResponseWriter, r *http.Request) {
+			rw.WriteHeader(http.StatusServiceUnavailable)
+			rw.Write([]byte(loadingMessage))
+		})
+	}
+}
+
 func newGrafanaMock(options ...routerOption) *httprouter.Router {
 	// set default responses
 	mock := httprouter.New()
@@ -113,7 +123,7 @@ func Test_GetGrafanaSession(t *testing.T) {
 		},
 		{
 			testCase:  "timeout waiting server",
-			mock:      newGrafanaMock(With503Response(5*time.Second, "POST", "/login", loginHandler)),
+			mock:      newGrafanaMock(WithAlways503Response("POST", "/login")),
 			expectErr: InstanceNotAvailableError,
 		},
 		{
