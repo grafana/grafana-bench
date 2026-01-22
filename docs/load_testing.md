@@ -41,7 +41,7 @@ module "cloud_sql_dev-us-central-0-hosted-grafana-dedicated-lt" {
 
   # update the name of the instance
   name              = "dev-us-central-0-hosted-grafana-dedicated-lt"
- 
+
   # make sure the database is in the same region as your test instance
   region            = "us-central1"
   tier              = "db-n1-highmem-16"
@@ -114,11 +114,11 @@ module "cloud_sql_dev-us-central-0-hosted-grafana-dedicated-lt" {
 3. **This will sign you into the raintank org**
 4. **Click `add stack`**
 5. **Select your stack identifier and set your region to the same as your database server and click apply**
-   
+
    <img width="1454" height="950" alt="Create stack interface" src="https://github.com/user-attachments/assets/262a8234-cced-4898-9df2-f95012f18a99" />
 
 6. **Wait for your stack to be created and note the ID in the URL for configuring your instance**
-   
+
    Example URL: `https://grafana-dev.com/orgs/raintank/stacks/8182`
 
 <img width="2070" height="756" alt="Stack created confirmation" src="https://github.com/user-attachments/assets/561ffba6-1a8f-406e-b58a-5c554d700dfd" />
@@ -258,11 +258,11 @@ The Grafana simulation suite provides a framework for writing load tests using k
    ```sh
    yarn build:simulation
    ```
-   
+
    This compiles TypeScript to JavaScript in `simulation/dist`
 
 3. **Configure environment variables:**
-   
+
    Create a `.env.{yourinstance}` file:
 
    ```sh
@@ -294,7 +294,7 @@ The Grafana simulation suite provides a framework for writing load tests using k
    - `simulation/src/unified_storage/` - Examples for unified storage testing
 
 3. **Create your test files:**
-   
+
    Follow the patterns in the existing examples to create your domain-specific load tests.
 
 ### Test execution patterns
@@ -406,22 +406,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-          
+
       - name: Install dependencies
         run: |
           cd simulation
           yarn install --immutable
-          
+
       - name: Build simulation suite
         run: |
           cd simulation
           yarn build:simulation
-          
+
       - name: Run load tests
         uses: grafana/k6-action@v0.2.0
         with:

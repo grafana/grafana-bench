@@ -83,7 +83,7 @@ By default, the login form is disabled for hosted Grafana stacks. The `gcom-dev`
 > **Important:** Use the gcom command for the environment your stack is in:
 >
 > - `gcom` for prod
-> - `gcom-dev` for dev  
+> - `gcom-dev` for dev
 > - `gcom-ops` for ops
 
 ```sh

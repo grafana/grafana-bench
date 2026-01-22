@@ -25,12 +25,12 @@ jobs:
           - 3000:3000
     steps:
       - uses: actions/checkout@v5
-      
+
       - name: Setup Grafana Bench
         uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@057477c3d586996c1fc3f38772760c34a68d2859
         with:
           version: 'v0.6.11'
-      
+
       - name: Run K6 API Tests
         run: |
           grafana-bench test \
@@ -38,7 +38,7 @@ jobs:
             --grafana-url http://localhost:3000 \
             --test-suite CI/k6 \
             --log-level info
-      
+
       - name: Run Playwright Tests
         run: |
           grafana-bench test \
@@ -161,7 +161,7 @@ When the action is updated and merged to main, run `make docs` to update all doc
 The action automatically detects your platform and installs the appropriate binary:
 
 - **Linux**: amd64, arm64
-- **macOS**: amd64, arm64  
+- **macOS**: amd64, arm64
 - **Windows**: amd64
 
 The action uses GitHub's API with authentication to download binaries from private releases. If binary download fails, it falls back to `go install` with proper authentication for private repositories.
@@ -232,7 +232,7 @@ on:
     branches: ["main"]
   pull_request:
     branches: ["main"]
-    
+
 jobs:
   bench-test:
     runs-on: ubuntu-latest
@@ -332,7 +332,7 @@ jobs:
             --pw-prepare-cmd "yarn install --frozen-lockfile; playwright install chromium" \
             --pw-execute-cmd "yarn e2e" \
             --test-env "CI=true" \
-            --log-level DEBUG 
+            --log-level DEBUG
 ```
 
 ### Workflow Breakdown

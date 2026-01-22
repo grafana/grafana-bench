@@ -5,12 +5,12 @@
 ### [Install Bench](index.md#installing-bench)
 
 1. **Start a Grafana instance to test against:**
-   ```bash
+   ```sh
    docker run -d --name=grafana -p 3000:3000 grafana/grafana
    ```
 
 2. **Create a K6 test:**
-   
+
    We're going to make a basic request to the Grafana instance and make sure it's running. K6 has support for TypeScript, so create a file called `check_grafana_instance.ts` with the following:
 
 ```typescript
@@ -32,13 +32,13 @@ export default function () {
 ```
 
 3. **Run the tests:**
-   ```bash
+   ```sh
    grafana-bench test --test-suite check_grafana_instance.ts
    ```
 
 You should see output which looks like:
 
-```shell
+```text
 CI/api_test.ts ... passed
 
 Tests executed 1
