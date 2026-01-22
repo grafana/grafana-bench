@@ -181,8 +181,7 @@ func TestNotificationReporter(t *testing.T) {
 			}
 
 			suiteRun := executor.SuiteRun{
-				Name:          "test",
-				Id:            "123",
+					Id:            "123",
 			}
 			err = reporter.Report(
 				context.Background(),

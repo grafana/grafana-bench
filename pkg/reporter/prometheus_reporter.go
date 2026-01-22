@@ -80,7 +80,8 @@ func (p *PrometheusReporter) Report(
 		"job":             "bench",
 		"grafana_version": suiteRun.GrafanaVersion,
 		"status":          string(summary.Status),
-		"suite_run":       suiteRun.Name,
+		"suite_name":      summary.SuiteName,
+		"run_stage":       suiteRun.RunStage,
 	}
 
 	for k, v := range suiteRun.Attributes {
