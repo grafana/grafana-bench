@@ -20,6 +20,7 @@ func TestRunStageInLogOutput(t *testing.T) {
 	suiteRun := executor.SuiteRun{
 		Id:             "test-run-123",
 		RunStage:       "ci-stage-test",
+		Service:        "grafana",
 		TestExecutor:   "k6",
 		BenchRevision:  "v1.0.0",
 		GrafanaURL:     "http://localhost:3000",
@@ -44,7 +45,7 @@ func TestRunStageInLogOutput(t *testing.T) {
 	}))
 
 	// Create LogReporter and override logger
-	logReporter, err := reporter.NewLogReporter("json", []any{"service", "bench"})
+	logReporter, err := reporter.NewLogReporter("json", []any{"tool", "bench"})
 	if err != nil {
 		t.Fatalf("Failed to create LogReporter: %v", err)
 	}
@@ -198,6 +199,7 @@ func TestRunStageIntegrationWithBuildSuiteRun(t *testing.T) {
 			config := &BenchConfig{
 				SuiteRun: SuiteRunConfig{
 					RunStage: tt.runStage,
+					Service:  "grafana",
 				},
 				TestSuite: TestSuiteConfig{
 					Name: "test-suite",

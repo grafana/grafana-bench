@@ -181,7 +181,8 @@ func TestNotificationReporter(t *testing.T) {
 			}
 
 			suiteRun := executor.SuiteRun{
-					Id:            "123",
+					Id:      "123",
+					Service: "grafana",
 			}
 			err = reporter.Report(
 				context.Background(),

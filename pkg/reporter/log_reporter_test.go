@@ -24,6 +24,7 @@ func TestLogReporter_Report(t *testing.T) {
 			suiteRun: executor.SuiteRun{
 				Id:             "test-run-123",
 				RunStage:       "local",
+				Service:        "grafana",
 				TestExecutor:   "k6",
 				BenchRevision:  "v0.6.1",
 				GrafanaURL:     "http://localhost:3000",
@@ -67,6 +68,7 @@ func TestLogReporter_Report(t *testing.T) {
 			suiteRun: executor.SuiteRun{
 				Id:             "test-run-456",
 				RunStage:       "ci",
+				Service:        "grafana",
 				TestExecutor:   "playwright",
 				BenchRevision:  "dev",
 				GrafanaURL:     "https://grafana.com",
@@ -101,6 +103,7 @@ func TestLogReporter_Report(t *testing.T) {
 			suiteRun: executor.SuiteRun{
 				Id:             "test-run-789",
 				RunStage:       "local",
+				Service:        "grafana",
 				TestExecutor:   "k6",
 				BenchRevision:  "v0.7.0",
 				GrafanaURL:     "http://localhost:3000",
@@ -156,7 +159,7 @@ func TestLogReporter_Report(t *testing.T) {
 			var buf bytes.Buffer
 
 			// Create LogReporter with JSON format and redirect to buffer
-			reporter, err := NewLogReporter("json", []any{"service", "bench"})
+			reporter, err := NewLogReporter("json", []any{"tool", "bench"})
 			if err != nil {
 				t.Fatalf("Failed to create LogReporter: %v", err)
 			}

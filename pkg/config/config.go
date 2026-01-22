@@ -199,6 +199,7 @@ func AddGoExecutorFlags(fs *pflag.FlagSet, config *GoTestConfig) {
 type SuiteRunConfig struct {
 	RunStage      string
 	Id            string
+	Service       string
 	DashboardURL  string
 	Metrics       []string
 	MetricsPrefix string
@@ -207,6 +208,12 @@ type SuiteRunConfig struct {
 }
 
 func AddSuiteRunFlags(fs *pflag.FlagSet, config *SuiteRunConfig) {
+	fs.StringVar(
+		&config.Service,
+		"service",
+		"",
+		"REQUIRED. Name of the service being tested (e.g., 'grafana', 'loki', 'tempo', 'datasources'). Used for identifying which service the test results belong to in logs and metrics.",
+	)
 	fs.StringVar(
 		&config.DashboardURL,
 		"dashboard",
@@ -751,6 +758,11 @@ func (benchConfig *BenchConfig) BuildSuiteRun(log *slog.Logger) (executor.SuiteR
 		}
 	}
 
+	// Validate required service field
+	if benchConfig.SuiteRun.Service == "" {
+		return executor.SuiteRun{}, fmt.Errorf("--service is required: specify the name of the service being tested (e.g., 'grafana', 'loki', 'tempo')")
+	}
+
 	// get attributes of this test suite run using the test suite information from the config
 	runId := benchConfig.SuiteRun.Id
 	if runId == "" {
@@ -769,6 +781,7 @@ func (benchConfig *BenchConfig) BuildSuiteRun(log *slog.Logger) (executor.SuiteR
 	return executor.SuiteRun{
 		Id:             runId,
 		RunStage:       benchConfig.SuiteRun.RunStage,
+		Service:        benchConfig.SuiteRun.Service,
 		TestExecutor:   benchConfig.Report.Input,
 		Attributes:     attributes,
 		BenchRevision:  benchConfig.Revision,
@@ -785,10 +798,9 @@ func (config *BenchConfig) BuildReporter() (reporter.SuiteRunReporter, error) {
 	// create test reporter
 	var suiteReporter reporter.SuiteRunReporter
 
-	// FIXME: this is a quick fix for the missing service attribute
-	// There's no way to get the attributes set in the runner's logger to be used
-	// in the reporter logger.
-	logAttrs := []any{"service", "bench"}
+	// Set tool=bench to identify that bench is running the tests
+	// Add service attribute to identify what service is being tested
+	logAttrs := []any{"tool", "bench", "service", config.SuiteRun.Service}
 	switch config.Report.Output {
 	case "json":
 		suiteReporter, _ = reporter.NewLogReporter(reporter.JSONLog, logAttrs)

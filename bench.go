@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	log := logger.NewLogger("service", "bench")
+	log := logger.NewLogger("tool", "bench")
 
 	root := root.NewCmd(log)
 

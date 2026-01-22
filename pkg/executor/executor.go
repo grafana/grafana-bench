@@ -29,6 +29,7 @@ type SuiteRun struct {
 	Id             string
 	TestExecutor   string
 	RunStage       string
+	Service        string
 	GrafanaVersion string
 	GrafanaURL     string
 	GrafanaSlug    string
