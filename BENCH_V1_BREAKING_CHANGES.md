@@ -8,6 +8,8 @@
 
 This document tracks all breaking changes being made for the v1.0.0 release. We're fixing long-standing issues with suite/test run identification and consolidating the data model.
 
+**Looking for migration instructions?** See [MIGRATION_GUIDE_v1.md](MIGRATION_GUIDE_v1.md) for step-by-step migration examples and use cases.
+
 ---
 
 ## Notes & Decisions
@@ -34,7 +36,7 @@ This document tracks all breaking changes being made for the v1.0.0 release. We'
 - **Logger Changes:** Changed from `service=bench` to `tool=bench, service=<user-specified>`
 - **Why:** Makes bench a generic testing reporter that can be used across all Grafana services
 
-### Generic Service Flags Decision 🚧 IN PROGRESS
+### Generic Service Flags Decision ✅ DONE
 - **Goal:** Replace Grafana-specific flags with generic service flags
 - **Current flags to replace:**
   - `--grafana-url` → `--service-url`
@@ -97,7 +99,7 @@ local Suite = benchFunctions.Suite {
 - `datasources` - For datasource plugin testing
 - `<your-service>` - Any other service name
 
-### BREAKING: Generic Service Flags (🚧 IN PROGRESS)
+### BREAKING: Generic Service Flags (✅ DONE)
 
 **Flag name changes and removals:**
 
@@ -471,9 +473,13 @@ return executor.SuiteRun{
 - [x] `generators/libsonnet/main_test.go` - Updated all tests for new flag names
 
 ### Documentation
-- [x] `BENCH_V1_BREAKING_CHANGES.md` - Complete breaking changes documentation
-- [ ] Update libsonnet codegen (if needed - TBD)
-- [ ] Update end-user documentation (README, guides)
+- [x] `BENCH_V1_BREAKING_CHANGES.md` - Complete breaking changes documentation ✅ **DONE**
+- [x] `MIGRATION_GUIDE_v1.md` - User-focused migration guide with examples ✅ **DONE**
+- [x] `README.md` - Updated all examples with v1.0.0 flags ✅ **DONE**
+- [x] `docs/github_actions.md` - Updated all examples with v1.0.0 flags ✅ **DONE**
+- [x] `docs/writing_pw_tests.md` - Updated all examples with v1.0.0 flags ✅ **DONE**
+- [x] `docs/metrics.md` - Updated labels and examples with v1.0.0 changes ✅ **DONE**
+- [x] Update libsonnet codegen - Already completed in earlier work ✅ **DONE**
 
 ---
 

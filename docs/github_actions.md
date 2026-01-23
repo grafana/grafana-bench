@@ -34,19 +34,30 @@ jobs:
       - name: Run K6 API Tests
         run: |
           grafana-bench test \
+            --service grafana \
+            --service-url http://localhost:3000 \
+            --service-version latest \
             --test-type smoke \
-            --grafana-url http://localhost:3000 \
-            --test-suite CI/k6 \
+            --suite-path CI/k6 \
+            --suite-name my-project/ci/k6 \
+            --run-stage ci \
+            --report-output log \
             --log-level info
 
       - name: Run Playwright Tests
         run: |
           grafana-bench test \
+            --service grafana \
+            --service-url http://localhost:3000 \
+            --service-version latest \
             --test-runner playwright \
-            --test-suite-base ./CI/playwright \
-            --grafana-url http://localhost:3000 \
-            --pw-prepare-cmd "npm install; npx playwright install" \
-            --pw-execute-cmd "npm run test"
+            --test-type smoke \
+            --suite-path ./CI/playwright \
+            --suite-name my-project/ci/playwright \
+            --run-stage ci \
+            --report-output log \
+            --pw-prepare "npm install; npx playwright install" \
+            --pw-execute "npm run test"
 ```
 
 > **Note:** For Playwright troubleshooting (including common permission errors), see the [Playwright Troubleshooting Guide](writing_pw_tests.md#troubleshooting).
@@ -74,8 +85,15 @@ After the setup step completes, the tokens are available in your environment. Si
 - name: Run tests with Prometheus metrics
   run: |
     grafana-bench test \
+      --service grafana \
+      --service-url http://localhost:3000 \
+      --service-version latest \
       --test-runner playwright \
-      --grafana-url http://localhost:3000 \
+      --test-type smoke \
+      --suite-path ./CI/playwright \
+      --suite-name my-project/ci/playwright \
+      --run-stage ci \
+      --report-output log \
       --prometheus-metrics
 ```
 
@@ -98,8 +116,15 @@ When using Docker, you need to explicitly pass the Prometheus environment variab
       -e PROMETHEUS_USER="${PROMETHEUS_USER}" \
       -e PROMETHEUS_PASSWORD="${PROMETHEUS_PASSWORD}" \
       us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.6.11 test \
+      --service grafana \
+      --service-url "http://localhost:3000" \
+      --service-version latest \
       --test-runner playwright \
-      --grafana-url "http://localhost:3000" \
+      --test-type smoke \
+      --suite-path /tests/CI/playwright \
+      --suite-name my-project/ci/playwright \
+      --run-stage ci \
+      --report-output log \
       --prometheus-metrics
 ```
 
@@ -202,9 +227,15 @@ This allows your CI workflows to handle test failures differently from internal 
 - name: Run Go tests with bench reporter
   run: |
     grafana-bench test \
+      --service grafana \
+      --service-url http://localhost:3000 \
+      --service-version latest \
       --test-runner gotest \
-      --test-suite-base ./tests \
-      --grafana-url http://localhost:3000
+      --test-type smoke \
+      --suite-path ./tests \
+      --suite-name my-project/tests \
+      --run-stage ci \
+      --report-output log
 ```
 
 **Docker Example (with pre-installed dependencies):**
@@ -216,8 +247,15 @@ This allows your CI workflows to handle test failures differently from internal 
       --network=host \
       --volume="./:/tests/" \
       us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.6.11 test \
+      --service grafana \
+      --service-url "http://localhost:3000" \
+      --service-version latest \
       --test-runner playwright \
-      --grafana-url "http://localhost:3000"
+      --test-type smoke \
+      --suite-path /tests/CI/playwright \
+      --suite-name my-project/ci/playwright \
+      --run-stage ci \
+      --report-output log
 ```
 
 ## Docker-based CI Example
@@ -251,15 +289,20 @@ jobs:
           docker run --rm \
             --network=host \
             --volume="./CI/:/tests/CI/" \
-
             us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.6.11 test \
-            --grafana-url "http://localhost:3000" \
-            --grafana-admin-user "admin" \
-            --grafana-admin-password "admin" \
-            --test-suite-base "/tests/CI/plugin-e2e"  \
+            --service grafana \
+            --service-url "http://localhost:3000" \
+            --service-version latest \
             --test-runner "playwright" \
-            --pw-prepare-cmd "yarn install; playwright install chromium" \
-            --pw-execute-cmd "yarn run test" \
+            --test-type smoke \
+            --suite-path "/tests/CI/plugin-e2e" \
+            --suite-name my-project/ci/plugin-e2e \
+            --run-stage ci \
+            --report-output log \
+            --pw-prepare "yarn install; playwright install chromium" \
+            --pw-execute "yarn run test" \
+            --test-env "GRAFANA_USER=admin" \
+            --test-env "GRAFANA_PASSWORD=admin" \
             --log-level DEBUG
       - name: archive screenshots
         uses: actions/upload-artifact@v3
@@ -326,11 +369,17 @@ jobs:
             --network=host \
             --volume="./:/tests/" \
             us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.6.11 test \
+            --service grafana \
+            --service-url "http://localhost:3000" \
+            --service-version latest \
             --test-runner "playwright" \
-            --test-suite-base "/tests/" \
-            --grafana-url "http://localhost:3000" \
-            --pw-prepare-cmd "yarn install --frozen-lockfile; playwright install chromium" \
-            --pw-execute-cmd "yarn e2e" \
+            --test-type smoke \
+            --suite-path "/tests/" \
+            --suite-name clickhouse-datasource/e2e \
+            --run-stage ci \
+            --report-output log \
+            --pw-prepare "yarn install --frozen-lockfile; playwright install chromium" \
+            --pw-execute "yarn e2e" \
             --test-env "CI=true" \
             --log-level DEBUG
 ```

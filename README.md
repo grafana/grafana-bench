@@ -5,6 +5,16 @@ Grafana bench is a tool for testing Grafana.
 It's built on top of k6, and [Grafana API Tests](https://github.com/grafana/grafana-api-tests)
 to build and test a grafana on the platform and architecture of your choosing.
 
+## 🚀 Upgrading to v1.0.0?
+
+**See [MIGRATION_GUIDE_v1.md](MIGRATION_GUIDE_v1.md)** for step-by-step migration instructions from v0.6.x to v1.0.0.
+
+Key changes in v1.0.0:
+- `--service` flag is now **required**
+- Grafana-specific flags renamed to generic `--service-*` flags
+- Credentials passed via `--test-env` (secure passthrough)
+- New metric labels: `service`, `suite_name`, `run_stage`
+
 ## Docs
 
 We keep updated docs in the docs/ directory which is published to
@@ -43,16 +53,18 @@ to access the repo with tests
 
 ```sh
     docker run --rm -e SUITE_REPO_TOKEN --network=host bench-playwright:dev test\
+    --service grafana \
+    --service-url http://localhost:3000 \
+    --service-version 11.0.0 \
     --log-level debug \
     --pw-prepare "yarn install; yarn playwright install" \
     --pw-execute "yarn playwright test" \
-    --report-format log \
-    --run-trigger grafana-bench-ci \
+    --report-output log \
+    --run-stage grafana-bench-ci \
     --suite-path ./CI/playwright \
     --suite-revision main \
     --suite-name grafana-bench/ci/playwright \
     --suite-repo-url https://github.com/grafana/grafana-bench.git \
-    --test-report-format text \
     --test-runner playwright \
     --test-type smoke
 ```
@@ -68,15 +80,17 @@ Use the built-in `fixuid` for seamless file permission handling:
 ```sh
     docker run --rm --network=host --volume="./CI/:/tests/CI/" \
      us-docker.pkg.dev/grafanalabs-dev/docker-grafana-bench-playwright/grafana-bench-playwright:dev-latest test \
+      --service grafana \
+      --service-url http://localhost:3000 \
+      --service-version 11.0.0 \
       --log-level debug \
       --pw-prepare "yarn install; yarn playwright install" \
       --pw-execute "yarn playwright test --grep-invert @performance" \
-      --report-format log \
-      --run-trigger grafana-bench-ci \
+      --report-output log \
+      --run-stage grafana-bench-ci \
       --suite-path ./CI/playwright \
       --suite-revision main \
       --suite-name grafana-bench-dev/ci/playwright \
-      --test-report-format text \
       --test-runner playwright \
       --test-type smoke
 ```
@@ -89,15 +103,17 @@ Use explicit user mapping to avoid permission issues on large runners:
     docker run --rm --network=host --volume="./CI/:/tests/CI/" \
      --user "$(id -u):$(id -g)" --env "HOME=/tmp" \
      localhost:5000/grafana-bench-test-playwright-dev:latest test \
+      --service grafana \
+      --service-url http://localhost:3000 \
+      --service-version 11.0.0 \
       --log-level debug \
       --pw-prepare "yarn install; yarn playwright install" \
       --pw-execute "yarn playwright test --grep-invert @performance" \
-      --report-format log \
-      --run-trigger grafana-bench-ci \
+      --report-output log \
+      --run-stage grafana-bench-ci \
       --suite-path ./CI/playwright \
       --suite-revision ${{ github.sha }} \
       --suite-name grafana-bench-dev/ci/playwright \
-      --test-report-format text \
       --test-runner playwright \
       --test-type smoke
 ```
