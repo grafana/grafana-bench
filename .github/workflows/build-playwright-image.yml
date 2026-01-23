@@ -78,9 +78,9 @@ jobs:
               --pw-execute "yarn playwright test --grep-invert @performance" \
               --report-format log \
               --run-stage grafana-bench-ci \
-              --test-suite-path ./CI/playwright \
-              --test-suite-revision ${{ github.sha }}\
-              --test-suite-name grafana-bench-dev/ci/playwright \
+              --suite-path ./CI/playwright \
+              --suite-revision ${{ github.sha }}\
+              --suite-name grafana-bench-dev/ci/playwright \
               --test-executor playwright \
               --test-type smoke
 
@@ -108,10 +108,10 @@ jobs:
             --pw-execute "yarn playwright test" \
             --report-format log \
             --run-stage grafana-bench-ci \
-            --test-suite-path ./CI/playwright \
-            --test-suite-revision ${{ github.sha }}\
-            --test-suite-name grafana-bench/ci/playwright \
-            --test-suite-repo-url https://github.com/grafana/grafana-bench.git \
+            --suite-path ./CI/playwright \
+            --suite-revision ${{ github.sha }}\
+            --suite-name grafana-bench/ci/playwright \
+            --suite-repo-url https://github.com/grafana/grafana-bench.git \
             --test-executor playwright \
             --test-type smoke
 
