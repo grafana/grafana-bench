@@ -55,13 +55,11 @@ func AddBenchFlags(fs *pflag.FlagSet, config *BenchConfig) {
 }
 
 type ServiceConfig struct {
-	Version       string
-	Url           string
-	AdminUser     string // Deprecated: kept for backward compatibility, will be removed
-	AdminPassword string // Deprecated: kept for backward compatibility, will be removed
-	Timeout       time.Duration
-	FetchVersion  string // Optional credentials for fetching Grafana version (user:password format)
-	HealthCheck   bool   // Whether to perform health check before running tests
+	Version      string
+	Url          string
+	Timeout      time.Duration
+	FetchVersion string // Optional credentials for fetching Grafana version (user:password format)
+	HealthCheck  bool   // Whether to perform health check before running tests
 }
 
 func AddServiceFlags(fs *pflag.FlagSet, config *ServiceConfig) {
@@ -119,18 +117,6 @@ func AddServiceFlags(fs *pflag.FlagSet, config *ServiceConfig) {
 		"grafana-version",
 		"",
 		"deprecated. Use --service-version",
-	)
-	fs.StringVar(
-		&config.AdminUser,
-		"grafana-admin-user",
-		"admin",
-		"deprecated. Use --fetch-grafana-version for Grafana version fetching, or pass credentials directly to tests via environment variables",
-	)
-	fs.StringVar(
-		&config.AdminPassword,
-		"grafana-admin-password",
-		"admin",
-		"deprecated. Use --fetch-grafana-version for Grafana version fetching, or pass credentials directly to tests via environment variables",
 	)
 }
 
@@ -377,10 +363,12 @@ func AddReportInputFlags(fs *pflag.FlagSet, config *ReportConfig) {
 }
 
 type TestConfig struct {
-	Verbose  bool
-	Type     string
-	Executor string
-	Env      map[string]string
+	Verbose    bool
+	Type       string
+	Executor   string
+	Env        map[string]string // Parsed env vars (for backward compat with config files)
+	EnvRaw     []string          // Raw --test-env flags for passthrough support
+	EnvVarsRaw []string          // Deprecated: raw --test-env-vars flags
 }
 
 func AddTestFlags(fs *pflag.FlagSet, test *TestConfig) {
@@ -397,11 +385,12 @@ func AddTestEnvFlags(fs *pflag.FlagSet, test *TestConfig) {
 		nil,
 		"deprecated. Use test-env",
 	)
-	fs.StringToStringVar(
-		&test.Env,
+	fs.StringSliceVar(
+		&test.EnvRaw,
 		"test-env",
 		nil,
-		"environment variables passed to the test execution.",
+		"environment variables passed to the test execution. "+
+			"Use 'KEY=VALUE' to set explicitly, or 'KEY' to pass through from environment (secure for credentials).",
 	)
 }
 
@@ -935,32 +924,6 @@ func (config *BenchConfig) BuildReporter() (reporter.SuiteRunReporter, error) {
 	return reporter.NewChainReporter(reporters...), nil
 }
 
-func (config *BenchConfig) GetGrafanaInstance(log *slog.Logger) (grafana.GrafanaInstance, string, error) {
-	grafanaInstance, err := grafana.NewInstance(
-		config.Grafana.Url,
-		config.Grafana.AdminUser,
-		config.Grafana.AdminPassword,
-		grafana.WithTimeout(config.Grafana.Timeout),
-	)
-	if err != nil {
-		return nil, "", err
-	}
-
-	log.Info("Waiting for grafana server...", "address", grafanaInstance.Url())
-
-	err = grafanaInstance.WaitForLiveGrafana(context.TODO())
-	if err != nil {
-		return nil, "", fmt.Errorf("checking Grafana is Live... %w", err)
-	}
-	log.Debug("Grafana server is ready!")
-
-	grafanaVersion, err := grafanaInstance.GetGrafanaBuildVersion()
-	if err != nil {
-		return nil, "", fmt.Errorf("getting grafana version %w", err)
-	}
-
-	return grafanaInstance, grafanaVersion, nil
-}
 
 func (config *BenchConfig) GetRunMetrics(log *slog.Logger) ([]metrics.Metric, error) {
 	metricList := []metrics.Metric{}

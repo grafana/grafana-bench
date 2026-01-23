@@ -283,14 +283,26 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 
 			// set common test execution variables
 			testEnvVars := map[string]string{
-				"TEST_TYPE":              benchConfig.Test.Type,
-				"TEST_SUITE_REVISION":    suite.Revision,
-				"GRAFANA_URL":            benchConfig.Grafana.Url,
-				"GRAFANA_ADMIN_USER":     benchConfig.Grafana.AdminUser,
-				"GRAFANA_ADMIN_PASSWORD": benchConfig.Grafana.AdminPassword,
+				"TEST_TYPE":           benchConfig.Test.Type,
+				"TEST_SUITE_REVISION": suite.Revision,
+				"GRAFANA_URL":         benchConfig.Grafana.Url,
 			}
 
-			// add test specific environment variables
+			// Parse --test-env flags (supports both KEY=VALUE and KEY formats)
+			for _, env := range benchConfig.Test.EnvRaw {
+				if strings.Contains(env, "=") {
+					// Explicit KEY=VALUE - split and expand any $VAR references
+					parts := strings.SplitN(env, "=", 2)
+					testEnvVars[parts[0]] = os.ExpandEnv(parts[1])
+				} else {
+					// Just KEY - passthrough from environment (secure for credentials)
+					if envVal := os.Getenv(env); envVal != "" {
+						testEnvVars[env] = envVal
+					}
+				}
+			}
+
+			// Add legacy --test-env-vars (deprecated, uses map format)
 			for k, v := range benchConfig.Test.Env {
 				testEnvVars[k] = os.ExpandEnv(v)
 			}

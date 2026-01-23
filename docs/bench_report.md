@@ -94,8 +94,6 @@ grafana:
                                           Mutually exclusive with --service-version. Overridden by FETCH_GRAFANA_VERSION environment variable.
                                           Example: --fetch-grafana-version=admin:admin
       --format string                     deprecated. Use report-output
-      --grafana-admin-password string     deprecated. Use --fetch-grafana-version for Grafana version fetching, or pass credentials directly to tests via environment variables (default "admin")
-      --grafana-admin-user string         deprecated. Use --fetch-grafana-version for Grafana version fetching, or pass credentials directly to tests via environment variables (default "admin")
       --grafana-timeout duration          deprecated. Use --service-timeout (default 1m0s)
       --grafana-url string                deprecated. Use --service-url (default "http://localhost:3000")
       --grafana-version string            deprecated. Use --service-version

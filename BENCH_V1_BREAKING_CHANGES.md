@@ -147,10 +147,48 @@ grafana-bench test \
 - `--grafana-version` → `--service-version` (now **REQUIRED**)
 - `--grafana-timeout` → `--service-timeout`
 - `--grafana-admin-user` and `--grafana-admin-password` → **REMOVED**
-  - Only needed for `--fetch-grafana-version`
-  - Test credentials passed via environment variables (unchanged)
+  - Credentials for `--fetch-grafana-version` now passed inline (e.g., `--fetch-grafana-version=admin:admin`)
+  - Test credentials now passed via `--test-env` or environment variables
 - **Version auto-detection removed** - must specify explicitly or use `--fetch-grafana-version`
 - **New:** `--service-health-check` flag to perform TCP health check before running tests
+
+**Passing credentials to tests:**
+
+Credentials for tests (NOT for bench itself) should now be passed via `--test-env`.
+
+**NEW in v1.0.0**: `--test-env` now supports two formats:
+- **`--test-env KEY=VALUE`** - Set explicit value (visible in process list)
+- **`--test-env KEY`** - Pass through from environment (SECURE for credentials)
+
+```bash
+# RECOMMENDED: Secure passthrough (credentials not visible in process list)
+export GRAFANA_ADMIN_USER=admin
+export GRAFANA_ADMIN_PASSWORD=secret
+grafana-bench test \
+  --service grafana \
+  --service-url http://localhost:3000 \
+  --service-version 11.0.0 \
+  --test-env GRAFANA_ADMIN_USER \
+  --test-env GRAFANA_ADMIN_PASSWORD
+
+# Alternative: Explicit values (NOT secure - visible in process list)
+grafana-bench test \
+  --service grafana \
+  --service-url http://localhost:3000 \
+  --service-version 11.0.0 \
+  --test-env GRAFANA_ADMIN_USER=admin \
+  --test-env GRAFANA_ADMIN_PASSWORD=secret
+
+# In CI/CD: Use environment passthrough (secure)
+export GRAFANA_ADMIN_USER=${{ secrets.GRAFANA_USER }}
+export GRAFANA_ADMIN_PASSWORD=${{ secrets.GRAFANA_PASSWORD }}
+grafana-bench test \
+  --service grafana \
+  --service-url http://localhost:3000 \
+  --service-version 11.0.0 \
+  --test-env GRAFANA_ADMIN_USER \
+  --test-env GRAFANA_ADMIN_PASSWORD
+```
 
 **For non-Grafana services:**
 ```bash
@@ -417,14 +455,18 @@ return executor.SuiteRun{
 - [x] `cmd/report/report.go` - Updated AddGrafanaFlags → AddServiceFlags
 - [x] `pkg/config/config_flag_compatibility_test.go` - Updated GrafanaConfig → ServiceConfig
 - [x] `pkg/config/config.go` - Added `--service-url`, `--service-timeout`, `--service-version` flags
-- [x] `pkg/config/config.go` - Deprecated old `--grafana-*` flags (kept for backward compatibility)
+- [x] `pkg/config/config.go` - Kept deprecated `--grafana-url`, `--grafana-version`, `--grafana-timeout` (backward compat)
+- [x] `pkg/config/config.go` - **REMOVED** `--grafana-admin-user` and `--grafana-admin-password` flags entirely
+- [x] `pkg/config/config.go` - **REMOVED** AdminUser and AdminPassword from ServiceConfig struct
+- [x] `pkg/config/config.go` - **REMOVED** unused GetGrafanaInstance() function
 - [x] `pkg/config/config.go` - Added `--fetch-grafana-version` flag with user:password parsing
 - [x] `pkg/config/config.go` - Updated BuildSuiteRun to parse FetchVersion and fetch from API if needed
 - [x] `pkg/config/config.go` - Removed auto version detection (version now required)
 - [x] `pkg/config/config.go` - Added `--service-health-check` flag and health check logic in BuildSuiteRun
+- [x] `cmd/test/command.go` - Updated to get credentials from environment/--test-env instead of config flags
+- [x] `cmd/test/command.go` - Added health check before running tests (when flag enabled)
 - [x] `pkg/service/healthcheck.go` - NEW: Generic service health check implementation
 - [x] `pkg/service/healthcheck_test.go` - NEW: Health check tests
-- [x] `cmd/test/command.go` - Added health check before running tests (when flag enabled)
 - [x] `generators/libsonnet/main.go` - Updated isRequiredStringFlag to use service-url
 - [x] `generators/libsonnet/main_test.go` - Updated all tests for new flag names
 

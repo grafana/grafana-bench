@@ -233,8 +233,6 @@ bench test  \
       --go-test-args stringArray          arguments to be passed to the test using the arg flag (e.g '-args -slow 1')
       --go-test-packages stringArray      patterns for selecting packages for testing. Can be repeated to specify multiple packages.
                                           If no pattern is specified only tests under the current working directory are executed.
-      --grafana-admin-password string     deprecated. Use --fetch-grafana-version for Grafana version fetching, or pass credentials directly to tests via environment variables (default "admin")
-      --grafana-admin-user string         deprecated. Use --fetch-grafana-version for Grafana version fetching, or pass credentials directly to tests via environment variables (default "admin")
       --grafana-timeout duration          deprecated. Use --service-timeout (default 1m0s)
       --grafana-url string                deprecated. Use --service-url (default "http://localhost:3000")
       --grafana-version string            deprecated. Use --service-version
@@ -302,7 +300,7 @@ bench test  \
       --suite-revision string             test suite revision. If not set SUITE_REVISION environment variable is used
       --suite-run-metrics strings         deprecated use --run-metrics
       --suite-run-metrics-prefix string   deprecated. Use --run-metrics-prefix
-      --test-env stringToString           environment variables passed to the test execution. (default [])
+      --test-env strings                  environment variables passed to the test execution. Use 'KEY=VALUE' to set explicitly, or 'KEY' to pass through from environment (secure for credentials).
       --test-env-vars stringToString      deprecated. Use test-env (default [])
       --test-report-format string         deprecated. Use report-output
       --test-runner string                test runner. Allowed values: 'k6', 'playwright', 'go' (default "k6")
