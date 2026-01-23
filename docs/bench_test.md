@@ -223,6 +223,9 @@ bench test  \
                                           If not set, the current git revision is used (default (devel)  (default "(devel)")
       --codeowners-mapping string         deprecated. Use slack-codeowners-mapping (default "codeowners-mapping.yaml")
       --dashboard string                  deprecated. Use run-dashboard
+      --fetch-grafana-version string      Optional: Fetch Grafana version from API using provided credentials in 'user:password' format.
+                                          Mutually exclusive with --service-version. Overridden by FETCH_GRAFANA_VERSION environment variable.
+                                          Example: --fetch-grafana-version=admin:admin
       --format string                     deprecated. Use report-output
       --git-driver string                 git driver used for downloading the test suite repo ('nanogit', 'gogit'). (default "nanogit")
       --go-args stringArray               arguments to be passed to go test command (e.g '-tag slow -race')
@@ -230,12 +233,11 @@ bench test  \
       --go-test-args stringArray          arguments to be passed to the test using the arg flag (e.g '-args -slow 1')
       --go-test-packages stringArray      patterns for selecting packages for testing. Can be repeated to specify multiple packages.
                                           If no pattern is specified only tests under the current working directory are executed.
-      --grafana-admin-password string     grafana admin user's password. Overridden by the GRAFANA_ADMIN_PASSWORD environment variable (default "admin")
-      --grafana-admin-user string         grafana admin user name. Overridden by the GRAFANA_ADMIN_USER environment variable (default "admin")
-      --grafana-timeout duration          timeout for waiting grafana to be live (default 1m0s)
-      --grafana-url string                url to grafana instance. Overridden by the GRAFANA_URL environment variable (default http://localhost:3000) (default "http://localhost:3000")
-      --grafana-version string            grafana version. If not provided GRAFANA_VERSION env var is used.
-                                          If not set, the version is retrieved from the grafana instance.
+      --grafana-admin-password string     deprecated. Use --fetch-grafana-version for Grafana version fetching, or pass credentials directly to tests via environment variables (default "admin")
+      --grafana-admin-user string         deprecated. Use --fetch-grafana-version for Grafana version fetching, or pass credentials directly to tests via environment variables (default "admin")
+      --grafana-timeout duration          deprecated. Use --service-timeout (default 1m0s)
+      --grafana-url string                deprecated. Use --service-url (default "http://localhost:3000")
+      --grafana-version string            deprecated. Use --service-version
   -h, --help                              help for test
       --k6-cloud-output                   send output to GCK6. Requires setting the GCK6 project ID and access token.
       --k6-cloud-project string           K6 cloud project ID. If not set K6_CLOUD_PROJECT_ID environment variable is used
@@ -270,6 +272,11 @@ bench test  \
       --run-metrics-prefix string         prefix to append to the suite run metric names
       --run-stage string                  the stage of CI the suite was executed. For example, 'local', 'ci', 'rrc'. (default "local")
       --run-trigger string                deprecated. Use run-stage. trigger of bench execution. For example, 'ci' or 'local'. (default "local")
+      --service string                    REQUIRED. Name of the service being tested (e.g., 'grafana', 'loki', 'tempo', 'datasources'). Used for identifying which service the test results belong to in logs and metrics.
+      --service-health-check              Perform a TCP health check on the service before running tests. Uses --service-url and --service-timeout.
+      --service-timeout duration          timeout for waiting for the service to be live (default 1m0s)
+      --service-url string                URL to the service being tested. Overridden by the SERVICE_URL environment variable (default http://localhost:3000) (default "http://localhost:3000")
+      --service-version string            REQUIRED. Version of the service being tested (e.g., '11.0.0', '2.9.0'). Overridden by the SERVICE_VERSION environment variable.
       --slack-codeowners-mapping string   path or url to the codeowner to slack channel id mapping.
                                           Relative to test suite base dir. (default "codeowners-mapping.yaml")
       --slack-notifications               send notifications to slack. Requires setting the --slack-token option or the SLACK_TOKEN environment variable.

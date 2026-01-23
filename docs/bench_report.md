@@ -90,13 +90,15 @@ grafana:
       --bench-revision string             grafana bench revision. If not set BENCH_REVISION environment variable is used.
                                           If not set, the current git revision is used (default (devel)  (default "(devel)")
       --dashboard string                  deprecated. Use run-dashboard
+      --fetch-grafana-version string      Optional: Fetch Grafana version from API using provided credentials in 'user:password' format.
+                                          Mutually exclusive with --service-version. Overridden by FETCH_GRAFANA_VERSION environment variable.
+                                          Example: --fetch-grafana-version=admin:admin
       --format string                     deprecated. Use report-output
-      --grafana-admin-password string     grafana admin user's password. Overridden by the GRAFANA_ADMIN_PASSWORD environment variable (default "admin")
-      --grafana-admin-user string         grafana admin user name. Overridden by the GRAFANA_ADMIN_USER environment variable (default "admin")
-      --grafana-timeout duration          timeout for waiting grafana to be live (default 1m0s)
-      --grafana-url string                url to grafana instance. Overridden by the GRAFANA_URL environment variable (default http://localhost:3000) (default "http://localhost:3000")
-      --grafana-version string            grafana version. If not provided GRAFANA_VERSION env var is used.
-                                          If not set, the version is retrieved from the grafana instance.
+      --grafana-admin-password string     deprecated. Use --fetch-grafana-version for Grafana version fetching, or pass credentials directly to tests via environment variables (default "admin")
+      --grafana-admin-user string         deprecated. Use --fetch-grafana-version for Grafana version fetching, or pass credentials directly to tests via environment variables (default "admin")
+      --grafana-timeout duration          deprecated. Use --service-timeout (default 1m0s)
+      --grafana-url string                deprecated. Use --service-url (default "http://localhost:3000")
+      --grafana-version string            deprecated. Use --service-version
   -h, --help                              help for report
       --prometheus-metrics                send test suite run results to a prometheus remote write endpoint.
       --prometheus-password string        prometheus remote write password. If not set PROMETHEUS_PASSWORD environment variable is used.
@@ -122,6 +124,11 @@ grafana:
       --run-metrics-prefix string         prefix to append to the suite run metric names
       --run-stage string                  the stage of CI the suite was executed. For example, 'local', 'ci', 'rrc'. (default "local")
       --run-trigger string                deprecated. Use run-stage. trigger of bench execution. For example, 'ci' or 'local'. (default "local")
+      --service string                    REQUIRED. Name of the service being tested (e.g., 'grafana', 'loki', 'tempo', 'datasources'). Used for identifying which service the test results belong to in logs and metrics.
+      --service-health-check              Perform a TCP health check on the service before running tests. Uses --service-url and --service-timeout.
+      --service-timeout duration          timeout for waiting for the service to be live (default 1m0s)
+      --service-url string                URL to the service being tested. Overridden by the SERVICE_URL environment variable (default http://localhost:3000) (default "http://localhost:3000")
+      --service-version string            REQUIRED. Version of the service being tested (e.g., '11.0.0', '2.9.0'). Overridden by the SERVICE_VERSION environment variable.
       --suite-name string                 test suite name. If not specified, SUITE_NAME environment variable is used.
                                           Defaults to the last component of -suite-path.
                                           For example --suite--path path/to/testsuite will give a test suite name of 'testsuite'.
