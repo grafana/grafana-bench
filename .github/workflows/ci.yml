@@ -131,13 +131,13 @@ jobs:
             --service-url http://localhost:3000 \
             --service-version 12.3.1 \
             --test-type smoke \
-            --suite-path CI/k6 \
+            --test-suite-path CI/k6 \
             --log-level info \
-            --suite-revision ${{ github.sha }} \
+            --test-suite-revision ${{ github.sha }} \
             --report-output log \
-            --suite-name grafana-bench/ci \
-            --suite-repo-url https://github.com/grafana/grafana-bench.git \
-            --suite-base /tmp/grafana-bench \
+            --test-suite-name grafana-bench/ci \
+            --test-suite-repo-url https://github.com/grafana/grafana-bench.git \
+            --test-suite-base /tmp/grafana-bench \
             --run-stage grafana-bench-ci \
             --slack-notifications
 
@@ -249,9 +249,9 @@ jobs:
         run: |
           mkdir -p /tmp/checkout-test-current
           grafana-bench checkout \
-            --suite-repo-url https://github.com/grafana/grafana-bench.git \
-            --suite-base /tmp/checkout-test-current \
-            --suite-revision ${{ github.sha }}
+            --test-suite-repo-url https://github.com/grafana/grafana-bench.git \
+            --test-suite-base /tmp/checkout-test-current \
+            --test-suite-revision ${{ github.sha }}
 
           # Verify checkout was successful
           [ -f /tmp/checkout-test-current/bench.go ] || { echo "Failed to checkout current repo"; exit 1; }
@@ -262,9 +262,9 @@ jobs:
           TEST_SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           grafana-bench checkout \
-            --suite-repo-url https://github.com/grafana/grafana-bench.git \
-            --suite-base /tmp/checkout-test-commit \
-            --suite-revision a5f38ee99875d3b18d5ee83ce683cc70b1c0e0a8
+            --test-suite-repo-url https://github.com/grafana/grafana-bench.git \
+            --test-suite-base /tmp/checkout-test-commit \
+            --test-suite-revision a5f38ee99875d3b18d5ee83ce683cc70b1c0e0a8
 
           # Verify checkout was successful
           [ -f /tmp/checkout-test-commit/bench.go ] || { echo "Failed to checkout specific commit"; exit 1; }
@@ -286,9 +286,9 @@ jobs:
           TEST_SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           grafana-bench checkout \
-            --suite-repo-url https://github.com/grafana/grafana-bench.git \
-            --suite-base /tmp/checkout-test-release \
-            --suite-revision v0.6.0
+            --test-suite-repo-url https://github.com/grafana/grafana-bench.git \
+            --test-suite-base /tmp/checkout-test-release \
+            --test-suite-revision v0.6.0
 
           # Verify checkout was successful
           [ -f /tmp/checkout-test-release/bench.go ] || { echo "Failed to checkout release"; exit 1; }
@@ -310,10 +310,10 @@ jobs:
           TEST_SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           grafana-bench checkout \
-            --suite-repo-url https://github.com/grafana/grafana-bench.git \
-            --suite-base /tmp/checkout-test-folder \
-            --suite-revision ${{ github.sha }} \
-            --suite-repo-dirs CI/k6
+            --test-suite-repo-url https://github.com/grafana/grafana-bench.git \
+            --test-suite-base /tmp/checkout-test-folder \
+            --test-suite-revision ${{ github.sha }} \
+            --test-suite-repo-dirs CI/k6
 
           # Verify checkout was successful and contains the specific folder
           [ -f /tmp/checkout-test-folder/CI/k6/api_test.ts ] || { echo "Failed to checkout specific folder"; exit 1; }
