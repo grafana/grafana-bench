@@ -91,37 +91,19 @@ func TestRunStageInLogOutput(t *testing.T) {
 	}
 }
 
-// TestFlagCompatibility validates that both --run-trigger and --run-stage set RunStage
+// TestFlagCompatibility validates that --run-stage sets RunStage
 func TestFlagCompatibility(t *testing.T) {
 	tests := []struct {
-		name         string
-		flagName     string
-		flagValue    string
+		name             string
+		flagName         string
+		flagValue        string
 		expectedRunStage string
 	}{
 		{
-			name:         "run-trigger flag sets RunStage",
-			flagName:     "run-trigger",
-			flagValue:    "ci-trigger-test",
-			expectedRunStage: "ci-trigger-test",
-		},
-		{
-			name:         "run-stage flag sets RunStage",
-			flagName:     "run-stage",
-			flagValue:    "ci-stage-test",
+			name:             "run-stage flag sets RunStage",
+			flagName:         "run-stage",
+			flagValue:        "ci-stage-test",
 			expectedRunStage: "ci-stage-test",
-		},
-		{
-			name:         "test-trigger flag sets RunStage (deprecated)",
-			flagName:     "test-trigger",
-			flagValue:    "deprecated-trigger",
-			expectedRunStage: "deprecated-trigger",
-		},
-		{
-			name:         "trigger flag sets RunStage (deprecated)",
-			flagName:     "trigger",
-			flagValue:    "deprecated-basic",
-			expectedRunStage: "deprecated-basic",
 		},
 	}
 
@@ -145,31 +127,6 @@ func TestFlagCompatibility(t *testing.T) {
 				t.Errorf("RunStage = %q, want %q", config.RunStage, tt.expectedRunStage)
 			}
 		})
-	}
-}
-
-// TestBothFlagsSetLastWins tests that when both flags are set, last one wins
-func TestBothFlagsSetLastWins(t *testing.T) {
-	config := &SuiteRunConfig{}
-	fs := pflag.NewFlagSet("test", pflag.ContinueOnError)
-	
-	AddSuiteRunFlags(fs, config)
-
-	// Set run-trigger first
-	err := fs.Set("run-trigger", "first-value")
-	if err != nil {
-		t.Fatalf("Failed to set run-trigger: %v", err)
-	}
-
-	// Set run-stage second (should override)
-	err = fs.Set("run-stage", "second-value")
-	if err != nil {
-		t.Fatalf("Failed to set run-stage: %v", err)
-	}
-
-	// Verify the last value wins
-	if config.RunStage != "second-value" {
-		t.Errorf("RunStage = %q, want 'second-value' (last flag should win)", config.RunStage)
 	}
 }
 

@@ -99,25 +99,6 @@ func AddServiceFlags(fs *pflag.FlagSet, config *ServiceConfig) {
 			"\nExample: --fetch-grafana-version=admin:admin",
 	)
 
-	// Deprecated flags - kept for backward compatibility
-	fs.StringVar(
-		&config.Url,
-		"grafana-url",
-		"http://localhost:3000",
-		"deprecated. Use --service-url",
-	)
-	fs.DurationVar(
-		&config.Timeout,
-		"grafana-timeout",
-		grafana.DefaultGrafanaTimeout,
-		"deprecated. Use --service-timeout",
-	)
-	fs.StringVar(
-		&config.Version,
-		"grafana-version",
-		"",
-		"deprecated. Use --service-version",
-	)
 }
 
 type K6Config struct {
@@ -132,12 +113,6 @@ func AddK6Flags(fs *pflag.FlagSet, config *K6Config) {
 		"k6-cloud-token",
 		"",
 		"K6 cloud access token. If not set K6_CLOUD_TOKEN environment variable is used",
-	)
-	fs.StringVar(
-		&config.CloudProjectId,
-		"k6-cloud-project-id",
-		"",
-		"deprecated. Use k6-cloud-project",
 	)
 	fs.StringVar(
 		&config.CloudProjectId,
@@ -161,22 +136,10 @@ type PWConfig struct {
 func AddPlaywrightFlags(fs *pflag.FlagSet, config *PWConfig) {
 	fs.StringVar(
 		&config.PrepareCmd,
-		"pw-prepare-cmd",
-		"",
-		"deprecated. Use pw-prepare",
-	)
-	fs.StringVar(
-		&config.PrepareCmd,
 		"pw-prepare",
 		"",
 		"commands used to install dependencies for the test suite eg: \"npm install\"."+
 			"\nMultiple commands can be specified by separating with ';'.",
-	)
-	fs.StringVar(
-		&config.ExecuteCmd,
-		"pw-execute-cmd",
-		"",
-		"deprecated. Use pw-execute",
 	)
 	fs.StringVar(
 		&config.ExecuteCmd,
@@ -241,12 +204,6 @@ func AddSuiteRunFlags(fs *pflag.FlagSet, config *SuiteRunConfig) {
 	)
 	fs.StringVar(
 		&config.DashboardURL,
-		"dashboard",
-		"",
-		"deprecated. Use run-dashboard",
-	)
-	fs.StringVar(
-		&config.DashboardURL,
 		"run-dashboard",
 		"",
 		"Template for the suite run dashboard URL."+
@@ -256,45 +213,15 @@ func AddSuiteRunFlags(fs *pflag.FlagSet, config *SuiteRunConfig) {
 	)
 	fs.StringVar(
 		&config.RunStage,
-		"test-trigger",
-		"local",
-		"deprecated. Use run-stage",
-	)
-	fs.StringVar(
-		&config.RunStage,
-		"trigger",
-		"local",
-		"deprecated. Use run-stage",
-	)
-	fs.StringVar(
-		&config.RunStage,
-		"run-trigger",
-		"local",
-		"deprecated. Use run-stage. trigger of bench execution. For example, 'ci' or 'local'.",
-	)
-	fs.StringVar(
-		&config.RunStage,
 		"run-stage",
 		"local",
 		"the stage of CI the suite was executed. For example, 'local', 'ci', 'rrc'.",
-	)
-	fs.StringSliceVar(
-		&config.Metrics,
-		"suite-run-metrics",
-		nil,
-		"deprecated use --run-metrics",
 	)
 	fs.StringArrayVar(
 		&config.Metrics,
 		"run-metric",
 		nil,
 		"test suite run custom metrics. Format: name{label=label-value,..}=value. The value must be a valid float number.",
-	)
-	fs.StringVar(
-		&config.MetricsPrefix,
-		"suite-run-metrics-prefix",
-		"",
-		"deprecated. Use --run-metrics-prefix",
 	)
 	fs.StringVar(
 		&config.MetricsPrefix,
@@ -326,24 +253,6 @@ type ReportConfig struct {
 }
 
 func AddReportOutputFlags(fs *pflag.FlagSet, report *ReportConfig) {
-	fs.StringVar(
-		&report.Output,
-		"format",
-		"",
-		"deprecated. Use report-output",
-	)
-	fs.StringVar(
-		&report.Output,
-		"test-report-format",
-		"",
-		"deprecated. Use report-output",
-	)
-	fs.StringVar(
-		&report.Output,
-		"report-format",
-		"text",
-		"deprecated. Use report-output",
-	)
 	fs.StringVar(
 		&report.Output,
 		"report-output",
@@ -379,12 +288,6 @@ func AddTestFlags(fs *pflag.FlagSet, test *TestConfig) {
 }
 
 func AddTestEnvFlags(fs *pflag.FlagSet, test *TestConfig) {
-	fs.StringToStringVar(
-		&test.Env,
-		"test-env-vars",
-		nil,
-		"deprecated. Use test-env",
-	)
 	fs.StringSliceVar(
 		&test.EnvRaw,
 		"test-env",
@@ -419,12 +322,6 @@ func AddTestVeboseFlag(fs *pflag.FlagSet, test *TestConfig) {
 		false,
 		"show test output",
 	)
-	fs.BoolVar(
-		&test.Verbose,
-		"verbose",
-		false,
-		"deprecated. Use verbose",
-	)
 }
 
 type TestSuiteConfig struct {
@@ -448,12 +345,6 @@ func AddTestSuiteFlags(fs *pflag.FlagSet, config *TestSuiteConfig) {
 func AddSuiteNameFlag(fs *pflag.FlagSet, config *TestSuiteConfig) {
 	fs.StringVar(
 		&config.Name,
-		"test-suite-name",
-		"",
-		"deprecated. Use suite-name",
-	)
-	fs.StringVar(
-		&config.Name,
 		"suite-name",
 		"",
 		"test suite name. If not specified, SUITE_NAME environment variable is used."+
@@ -465,22 +356,11 @@ func AddSuiteNameFlag(fs *pflag.FlagSet, config *TestSuiteConfig) {
 func AddSuitePathFlags(fs *pflag.FlagSet, config *TestSuiteConfig) {
 	fs.StringVar(
 		&config.BaseDir,
-		"test-suite-base",
-		"",
-		"deprecated. Use suite-base",
-	)
-	fs.StringVar(
-		&config.BaseDir,
 		"suite-base",
 		".",
 		"base directory for searching test suites. Defaults to current directory"+
 			"\nIf specified, it is prefixed to the --suite-path.",
 	)
-	fs.StringVar(
-		&config.Path,
-		"test-suite",
-		"",
-		"deprecated. Use suite-path")
 	fs.StringVar(
 		&config.Path,
 		"suite-path",
@@ -495,24 +375,12 @@ func AddSuitePathFlags(fs *pflag.FlagSet, config *TestSuiteConfig) {
 func AddSuiteRepoFlags(fs *pflag.FlagSet, config *TestSuiteConfig) {
 	fs.StringVar(
 		&config.Repo,
-		"test-suite-repo",
-		"",
-		"deprecated. Use suite-repo-url",
-	)
-	fs.StringVar(
-		&config.Repo,
 		"suite-repo-url",
 		"",
 		"url to the repository to get the test suite from. If not set SUITE_REPO_URL environment variable is used."+
 			"\nIf specified, the repo will be checkout into the --suite-base directory."+
 			"\nIf --suite-revision is specified, that revision will be checkout."+
 			"\nOtherwise the default branch will be checkout",
-	)
-	fs.StringVar(
-		&config.RepoToken,
-		"test-suite-repo-token",
-		"",
-		"deprecated. Use suite-repo-token",
 	)
 	fs.StringVar(
 		&config.RepoToken,
@@ -523,12 +391,6 @@ func AddSuiteRepoFlags(fs *pflag.FlagSet, config *TestSuiteConfig) {
 	)
 	fs.StringSliceVar(
 		&config.RepoDirs,
-		"test-suite-repo-dirs",
-		nil,
-		"deprecated. Use suite-repo-dirs",
-	)
-	fs.StringSliceVar(
-		&config.RepoDirs,
 		"suite-repo-dirs",
 		nil,
 		"Directories to checkout from test suite repo. If omitted, all folders will be checkout",
@@ -536,12 +398,6 @@ func AddSuiteRepoFlags(fs *pflag.FlagSet, config *TestSuiteConfig) {
 }
 
 func AddSuiteRevisionFlag(fs *pflag.FlagSet, config *TestSuiteConfig) {
-	fs.StringVar(
-		&config.Revision,
-		"test-suite-revision",
-		"",
-		"deprecated. Use suite-revision",
-	)
 	fs.StringVar(
 		&config.Revision,
 		"suite-revision",
@@ -576,12 +432,6 @@ func AddSlackNotificationsFlag(fs *pflag.FlagSet, config *SlackNotifierConfig) {
 func AddSlackNotifyPassingFlag(fs *pflag.FlagSet, config *SlackNotifierConfig) {
 	fs.BoolVar(
 		&config.NotifyPassing,
-		"notify-passing",
-		false,
-		"deprecated. Use slack-notify-passing",
-	)
-	fs.BoolVar(
-		&config.NotifyPassing,
 		"slack-passing",
 		false,
 		"send notifications for passing test suites. By default only not passing test suites are notified",
@@ -598,11 +448,6 @@ func AddSlackToken(fs *pflag.FlagSet, config *SlackNotifierConfig) {
 	)
 }
 func AddSlackCodeownersMapFlag(fs *pflag.FlagSet, config *SlackNotifierConfig) {
-	fs.StringVar(
-		&config.CodeownersMap,
-		"codeowners-mapping",
-		"codeowners-mapping.yaml",
-		"deprecated. Use slack-codeowners-mapping")
 	fs.StringVar(
 		&config.CodeownersMap,
 		"slack-codeowners-mapping",

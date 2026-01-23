@@ -26,7 +26,6 @@ Validate slack configuration
 
 ```
       --check-slack-permissions           validate slack notifier permissions based on the current codeowner-mapping file
-      --codeowners-mapping string         deprecated. Use slack-codeowners-mapping (default "codeowners-mapping.yaml")
   -h, --help                              help for validate
       --slack-codeowners-mapping string   path or url to the codeowner to slack channel id mapping.
                                           Relative to test suite base dir. (default "codeowners-mapping.yaml")
