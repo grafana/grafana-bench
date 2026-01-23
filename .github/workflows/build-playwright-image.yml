@@ -79,7 +79,7 @@ jobs:
               --report-format log \
               --run-stage grafana-bench-ci \
               --suite-path ./CI/playwright \
-              --suite-revision ${{ github.sha }}\
+              --suite-revision ${{ github.event.pull_request.head.sha || github.sha }}\
               --suite-name grafana-bench-dev/ci/playwright \
               --test-executor playwright \
               --test-type smoke
@@ -109,7 +109,7 @@ jobs:
             --report-format log \
             --run-stage grafana-bench-ci \
             --suite-path ./CI/playwright \
-            --suite-revision ${{ github.sha }}\
+            --suite-revision ${{ github.event.pull_request.head.sha || github.sha }}\
             --suite-name grafana-bench/ci/playwright \
             --suite-repo-url https://github.com/grafana/grafana-bench.git \
             --test-executor playwright \
