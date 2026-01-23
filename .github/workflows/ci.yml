@@ -136,8 +136,6 @@ jobs:
             --suite-revision ${{ github.sha }} \
             --report-output log \
             --suite-name grafana-bench/ci \
-            --suite-repo-url https://github.com/grafana/grafana-bench.git \
-            --suite-base /tmp/grafana-bench \
             --run-stage grafana-bench-ci \
             --slack-notifications
 
