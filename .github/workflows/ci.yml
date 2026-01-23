@@ -124,7 +124,7 @@ jobs:
 
       - name: Test Slack Notifications
         env:
-          TEST_SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           grafana-bench test \
             --service grafana \
@@ -203,7 +203,7 @@ jobs:
 
       - name: --slack-notifier-permissions should pass
         env:
-          TEST_SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           grafana-bench validate --check-slack-permissions
 
@@ -243,7 +243,7 @@ jobs:
 
       - name: Test checkout current repository
         env:
-          TEST_SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p /tmp/checkout-test-current
           grafana-bench checkout \
@@ -257,7 +257,7 @@ jobs:
 
       - name: Test checkout specific commit
         env:
-          TEST_SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           grafana-bench checkout \
             --suite-repo-url https://github.com/grafana/grafana-bench.git \
@@ -281,7 +281,7 @@ jobs:
 
       - name: Test checkout release tag
         env:
-          TEST_SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           grafana-bench checkout \
             --suite-repo-url https://github.com/grafana/grafana-bench.git \
@@ -305,7 +305,7 @@ jobs:
 
       - name: Test checkout specific folder
         env:
-          TEST_SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           grafana-bench checkout \
             --suite-repo-url https://github.com/grafana/grafana-bench.git \
@@ -385,7 +385,7 @@ jobs:
       id-token: write
     uses: ./.github/workflows/build-base-image.yml
     secrets:
-      TEST_SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-playwright-image:
     needs: [check-docs-up-to-date, test-go, test-libsonnet, test-binary, test-validate, test-checkout, test-setup-action]
