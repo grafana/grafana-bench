@@ -133,7 +133,7 @@ jobs:
             --test-type smoke \
             --suite-path CI/k6 \
             --log-level info \
-            --suite-revision ${{ github.sha }} \
+            --suite-revision ${{ github.event.pull_request.head.sha || github.sha }} \
             --report-output log \
             --suite-name grafana-bench/ci \
             --run-stage grafana-bench-ci \
@@ -249,7 +249,7 @@ jobs:
           grafana-bench checkout \
             --suite-repo-url https://github.com/grafana/grafana-bench.git \
             --suite-base /tmp/checkout-test-current \
-            --suite-revision ${{ github.sha }}
+            --suite-revision ${{ github.event.pull_request.head.sha || github.sha }}
 
           # Verify checkout was successful
           [ -f /tmp/checkout-test-current/bench.go ] || { echo "Failed to checkout current repo"; exit 1; }
@@ -310,7 +310,7 @@ jobs:
           grafana-bench checkout \
             --suite-repo-url https://github.com/grafana/grafana-bench.git \
             --suite-base /tmp/checkout-test-folder \
-            --suite-revision ${{ github.sha }} \
+            --suite-revision ${{ github.event.pull_request.head.sha || github.sha }} \
             --suite-repo-dirs CI/k6
 
           # Verify checkout was successful and contains the specific folder
