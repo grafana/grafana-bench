@@ -5,9 +5,11 @@ import (
 	"log/slog"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/grafana/grafana-bench/pkg/config"
 	"github.com/grafana/grafana-bench/pkg/executor"
+	"github.com/grafana/grafana-bench/pkg/service"
 	"github.com/spf13/cobra"
 )
 
@@ -246,6 +248,24 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			suiteRun, err := benchConfig.BuildSuiteRun(log)
 			if err != nil {
 				return err
+			}
+
+			// Perform health check if requested
+			if benchConfig.Grafana.HealthCheck {
+				if benchConfig.Grafana.Url == "" {
+					return fmt.Errorf("--service-url is required when using --service-health-check")
+				}
+
+				log.Info("performing service health check...", "url", benchConfig.Grafana.Url, "timeout", benchConfig.Grafana.Timeout)
+				healthCheckOpts := service.HealthCheckOptions{
+					Timeout: benchConfig.Grafana.Timeout,
+					Backoff: 1 * time.Second,
+				}
+				err := service.WaitForServiceLive(cmd.Context(), benchConfig.Grafana.Url, healthCheckOpts)
+				if err != nil {
+					return fmt.Errorf("service health check failed: %w", err)
+				}
+				log.Info("service is ready")
 			}
 
 			testExecutor, err := benchConfig.BuildTestExecutor(

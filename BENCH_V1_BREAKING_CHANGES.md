@@ -51,8 +51,11 @@ This document tracks all breaking changes being made for the v1.0.0 release. We'
 - **Version Auto-Detection:** Removed - users must specify version explicitly or use `--fetch-grafana-version`
 
 - **Health Check:**
+  - New `--service-health-check` flag to enable health check before running tests
   - Generic TCP-based health check using `--service-url` and `--service-timeout`
   - No auth required (matches Kubernetes health check patterns)
+  - Automatically performed before `--fetch-grafana-version` API call
+  - Health check logic extracted to `pkg/service/healthcheck.go` (service-agnostic)
 
 - **Why:**
   - Makes bench truly service-agnostic
@@ -130,6 +133,13 @@ grafana-bench test \
   --service grafana \
   --service-url http://localhost:3000 \
   --service-timeout 60s
+
+# Option 4: With health check before running tests
+grafana-bench test \
+  --service grafana \
+  --service-url http://localhost:3000 \
+  --service-version 11.0.0 \
+  --service-health-check
 ```
 
 **Key changes:**
@@ -140,6 +150,7 @@ grafana-bench test \
   - Only needed for `--fetch-grafana-version`
   - Test credentials passed via environment variables (unchanged)
 - **Version auto-detection removed** - must specify explicitly or use `--fetch-grafana-version`
+- **New:** `--service-health-check` flag to perform TCP health check before running tests
 
 **For non-Grafana services:**
 ```bash
@@ -410,6 +421,10 @@ return executor.SuiteRun{
 - [x] `pkg/config/config.go` - Added `--fetch-grafana-version` flag with user:password parsing
 - [x] `pkg/config/config.go` - Updated BuildSuiteRun to parse FetchVersion and fetch from API if needed
 - [x] `pkg/config/config.go` - Removed auto version detection (version now required)
+- [x] `pkg/config/config.go` - Added `--service-health-check` flag and health check logic in BuildSuiteRun
+- [x] `pkg/service/healthcheck.go` - NEW: Generic service health check implementation
+- [x] `pkg/service/healthcheck_test.go` - NEW: Health check tests
+- [x] `cmd/test/command.go` - Added health check before running tests (when flag enabled)
 - [x] `generators/libsonnet/main.go` - Updated isRequiredStringFlag to use service-url
 - [x] `generators/libsonnet/main_test.go` - Updated all tests for new flag names
 

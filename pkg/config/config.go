@@ -22,6 +22,7 @@ import (
 	"github.com/grafana/grafana-bench/pkg/notifier"
 	"github.com/grafana/grafana-bench/pkg/reporter"
 	"github.com/grafana/grafana-bench/pkg/revision"
+	"github.com/grafana/grafana-bench/pkg/service"
 	"github.com/grafana/grafana-bench/pkg/utils/id"
 	"github.com/spf13/pflag"
 )
@@ -60,6 +61,7 @@ type ServiceConfig struct {
 	AdminPassword string // Deprecated: kept for backward compatibility, will be removed
 	Timeout       time.Duration
 	FetchVersion  string // Optional credentials for fetching Grafana version (user:password format)
+	HealthCheck   bool   // Whether to perform health check before running tests
 }
 
 func AddServiceFlags(fs *pflag.FlagSet, config *ServiceConfig) {
@@ -81,6 +83,12 @@ func AddServiceFlags(fs *pflag.FlagSet, config *ServiceConfig) {
 		"service-version",
 		"",
 		"REQUIRED. Version of the service being tested (e.g., '11.0.0', '2.9.0'). Overridden by the SERVICE_VERSION environment variable.",
+	)
+	fs.BoolVar(
+		&config.HealthCheck,
+		"service-health-check",
+		false,
+		"Perform a TCP health check on the service before running tests. Uses --service-url and --service-timeout.",
 	)
 
 	// Grafana-specific convenience flag for fetching version
@@ -797,6 +805,18 @@ func (benchConfig *BenchConfig) BuildSuiteRun(log *slog.Logger) (executor.SuiteR
 		if benchConfig.Grafana.Url == "" {
 			return executor.SuiteRun{}, fmt.Errorf("--service-url is required when using --fetch-grafana-version")
 		}
+
+		// Wait for service to be live before attempting to fetch version
+		log.Info("waiting for service to be ready...", "url", benchConfig.Grafana.Url, "timeout", benchConfig.Grafana.Timeout)
+		healthCheckOpts := service.HealthCheckOptions{
+			Timeout: benchConfig.Grafana.Timeout,
+			Backoff: 1 * time.Second,
+		}
+		err := service.WaitForServiceLive(context.TODO(), benchConfig.Grafana.Url, healthCheckOpts)
+		if err != nil {
+			return executor.SuiteRun{}, fmt.Errorf("service health check failed: %w", err)
+		}
+		log.Info("service is ready")
 
 		grafanaInstance, err := grafana.NewInstance(
 			benchConfig.Grafana.Url,
