@@ -308,7 +308,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	config.AddTestFlags(fs, &benchConfig.Test)
 	config.AddTestSuiteFlags(fs, &benchConfig.TestSuite)
 	config.AddSuiteRunFlags(fs, &benchConfig.SuiteRun)
-	config.AddGrafanaFlags(fs, &benchConfig.Grafana)
+	config.AddServiceFlags(fs, &benchConfig.Grafana)
 	config.AddK6Flags(fs, &benchConfig.K6)
 	config.AddPlaywrightFlags(fs, &benchConfig.Playwright)
 	config.AddGoExecutorFlags(fs, &benchConfig.Go)

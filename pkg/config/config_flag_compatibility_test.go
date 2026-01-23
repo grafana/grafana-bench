@@ -207,7 +207,7 @@ func TestRunStageIntegrationWithBuildSuiteRun(t *testing.T) {
 				Test: TestConfig{
 					Type: "smoke",
 				},
-				Grafana: GrafanaConfig{
+				Grafana: ServiceConfig{
 					Version: "11.0.0",
 				},
 			}

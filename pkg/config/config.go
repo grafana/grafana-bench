@@ -34,7 +34,7 @@ type BenchConfig struct {
 	Test       TestConfig
 	Report     ReportConfig
 	SuiteRun   SuiteRunConfig
-	Grafana    GrafanaConfig
+	Grafana    ServiceConfig
 	Go         GoTestConfig
 	K6         K6Config
 	Playwright PWConfig
@@ -53,15 +53,16 @@ func AddBenchFlags(fs *pflag.FlagSet, config *BenchConfig) {
 	)
 }
 
-type GrafanaConfig struct {
+type ServiceConfig struct {
 	Version       string
 	Url           string
 	AdminUser     string
 	AdminPassword string
 	Timeout       time.Duration
+	FetchVersion  string // Credentials for fetching version (user:password format)
 }
 
-func AddGrafanaFlags(fs *pflag.FlagSet, config *GrafanaConfig) {
+func AddServiceFlags(fs *pflag.FlagSet, config *ServiceConfig) {
 	fs.StringVar(
 		&config.Url,
 		"grafana-url",
