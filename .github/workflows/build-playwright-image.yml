@@ -71,15 +71,17 @@ jobs:
              --env "HOME=/tmp" \
              localhost:5000/grafana-bench-test-playwright-dev:latest test \
               --log-level debug \
+              --service grafana \
+              --service-url http://localhost:3000 \
+              --service-version 12.3.1 \
               --pw-prepare "yarn install; yarn playwright install" \
               --pw-execute "yarn playwright test --grep-invert @performance" \
               --report-format log \
-              --run-trigger grafana-bench-ci \
-              --suite-path ./CI/playwright \
-              --suite-revision ${{ github.sha }}\
-              --suite-name grafana-bench-dev/ci/playwright \
-              --test-report-format text \
-              --test-runner playwright \
+              --run-stage grafana-bench-ci \
+              --test-suite-path ./CI/playwright \
+              --test-suite-revision ${{ github.sha }}\
+              --test-suite-name grafana-bench-dev/ci/playwright \
+              --test-executor playwright \
               --test-type smoke
 
       - name: build prod container
@@ -99,16 +101,18 @@ jobs:
           docker run --rm -e TEST_SUITE_REPO_TOKEN --network=host \
             localhost:5000/grafana-bench-test-playwright:latest test \
             --log-level debug \
+            --service grafana \
+            --service-url http://localhost:3000 \
+            --service-version 12.3.1 \
             --pw-prepare "yarn install; yarn playwright install" \
             --pw-execute "yarn playwright test" \
             --report-format log \
-            --run-trigger grafana-bench-ci \
-            --suite-path ./CI/playwright \
-            --suite-revision ${{ github.sha }}\
-            --suite-name grafana-bench/ci/playwright \
-            --suite-repo-url https://github.com/grafana/grafana-bench.git \
-            --test-report-format text \
-            --test-runner playwright \
+            --run-stage grafana-bench-ci \
+            --test-suite-path ./CI/playwright \
+            --test-suite-revision ${{ github.sha }}\
+            --test-suite-name grafana-bench/ci/playwright \
+            --test-suite-repo-url https://github.com/grafana/grafana-bench.git \
+            --test-executor playwright \
             --test-type smoke
 
   publish-dev-playwright:
