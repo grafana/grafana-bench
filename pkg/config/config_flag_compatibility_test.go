@@ -156,7 +156,6 @@ func TestRunStageIntegrationWithBuildSuiteRun(t *testing.T) {
 			config := &BenchConfig{
 				SuiteRun: SuiteRunConfig{
 					RunStage: tt.runStage,
-					Service:  "grafana",
 				},
 				TestSuite: TestSuiteConfig{
 					Name: "test-suite",
@@ -165,6 +164,7 @@ func TestRunStageIntegrationWithBuildSuiteRun(t *testing.T) {
 					Type: "smoke",
 				},
 				Service: ServiceConfig{
+					Name:    "grafana",
 					Version: "11.0.0",
 				},
 			}

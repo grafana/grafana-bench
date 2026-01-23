@@ -55,6 +55,7 @@ func AddBenchFlags(fs *pflag.FlagSet, config *BenchConfig) {
 }
 
 type ServiceConfig struct {
+	Name         string
 	Version      string
 	Url          string
 	Timeout      time.Duration
@@ -63,6 +64,14 @@ type ServiceConfig struct {
 }
 
 func AddServiceFlags(fs *pflag.FlagSet, config *ServiceConfig) {
+	// Service identifier
+	fs.StringVar(
+		&config.Name,
+		"service",
+		"",
+		"REQUIRED. Name of the service being tested (e.g., 'grafana', 'loki', 'tempo', 'datasources'). Used for identifying which service the test results belong to in logs and metrics.",
+	)
+
 	// Generic service flags
 	fs.StringVar(
 		&config.Url,
@@ -187,7 +196,6 @@ func AddGoExecutorFlags(fs *pflag.FlagSet, config *GoTestConfig) {
 type SuiteRunConfig struct {
 	RunStage      string
 	Id            string
-	Service       string
 	DashboardURL  string
 	Metrics       []string
 	MetricsPrefix string
@@ -196,12 +204,6 @@ type SuiteRunConfig struct {
 }
 
 func AddSuiteRunFlags(fs *pflag.FlagSet, config *SuiteRunConfig) {
-	fs.StringVar(
-		&config.Service,
-		"service",
-		"",
-		"REQUIRED. Name of the service being tested (e.g., 'grafana', 'loki', 'tempo', 'datasources'). Used for identifying which service the test results belong to in logs and metrics.",
-	)
 	fs.StringVar(
 		&config.DashboardURL,
 		"run-dashboard",
@@ -611,7 +613,7 @@ func (benchConfig *BenchConfig) BuildSuiteRun(log *slog.Logger) (executor.SuiteR
 	}
 
 	// Validate required service field
-	if benchConfig.SuiteRun.Service == "" {
+	if benchConfig.Service.Name == "" {
 		return executor.SuiteRun{}, fmt.Errorf("--service is required: specify the name of the service being tested (e.g., 'grafana', 'loki', 'tempo')")
 	}
 
@@ -692,7 +694,7 @@ func (benchConfig *BenchConfig) BuildSuiteRun(log *slog.Logger) (executor.SuiteR
 	return executor.SuiteRun{
 		Id:             runId,
 		RunStage:       benchConfig.SuiteRun.RunStage,
-		Service:        benchConfig.SuiteRun.Service,
+		Service:        benchConfig.Service.Name,
 		TestExecutor:   benchConfig.Report.Input,
 		Attributes:     attributes,
 		BenchRevision:  benchConfig.Revision,
@@ -711,7 +713,7 @@ func (config *BenchConfig) BuildReporter() (reporter.SuiteRunReporter, error) {
 
 	// Set tool=bench to identify that bench is running the tests
 	// Add service attribute to identify what service is being tested
-	logAttrs := []any{"tool", "bench", "service", config.SuiteRun.Service}
+	logAttrs := []any{"tool", "bench", "service", config.Service.Name}
 	switch config.Report.Output {
 	case "json":
 		suiteReporter, _ = reporter.NewLogReporter(reporter.JSONLog, logAttrs)

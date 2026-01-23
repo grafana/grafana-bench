@@ -1,6 +1,5 @@
 suiteRun:
   runStage: "ci"
-  service: "grafana"
 
 test:
   type: "smoke"
@@ -11,6 +10,7 @@ testSuite:
   path: "/tests/CI/k6"
 
 service:
+  name: "grafana"
   url: "http://localhost:3000"
   version: "12.3.1"
 
