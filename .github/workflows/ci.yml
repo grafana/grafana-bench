@@ -127,16 +127,18 @@ jobs:
           TEST_SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           grafana-bench test \
+            --service grafana \
+            --service-url http://localhost:3000 \
+            --service-version 12.3.1 \
             --test-type smoke \
-            --grafana-url http://localhost:3000 \
-            --test-suite CI/k6 \
+            --suite-path CI/k6 \
             --log-level info \
-            --test-suite-revision ${{ github.sha }} \
-            --test-report-format log \
-            --test-suite-name grafana-bench/ci \
-            --test-suite-repo https://github.com/grafana/grafana-bench.git \
-            --test-suite-base /tmp/grafana-bench \
-            --test-trigger grafana-bench-ci \
+            --suite-revision ${{ github.sha }} \
+            --report-output log \
+            --suite-name grafana-bench/ci \
+            --suite-repo-url https://github.com/grafana/grafana-bench.git \
+            --suite-base /tmp/grafana-bench \
+            --run-stage grafana-bench-ci \
             --slack-notifications
 
   test-libsonnet:
