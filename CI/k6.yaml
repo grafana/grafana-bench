@@ -10,7 +10,7 @@ testSuite:
   name: "CI"
   path: "/tests/CI/k6"
 
-grafana:
+service:
   url: "http://localhost:3000"
   version: "12.3.1"
 

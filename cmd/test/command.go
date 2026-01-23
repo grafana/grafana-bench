@@ -251,17 +251,17 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			}
 
 			// Perform health check if requested
-			if benchConfig.Grafana.HealthCheck {
-				if benchConfig.Grafana.Url == "" {
+			if benchConfig.Service.HealthCheck {
+				if benchConfig.Service.Url == "" {
 					return fmt.Errorf("--service-url is required when using --service-health-check")
 				}
 
-				log.Info("performing service health check...", "url", benchConfig.Grafana.Url, "timeout", benchConfig.Grafana.Timeout)
+				log.Info("performing service health check...", "url", benchConfig.Service.Url, "timeout", benchConfig.Service.Timeout)
 				healthCheckOpts := service.HealthCheckOptions{
-					Timeout: benchConfig.Grafana.Timeout,
+					Timeout: benchConfig.Service.Timeout,
 					Backoff: 1 * time.Second,
 				}
-				err := service.WaitForServiceLive(cmd.Context(), benchConfig.Grafana.Url, healthCheckOpts)
+				err := service.WaitForServiceLive(cmd.Context(), benchConfig.Service.Url, healthCheckOpts)
 				if err != nil {
 					return fmt.Errorf("service health check failed: %w", err)
 				}
@@ -285,7 +285,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			testEnvVars := map[string]string{
 				"TEST_TYPE":           benchConfig.Test.Type,
 				"TEST_SUITE_REVISION": suite.Revision,
-				"GRAFANA_URL":         benchConfig.Grafana.Url,
+				"GRAFANA_URL":         benchConfig.Service.Url,
 			}
 
 			// Parse --test-env flags (supports both KEY=VALUE and KEY formats)
@@ -340,7 +340,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	config.AddTestFlags(fs, &benchConfig.Test)
 	config.AddTestSuiteFlags(fs, &benchConfig.TestSuite)
 	config.AddSuiteRunFlags(fs, &benchConfig.SuiteRun)
-	config.AddServiceFlags(fs, &benchConfig.Grafana)
+	config.AddServiceFlags(fs, &benchConfig.Service)
 	config.AddK6Flags(fs, &benchConfig.K6)
 	config.AddPlaywrightFlags(fs, &benchConfig.Playwright)
 	config.AddGoExecutorFlags(fs, &benchConfig.Go)

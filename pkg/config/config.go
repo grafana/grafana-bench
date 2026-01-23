@@ -35,7 +35,7 @@ type BenchConfig struct {
 	Test       TestConfig
 	Report     ReportConfig
 	SuiteRun   SuiteRunConfig
-	Grafana    ServiceConfig
+	Service    ServiceConfig
 	Go         GoTestConfig
 	K6         K6Config
 	Playwright PWConfig
@@ -605,9 +605,9 @@ func (config *BenchConfig) BuildTestSuite(log *slog.Logger) (*executor.TestSuite
 
 func (benchConfig *BenchConfig) BuildSuiteRun(log *slog.Logger) (executor.SuiteRun, error) {
 	grafanaSlug := ""
-	if benchConfig.Grafana.Url != "" {
+	if benchConfig.Service.Url != "" {
 		// in case of error, slug it will be empty
-		grafanaSlug, _ = grafana.Slug(benchConfig.Grafana.Url)
+		grafanaSlug, _ = grafana.Slug(benchConfig.Service.Url)
 	}
 
 	// Validate required service field
@@ -616,17 +616,17 @@ func (benchConfig *BenchConfig) BuildSuiteRun(log *slog.Logger) (executor.SuiteR
 	}
 
 	// Handle service version - either explicit or fetched from Grafana API
-	serviceVersion := benchConfig.Grafana.Version
+	serviceVersion := benchConfig.Service.Version
 
 	// Check for mutually exclusive version options
-	if serviceVersion != "" && benchConfig.Grafana.FetchVersion != "" {
+	if serviceVersion != "" && benchConfig.Service.FetchVersion != "" {
 		return executor.SuiteRun{}, fmt.Errorf("--service-version and --fetch-grafana-version are mutually exclusive: use only one")
 	}
 
 	// Fetch version from Grafana API if requested
-	if benchConfig.Grafana.FetchVersion != "" {
+	if benchConfig.Service.FetchVersion != "" {
 		// Parse user:password format
-		parts := strings.SplitN(benchConfig.Grafana.FetchVersion, ":", 2)
+		parts := strings.SplitN(benchConfig.Service.FetchVersion, ":", 2)
 		if len(parts) != 2 {
 			return executor.SuiteRun{}, fmt.Errorf("--fetch-grafana-version must be in 'user:password' format (e.g., 'admin:admin')")
 		}
@@ -636,24 +636,24 @@ func (benchConfig *BenchConfig) BuildSuiteRun(log *slog.Logger) (executor.SuiteR
 			return executor.SuiteRun{}, fmt.Errorf("--fetch-grafana-version: both username and password are required")
 		}
 
-		if benchConfig.Grafana.Url == "" {
+		if benchConfig.Service.Url == "" {
 			return executor.SuiteRun{}, fmt.Errorf("--service-url is required when using --fetch-grafana-version")
 		}
 
 		// Wait for service to be live before attempting to fetch version
-		log.Info("waiting for service to be ready...", "url", benchConfig.Grafana.Url, "timeout", benchConfig.Grafana.Timeout)
+		log.Info("waiting for service to be ready...", "url", benchConfig.Service.Url, "timeout", benchConfig.Service.Timeout)
 		healthCheckOpts := service.HealthCheckOptions{
-			Timeout: benchConfig.Grafana.Timeout,
+			Timeout: benchConfig.Service.Timeout,
 			Backoff: 1 * time.Second,
 		}
-		err := service.WaitForServiceLive(context.TODO(), benchConfig.Grafana.Url, healthCheckOpts)
+		err := service.WaitForServiceLive(context.TODO(), benchConfig.Service.Url, healthCheckOpts)
 		if err != nil {
 			return executor.SuiteRun{}, fmt.Errorf("service health check failed: %w", err)
 		}
 		log.Info("service is ready")
 
 		grafanaInstance, err := grafana.NewInstance(
-			benchConfig.Grafana.Url,
+			benchConfig.Service.Url,
 			username,
 			password,
 		)
@@ -696,7 +696,7 @@ func (benchConfig *BenchConfig) BuildSuiteRun(log *slog.Logger) (executor.SuiteR
 		TestExecutor:   benchConfig.Report.Input,
 		Attributes:     attributes,
 		BenchRevision:  benchConfig.Revision,
-		GrafanaURL:     benchConfig.Grafana.Url,
+		GrafanaURL:     benchConfig.Service.Url,
 		GrafanaSlug:    grafanaSlug,
 		GrafanaVersion: serviceVersion,
 	}, nil
