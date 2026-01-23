@@ -1,18 +1,18 @@
-trigger: "ci"
+suiteRun:
+  runStage: "ci"
 
 test:
   type: "smoke"
-  runner: "k6"
+  executor: "k6"
 
-suite:
+testSuite:
   name: "CI"
-  base: "/tests/CI/k6"
+  path: "/tests/CI/k6"
 
-grafana:
+service:
+  name: "grafana"
   url: "http://localhost:3000"
-  admin:
-    user: "admin"
-    password: "admin"
+  version: "12.3.1"
 
 log:
   level: DEBUG

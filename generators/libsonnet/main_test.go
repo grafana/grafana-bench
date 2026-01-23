@@ -25,7 +25,7 @@ func TestExtractFlags(t *testing.T) {
 	
 	// Should have common flags
 	expectedFlags := map[string]bool{
-		"grafana-url":      true,
+		"service-url":      true, // Renamed from grafana-url in v1.0.0
 		"suite-path":       true,
 		"test-type":        true,
 		"test-runner":      true,
@@ -84,8 +84,8 @@ func TestShouldSkipFlag(t *testing.T) {
 		},
 		{
 			name:     "keep normal flag",
-			flagName: "grafana-url",
-			usage:    "url to grafana instance",
+			flagName: "service-url",
+			usage:    "url to service instance",
 			expected: false,
 		},
 	}
@@ -109,7 +109,7 @@ func TestToCamelCase(t *testing.T) {
 		{"single", "single"},
 		{"two-words", "twoWords"},
 		{"three-word-test", "threeWordTest"},
-		{"grafana-url", "grafanaUrl"},
+		{"service-url", "serviceUrl"},
 		{"test-runner", "testRunner"},
 		{"slack-notifications", "slackNotifications"},
 		{"prometheus-metrics", "prometheusMetrics"},
@@ -160,13 +160,13 @@ func TestGetLibsonnetDefaultValue(t *testing.T) {
 			expected: "''", // Returns empty string (zero value) to avoid generating CLI flag
 		},
 		{
-			name: "required string (grafana-url)",
+			name: "required string (service-url)",
 			flag: FlagInfo{
-				Name:         "grafana-url",
+				Name:         "service-url",
 				Type:         "string",
 				DefaultValue: "",
 			},
-			expected: "error 'must define grafana url'",
+			expected: "error 'must define service url'",
 		},
 		{
 			name: "required string (suite-path)", 
@@ -249,7 +249,7 @@ func TestIsRequiredStringFlag(t *testing.T) {
 		flagName string
 		expected bool
 	}{
-		{"grafana-url", true},
+		{"service-url", true}, // Renamed from grafana-url in v1.0.0
 		{"suite-path", true},
 		{"test-type", false},
 		{"test-runner", false},
@@ -286,12 +286,12 @@ func TestGenerateLibsonnetOption(t *testing.T) {
 		{
 			name: "required string flag",
 			flag: FlagInfo{
-				Name:         "grafana-url",
-				Type:         "string", 
+				Name:         "service-url",
+				Type:         "string",
 				DefaultValue: "",
-				Usage:        "url to grafana instance",
+				Usage:        "url to service instance",
 			},
-			expected: "// --grafana-url: url to grafana instance\n      grafanaUrl: error 'must define grafana url'",
+			expected: "// --service-url: url to service instance\n      serviceUrl: error 'must define service url'",
 		},
 		{
 			name: "string with default",
@@ -378,11 +378,11 @@ func TestGenerateScriptFlag(t *testing.T) {
 		{
 			name: "required string flag returns empty",
 			flag: FlagInfo{
-				Name: "grafana-url", 
+				Name: "service-url",
 				Type: "string",
 			},
 			contains: []string{}, // Required flags return empty string from generateOptionalScriptFlag
-			notContains: []string{"--grafana-url", "grafanaURL", "(if", "else [])"},
+			notContains: []string{"--service-url", "serviceURL", "(if", "else [])"},
 		},
 		{
 			name: "optional string flag",

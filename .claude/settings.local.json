@@ -24,7 +24,11 @@
       "Bash(bd dep add:*)",
       "Bash(bd list:*)",
       "Bash(bd graph:*)",
-      "Bash(bd show:*)"
+      "Bash(bd show:*)",
+      "Bash(git rebase:*)",
+      "Bash(git stash:*)",
+      "Bash(git grep:*)",
+      "Bash(go build:*)"
     ],
     "deny": []
   }

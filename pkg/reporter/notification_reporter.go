@@ -89,7 +89,7 @@ func (r *notificationReporter) Report(
 
 	errs := []error{}
 	for recipient, testRuns := range recipients {
-		err := r.notifier.Notify(ctx, recipient, suiteRun.Name, testRuns)
+		err := r.notifier.Notify(ctx, recipient, suiteRunSummary.SuiteName, testRuns)
 		// it's ok not to have a notifications mapping for a codeowner
 		if err != nil && !errors.Is(err, notifier.ErrNoMappingForCodeowner) {
 			errs = append(errs, fmt.Errorf("recipient %q %w", recipient, err))

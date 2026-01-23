@@ -63,7 +63,7 @@ jobs:
 
       - name: mount and run playwright test suite in dev container (FIXUID)
         env:
-          TEST_SUITE_REPO_TOKEN: ${{ github.token }}
+          SUITE_REPO_TOKEN: ${{ github.token }}
         run: |
           # Run as host user to avoid volume mount permission issues on large runners
           docker run --rm --network=host --volume="./CI/:/tests/CI/" \
@@ -71,14 +71,16 @@ jobs:
              --env "HOME=/tmp" \
              localhost:5000/grafana-bench-test-playwright-dev:latest test \
               --log-level debug \
+              --service grafana \
+              --service-url http://localhost:3000 \
+              --service-version 12.3.1 \
               --pw-prepare "yarn install; yarn playwright install" \
               --pw-execute "yarn playwright test --grep-invert @performance" \
-              --report-format log \
-              --run-trigger grafana-bench-ci \
+              --report-output log \
+              --run-stage grafana-bench-ci \
               --suite-path ./CI/playwright \
-              --suite-revision ${{ github.sha }}\
+              --suite-revision ${{ github.event.pull_request.head.sha || github.sha }}\
               --suite-name grafana-bench-dev/ci/playwright \
-              --test-report-format text \
               --test-runner playwright \
               --test-type smoke
 
@@ -94,20 +96,22 @@ jobs:
 
       - name: checkout and run playwright test suite
         env:
-          TEST_SUITE_REPO_TOKEN: ${{ github.token }}
+          SUITE_REPO_TOKEN: ${{ github.token }}
         run: |
-          docker run --rm -e TEST_SUITE_REPO_TOKEN --network=host \
+          docker run --rm -e SUITE_REPO_TOKEN --network=host \
             localhost:5000/grafana-bench-test-playwright:latest test \
             --log-level debug \
+            --service grafana \
+            --service-url http://localhost:3000 \
+            --service-version 12.3.1 \
             --pw-prepare "yarn install; yarn playwright install" \
             --pw-execute "yarn playwright test" \
-            --report-format log \
-            --run-trigger grafana-bench-ci \
+            --report-output log \
+            --run-stage grafana-bench-ci \
             --suite-path ./CI/playwright \
-            --suite-revision ${{ github.sha }}\
+            --suite-revision ${{ github.event.pull_request.head.sha || github.sha }}\
             --suite-name grafana-bench/ci/playwright \
             --suite-repo-url https://github.com/grafana/grafana-bench.git \
-            --test-report-format text \
             --test-runner playwright \
             --test-type smoke
 

@@ -94,6 +94,12 @@ func NewGitServer(ctx context.Context, config GitServerConfig) (*GitServer, erro
 	if err != nil {
 		return nil, fmt.Errorf("creating user %w", err)
 	}
+
+	// Add delay after user creation to ensure auth is ready
+	if os.Getenv("CI") == "true" {
+		time.Sleep(2 * time.Second)
+	}
+
 	//create repo
 	err = createGiteaRepo(ctx, container, config.User, config.Password, config.RepoName)
 	if err != nil {
@@ -141,20 +147,51 @@ func createGiteaRepo(ctx context.Context, container testcontainers.Container, us
 	}
 	createRepoURL := fmt.Sprintf("http://%s:%s/api/v1/user/repos", host, port.Port())
 	jsonData := []byte(fmt.Sprintf(`{"name":"%s"}`, repoName))
-	reqCreate, err := http.NewRequestWithContext(context.Background(), "POST", createRepoURL, bytes.NewBuffer(jsonData))
-	if err != nil {
-		return fmt.Errorf("creating gitea request %w", err)
+
+	// Retry with exponential backoff to handle transient auth issues
+	maxRetries := 5
+	backoff := 1 * time.Second
+	var lastErr error
+
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		if attempt > 0 {
+			time.Sleep(backoff)
+			backoff *= 2
+		}
+
+		reqCreate, err := http.NewRequestWithContext(context.Background(), "POST", createRepoURL, bytes.NewBuffer(jsonData))
+		if err != nil {
+			return fmt.Errorf("creating gitea request %w", err)
+		}
+		reqCreate.Header.Set("Content-Type", "application/json")
+		reqCreate.SetBasicAuth(user, password)
+
+		resp, err := http.DefaultClient.Do(reqCreate)
+		if err != nil {
+			lastErr = fmt.Errorf("performing gitea request %w", err)
+			continue
+		}
+
+		if resp.StatusCode == http.StatusCreated {
+			return nil
+		}
+
+		// Read response body for better error messages
+		body, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+
+		lastErr = fmt.Errorf("creating repo status code %s (attempt %d/%d): %s", resp.Status, attempt+1, maxRetries, string(body))
+
+		// If we get 401 Unauthorized, the user might not be fully ready - retry
+		if resp.StatusCode == http.StatusUnauthorized {
+			continue
+		}
+
+		// For other errors, fail immediately
+		return lastErr
 	}
-	reqCreate.Header.Set("Content-Type", "application/json")
-	reqCreate.SetBasicAuth(user, password)
-	resp, err := http.DefaultClient.Do(reqCreate)
-	if err != nil {
-		return fmt.Errorf("performing gitea request %w", err)
-	}
-	if resp.StatusCode != http.StatusCreated {
-		return fmt.Errorf("creating repo status code %s", resp.Status)
-	}
-	return nil
+
+	return fmt.Errorf("failed after %d attempts: %w", maxRetries, lastErr)
 }
 
 func generateToken(ctx context.Context, container testcontainers.Container, user string) (string, error) {

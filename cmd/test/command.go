@@ -5,9 +5,11 @@ import (
 	"log/slog"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/grafana/grafana-bench/pkg/config"
 	"github.com/grafana/grafana-bench/pkg/executor"
+	"github.com/grafana/grafana-bench/pkg/service"
 	"github.com/spf13/cobra"
 )
 
@@ -248,6 +250,24 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				return err
 			}
 
+			// Perform health check if requested
+			if benchConfig.Service.HealthCheck {
+				if benchConfig.Service.Url == "" {
+					return fmt.Errorf("--service-url is required when using --service-health-check")
+				}
+
+				log.Info("performing service health check...", "url", benchConfig.Service.Url, "timeout", benchConfig.Service.Timeout)
+				healthCheckOpts := service.HealthCheckOptions{
+					Timeout: benchConfig.Service.Timeout,
+					Backoff: 1 * time.Second,
+				}
+				err := service.WaitForServiceLive(cmd.Context(), benchConfig.Service.Url, healthCheckOpts)
+				if err != nil {
+					return fmt.Errorf("service health check failed: %w", err)
+				}
+				log.Info("service is ready")
+			}
+
 			testExecutor, err := benchConfig.BuildTestExecutor(
 				log,
 				benchConfig.Test.Executor,
@@ -263,14 +283,26 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 
 			// set common test execution variables
 			testEnvVars := map[string]string{
-				"TEST_TYPE":              benchConfig.Test.Type,
-				"TEST_SUITE_REVISION":    suite.Revision,
-				"GRAFANA_URL":            benchConfig.Grafana.Url,
-				"GRAFANA_ADMIN_USER":     benchConfig.Grafana.AdminUser,
-				"GRAFANA_ADMIN_PASSWORD": benchConfig.Grafana.AdminPassword,
+				"TEST_TYPE":           benchConfig.Test.Type,
+				"TEST_SUITE_REVISION": suite.Revision,
+				"GRAFANA_URL":         benchConfig.Service.Url,
 			}
 
-			// add test specific environment variables
+			// Parse --test-env flags (supports both KEY=VALUE and KEY formats)
+			for _, env := range benchConfig.Test.EnvRaw {
+				if strings.Contains(env, "=") {
+					// Explicit KEY=VALUE - split and expand any $VAR references
+					parts := strings.SplitN(env, "=", 2)
+					testEnvVars[parts[0]] = os.ExpandEnv(parts[1])
+				} else {
+					// Just KEY - passthrough from environment (secure for credentials)
+					if envVal := os.Getenv(env); envVal != "" {
+						testEnvVars[env] = envVal
+					}
+				}
+			}
+
+			// Add legacy --test-env-vars (deprecated, uses map format)
 			for k, v := range benchConfig.Test.Env {
 				testEnvVars[k] = os.ExpandEnv(v)
 			}
@@ -308,7 +340,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	config.AddTestFlags(fs, &benchConfig.Test)
 	config.AddTestSuiteFlags(fs, &benchConfig.TestSuite)
 	config.AddSuiteRunFlags(fs, &benchConfig.SuiteRun)
-	config.AddGrafanaFlags(fs, &benchConfig.Grafana)
+	config.AddServiceFlags(fs, &benchConfig.Service)
 	config.AddK6Flags(fs, &benchConfig.K6)
 	config.AddPlaywrightFlags(fs, &benchConfig.Playwright)
 	config.AddGoExecutorFlags(fs, &benchConfig.Go)

@@ -49,8 +49,6 @@ func (r *LogReporter) Report(
 
 	log := r.Log.With(
 		"runId", suiteRun.Id,
-		// TODO: deprecate
-		"suiteRun", suiteRun.Name,
 		"suiteName", summary.SuiteName,
 		"suiteRevision", summary.SuiteRevision,
 		"runStage", suiteRun.RunStage,

@@ -22,9 +22,9 @@ func TestLogReporter_Report(t *testing.T) {
 		{
 			name: "complete suite run with all fields",
 			suiteRun: executor.SuiteRun{
-				Name:           "test-suite-smoke",
 				Id:             "test-run-123",
 				RunStage:       "local",
+				Service:        "grafana",
 				TestExecutor:   "k6",
 				BenchRevision:  "v0.6.1",
 				GrafanaURL:     "http://localhost:3000",
@@ -53,7 +53,6 @@ func TestLogReporter_Report(t *testing.T) {
 			},
 			expected: map[string]any{
 				"runId":          "test-run-123",
-				"suiteRun":       "test-suite-smoke",
 				"suiteName":      "test-suite",
 				"suiteRevision":  "abc123",
 				"runStage":       "local",
@@ -67,9 +66,9 @@ func TestLogReporter_Report(t *testing.T) {
 		{
 			name: "suite run with empty optional fields",
 			suiteRun: executor.SuiteRun{
-				Name:           "empty-fields-test",
 				Id:             "test-run-456",
 				RunStage:       "ci",
+				Service:        "grafana",
 				TestExecutor:   "playwright",
 				BenchRevision:  "dev",
 				GrafanaURL:     "https://grafana.com",
@@ -89,7 +88,6 @@ func TestLogReporter_Report(t *testing.T) {
 			},
 			expected: map[string]any{
 				"runId":          "test-run-456",
-				"suiteRun":       "empty-fields-test",
 				"suiteName":      "",
 				"suiteRevision":  "",
 				"runStage":       "ci",
@@ -103,9 +101,9 @@ func TestLogReporter_Report(t *testing.T) {
 		{
 			name: "suite run with custom attributes",
 			suiteRun: executor.SuiteRun{
-				Name:           "attributes-test",
 				Id:             "test-run-789",
 				RunStage:       "local",
+				Service:        "grafana",
 				TestExecutor:   "k6",
 				BenchRevision:  "v0.7.0",
 				GrafanaURL:     "http://localhost:3000",
@@ -140,7 +138,6 @@ func TestLogReporter_Report(t *testing.T) {
 			},
 			expected: map[string]any{
 				"runId":          "test-run-789",
-				"suiteRun":       "attributes-test",
 				"suiteName":      "smoke-tests",
 				"suiteRevision":  "main-branch",
 				"runStage":       "local",
@@ -162,7 +159,7 @@ func TestLogReporter_Report(t *testing.T) {
 			var buf bytes.Buffer
 
 			// Create LogReporter with JSON format and redirect to buffer
-			reporter, err := NewLogReporter("json", []any{"service", "bench"})
+			reporter, err := NewLogReporter("json", []any{"tool", "bench"})
 			if err != nil {
 				t.Fatalf("Failed to create LogReporter: %v", err)
 			}

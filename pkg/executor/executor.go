@@ -26,10 +26,10 @@ const (
 )
 
 type SuiteRun struct {
-	Name           string
 	Id             string
 	TestExecutor   string
 	RunStage       string
+	Service        string
 	GrafanaVersion string
 	GrafanaURL     string
 	GrafanaSlug    string

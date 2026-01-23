@@ -27,22 +27,18 @@ bench checkout \
 ### Options
 
 ```
-      --git-driver string              git driver used for downloading the test suite repo ('nanogit', 'gogit'). (default "nanogit")
-  -h, --help                           help for checkout
-      --suite-base string              base directory for searching test suites. Defaults to current directory
-                                       If specified, it is prefixed to the --suite-path. (default ".")
-      --suite-repo-dirs strings        Directories to checkout from test suite repo. If omitted, all folders will be checkout
-      --suite-repo-token string        authentication token for the test suite repository. 
-                                       If not set SUITE_REPO_TOKEN environment variable is used.
-      --suite-repo-url string          url to the repository to get the test suite from. If not set SUITE_REPO_URL environment variable is used.
-                                       If specified, the repo will be checkout into the --suite-base directory.
-                                       If --suite-revision is specified, that revision will be checkout.
-                                       Otherwise the default branch will be checkout
-      --suite-revision string          test suite revision. If not set SUITE_REVISION environment variable is used
-      --test-suite-repo string         deprecated. Use suite-repo-url
-      --test-suite-repo-dirs strings   deprecated. Use suite-repo-dirs
-      --test-suite-repo-token string   deprecated. Use suite-repo-token
-      --test-suite-revision string     deprecated. Use suite-revision
+      --git-driver string         git driver used for downloading the test suite repo ('nanogit', 'gogit'). (default "nanogit")
+  -h, --help                      help for checkout
+      --suite-base string         base directory for searching test suites. Defaults to current directory
+                                  If specified, it is prefixed to the --suite-path. (default ".")
+      --suite-repo-dirs strings   Directories to checkout from test suite repo. If omitted, all folders will be checkout
+      --suite-repo-token string   authentication token for the test suite repository. 
+                                  If not set SUITE_REPO_TOKEN environment variable is used.
+      --suite-repo-url string     url to the repository to get the test suite from. If not set SUITE_REPO_URL environment variable is used.
+                                  If specified, the repo will be checkout into the --suite-base directory.
+                                  If --suite-revision is specified, that revision will be checkout.
+                                  Otherwise the default branch will be checkout
+      --suite-revision string     test suite revision. If not set SUITE_REVISION environment variable is used
 ```
 
 ### Options inherited from parent commands

@@ -3,7 +3,7 @@ name: build publish slim image
 on:
   workflow_call:
     secrets:
-      TEST_SUITE_REPO_TOKEN:
+      SUITE_REPO_TOKEN:
         required: true
 
 jobs:

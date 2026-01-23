@@ -18,9 +18,9 @@ import (
 func TestRunStageInLogOutput(t *testing.T) {
 	// Create a SuiteRun with runStage set
 	suiteRun := executor.SuiteRun{
-		Name:           "test-suite",
 		Id:             "test-run-123",
 		RunStage:       "ci-stage-test",
+		Service:        "grafana",
 		TestExecutor:   "k6",
 		BenchRevision:  "v1.0.0",
 		GrafanaURL:     "http://localhost:3000",
@@ -45,7 +45,7 @@ func TestRunStageInLogOutput(t *testing.T) {
 	}))
 
 	// Create LogReporter and override logger
-	logReporter, err := reporter.NewLogReporter("json", []any{"service", "bench"})
+	logReporter, err := reporter.NewLogReporter("json", []any{"tool", "bench"})
 	if err != nil {
 		t.Fatalf("Failed to create LogReporter: %v", err)
 	}
@@ -91,37 +91,19 @@ func TestRunStageInLogOutput(t *testing.T) {
 	}
 }
 
-// TestFlagCompatibility validates that both --run-trigger and --run-stage set RunStage
+// TestFlagCompatibility validates that --run-stage sets RunStage
 func TestFlagCompatibility(t *testing.T) {
 	tests := []struct {
-		name         string
-		flagName     string
-		flagValue    string
+		name             string
+		flagName         string
+		flagValue        string
 		expectedRunStage string
 	}{
 		{
-			name:         "run-trigger flag sets RunStage",
-			flagName:     "run-trigger",
-			flagValue:    "ci-trigger-test",
-			expectedRunStage: "ci-trigger-test",
-		},
-		{
-			name:         "run-stage flag sets RunStage",
-			flagName:     "run-stage",
-			flagValue:    "ci-stage-test",
+			name:             "run-stage flag sets RunStage",
+			flagName:         "run-stage",
+			flagValue:        "ci-stage-test",
 			expectedRunStage: "ci-stage-test",
-		},
-		{
-			name:         "test-trigger flag sets RunStage (deprecated)",
-			flagName:     "test-trigger",
-			flagValue:    "deprecated-trigger",
-			expectedRunStage: "deprecated-trigger",
-		},
-		{
-			name:         "trigger flag sets RunStage (deprecated)",
-			flagName:     "trigger",
-			flagValue:    "deprecated-basic",
-			expectedRunStage: "deprecated-basic",
 		},
 	}
 
@@ -145,31 +127,6 @@ func TestFlagCompatibility(t *testing.T) {
 				t.Errorf("RunStage = %q, want %q", config.RunStage, tt.expectedRunStage)
 			}
 		})
-	}
-}
-
-// TestBothFlagsSetLastWins tests that when both flags are set, last one wins
-func TestBothFlagsSetLastWins(t *testing.T) {
-	config := &SuiteRunConfig{}
-	fs := pflag.NewFlagSet("test", pflag.ContinueOnError)
-	
-	AddSuiteRunFlags(fs, config)
-
-	// Set run-trigger first
-	err := fs.Set("run-trigger", "first-value")
-	if err != nil {
-		t.Fatalf("Failed to set run-trigger: %v", err)
-	}
-
-	// Set run-stage second (should override)
-	err = fs.Set("run-stage", "second-value")
-	if err != nil {
-		t.Fatalf("Failed to set run-stage: %v", err)
-	}
-
-	// Verify the last value wins
-	if config.RunStage != "second-value" {
-		t.Errorf("RunStage = %q, want 'second-value' (last flag should win)", config.RunStage)
 	}
 }
 
@@ -206,7 +163,8 @@ func TestRunStageIntegrationWithBuildSuiteRun(t *testing.T) {
 				Test: TestConfig{
 					Type: "smoke",
 				},
-				Grafana: GrafanaConfig{
+				Service: ServiceConfig{
+					Name:    "grafana",
 					Version: "11.0.0",
 				},
 			}
@@ -224,10 +182,12 @@ func TestRunStageIntegrationWithBuildSuiteRun(t *testing.T) {
 				t.Errorf("SuiteRun.RunStage = %q, want %q", suiteRun.RunStage, tt.runStage)
 			}
 
-			// Verify it's used in the suite run name generation
-			expectedNamePrefix := tt.runStage + "-test-suite-smoke"
-			if !strings.HasPrefix(suiteRun.Name, expectedNamePrefix) {
-				t.Errorf("SuiteRun.Name = %q, should start with %q", suiteRun.Name, expectedNamePrefix)
+			// Verify the new ID format includes stage and suite name
+			// Format: {stage}-{suiteName}-{timestamp}
+			// Example: ci-test-suite-2026022-140035
+			expectedIdPrefix := tt.runStage + "-test-suite-"
+			if !strings.HasPrefix(suiteRun.Id, expectedIdPrefix) {
+				t.Errorf("SuiteRun.Id = %q, should start with %q", suiteRun.Id, expectedIdPrefix)
 			}
 		})
 	}

@@ -221,27 +221,19 @@ bench test  \
 ```
       --bench-revision string             grafana bench revision. If not set BENCH_REVISION environment variable is used.
                                           If not set, the current git revision is used (default (devel)  (default "(devel)")
-      --codeowners-mapping string         deprecated. Use slack-codeowners-mapping (default "codeowners-mapping.yaml")
-      --dashboard string                  deprecated. Use run-dashboard
-      --format string                     deprecated. Use report-output
+      --fetch-grafana-version string      Optional: Fetch Grafana version from API using provided credentials in 'user:password' format.
+                                          Mutually exclusive with --service-version. Overridden by FETCH_GRAFANA_VERSION environment variable.
+                                          Example: --fetch-grafana-version=admin:admin
       --git-driver string                 git driver used for downloading the test suite repo ('nanogit', 'gogit'). (default "nanogit")
       --go-args stringArray               arguments to be passed to go test command (e.g '-tag slow -race')
       --go-retries int                    number of retries for failed tests. Retried tests that pass are reported as flaky
       --go-test-args stringArray          arguments to be passed to the test using the arg flag (e.g '-args -slow 1')
       --go-test-packages stringArray      patterns for selecting packages for testing. Can be repeated to specify multiple packages.
                                           If no pattern is specified only tests under the current working directory are executed.
-      --grafana-admin-password string     grafana admin user's password. Overridden by the GRAFANA_ADMIN_PASSWORD environment variable (default "admin")
-      --grafana-admin-user string         grafana admin user name. Overridden by the GRAFANA_ADMIN_USER environment variable (default "admin")
-      --grafana-timeout duration          timeout for waiting grafana to be live (default 1m0s)
-      --grafana-url string                url to grafana instance. Overridden by the GRAFANA_URL environment variable (default http://localhost:3000) (default "http://localhost:3000")
-      --grafana-version string            grafana version. If not provided GRAFANA_VERSION env var is used.
-                                          If not set, the version is retrieved from the grafana instance.
   -h, --help                              help for test
       --k6-cloud-output                   send output to GCK6. Requires setting the GCK6 project ID and access token.
       --k6-cloud-project string           K6 cloud project ID. If not set K6_CLOUD_PROJECT_ID environment variable is used
-      --k6-cloud-project-id string        deprecated. Use k6-cloud-project
       --k6-cloud-token string             K6 cloud access token. If not set K6_CLOUD_TOKEN environment variable is used
-      --notify-passing                    deprecated. Use slack-notify-passing
       --prometheus-metrics                send test suite run results to a prometheus remote write endpoint.
       --prometheus-password string        prometheus remote write password. If not set PROMETHEUS_PASSWORD environment variable is used.
       --prometheus-strict-lint            strict lint prometheus metrics. If set to true, will fail if metric does not pass linting
@@ -249,11 +241,8 @@ bench test  \
       --prometheus-url string             prometheus remote write URL. If not set PROMETHEUS_URL environment variable is used.
       --prometheus-user string            prometheus remote write user. If not set PROMETHEUS_USER environment variable is used.
       --pw-execute string                 command used to execute the test suite eg: "npm run test"
-      --pw-execute-cmd string             deprecated. Use pw-execute
       --pw-prepare string                 commands used to install dependencies for the test suite eg: "npm install".
                                           Multiple commands can be specified by separating with ';'.
-      --pw-prepare-cmd string             deprecated. Use pw-prepare
-      --report-format string              deprecated. Use report-output (default "text")
       --report-output string              format of the test execution report. Allowed values 'log' or 'text'.
                                            'log' produced a structure log. 'text' produced an human readable output (default "text")
       --run-attribute stringArray         adds custom attributes to a suite run. Good for descriptive information. Format: --run-attribute="key=value,key=value". Attributes with no value will be skipped. You can either use the comma separated format shown here or call --run-attribute multiple times to add additional attributes
@@ -269,7 +258,11 @@ bench test  \
                                           [1] https://github.com/Showmax/prometheus-docs/blob/master/content/docs/instrumenting/exposition_formats.md
       --run-metrics-prefix string         prefix to append to the suite run metric names
       --run-stage string                  the stage of CI the suite was executed. For example, 'local', 'ci', 'rrc'. (default "local")
-      --run-trigger string                deprecated. Use run-stage. trigger of bench execution. For example, 'ci' or 'local'. (default "local")
+      --service string                    REQUIRED. Name of the service being tested (e.g., 'grafana', 'loki', 'tempo', 'datasources'). Used for identifying which service the test results belong to in logs and metrics.
+      --service-health-check              Perform a TCP health check on the service before running tests. Uses --service-url and --service-timeout.
+      --service-timeout duration          timeout for waiting for the service to be live (default 1m0s)
+      --service-url string                URL to the service being tested. Overridden by the SERVICE_URL environment variable (default http://localhost:3000) (default "http://localhost:3000")
+      --service-version string            REQUIRED. Version of the service being tested (e.g., '11.0.0', '2.9.0'). Overridden by the SERVICE_VERSION environment variable.
       --slack-codeowners-mapping string   path or url to the codeowner to slack channel id mapping.
                                           Relative to test suite base dir. (default "codeowners-mapping.yaml")
       --slack-notifications               send notifications to slack. Requires setting the --slack-token option or the SLACK_TOKEN environment variable.
@@ -293,24 +286,10 @@ bench test  \
                                           If --suite-revision is specified, that revision will be checkout.
                                           Otherwise the default branch will be checkout
       --suite-revision string             test suite revision. If not set SUITE_REVISION environment variable is used
-      --suite-run-metrics strings         deprecated use --run-metrics
-      --suite-run-metrics-prefix string   deprecated. Use --run-metrics-prefix
-      --test-env stringToString           environment variables passed to the test execution. (default [])
-      --test-env-vars stringToString      deprecated. Use test-env (default [])
-      --test-report-format string         deprecated. Use report-output
+      --test-env strings                  environment variables passed to the test execution. Use 'KEY=VALUE' to set explicitly, or 'KEY' to pass through from environment (secure for credentials).
       --test-runner string                test runner. Allowed values: 'k6', 'playwright', 'go' (default "k6")
-      --test-suite string                 deprecated. Use suite-path
-      --test-suite-base string            deprecated. Use suite-base
-      --test-suite-name string            deprecated. Use suite-name
-      --test-suite-repo string            deprecated. Use suite-repo-url
-      --test-suite-repo-dirs strings      deprecated. Use suite-repo-dirs
-      --test-suite-repo-token string      deprecated. Use suite-repo-token
-      --test-suite-revision string        deprecated. Use suite-revision
-      --test-trigger string               deprecated. Use run-stage (default "local")
       --test-type string                  test type. Allowed values: 'smoke', 'load' (default "smoke")
       --test-verbose                      show test output
-      --trigger string                    deprecated. Use run-stage (default "local")
-      --verbose                           deprecated. Use verbose
 ```
 
 ### Options inherited from parent commands

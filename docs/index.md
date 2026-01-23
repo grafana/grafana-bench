@@ -2,12 +2,13 @@
 
 **Bench** provides test observability and standardized test execution for the Grafana ecosystem.
 
-**Latest Version:** v0.6.11
+**Latest Version:** v1.0.0
 
 ---
 
 ## Quick Links
 
+- **Upgrading from v0.6.x?** See the [Migration Guide](../MIGRATION_GUIDE_v1.md) 🚀
 - **New to Bench?** Start with the [5-minute Quickstart](quickstart.md)
 - **Ready to dive in?** Read the [Installation Guide](installation.md)
 - **Want examples?** Check out [Templates](templates.md)

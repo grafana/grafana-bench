@@ -18,9 +18,10 @@ Currently, there is no way to set the baseURL or executablePath of Playwright vi
 
 The following CLI arguments will be passed through Bench and available in the Playwright config as environment variables via `process.env`:
 
-- `--grafana-url` will be available as `process.env.GRAFANA_URL`
-- `--grafana-admin-user` will be available as `process.env.GRAFANA_ADMIN_USER`
-- `--grafana-admin-password` will be available as `process.env.GRAFANA_ADMIN_PASSWORD`
+- `--service-url` will be available as `process.env.GRAFANA_URL`
+- Any `--test-env KEY=VALUE` pairs will be available as `process.env.KEY`
+
+For authentication, use `--test-env GRAFANA_ADMIN_USER=admin --test-env GRAFANA_ADMIN_PASSWORD=admin` instead of the deprecated credential flags.
 
 Both of the examples below will show you how to configure your Playwright tests to use these variables.
 
@@ -205,14 +206,14 @@ This boots a docker container running grafana and mounts port 3000 to localhost 
 
 ### Run the tests
 
-Bench assumes the following defaults for specifying the grafana instance, so we don't need to add those to the command.
+Bench provides reasonable defaults for specifying the grafana instance. In v1.0.0, credentials are passed via `--test-env`:
 
 #### defaults
 
 ```sh
-  --grafana-url "http://localhost:3000"
-  --grafana-admin-user "admin"
-  --grafana-admin-password "admin"
+  --service-url "http://localhost:3000"
+  --test-env "GRAFANA_ADMIN_USER=admin"
+  --test-env "GRAFANA_ADMIN_PASSWORD=admin"
 ```
 
 #### test command
@@ -222,12 +223,19 @@ docker run --rm \
   --network=host \
   --volume="./:/tests/" \
   us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.6.11 test \
-  --test-runner "playwright" \
-  --grafana-url "http://localhost:3000" \
-  --pw-prepare-cmd "yarn install --frozen-lockfile; yarn playwright install chromium" \
-  --pw-execute-cmd "yarn e2e" \
+  --service grafana \
+  --service-url "http://localhost:3000" \
+  --service-version latest \
+  --test-runner playwright \
+  --test-type smoke \
+  --suite-path /tests \
+  --suite-name my-project/e2e \
+  --run-stage local \
+  --report-output log \
+  --pw-prepare "yarn install --frozen-lockfile; yarn playwright install chromium" \
+  --pw-execute "yarn e2e" \
   --test-env "CI=true" \
-    --verbose
+  --log-level debug
 ```
 
 #### Breakdown of the Bench command
@@ -236,14 +244,18 @@ docker run --rm \
 2. `--network=host` connects the docker container to the same network that the host is on. This is important as the the docker-compose file in the previous step mounts the grafana container to port 3000. So to make grafana accessible from the bench container, we need to connect the bench container to the same network.
 3. `--volume="./:/tests/"` mounts the current directory of the host machine inside the bench container. In this case, the checkout command from step 1 in the workflow grabs all of the plugin code and puts it in the current directory. So we're mounting everything inside the container in the `/tests` directory
 4. `us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.6.11 test` says use the bench container tagged with bench:`v0.6.11`. The container specificies the bench binary as the default execution script, so `test` the subcommand and effectively runs `grafana-bench test`
-5. `--test-runner "playwright"` tells the test command to use the playwright executor
-7. `--pw-prepare-cmd "yarn install --frozen-lockfile; yarn playwright install"` specifies the two commands necessary to configure the e2e tests separated by a `;`. We do not currently support the `&&` operator, so you must use `;`. The first command installs yarn dependencies. The second installs playwright and dependencies
+5. `--service grafana` specifies that we're testing a Grafana service
+6. `--service-url "http://localhost:3000"` sets the URL of the Grafana instance to test
+7. `--service-version latest` specifies the version of Grafana being tested
+8. `--test-runner playwright` tells the test command to use the playwright executor
+9. `--suite-path /tests` specifies the path to the test suite
+10. `--pw-prepare "yarn install --frozen-lockfile; yarn playwright install"` specifies the two commands necessary to configure the e2e tests separated by a `;`. We do not currently support the `&&` operator, so you must use `;`. The first command installs yarn dependencies. The second installs playwright and dependencies
 
    > **WARNING:** Do NOT use `--with-deps` flag when running `playwright install --with-deps` in the Playwright Docker image. The flag requires root access to install system dependencies, but the container runs as a non-root user. The system dependencies are already included in the base image, so only the browser binaries need to be downloaded (which doesn't require root). See [Troubleshooting](#troubleshooting) for more details.
 
-8. `--pw-execute-cmd "yarn e2e"` specifies the command to run the e2e tests.
-9. `--test-env "CI=true"` sets an environment variable to be passed to the test executor. Effectively `CI=true grafana-bench test ...`. It is common convention with playwright tests to use the `CI=true` flag
-10. `--log-level DEBUG` sets the log level
+11. `--pw-execute "yarn e2e"` specifies the command to run the e2e tests.
+12. `--test-env "CI=true"` sets an environment variable to be passed to the test executor. It is common convention with playwright tests to use the `CI=true` flag
+13. `--log-level debug` sets the log level
 
 ## Troubleshooting
 
@@ -264,13 +276,13 @@ Error: Installation process exited with code: 1
 
 ```bash
 # ❌ BAD - Requires root access
---pw-prepare-cmd "yarn install; yarn playwright install --with-deps chromium"
+--pw-prepare "yarn install; yarn playwright install --with-deps chromium"
 
 # ✅ GOOD - Downloads browsers only, no root needed
---pw-prepare-cmd "yarn install; yarn playwright install chromium"
+--pw-prepare "yarn install; yarn playwright install chromium"
 
 # ✅ ALSO GOOD - Downloads all browsers (if you need multiple)
---pw-prepare-cmd "yarn install; yarn playwright install"
+--pw-prepare "yarn install; yarn playwright install"
 ```
 
 **Why this works:** The `mcr.microsoft.com/playwright` base image already includes all necessary system dependencies (libnss3, libgbm1, fonts, etc.). The `playwright install` command without `--with-deps` only downloads browser binaries to the user's cache directory (`~/.cache/ms-playwright`), which doesn't require elevated permissions.
@@ -291,7 +303,7 @@ Error: Installation process exited with code: 1
 
 ```bash
 # This handles version mismatches correctly
---pw-prepare-cmd "yarn install; yarn playwright install chromium"
+--pw-prepare "yarn install; yarn playwright install chromium"
 ```
 
 ### Only Install Browsers You Need
@@ -300,10 +312,10 @@ Error: Installation process exited with code: 1
 
 ```bash
 # Downloads only Chromium
---pw-prepare-cmd "yarn install; yarn playwright install chromium"
+--pw-prepare "yarn install; yarn playwright install chromium"
 
 # Downloads all browsers (Chromium, Firefox, WebKit)
---pw-prepare-cmd "yarn install; yarn playwright install"
+--pw-prepare "yarn install; yarn playwright install"
 ```
 
 Most Grafana tests only need Chromium, so the first option is recommended.

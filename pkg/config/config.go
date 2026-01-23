@@ -22,6 +22,7 @@ import (
 	"github.com/grafana/grafana-bench/pkg/notifier"
 	"github.com/grafana/grafana-bench/pkg/reporter"
 	"github.com/grafana/grafana-bench/pkg/revision"
+	"github.com/grafana/grafana-bench/pkg/service"
 	"github.com/grafana/grafana-bench/pkg/utils/id"
 	"github.com/spf13/pflag"
 )
@@ -34,7 +35,7 @@ type BenchConfig struct {
 	Test       TestConfig
 	Report     ReportConfig
 	SuiteRun   SuiteRunConfig
-	Grafana    GrafanaConfig
+	Service    ServiceConfig
 	Go         GoTestConfig
 	K6         K6Config
 	Playwright PWConfig
@@ -53,46 +54,60 @@ func AddBenchFlags(fs *pflag.FlagSet, config *BenchConfig) {
 	)
 }
 
-type GrafanaConfig struct {
-	Version       string
-	Url           string
-	AdminUser     string
-	AdminPassword string
-	Timeout       time.Duration
+type ServiceConfig struct {
+	Name         string
+	Version      string
+	Url          string
+	Timeout      time.Duration
+	FetchVersion string // Optional credentials for fetching Grafana version (user:password format)
+	HealthCheck  bool   // Whether to perform health check before running tests
 }
 
-func AddGrafanaFlags(fs *pflag.FlagSet, config *GrafanaConfig) {
+func AddServiceFlags(fs *pflag.FlagSet, config *ServiceConfig) {
+	// Service identifier
+	fs.StringVar(
+		&config.Name,
+		"service",
+		"",
+		"REQUIRED. Name of the service being tested (e.g., 'grafana', 'loki', 'tempo', 'datasources'). Used for identifying which service the test results belong to in logs and metrics.",
+	)
+
+	// Generic service flags
 	fs.StringVar(
 		&config.Url,
-		"grafana-url",
+		"service-url",
 		"http://localhost:3000",
-		"url to grafana instance. Overridden by the GRAFANA_URL environment variable (default http://localhost:3000)",
+		"URL to the service being tested. Overridden by the SERVICE_URL environment variable (default http://localhost:3000)",
 	)
 	fs.DurationVar(
 		&config.Timeout,
-		"grafana-timeout",
+		"service-timeout",
 		grafana.DefaultGrafanaTimeout,
-		"timeout for waiting grafana to be live",
-	)
-	fs.StringVar(
-		&config.AdminUser,
-		"grafana-admin-user",
-		"admin",
-		"grafana admin user name. Overridden by the GRAFANA_ADMIN_USER environment variable",
-	)
-	fs.StringVar(
-		&config.AdminPassword,
-		"grafana-admin-password",
-		"admin",
-		"grafana admin user's password. Overridden by the GRAFANA_ADMIN_PASSWORD environment variable",
+		"timeout for waiting for the service to be live",
 	)
 	fs.StringVar(
 		&config.Version,
-		"grafana-version",
+		"service-version",
 		"",
-		"grafana version. If not provided GRAFANA_VERSION env var is used."+
-			"\nIf not set, the version is retrieved from the grafana instance.",
+		"REQUIRED. Version of the service being tested (e.g., '11.0.0', '2.9.0'). Overridden by the SERVICE_VERSION environment variable.",
 	)
+	fs.BoolVar(
+		&config.HealthCheck,
+		"service-health-check",
+		false,
+		"Perform a TCP health check on the service before running tests. Uses --service-url and --service-timeout.",
+	)
+
+	// Grafana-specific convenience flag for fetching version
+	fs.StringVar(
+		&config.FetchVersion,
+		"fetch-grafana-version",
+		"",
+		"Optional: Fetch Grafana version from API using provided credentials in 'user:password' format."+
+			"\nMutually exclusive with --service-version. Overridden by FETCH_GRAFANA_VERSION environment variable."+
+			"\nExample: --fetch-grafana-version=admin:admin",
+	)
+
 }
 
 type K6Config struct {
@@ -107,12 +122,6 @@ func AddK6Flags(fs *pflag.FlagSet, config *K6Config) {
 		"k6-cloud-token",
 		"",
 		"K6 cloud access token. If not set K6_CLOUD_TOKEN environment variable is used",
-	)
-	fs.StringVar(
-		&config.CloudProjectId,
-		"k6-cloud-project-id",
-		"",
-		"deprecated. Use k6-cloud-project",
 	)
 	fs.StringVar(
 		&config.CloudProjectId,
@@ -136,22 +145,10 @@ type PWConfig struct {
 func AddPlaywrightFlags(fs *pflag.FlagSet, config *PWConfig) {
 	fs.StringVar(
 		&config.PrepareCmd,
-		"pw-prepare-cmd",
-		"",
-		"deprecated. Use pw-prepare",
-	)
-	fs.StringVar(
-		&config.PrepareCmd,
 		"pw-prepare",
 		"",
 		"commands used to install dependencies for the test suite eg: \"npm install\"."+
 			"\nMultiple commands can be specified by separating with ';'.",
-	)
-	fs.StringVar(
-		&config.ExecuteCmd,
-		"pw-execute-cmd",
-		"",
-		"deprecated. Use pw-execute",
 	)
 	fs.StringVar(
 		&config.ExecuteCmd,
@@ -209,12 +206,6 @@ type SuiteRunConfig struct {
 func AddSuiteRunFlags(fs *pflag.FlagSet, config *SuiteRunConfig) {
 	fs.StringVar(
 		&config.DashboardURL,
-		"dashboard",
-		"",
-		"deprecated. Use run-dashboard",
-	)
-	fs.StringVar(
-		&config.DashboardURL,
 		"run-dashboard",
 		"",
 		"Template for the suite run dashboard URL."+
@@ -224,45 +215,15 @@ func AddSuiteRunFlags(fs *pflag.FlagSet, config *SuiteRunConfig) {
 	)
 	fs.StringVar(
 		&config.RunStage,
-		"test-trigger",
-		"local",
-		"deprecated. Use run-stage",
-	)
-	fs.StringVar(
-		&config.RunStage,
-		"trigger",
-		"local",
-		"deprecated. Use run-stage",
-	)
-	fs.StringVar(
-		&config.RunStage,
-		"run-trigger",
-		"local",
-		"deprecated. Use run-stage. trigger of bench execution. For example, 'ci' or 'local'.",
-	)
-	fs.StringVar(
-		&config.RunStage,
 		"run-stage",
 		"local",
 		"the stage of CI the suite was executed. For example, 'local', 'ci', 'rrc'.",
-	)
-	fs.StringSliceVar(
-		&config.Metrics,
-		"suite-run-metrics",
-		nil,
-		"deprecated use --run-metrics",
 	)
 	fs.StringArrayVar(
 		&config.Metrics,
 		"run-metric",
 		nil,
 		"test suite run custom metrics. Format: name{label=label-value,..}=value. The value must be a valid float number.",
-	)
-	fs.StringVar(
-		&config.MetricsPrefix,
-		"suite-run-metrics-prefix",
-		"",
-		"deprecated. Use --run-metrics-prefix",
 	)
 	fs.StringVar(
 		&config.MetricsPrefix,
@@ -296,24 +257,6 @@ type ReportConfig struct {
 func AddReportOutputFlags(fs *pflag.FlagSet, report *ReportConfig) {
 	fs.StringVar(
 		&report.Output,
-		"format",
-		"",
-		"deprecated. Use report-output",
-	)
-	fs.StringVar(
-		&report.Output,
-		"test-report-format",
-		"",
-		"deprecated. Use report-output",
-	)
-	fs.StringVar(
-		&report.Output,
-		"report-format",
-		"text",
-		"deprecated. Use report-output",
-	)
-	fs.StringVar(
-		&report.Output,
 		"report-output",
 		"text",
 		"format of the test execution report. Allowed values 'log' or 'text'."+
@@ -331,10 +274,12 @@ func AddReportInputFlags(fs *pflag.FlagSet, config *ReportConfig) {
 }
 
 type TestConfig struct {
-	Verbose  bool
-	Type     string
-	Executor string
-	Env      map[string]string
+	Verbose    bool
+	Type       string
+	Executor   string
+	Env        map[string]string // Parsed env vars (for backward compat with config files)
+	EnvRaw     []string          // Raw --test-env flags for passthrough support
+	EnvVarsRaw []string          // Deprecated: raw --test-env-vars flags
 }
 
 func AddTestFlags(fs *pflag.FlagSet, test *TestConfig) {
@@ -345,17 +290,12 @@ func AddTestFlags(fs *pflag.FlagSet, test *TestConfig) {
 }
 
 func AddTestEnvFlags(fs *pflag.FlagSet, test *TestConfig) {
-	fs.StringToStringVar(
-		&test.Env,
-		"test-env-vars",
-		nil,
-		"deprecated. Use test-env",
-	)
-	fs.StringToStringVar(
-		&test.Env,
+	fs.StringSliceVar(
+		&test.EnvRaw,
 		"test-env",
 		nil,
-		"environment variables passed to the test execution.",
+		"environment variables passed to the test execution. "+
+			"Use 'KEY=VALUE' to set explicitly, or 'KEY' to pass through from environment (secure for credentials).",
 	)
 }
 
@@ -384,12 +324,6 @@ func AddTestVeboseFlag(fs *pflag.FlagSet, test *TestConfig) {
 		false,
 		"show test output",
 	)
-	fs.BoolVar(
-		&test.Verbose,
-		"verbose",
-		false,
-		"deprecated. Use verbose",
-	)
 }
 
 type TestSuiteConfig struct {
@@ -413,12 +347,6 @@ func AddTestSuiteFlags(fs *pflag.FlagSet, config *TestSuiteConfig) {
 func AddSuiteNameFlag(fs *pflag.FlagSet, config *TestSuiteConfig) {
 	fs.StringVar(
 		&config.Name,
-		"test-suite-name",
-		"",
-		"deprecated. Use suite-name",
-	)
-	fs.StringVar(
-		&config.Name,
 		"suite-name",
 		"",
 		"test suite name. If not specified, SUITE_NAME environment variable is used."+
@@ -430,22 +358,11 @@ func AddSuiteNameFlag(fs *pflag.FlagSet, config *TestSuiteConfig) {
 func AddSuitePathFlags(fs *pflag.FlagSet, config *TestSuiteConfig) {
 	fs.StringVar(
 		&config.BaseDir,
-		"test-suite-base",
-		"",
-		"deprecated. Use suite-base",
-	)
-	fs.StringVar(
-		&config.BaseDir,
 		"suite-base",
 		".",
 		"base directory for searching test suites. Defaults to current directory"+
 			"\nIf specified, it is prefixed to the --suite-path.",
 	)
-	fs.StringVar(
-		&config.Path,
-		"test-suite",
-		"",
-		"deprecated. Use suite-path")
 	fs.StringVar(
 		&config.Path,
 		"suite-path",
@@ -460,24 +377,12 @@ func AddSuitePathFlags(fs *pflag.FlagSet, config *TestSuiteConfig) {
 func AddSuiteRepoFlags(fs *pflag.FlagSet, config *TestSuiteConfig) {
 	fs.StringVar(
 		&config.Repo,
-		"test-suite-repo",
-		"",
-		"deprecated. Use suite-repo-url",
-	)
-	fs.StringVar(
-		&config.Repo,
 		"suite-repo-url",
 		"",
 		"url to the repository to get the test suite from. If not set SUITE_REPO_URL environment variable is used."+
 			"\nIf specified, the repo will be checkout into the --suite-base directory."+
 			"\nIf --suite-revision is specified, that revision will be checkout."+
 			"\nOtherwise the default branch will be checkout",
-	)
-	fs.StringVar(
-		&config.RepoToken,
-		"test-suite-repo-token",
-		"",
-		"deprecated. Use suite-repo-token",
 	)
 	fs.StringVar(
 		&config.RepoToken,
@@ -488,12 +393,6 @@ func AddSuiteRepoFlags(fs *pflag.FlagSet, config *TestSuiteConfig) {
 	)
 	fs.StringSliceVar(
 		&config.RepoDirs,
-		"test-suite-repo-dirs",
-		nil,
-		"deprecated. Use suite-repo-dirs",
-	)
-	fs.StringSliceVar(
-		&config.RepoDirs,
 		"suite-repo-dirs",
 		nil,
 		"Directories to checkout from test suite repo. If omitted, all folders will be checkout",
@@ -501,12 +400,6 @@ func AddSuiteRepoFlags(fs *pflag.FlagSet, config *TestSuiteConfig) {
 }
 
 func AddSuiteRevisionFlag(fs *pflag.FlagSet, config *TestSuiteConfig) {
-	fs.StringVar(
-		&config.Revision,
-		"test-suite-revision",
-		"",
-		"deprecated. Use suite-revision",
-	)
 	fs.StringVar(
 		&config.Revision,
 		"suite-revision",
@@ -541,12 +434,6 @@ func AddSlackNotificationsFlag(fs *pflag.FlagSet, config *SlackNotifierConfig) {
 func AddSlackNotifyPassingFlag(fs *pflag.FlagSet, config *SlackNotifierConfig) {
 	fs.BoolVar(
 		&config.NotifyPassing,
-		"notify-passing",
-		false,
-		"deprecated. Use slack-notify-passing",
-	)
-	fs.BoolVar(
-		&config.NotifyPassing,
 		"slack-passing",
 		false,
 		"send notifications for passing test suites. By default only not passing test suites are notified",
@@ -563,11 +450,6 @@ func AddSlackToken(fs *pflag.FlagSet, config *SlackNotifierConfig) {
 	)
 }
 func AddSlackCodeownersMapFlag(fs *pflag.FlagSet, config *SlackNotifierConfig) {
-	fs.StringVar(
-		&config.CodeownersMap,
-		"codeowners-mapping",
-		"codeowners-mapping.yaml",
-		"deprecated. Use slack-codeowners-mapping")
 	fs.StringVar(
 		&config.CodeownersMap,
 		"slack-codeowners-mapping",
@@ -725,43 +607,84 @@ func (config *BenchConfig) BuildTestSuite(log *slog.Logger) (*executor.TestSuite
 
 func (benchConfig *BenchConfig) BuildSuiteRun(log *slog.Logger) (executor.SuiteRun, error) {
 	grafanaSlug := ""
-	if benchConfig.Grafana.Url != "" {
+	if benchConfig.Service.Url != "" {
 		// in case of error, slug it will be empty
-		grafanaSlug, _ = grafana.Slug(benchConfig.Grafana.Url)
+		grafanaSlug, _ = grafana.Slug(benchConfig.Service.Url)
 	}
 
-	// get grafana version if not provided
-	grafanaVersion := benchConfig.Grafana.Version
-	if grafanaVersion == "" {
-		if benchConfig.Grafana.Url == "" || benchConfig.Grafana.AdminUser == "" || benchConfig.Grafana.AdminPassword == "" {
-			return executor.SuiteRun{}, fmt.Errorf("grafana admin user and password are needed to get grafana version")
+	// Validate required service field
+	if benchConfig.Service.Name == "" {
+		return executor.SuiteRun{}, fmt.Errorf("--service is required: specify the name of the service being tested (e.g., 'grafana', 'loki', 'tempo')")
+	}
+
+	// Handle service version - either explicit or fetched from Grafana API
+	serviceVersion := benchConfig.Service.Version
+
+	// Check for mutually exclusive version options
+	if serviceVersion != "" && benchConfig.Service.FetchVersion != "" {
+		return executor.SuiteRun{}, fmt.Errorf("--service-version and --fetch-grafana-version are mutually exclusive: use only one")
+	}
+
+	// Fetch version from Grafana API if requested
+	if benchConfig.Service.FetchVersion != "" {
+		// Parse user:password format
+		parts := strings.SplitN(benchConfig.Service.FetchVersion, ":", 2)
+		if len(parts) != 2 {
+			return executor.SuiteRun{}, fmt.Errorf("--fetch-grafana-version must be in 'user:password' format (e.g., 'admin:admin')")
+		}
+		username, password := parts[0], parts[1]
+
+		if username == "" || password == "" {
+			return executor.SuiteRun{}, fmt.Errorf("--fetch-grafana-version: both username and password are required")
 		}
 
+		if benchConfig.Service.Url == "" {
+			return executor.SuiteRun{}, fmt.Errorf("--service-url is required when using --fetch-grafana-version")
+		}
+
+		// Wait for service to be live before attempting to fetch version
+		log.Info("waiting for service to be ready...", "url", benchConfig.Service.Url, "timeout", benchConfig.Service.Timeout)
+		healthCheckOpts := service.HealthCheckOptions{
+			Timeout: benchConfig.Service.Timeout,
+			Backoff: 1 * time.Second,
+		}
+		err := service.WaitForServiceLive(context.TODO(), benchConfig.Service.Url, healthCheckOpts)
+		if err != nil {
+			return executor.SuiteRun{}, fmt.Errorf("service health check failed: %w", err)
+		}
+		log.Info("service is ready")
+
 		grafanaInstance, err := grafana.NewInstance(
-			benchConfig.Grafana.Url,
-			benchConfig.Grafana.AdminUser,
-			benchConfig.Grafana.AdminPassword,
+			benchConfig.Service.Url,
+			username,
+			password,
 		)
 		if err != nil {
-			return executor.SuiteRun{}, fmt.Errorf("failed to create grafana instance: %w", err)
+			return executor.SuiteRun{}, fmt.Errorf("failed to create grafana instance for version fetching: %w", err)
 		}
-		grafanaVersion, err = grafanaInstance.GetGrafanaBuildVersion()
+
+		serviceVersion, err = grafanaInstance.GetGrafanaBuildVersion()
 		if err != nil {
-			return executor.SuiteRun{}, fmt.Errorf("failed to get grafana version: %w", err)
+			return executor.SuiteRun{}, fmt.Errorf("failed to fetch grafana version: %w", err)
 		}
+
+		log.Info("fetched grafana version from API", "version", serviceVersion)
+	}
+
+	// Validate that version is provided
+	if serviceVersion == "" {
+		return executor.SuiteRun{}, fmt.Errorf("--service-version is required: specify the version of the service being tested (e.g., '11.0.0'), or use --fetch-grafana-version for Grafana")
 	}
 
 	// get attributes of this test suite run using the test suite information from the config
 	runId := benchConfig.SuiteRun.Id
 	if runId == "" {
-		runId = id.Run(benchConfig.SuiteRun.RunStage, time.Now())
+		runId = id.Run(
+			benchConfig.SuiteRun.RunStage,
+			benchConfig.TestSuite.Name,
+			time.Now(),
+		)
 	}
-
-	suiteRunName := id.SuiteRunName(
-		benchConfig.SuiteRun.RunStage,
-		benchConfig.TestSuite.Name,
-		benchConfig.Test.Type,
-	)
 
 	attributes, err := parseAttributes(benchConfig.SuiteRun.Attributes, log)
 	if err != nil {
@@ -769,15 +692,15 @@ func (benchConfig *BenchConfig) BuildSuiteRun(log *slog.Logger) (executor.SuiteR
 	}
 
 	return executor.SuiteRun{
-		Name:           suiteRunName,
 		Id:             runId,
 		RunStage:       benchConfig.SuiteRun.RunStage,
+		Service:        benchConfig.Service.Name,
 		TestExecutor:   benchConfig.Report.Input,
 		Attributes:     attributes,
 		BenchRevision:  benchConfig.Revision,
-		GrafanaURL:     benchConfig.Grafana.Url,
+		GrafanaURL:     benchConfig.Service.Url,
 		GrafanaSlug:    grafanaSlug,
-		GrafanaVersion: grafanaVersion,
+		GrafanaVersion: serviceVersion,
 	}, nil
 }
 
@@ -788,10 +711,9 @@ func (config *BenchConfig) BuildReporter() (reporter.SuiteRunReporter, error) {
 	// create test reporter
 	var suiteReporter reporter.SuiteRunReporter
 
-	// FIXME: this is a quick fix for the missing service attribute
-	// There's no way to get the attributes set in the runner's logger to be used
-	// in the reporter logger.
-	logAttrs := []any{"service", "bench"}
+	// Set tool=bench to identify that bench is running the tests
+	// Add service attribute to identify what service is being tested
+	logAttrs := []any{"tool", "bench", "service", config.Service.Name}
 	switch config.Report.Output {
 	case "json":
 		suiteReporter, _ = reporter.NewLogReporter(reporter.JSONLog, logAttrs)
@@ -849,32 +771,6 @@ func (config *BenchConfig) BuildReporter() (reporter.SuiteRunReporter, error) {
 	return reporter.NewChainReporter(reporters...), nil
 }
 
-func (config *BenchConfig) GetGrafanaInstance(log *slog.Logger) (grafana.GrafanaInstance, string, error) {
-	grafanaInstance, err := grafana.NewInstance(
-		config.Grafana.Url,
-		config.Grafana.AdminUser,
-		config.Grafana.AdminPassword,
-		grafana.WithTimeout(config.Grafana.Timeout),
-	)
-	if err != nil {
-		return nil, "", err
-	}
-
-	log.Info("Waiting for grafana server...", "address", grafanaInstance.Url())
-
-	err = grafanaInstance.WaitForLiveGrafana(context.TODO())
-	if err != nil {
-		return nil, "", fmt.Errorf("checking Grafana is Live... %w", err)
-	}
-	log.Debug("Grafana server is ready!")
-
-	grafanaVersion, err := grafanaInstance.GetGrafanaBuildVersion()
-	if err != nil {
-		return nil, "", fmt.Errorf("getting grafana version %w", err)
-	}
-
-	return grafanaInstance, grafanaVersion, nil
-}
 
 func (config *BenchConfig) GetRunMetrics(log *slog.Logger) ([]metrics.Metric, error) {
 	metricList := []metrics.Metric{}
