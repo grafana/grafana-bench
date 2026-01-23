@@ -34,6 +34,32 @@ This document tracks all breaking changes being made for the v1.0.0 release. We'
 - **Logger Changes:** Changed from `service=bench` to `tool=bench, service=<user-specified>`
 - **Why:** Makes bench a generic testing reporter that can be used across all Grafana services
 
+### Generic Service Flags Decision 🚧 IN PROGRESS
+- **Goal:** Replace Grafana-specific flags with generic service flags
+- **Current flags to replace:**
+  - `--grafana-url` → `--service-url`
+  - `--grafana-version` → `--service-version` (REQUIRED)
+  - `--grafana-timeout` → `--service-timeout`
+  - `--grafana-admin-user` → REMOVED (only needed for version fetch)
+  - `--grafana-admin-password` → REMOVED (only needed for version fetch)
+
+- **New Grafana-specific flag:**
+  - `--fetch-grafana-version=user:password` - Fetches version from Grafana API
+  - Alternative: `FETCH_GRAFANA_VERSION=user:password` environment variable
+  - Mutually exclusive with `--service-version`
+
+- **Version Auto-Detection:** Removed - users must specify version explicitly or use `--fetch-grafana-version`
+
+- **Health Check:**
+  - Generic TCP-based health check using `--service-url` and `--service-timeout`
+  - No auth required (matches Kubernetes health check patterns)
+
+- **Why:**
+  - Makes bench truly service-agnostic
+  - Bench itself doesn't need credentials (tests get them via env vars)
+  - Only Grafana-specific convenience is `--fetch-grafana-version` for backwards compat
+  - Cleaner, more explicit configuration
+
 ---
 
 ## Migration Instructions
@@ -67,6 +93,68 @@ local Suite = benchFunctions.Suite {
 - `tempo` - For Tempo testing
 - `datasources` - For datasource plugin testing
 - `<your-service>` - Any other service name
+
+### BREAKING: Generic Service Flags (🚧 IN PROGRESS)
+
+**Flag name changes and removals:**
+
+#### Before (v0.6.11):
+```bash
+grafana-bench test \
+  --grafana-url http://localhost:3000 \
+  --grafana-admin-user admin \
+  --grafana-admin-password admin \
+  --grafana-timeout 60s
+  # Version auto-detected if not provided
+```
+
+#### After (v1.0.0):
+```bash
+# Option 1: Specify version explicitly (recommended)
+grafana-bench test \
+  --service grafana \
+  --service-url http://localhost:3000 \
+  --service-version 11.0.0 \
+  --service-timeout 60s
+
+# Option 2: Fetch version from Grafana API
+grafana-bench test \
+  --service grafana \
+  --service-url http://localhost:3000 \
+  --fetch-grafana-version=admin:admin \
+  --service-timeout 60s
+
+# Option 3: Fetch version using environment variable
+export FETCH_GRAFANA_VERSION=admin:admin
+grafana-bench test \
+  --service grafana \
+  --service-url http://localhost:3000 \
+  --service-timeout 60s
+```
+
+**Key changes:**
+- `--grafana-url` → `--service-url`
+- `--grafana-version` → `--service-version` (now **REQUIRED**)
+- `--grafana-timeout` → `--service-timeout`
+- `--grafana-admin-user` and `--grafana-admin-password` → **REMOVED**
+  - Only needed for `--fetch-grafana-version`
+  - Test credentials passed via environment variables (unchanged)
+- **Version auto-detection removed** - must specify explicitly or use `--fetch-grafana-version`
+
+**For non-Grafana services:**
+```bash
+# Loki
+grafana-bench test \
+  --service loki \
+  --service-url http://loki:3100 \
+  --service-version 2.9.0
+
+# Tempo
+grafana-bench test \
+  --service tempo \
+  --service-url http://tempo:3200 \
+  --service-version 2.3.0
+```
 
 ### For deployment_tools Users
 
@@ -160,6 +248,14 @@ View bench metrics and logs in Ops Grafana:
 - [x] Change service=bench to tool=bench ✅ **DONE**
 - [x] Confirm name: chose "service" for the generic service field ✅ **DONE**
 - [x] Add --service flag to suite config (REQUIRED field) ✅ **DONE**
+
+#### Issue #666 - Generic Service Support (🚧 IN PROGRESS)
+- [x] Rename GrafanaConfig to ServiceConfig ✅ **DONE**
+- [ ] Replace Grafana-specific flags with generic service flags
+- [ ] Add --fetch-grafana-version for backwards compatibility
+- [ ] Remove auto version detection (require explicit version)
+- [ ] Remove admin credential flags (only needed for version fetch)
+- [ ] Update health check to be service-agnostic
 
 ### Changes Made
 
@@ -303,6 +399,20 @@ return executor.SuiteRun{
 - [x] `pkg/executor/executor.go` - Added Service field to SuiteRun struct
 - [x] `pkg/reporter/prometheus_reporter.go` - Added service label
 - [x] All test files - Added Service field to test fixtures
+
+### Generic Service Flags (#666 - 🚧 IN PROGRESS)
+- [x] `pkg/config/config.go` - Renamed GrafanaConfig to ServiceConfig
+- [x] `cmd/test/command.go` - Updated AddGrafanaFlags → AddServiceFlags
+- [x] `cmd/report/report.go` - Updated AddGrafanaFlags → AddServiceFlags
+- [x] `pkg/config/config_flag_compatibility_test.go` - Updated GrafanaConfig → ServiceConfig
+- [ ] Replace `--grafana-url` with `--service-url`
+- [ ] Replace `--grafana-version` with `--service-version` (make required)
+- [ ] Replace `--grafana-timeout` with `--service-timeout`
+- [ ] Add `--fetch-grafana-version` flag with credentials parsing
+- [ ] Remove `--grafana-admin-user` and `--grafana-admin-password` flags
+- [ ] Update `pkg/grafana` package to support optional credentials
+- [ ] Remove auto version detection from BuildSuiteRun
+- [ ] Update all tests for new flag names
 
 ### Documentation
 - [x] `BENCH_V1_BREAKING_CHANGES.md` - Complete breaking changes documentation
