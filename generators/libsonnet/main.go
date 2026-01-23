@@ -767,7 +767,7 @@ func getLibsonnetDefaultValue(flag FlagInfo) string {
 func isRequiredStringFlag(flagName string) bool {
 	// These flags are required in the original libsonnet (have error defaults)
 	requiredFlags := map[string]bool{
-		"grafana-url": true,
+		"service-url": true, // Renamed from grafana-url in v1.0.0
 		"suite-path":  true,
 	}
 	return requiredFlags[flagName]

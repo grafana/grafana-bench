@@ -249,13 +249,13 @@ View bench metrics and logs in Ops Grafana:
 - [x] Confirm name: chose "service" for the generic service field ✅ **DONE**
 - [x] Add --service flag to suite config (REQUIRED field) ✅ **DONE**
 
-#### Issue #666 - Generic Service Support (🚧 IN PROGRESS)
+#### Issue #666 - Generic Service Support ✅ **DONE**
 - [x] Rename GrafanaConfig to ServiceConfig ✅ **DONE**
-- [ ] Replace Grafana-specific flags with generic service flags
-- [ ] Add --fetch-grafana-version for backwards compatibility
-- [ ] Remove auto version detection (require explicit version)
-- [ ] Remove admin credential flags (only needed for version fetch)
-- [ ] Update health check to be service-agnostic
+- [x] Replace Grafana-specific flags with generic service flags ✅ **DONE**
+- [x] Add --fetch-grafana-version for backwards compatibility ✅ **DONE**
+- [x] Remove auto version detection (require explicit version) ✅ **DONE**
+- [x] Deprecated admin credential flags (kept for backward compat, only needed for version fetch) ✅ **DONE**
+- [x] Health check already service-agnostic (uses TCP dial) ✅ **DONE**
 
 ### Changes Made
 
@@ -400,19 +400,18 @@ return executor.SuiteRun{
 - [x] `pkg/reporter/prometheus_reporter.go` - Added service label
 - [x] All test files - Added Service field to test fixtures
 
-### Generic Service Flags (#666 - 🚧 IN PROGRESS)
+### Generic Service Flags (#666) ✅ **DONE**
 - [x] `pkg/config/config.go` - Renamed GrafanaConfig to ServiceConfig
 - [x] `cmd/test/command.go` - Updated AddGrafanaFlags → AddServiceFlags
 - [x] `cmd/report/report.go` - Updated AddGrafanaFlags → AddServiceFlags
 - [x] `pkg/config/config_flag_compatibility_test.go` - Updated GrafanaConfig → ServiceConfig
-- [ ] Replace `--grafana-url` with `--service-url`
-- [ ] Replace `--grafana-version` with `--service-version` (make required)
-- [ ] Replace `--grafana-timeout` with `--service-timeout`
-- [ ] Add `--fetch-grafana-version` flag with credentials parsing
-- [ ] Remove `--grafana-admin-user` and `--grafana-admin-password` flags
-- [ ] Update `pkg/grafana` package to support optional credentials
-- [ ] Remove auto version detection from BuildSuiteRun
-- [ ] Update all tests for new flag names
+- [x] `pkg/config/config.go` - Added `--service-url`, `--service-timeout`, `--service-version` flags
+- [x] `pkg/config/config.go` - Deprecated old `--grafana-*` flags (kept for backward compatibility)
+- [x] `pkg/config/config.go` - Added `--fetch-grafana-version` flag with user:password parsing
+- [x] `pkg/config/config.go` - Updated BuildSuiteRun to parse FetchVersion and fetch from API if needed
+- [x] `pkg/config/config.go` - Removed auto version detection (version now required)
+- [x] `generators/libsonnet/main.go` - Updated isRequiredStringFlag to use service-url
+- [x] `generators/libsonnet/main_test.go` - Updated all tests for new flag names
 
 ### Documentation
 - [x] `BENCH_V1_BREAKING_CHANGES.md` - Complete breaking changes documentation

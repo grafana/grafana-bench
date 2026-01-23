@@ -56,43 +56,73 @@ func AddBenchFlags(fs *pflag.FlagSet, config *BenchConfig) {
 type ServiceConfig struct {
 	Version       string
 	Url           string
-	AdminUser     string
-	AdminPassword string
+	AdminUser     string // Deprecated: kept for backward compatibility, will be removed
+	AdminPassword string // Deprecated: kept for backward compatibility, will be removed
 	Timeout       time.Duration
-	FetchVersion  string // Credentials for fetching version (user:password format)
+	FetchVersion  string // Optional credentials for fetching Grafana version (user:password format)
 }
 
 func AddServiceFlags(fs *pflag.FlagSet, config *ServiceConfig) {
+	// Generic service flags
+	fs.StringVar(
+		&config.Url,
+		"service-url",
+		"http://localhost:3000",
+		"URL to the service being tested. Overridden by the SERVICE_URL environment variable (default http://localhost:3000)",
+	)
+	fs.DurationVar(
+		&config.Timeout,
+		"service-timeout",
+		grafana.DefaultGrafanaTimeout,
+		"timeout for waiting for the service to be live",
+	)
+	fs.StringVar(
+		&config.Version,
+		"service-version",
+		"",
+		"REQUIRED. Version of the service being tested (e.g., '11.0.0', '2.9.0'). Overridden by the SERVICE_VERSION environment variable.",
+	)
+
+	// Grafana-specific convenience flag for fetching version
+	fs.StringVar(
+		&config.FetchVersion,
+		"fetch-grafana-version",
+		"",
+		"Optional: Fetch Grafana version from API using provided credentials in 'user:password' format."+
+			"\nMutually exclusive with --service-version. Overridden by FETCH_GRAFANA_VERSION environment variable."+
+			"\nExample: --fetch-grafana-version=admin:admin",
+	)
+
+	// Deprecated flags - kept for backward compatibility
 	fs.StringVar(
 		&config.Url,
 		"grafana-url",
 		"http://localhost:3000",
-		"url to grafana instance. Overridden by the GRAFANA_URL environment variable (default http://localhost:3000)",
+		"deprecated. Use --service-url",
 	)
 	fs.DurationVar(
 		&config.Timeout,
 		"grafana-timeout",
 		grafana.DefaultGrafanaTimeout,
-		"timeout for waiting grafana to be live",
-	)
-	fs.StringVar(
-		&config.AdminUser,
-		"grafana-admin-user",
-		"admin",
-		"grafana admin user name. Overridden by the GRAFANA_ADMIN_USER environment variable",
-	)
-	fs.StringVar(
-		&config.AdminPassword,
-		"grafana-admin-password",
-		"admin",
-		"grafana admin user's password. Overridden by the GRAFANA_ADMIN_PASSWORD environment variable",
+		"deprecated. Use --service-timeout",
 	)
 	fs.StringVar(
 		&config.Version,
 		"grafana-version",
 		"",
-		"grafana version. If not provided GRAFANA_VERSION env var is used."+
-			"\nIf not set, the version is retrieved from the grafana instance.",
+		"deprecated. Use --service-version",
+	)
+	fs.StringVar(
+		&config.AdminUser,
+		"grafana-admin-user",
+		"admin",
+		"deprecated. Use --fetch-grafana-version for Grafana version fetching, or pass credentials directly to tests via environment variables",
+	)
+	fs.StringVar(
+		&config.AdminPassword,
+		"grafana-admin-password",
+		"admin",
+		"deprecated. Use --fetch-grafana-version for Grafana version fetching, or pass credentials directly to tests via environment variables",
 	)
 }
 
@@ -738,30 +768,56 @@ func (benchConfig *BenchConfig) BuildSuiteRun(log *slog.Logger) (executor.SuiteR
 		grafanaSlug, _ = grafana.Slug(benchConfig.Grafana.Url)
 	}
 
-	// get grafana version if not provided
-	grafanaVersion := benchConfig.Grafana.Version
-	if grafanaVersion == "" {
-		if benchConfig.Grafana.Url == "" || benchConfig.Grafana.AdminUser == "" || benchConfig.Grafana.AdminPassword == "" {
-			return executor.SuiteRun{}, fmt.Errorf("grafana admin user and password are needed to get grafana version")
+	// Validate required service field
+	if benchConfig.SuiteRun.Service == "" {
+		return executor.SuiteRun{}, fmt.Errorf("--service is required: specify the name of the service being tested (e.g., 'grafana', 'loki', 'tempo')")
+	}
+
+	// Handle service version - either explicit or fetched from Grafana API
+	serviceVersion := benchConfig.Grafana.Version
+
+	// Check for mutually exclusive version options
+	if serviceVersion != "" && benchConfig.Grafana.FetchVersion != "" {
+		return executor.SuiteRun{}, fmt.Errorf("--service-version and --fetch-grafana-version are mutually exclusive: use only one")
+	}
+
+	// Fetch version from Grafana API if requested
+	if benchConfig.Grafana.FetchVersion != "" {
+		// Parse user:password format
+		parts := strings.SplitN(benchConfig.Grafana.FetchVersion, ":", 2)
+		if len(parts) != 2 {
+			return executor.SuiteRun{}, fmt.Errorf("--fetch-grafana-version must be in 'user:password' format (e.g., 'admin:admin')")
+		}
+		username, password := parts[0], parts[1]
+
+		if username == "" || password == "" {
+			return executor.SuiteRun{}, fmt.Errorf("--fetch-grafana-version: both username and password are required")
+		}
+
+		if benchConfig.Grafana.Url == "" {
+			return executor.SuiteRun{}, fmt.Errorf("--service-url is required when using --fetch-grafana-version")
 		}
 
 		grafanaInstance, err := grafana.NewInstance(
 			benchConfig.Grafana.Url,
-			benchConfig.Grafana.AdminUser,
-			benchConfig.Grafana.AdminPassword,
+			username,
+			password,
 		)
 		if err != nil {
-			return executor.SuiteRun{}, fmt.Errorf("failed to create grafana instance: %w", err)
+			return executor.SuiteRun{}, fmt.Errorf("failed to create grafana instance for version fetching: %w", err)
 		}
-		grafanaVersion, err = grafanaInstance.GetGrafanaBuildVersion()
+
+		serviceVersion, err = grafanaInstance.GetGrafanaBuildVersion()
 		if err != nil {
-			return executor.SuiteRun{}, fmt.Errorf("failed to get grafana version: %w", err)
+			return executor.SuiteRun{}, fmt.Errorf("failed to fetch grafana version: %w", err)
 		}
+
+		log.Info("fetched grafana version from API", "version", serviceVersion)
 	}
 
-	// Validate required service field
-	if benchConfig.SuiteRun.Service == "" {
-		return executor.SuiteRun{}, fmt.Errorf("--service is required: specify the name of the service being tested (e.g., 'grafana', 'loki', 'tempo')")
+	// Validate that version is provided
+	if serviceVersion == "" {
+		return executor.SuiteRun{}, fmt.Errorf("--service-version is required: specify the version of the service being tested (e.g., '11.0.0'), or use --fetch-grafana-version for Grafana")
 	}
 
 	// get attributes of this test suite run using the test suite information from the config
@@ -788,7 +844,7 @@ func (benchConfig *BenchConfig) BuildSuiteRun(log *slog.Logger) (executor.SuiteR
 		BenchRevision:  benchConfig.Revision,
 		GrafanaURL:     benchConfig.Grafana.Url,
 		GrafanaSlug:    grafanaSlug,
-		GrafanaVersion: grafanaVersion,
+		GrafanaVersion: serviceVersion,
 	}, nil
 }
 
