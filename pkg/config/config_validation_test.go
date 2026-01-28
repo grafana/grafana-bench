@@ -29,6 +29,10 @@ func TestSuiteNameRequired(t *testing.T) {
 	if !strings.Contains(err.Error(), "--suite-name is required") {
 		t.Errorf("Expected error message to contain '--suite-name is required', got: %v", err)
 	}
+	// Verify the error message includes helpful examples
+	if !strings.Contains(err.Error(), "Examples:") {
+		t.Errorf("Expected error message to contain examples, got: %v", err)
+	}
 }
 
 // TestPrometheusValidation verifies that prometheus flags are validated when --prometheus-metrics is enabled

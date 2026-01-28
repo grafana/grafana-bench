@@ -100,16 +100,8 @@ func (r *TextReporter) Report(
 	tw := tabwriter.NewWriter(r.report, 5, 0, 1, ' ', 0)
 	defer tw.Flush()
 
-	// Check if this is a benchmark run by looking for benchmark metrics
-	hasBenchmarkMetrics := false
-	for _, metric := range suiteRunSummary.Metrics {
-		if strings.HasPrefix(metric.Name, "bench_go_benchmark_") {
-			hasBenchmarkMetrics = true
-			break
-		}
-	}
-
-	if hasBenchmarkMetrics {
+	// Use different formatting based on test executor type
+	if suiteRun.TestExecutor == "gobench" {
 		// Display benchmark results with metrics
 		r.reportBenchmarks(tw, suiteRunSummary)
 	} else {

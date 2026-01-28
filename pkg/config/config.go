@@ -657,7 +657,13 @@ func (config *BenchConfig) BuildTestSuite(log *slog.Logger) (*executor.TestSuite
 
 	// Validate required test suite name
 	if config.TestSuite.Name == "" {
-		return nil, fmt.Errorf("--suite-name is required")
+		return nil, fmt.Errorf("--suite-name is required\n" +
+			"The suite name identifies your tests in logs and metrics.\n" +
+			"Use format: <project>/<test-type>\n" +
+			"Examples:\n" +
+			"  --suite-name grafana-bench/go-tests\n" +
+			"  --suite-name my-plugin/e2e-tests\n" +
+			"  --suite-name api-service/benchmarks")
 	}
 
 	return &executor.TestSuite{
