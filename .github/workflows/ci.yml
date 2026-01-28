@@ -93,9 +93,10 @@ jobs:
           SERVICE_VERSION: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'ci' }}
         run: |
           grafana-bench test \
-            --service bench \
+            --service grafana-bench \
             --service-version $SERVICE_VERSION \
             --test-runner go \
+            --suite-name gotest \
             --go-test-packages ./... \
             --run-stage ci \
             --prometheus-metrics
@@ -130,12 +131,12 @@ jobs:
         env:
           SERVICE_VERSION: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || github.sha }}
         run: |
-          echo "Running benchmarks and exporting to Prometheus..."
           grafana-bench test \
             --service grafana-bench \
             --service-version $SERVICE_VERSION \
             --test-runner gobench \
             --suite-path pkg/executor/gobench/tests \
+            --suite-name gobench \
             --gobench-time 5s \
             --gobench-mem \
             --report-output log \
@@ -193,8 +194,8 @@ jobs:
             --log-level info \
             --suite-revision ${{ github.event.pull_request.head.sha || github.sha }} \
             --report-output log \
-            --suite-name grafana-bench/ci \
-            --run-stage grafana-bench-ci \
+            --suite-name slack \
+            --run-stage ci \
             --slack-notifications
 
   test-libsonnet:

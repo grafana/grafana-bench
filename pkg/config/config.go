@@ -5,9 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"net/url"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -406,9 +404,9 @@ func AddSuiteNameFlag(fs *pflag.FlagSet, config *TestSuiteConfig) {
 		&config.Name,
 		"suite-name",
 		"",
-		"test suite name. If not specified, SUITE_NAME environment variable is used."+
-			"\nDefaults to the last component of -suite-path."+
-			"\nFor example --suite--path path/to/testsuite will give a test suite name of 'testsuite'.",
+		"[REQUIRED] Test suite name used for identifying and labeling test results in logs and metrics."+
+			"\nIf not specified, SUITE_NAME environment variable is used."+
+			"\nExample: 'grafana-bench/go-tests' or 'my-project/smoke-tests'",
 	)
 }
 
@@ -657,14 +655,9 @@ func (config *BenchConfig) BuildTestSuite(log *slog.Logger) (*executor.TestSuite
 		}
 	}
 
-	// if the test suite name was not given, use repo name (if Any) and the last element of the test suite path
+	// Validate required test suite name
 	if config.TestSuite.Name == "" {
-		name := strings.TrimSuffix(path.Base(config.TestSuite.Path), path.Ext(config.TestSuite.Path))
-		if config.TestSuite.Repo != "" {
-			repoURL, _ := url.Parse(config.TestSuite.Repo)
-			name, _ = strings.CutPrefix(filepath.Join(repoURL.Path, name), "/")
-		}
-		config.TestSuite.Name = name
+		return nil, fmt.Errorf("--suite-name is required")
 	}
 
 	return &executor.TestSuite{
@@ -827,6 +820,17 @@ func (config *BenchConfig) BuildReporter() (reporter.SuiteRunReporter, error) {
 	}
 
 	if config.Prometheus.Metrics {
+		// Validate required Prometheus configuration
+		if config.Prometheus.URL == "" {
+			return nil, fmt.Errorf("--prometheus-metrics requires PROMETHEUS_URL environment variable or --prometheus-url flag to be set")
+		}
+		if config.Prometheus.User == "" {
+			return nil, fmt.Errorf("--prometheus-metrics requires PROMETHEUS_USER environment variable or --prometheus-user flag to be set")
+		}
+		if config.Prometheus.Password == "" {
+			return nil, fmt.Errorf("--prometheus-metrics requires PROMETHEUS_PASSWORD environment variable or --prometheus-password flag to be set")
+		}
+
 		prometheusReporter := reporter.NewPrometheusReporter(reporter.PrometheusConfig{
 			URL:      config.Prometheus.URL,
 			User:     config.Prometheus.User,
