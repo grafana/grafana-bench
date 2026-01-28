@@ -52,10 +52,8 @@ Built-in metrics are prefixed with `bench_` and describe your test suite.
 - `bench_go_benchmark_allocs_per_op` - Number of allocations per operation (requires --gobench-mem)
 - `bench_go_benchmark_iterations` - Number of benchmark iterations (N)
 
-Go benchmark metrics include additional labels:
+Go benchmark metrics include an additional label:
 - `benchmark` - Benchmark function name
-- `package` - Package path
-- `procs` - GOMAXPROCS value
 
 ### Default Labels
 

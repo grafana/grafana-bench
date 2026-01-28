@@ -59,11 +59,9 @@ func TestCreateBenchmarkMetrics(t *testing.T) {
 		if m.Labels["benchmark"] != "BenchmarkTest" {
 			t.Errorf("expected benchmark label 'BenchmarkTest', got %q", m.Labels["benchmark"])
 		}
-		if m.Labels["package"] != "github.com/example/pkg" {
-			t.Errorf("expected package label 'github.com/example/pkg', got %q", m.Labels["package"])
-		}
-		if m.Labels["procs"] != "8" {
-			t.Errorf("expected procs label '8', got %q", m.Labels["procs"])
+		// Only benchmark label should be present
+		if len(m.Labels) != 1 {
+			t.Errorf("expected only benchmark label, got %d labels: %v", len(m.Labels), m.Labels)
 		}
 	}
 

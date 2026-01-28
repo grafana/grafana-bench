@@ -210,14 +210,11 @@ Grafana Bench exports the following metrics for each benchmark:
 
 Each metric includes these labels:
 
-- `benchmark` - Benchmark function name
-- `package` - Package path
-- `procs` - GOMAXPROCS value
+- `benchmark` - Benchmark function name (benchmark-specific)
 - `service` - Service name (from --service flag)
 - `service_version` - Service version (from --service-version flag)
 - `suite_name` - Test suite name
 - `run_stage` - Execution stage (ci, local, etc.)
-- `status` - Benchmark status (passed, failed)
 
 ## Example Benchmarks
 

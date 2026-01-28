@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -194,8 +195,6 @@ func (e *GoBenchExecutor) createBenchmarkMetrics(bench BenchmarkRunSummary) []me
 	// are automatically added by the Prometheus reporter)
 	labels := map[string]string{
 		"benchmark": bench.BenchmarkName,
-		"package":   bench.BenchmarkFolder,
-		"procs":     strconv.Itoa(bench.Procs),
 	}
 
 	timestamp := bench.StartTime.UnixMilli()
@@ -240,8 +239,6 @@ func (e *GoBenchExecutor) createBenchmarkMetrics(bench BenchmarkRunSummary) []me
 // copyLabels creates a copy of a label map
 func copyLabels(labels map[string]string) map[string]string {
 	copied := make(map[string]string, len(labels))
-	for k, v := range labels {
-		copied[k] = v
-	}
+	maps.Copy(copied, labels)
 	return copied
 }
