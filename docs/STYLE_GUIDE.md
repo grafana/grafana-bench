@@ -42,7 +42,7 @@ Content without spacing.
 ````markdown
 ```sh
 grafana-bench test \
-  --suite-name my-project/tests \
+  --suite-name my-repo/tests \
   --suite-path ./tests
 ```
 ````
@@ -51,7 +51,7 @@ grafana-bench test \
 ````markdown
 ```
     grafana-bench test \
-      --suite-name my-project/tests \
+      --suite-name my-repo/tests \
       --suite-path ./tests  # Indented
 ```
 ````
@@ -61,7 +61,7 @@ or
 ````markdown
 ```shell  # Use sh not shell
 grafana-bench test \
-  --suite-name my-project/tests \
+  --suite-name my-repo/tests \
   --suite-path ./tests
 ```
 ````
@@ -185,7 +185,7 @@ Run the command from your project root: `./tests/`
 # Run K6 tests with verbose output
 grafana-bench test \
   --test-runner k6 \
-  --suite-name my-project/k6-tests \
+  --suite-name my-repo/k6-tests \
   --suite-path ./tests \
   --log-level debug
 ```
@@ -311,7 +311,7 @@ Content with examples.
 ```bash
 # Example command
 grafana-bench test \
-  --suite-name my-project/tests \
+  --suite-name my-repo/tests \
   --suite-path ./tests
 ```
 
@@ -366,7 +366,7 @@ export default function () {
 
 ```bash
 grafana-bench test \
-  --suite-name my-project/quickstart \
+  --suite-name my-repo/quickstart \
   --suite-path test.ts
 ```
 

@@ -25,7 +25,7 @@ PROMETHEUS_PASSWORD=MYSUPERSECRETPROMTOKEN grafana-bench test \
         --test-runner k6 \
         --test-type smoke \
         --suite-path myMetricsTest.ts \
-        --suite-name my-project/metrics \
+        --suite-name my-repo/metrics \
         --run-stage ci \
         --report-output log \
         --prometheus-metrics \

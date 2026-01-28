@@ -103,7 +103,7 @@ Add Bench to your GitHub Actions workflow:
 - name: Run Tests
   run: |
     grafana-bench test \
-      --suite-name my-project/tests \
+      --suite-name my-repo/tests \
       --suite-path ./tests
 ```
 

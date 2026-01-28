@@ -39,7 +39,7 @@ jobs:
             --service-version latest \
             --test-type smoke \
             --suite-path CI/k6 \
-            --suite-name my-project/ci/k6 \
+            --suite-name my-repo/ci/k6 \
             --run-stage ci \
             --report-output log \
             --log-level info
@@ -53,7 +53,7 @@ jobs:
             --test-runner playwright \
             --test-type smoke \
             --suite-path ./CI/playwright \
-            --suite-name my-project/ci/playwright \
+            --suite-name my-repo/ci/playwright \
             --run-stage ci \
             --report-output log \
             --pw-prepare "npm install; npx playwright install" \
@@ -110,7 +110,7 @@ After the setup step completes, the tokens are available in your environment. Si
       --test-runner playwright \
       --test-type smoke \
       --suite-path ./CI/playwright \
-      --suite-name my-project/ci/playwright \
+      --suite-name my-repo/ci/playwright \
       --run-stage ci \
       --report-output log \
       --prometheus-metrics
@@ -141,7 +141,7 @@ When using Docker, you need to explicitly pass the Prometheus environment variab
       --test-runner playwright \
       --test-type smoke \
       --suite-path /tests/CI/playwright \
-      --suite-name my-project/ci/playwright \
+      --suite-name my-repo/ci/playwright \
       --run-stage ci \
       --report-output log \
       --prometheus-metrics
@@ -252,7 +252,7 @@ This allows your CI workflows to handle test failures differently from internal 
       --test-runner gotest \
       --test-type smoke \
       --suite-path ./tests \
-      --suite-name my-project/tests \
+      --suite-name my-repo/tests \
       --run-stage ci \
       --report-output log
 ```
@@ -272,7 +272,7 @@ This allows your CI workflows to handle test failures differently from internal 
       --test-runner playwright \
       --test-type smoke \
       --suite-path /tests/CI/playwright \
-      --suite-name my-project/ci/playwright \
+      --suite-name my-repo/ci/playwright \
       --run-stage ci \
       --report-output log
 ```
@@ -315,7 +315,7 @@ jobs:
             --test-runner "playwright" \
             --test-type smoke \
             --suite-path "/tests/CI/plugin-e2e" \
-            --suite-name my-project/ci/plugin-e2e \
+            --suite-name my-repo/ci/plugin-e2e \
             --run-stage ci \
             --report-output log \
             --pw-prepare "yarn install; playwright install chromium" \
