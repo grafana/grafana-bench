@@ -1,0 +1,19 @@
+{"Time":"2024-01-15T10:00:00Z","Action":"start","Package":"github.com/example/pkg"}
+{"Time":"2024-01-15T10:00:01Z","Action":"output","Package":"github.com/example/pkg","Output":"goos: linux\n"}
+{"Time":"2024-01-15T10:00:01Z","Action":"output","Package":"github.com/example/pkg","Output":"goarch: amd64\n"}
+{"Time":"2024-01-15T10:00:01Z","Action":"output","Package":"github.com/example/pkg","Output":"pkg: github.com/example/pkg\n"}
+{"Time":"2024-01-15T10:00:01Z","Action":"output","Package":"github.com/example/pkg","Output":"cpu: Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz\n"}
+{"Time":"2024-01-15T10:00:02Z","Action":"run","Package":"github.com/example/pkg","Test":"BenchmarkStringConcat"}
+{"Time":"2024-01-15T10:00:02Z","Action":"output","Package":"github.com/example/pkg","Test":"BenchmarkStringConcat","Output":"=== RUN   BenchmarkStringConcat\n"}
+{"Time":"2024-01-15T10:00:03Z","Action":"output","Package":"github.com/example/pkg","Output":"BenchmarkStringConcat-8   \t 1000000\t      1234 ns/op\t     456 B/op\t       7 allocs/op\n"}
+{"Time":"2024-01-15T10:00:03Z","Action":"pass","Package":"github.com/example/pkg","Test":"BenchmarkStringConcat","Elapsed":1.234}
+{"Time":"2024-01-15T10:00:03Z","Action":"run","Package":"github.com/example/pkg","Test":"BenchmarkStringBuilder"}
+{"Time":"2024-01-15T10:00:03Z","Action":"output","Package":"github.com/example/pkg","Test":"BenchmarkStringBuilder","Output":"=== RUN   BenchmarkStringBuilder\n"}
+{"Time":"2024-01-15T10:00:04Z","Action":"output","Package":"github.com/example/pkg","Output":"BenchmarkStringBuilder-8   \t 5000000\t       234 ns/op\t      64 B/op\t       2 allocs/op\n"}
+{"Time":"2024-01-15T10:00:04Z","Action":"pass","Package":"github.com/example/pkg","Test":"BenchmarkStringBuilder","Elapsed":0.567}
+{"Time":"2024-01-15T10:00:04Z","Action":"run","Package":"github.com/example/pkg","Test":"BenchmarkJSONMarshal"}
+{"Time":"2024-01-15T10:00:04Z","Action":"output","Package":"github.com/example/pkg","Test":"BenchmarkJSONMarshal","Output":"=== RUN   BenchmarkJSONMarshal\n"}
+{"Time":"2024-01-15T10:00:05Z","Action":"output","Package":"github.com/example/pkg","Output":"BenchmarkJSONMarshal-8   \t  500000\t      3456 ns/op\n"}
+{"Time":"2024-01-15T10:00:05Z","Action":"pass","Package":"github.com/example/pkg","Test":"BenchmarkJSONMarshal","Elapsed":1.728}
+{"Time":"2024-01-15T10:00:05Z","Action":"output","Package":"github.com/example/pkg","Output":"PASS\n"}
+{"Time":"2024-01-15T10:00:05Z","Action":"pass","Package":"github.com/example/pkg","Elapsed":5.0}

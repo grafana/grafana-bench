@@ -38,12 +38,24 @@ PROMETHEUS_PASSWORD=MYSUPERSECRETPROMTOKEN grafana-bench test \
 
 Built-in metrics are prefixed with `bench_` and describe your test suite.
 
-bench_tests_error
-bench_tests_executed
-bench_tests_failed
-bench_tests_flakey
-bench_tests_passed
-bench_total_duration_seconds
+**Test Suite Metrics:**
+- `bench_tests_error` - Number of tests with errors
+- `bench_tests_executed` - Total number of tests executed
+- `bench_tests_failed` - Number of failed tests
+- `bench_tests_flakey` - Number of flaky tests (passed after retry)
+- `bench_tests_passed` - Number of passed tests
+- `bench_total_duration_seconds` - Total duration of test suite execution
+
+**Go Benchmark Metrics** (when using `--test-runner gobench`):
+- `bench_go_benchmark_ns_per_op` - Nanoseconds per operation
+- `bench_go_benchmark_bytes_per_op` - Bytes allocated per operation (requires --gobench-mem)
+- `bench_go_benchmark_allocs_per_op` - Number of allocations per operation (requires --gobench-mem)
+- `bench_go_benchmark_iterations` - Number of benchmark iterations (N)
+
+Go benchmark metrics include additional labels:
+- `benchmark` - Benchmark function name
+- `package` - Package path
+- `procs` - GOMAXPROCS value
 
 ### Default Labels
 

@@ -66,6 +66,9 @@ jobs:
 
   test-go:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - uses: actions/checkout@v5
         with:
@@ -81,19 +84,21 @@ jobs:
       - name: install development dependencies
         run: make install-deps
 
-      - name: install grafana-bench
-        run: go install
+      - uses: ./.github/actions/setup-grafana-bench
+        with:
+          version: 'v0.6.11'
 
       - name: test
         env:
-          SERVICE_VERSION: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || github.event.pull_request.head.sha || github.sha }}
+          SERVICE_VERSION: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'ci' }}
         run: |
           grafana-bench test \
             --service bench \
             --service-version $SERVICE_VERSION \
             --test-runner go \
             --go-test-packages ./... \
-            --run-stage ci
+            --run-stage ci \
+            --prometheus-metrics
 
       - name: build
         run: go build -v ./...

@@ -14,6 +14,7 @@ import (
 
 	"github.com/grafana/grafana-bench/pkg/compile"
 	"github.com/grafana/grafana-bench/pkg/executor"
+	"github.com/grafana/grafana-bench/pkg/executor/gobench"
 	"github.com/grafana/grafana-bench/pkg/executor/gotest"
 	"github.com/grafana/grafana-bench/pkg/executor/k6"
 	"github.com/grafana/grafana-bench/pkg/executor/playwright"
@@ -37,6 +38,7 @@ type BenchConfig struct {
 	SuiteRun   SuiteRunConfig
 	Service    ServiceConfig
 	Go         GoTestConfig
+	GoBench    GoBenchConfig
 	K6         K6Config
 	Playwright PWConfig
 	Slack      SlackNotifierConfig
@@ -193,6 +195,61 @@ func AddGoExecutorFlags(fs *pflag.FlagSet, config *GoTestConfig) {
 	)
 }
 
+type GoBenchConfig struct {
+	GoArgs       []string
+	BenchArgs    []string
+	Packages     []string
+	BenchPattern string
+	BenchTime    string
+	BenchMem     bool
+	Count        int
+}
+
+func AddGoBenchExecutorFlags(fs *pflag.FlagSet, config *GoBenchConfig) {
+	fs.StringArrayVar(
+		&config.Packages,
+		"gobench-packages",
+		nil,
+		"Package patterns for benchmarks (e.g., './...', './pkg/...'). If not specified, defaults to './...'",
+	)
+	fs.StringVar(
+		&config.BenchPattern,
+		"gobench-pattern",
+		".",
+		"Benchmark name pattern (regex). Use '.' to run all benchmarks",
+	)
+	fs.StringVar(
+		&config.BenchTime,
+		"gobench-time",
+		"",
+		"Benchmark duration (e.g., '10s', '100x'). If not set, uses Go's default",
+	)
+	fs.BoolVar(
+		&config.BenchMem,
+		"gobench-mem",
+		true,
+		"Enable memory statistics (B/op, allocs/op)",
+	)
+	fs.IntVar(
+		&config.Count,
+		"gobench-count",
+		1,
+		"Number of times to run each benchmark",
+	)
+	fs.StringArrayVar(
+		&config.GoArgs,
+		"gobench-args",
+		nil,
+		"Additional arguments passed to 'go test' (e.g., '-tags=integration')",
+	)
+	fs.StringArrayVar(
+		&config.BenchArgs,
+		"gobench-bench-args",
+		nil,
+		"Arguments passed to benchmarks via -args",
+	)
+}
+
 type SuiteRunConfig struct {
 	RunStage      string
 	Id            string
@@ -313,7 +370,7 @@ func AddTestRunnerFlag(fs *pflag.FlagSet, test *TestConfig) {
 		&test.Executor,
 		"test-runner",
 		"k6",
-		"test runner. Allowed values: 'k6', 'playwright', 'go'",
+		"test runner. Allowed values: 'k6', 'playwright', 'go', 'gobench'",
 	)
 }
 
@@ -535,6 +592,19 @@ func (config BenchConfig) BuildTestExecutor(
 				Packages: config.Go.Packages,
 				TestArgs: config.Go.TestArgs,
 				Retries:  config.Go.Retries,
+			},
+		)
+	case "gobench":
+		executor = gobench.NewGoBenchExecutor(
+			log,
+			gobench.GoBenchExecutorOptions{
+				GoArgs:       config.GoBench.GoArgs,
+				BenchArgs:    config.GoBench.BenchArgs,
+				Packages:     config.GoBench.Packages,
+				BenchPattern: config.GoBench.BenchPattern,
+				BenchTime:    config.GoBench.BenchTime,
+				BenchMem:     config.GoBench.BenchMem,
+				Count:        config.GoBench.Count,
 			},
 		)
 	case "k6":

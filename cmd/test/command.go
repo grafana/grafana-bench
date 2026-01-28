@@ -52,6 +52,17 @@ bench test  \
 bench test  \
   --suite-path ./path/to/test/... \
   --test-runner go
+
+# run go benchmarks with prometheus metrics
+bench test \
+  --service bench \
+  --service-version v1.0.0 \
+  --test-runner gobench \
+  --suite-path ./benchmarks \
+  --gobench-pattern "BenchmarkAPI" \
+  --gobench-time 10s \
+  --prometheus-metrics \
+  --run-stage ci
 `
 
 const longDescription = `
@@ -136,6 +147,49 @@ The number of retries is defined by the go-retries option.
     grafana-bench test --test-runner go \
        --go-test-packages ./path/to/package/... \
        --go-retries 3
+
+Go Benchmarks
+-------------
+
+Execute Go benchmarks with 'go test -bench' and export performance metrics (ns/op, B/op, allocs/op) to
+Prometheus and test reports. Use --test-runner gobench to run benchmarks instead of tests.
+
+The --gobench-packages argument defines the packages to benchmark using the same format as go test.
+If not specified, defaults to './...' (all packages).
+    grafana-bench test --test-runner gobench --gobench-packages ./pkg/...
+
+Use --gobench-pattern to filter benchmarks by name (regex):
+    grafana-bench test --test-runner gobench --gobench-pattern "BenchmarkAPI"
+
+Control benchmark duration with --gobench-time (e.g., "10s" or "100x"):
+    grafana-bench test --test-runner gobench --gobench-time 10s
+
+Memory statistics are enabled by default. Disable with --gobench-mem=false:
+    grafana-bench test --test-runner gobench --gobench-mem=false
+
+Run benchmarks multiple times with --gobench-count:
+    grafana-bench test --test-runner gobench --gobench-count 5
+
+Additional go test arguments can be passed using --gobench-args:
+    grafana-bench test --test-runner gobench \
+       --gobench-args "-tags=integration -timeout=30m"
+
+Arguments for the benchmark itself can be passed using --gobench-bench-args:
+    grafana-bench test --test-runner gobench \
+       --gobench-bench-args "-cpuprofile=cpu.prof"
+
+Complete example with Prometheus metrics:
+    grafana-bench test \
+       --service bench \
+       --service-version abc123 \
+       --test-runner gobench \
+       --suite-path ./benchmarks \
+       --gobench-pattern "BenchmarkAPI" \
+       --gobench-time 10s \
+       --gobench-count 3 \
+       --prometheus-metrics \
+       --prometheus-url https://prometheus.example.com/api/v1/write \
+       --run-stage ci
 
 [1] https://github.com/grafana/grafana-bench/blob/main/docs/writing_pw_tests.md
 
@@ -344,6 +398,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	config.AddK6Flags(fs, &benchConfig.K6)
 	config.AddPlaywrightFlags(fs, &benchConfig.Playwright)
 	config.AddGoExecutorFlags(fs, &benchConfig.Go)
+	config.AddGoBenchExecutorFlags(fs, &benchConfig.GoBench)
 	config.AddSlackFlags(fs, &benchConfig.Slack)
 	config.AddReportOutputFlags(fs, &benchConfig.Report)
 	config.AddPrometheusFlags(fs, &benchConfig.Prometheus)
