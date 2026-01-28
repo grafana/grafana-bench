@@ -6,6 +6,50 @@ This guide covers how to write Go benchmarks that integrate with Grafana Bench f
 
 Grafana Bench supports running Go benchmarks via the `gobench` test runner, which executes `go test -bench` and exports performance metrics (ns/op, B/op, allocs/op) to Prometheus, text reports, and JSON logs.
 
+## CI/CD Integration
+
+**NOTE:** when running in ci, do NOT use the default ubuntu-latest github runner. This is a shared runner that is very
+small. Use a self-hosted runner like ubuntu-x64-medium
+
+Example GitHub Actions workflow:
+
+```yaml
+name: Performance Benchmarks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  benchmark:
+    # USE A DEDICATED RUNNER
+    # do _not_ use ubuntu-latest
+    runs-on: ubuntu-x64-medium
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+
+      - name: Setup bench + Prometheus secrets
+        uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@057477c3d586996c1fc3f38772760c34a68d2859
+        with:
+          version: latest
+
+      - name: Run benchmarks
+        run: |
+          grafana-bench test \
+            --service myservice \
+            --service-version ci \
+            --test-runner gobench \
+            --suite-path ./benchmarks \
+            --gobench-time 10s \
+            --prometheus-metrics \
+            --run-stage ci
+```
+
 ## Basic Benchmark Structure
 
 Go benchmarks follow standard Go testing conventions:
@@ -163,6 +207,7 @@ Grafana Bench exports the following metrics for each benchmark:
 - `bench_go_benchmark_allocs_per_op` - Allocations per operation (with --gobench-mem)
 
 Each metric includes these labels:
+
 - `benchmark` - Benchmark function name
 - `package` - Package path
 - `procs` - GOMAXPROCS value
@@ -243,53 +288,12 @@ func BenchmarkSearch(b *testing.B) {
 }
 ```
 
-## CI/CD Integration
-
-Example GitHub Actions workflow:
-
-```yaml
-name: Performance Benchmarks
-
-on:
-  push:
-    branches: [main]
-  pull_request:
-
-jobs:
-  benchmark:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-go@v5
-        with:
-          go-version: 'stable'
-
-      - name: Install grafana-bench
-        run: |
-          go install github.com/grafana/grafana-bench@latest
-
-      - name: Run benchmarks
-        env:
-          PROMETHEUS_URL: ${{ secrets.PROMETHEUS_URL }}
-          PROMETHEUS_USER: ${{ secrets.PROMETHEUS_USER }}
-          PROMETHEUS_PASSWORD: ${{ secrets.PROMETHEUS_PASSWORD }}
-        run: |
-          grafana-bench test \
-            --service myservice \
-            --service-version ${{ github.sha }} \
-            --test-runner gobench \
-            --suite-path ./benchmarks \
-            --gobench-time 10s \
-            --prometheus-metrics \
-            --run-stage ci
-```
-
 ## Troubleshooting
 
 ### Benchmarks Not Found
 
 Ensure your benchmark functions:
+
 - Start with `Benchmark` prefix
 - Accept `*testing.B` parameter
 - Are in `*_test.go` files
