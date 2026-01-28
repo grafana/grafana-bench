@@ -62,6 +62,25 @@ jobs:
 
 > **Note:** For Playwright troubleshooting (including common permission errors), see the [Playwright Troubleshooting Guide](writing_pw_tests.md#troubleshooting).
 
+### Suite Naming Best Practices
+
+The `--suite-name` flag is **required** and identifies your tests in logs and Prometheus metrics. Use a consistent naming convention:
+
+**Recommended Format:** `<project>/<test-type>`
+
+**Examples:**
+- `grafana-bench/go-tests` - Go unit/integration tests
+- `grafana-bench/benchmarks` - Performance benchmarks
+- `my-plugin/e2e-tests` - End-to-end browser tests
+- `api-service/smoke-tests` - API smoke tests
+- `grafana/k6-load-tests` - Load testing suite
+
+**Why This Matters:**
+- Suite names become Prometheus metric labels (`suite_name="grafana-bench/go-tests"`)
+- Enables filtering and grouping in dashboards
+- Makes it easy to track metrics over time per test suite
+- Helps identify which tests are failing in aggregate views
+
 ### Action Inputs
 
 | Input | Description | Required | Default |

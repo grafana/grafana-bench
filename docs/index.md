@@ -101,8 +101,13 @@ Add Bench to your GitHub Actions workflow:
     version: 'v0.6.11'
 
 - name: Run Tests
-  run: grafana-bench test --suite-path ./tests
+  run: |
+    grafana-bench test \
+      --suite-name my-project/tests \
+      --suite-path ./tests
 ```
+
+> **Note on Suite Names:** Use the format `<project>/<test-type>` for clear organization in logs and metrics. Examples: `grafana-bench/go-tests`, `my-plugin/e2e-tests`, `api-service/benchmarks`.
 
 📖 [GitHub Actions Integration Guide](github_actions.md)
 

@@ -33,7 +33,9 @@ export default function () {
 
 3. **Run the tests:**
    ```sh
-   grafana-bench test --test-suite check_grafana_instance.ts
+   grafana-bench test \
+     --suite-name quickstart/k6 \
+     --suite-path check_grafana_instance.ts
    ```
 
 You should see output which looks like:

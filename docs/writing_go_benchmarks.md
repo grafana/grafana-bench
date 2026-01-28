@@ -44,6 +44,7 @@ jobs:
             --service myservice \
             --service-version ci \
             --test-runner gobench \
+            --suite-name myservice/benchmarks \
             --suite-path ./benchmarks \
             --gobench-time 10s \
             --prometheus-metrics \
@@ -82,6 +83,7 @@ grafana-bench test \
   --service myservice \
   --service-version v1.0.0 \
   --test-runner gobench \
+  --suite-name myservice/benchmarks \
   --suite-path ./benchmarks \
   --run-stage ci
 ```
@@ -93,12 +95,12 @@ grafana-bench test \
   --service myservice \
   --service-version v1.0.0 \
   --test-runner gobench \
+  --suite-name myservice/api-benchmarks \
   --suite-path ./benchmarks \
   --gobench-pattern "BenchmarkAPI" \
   --gobench-time 10s \
   --gobench-count 3 \
   --prometheus-metrics \
-  --prometheus-url https://prometheus.example.com/api/v1/write \
   --run-stage ci
 ```
 

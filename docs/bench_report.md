@@ -120,9 +120,9 @@ grafana:
       --service-timeout duration       timeout for waiting for the service to be live (default 1m0s)
       --service-url string             URL to the service being tested. Overridden by the SERVICE_URL environment variable (default http://localhost:3000) (default "http://localhost:3000")
       --service-version string         REQUIRED. Version of the service being tested (e.g., '11.0.0', '2.9.0'). Overridden by the SERVICE_VERSION environment variable.
-      --suite-name string              test suite name. If not specified, SUITE_NAME environment variable is used.
-                                       Defaults to the last component of -suite-path.
-                                       For example --suite--path path/to/testsuite will give a test suite name of 'testsuite'.
+      --suite-name string              [REQUIRED] Test suite name used for identifying and labeling test results in logs and metrics.
+                                       If not specified, SUITE_NAME environment variable is used.
+                                       Example: 'grafana-bench/go-tests' or 'my-project/smoke-tests'
       --suite-revision string          test suite revision. If not set SUITE_REVISION environment variable is used
       --test-type string               test type. Allowed values: 'smoke', 'load' (default "smoke")
 ```

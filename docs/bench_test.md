@@ -63,27 +63,39 @@ It also provides the possibility of retrying failed test and report flaky tests.
 
 The --go-test-packages argument defines the packages to be tested using the same format as the go test command.
 If not specified, only the tests under the current working directory are executed.
-    grafana-bench test --test-runner go --go-test-packages ./path/to/packages/...
+    grafana-bench test \
+      --suite-name my-project/go-tests \
+      --test-runner go \
+      --go-test-packages ./path/to/packages/...
 
 The '--suite-path' can be used to change the working directory for the go test command.
 The following command will search for tests under the 'tests' directory using the pattern defined by
 the --go-test-packages:
-    grafana-bench test --test-runner go \
-      --suite-path tests --go-test-packages ./path/to/package/...
+    grafana-bench test \
+      --suite-name my-project/go-tests \
+      --test-runner go \
+      --suite-path tests \
+      --go-test-packages ./path/to/package/...
 
 Additional arguments such as build tags can be passed using the --go-args flag.
-    grafana-bench test --test-runner go \
+    grafana-bench test \
+       --suite-name my-project/go-tests \
+       --test-runner go \
        --go-test-packages ./path/to/package/... \
        --go-args "-tags=slow -race -timeout=30m"
 
 For passing flags to configure the test, use the --go-test-args flag
-    grafana-bench test --test-runner go \
-       --go-test-packages ./path/to/package/... \ 
+    grafana-bench test \
+       --suite-name my-project/go-tests \
+       --test-runner go \
+       --go-test-packages ./path/to/package/... \
        --go-test-args "-slow 1"
 
 The go test executor can retry failed tests. Test that pass after retrying are reported as flaky.
 The number of retries is defined by the go-retries option.
-    grafana-bench test --test-runner go \
+    grafana-bench test \
+       --suite-name my-project/go-tests \
+       --test-runner go \
        --go-test-packages ./path/to/package/... \
        --go-retries 3
 
@@ -95,30 +107,50 @@ Prometheus and test reports. Use --test-runner gobench to run benchmarks instead
 
 The --gobench-packages argument defines the packages to benchmark using the same format as go test.
 If not specified, defaults to './...' (all packages).
-    grafana-bench test --test-runner gobench --gobench-packages ./pkg/...
+    grafana-bench test \
+      --suite-name my-project/benchmarks \
+      --test-runner gobench \
+      --gobench-packages ./pkg/...
 
 Use --gobench-pattern to filter benchmarks by name (regex):
-    grafana-bench test --test-runner gobench --gobench-pattern "BenchmarkAPI"
+    grafana-bench test \
+      --suite-name my-project/benchmarks \
+      --test-runner gobench \
+      --gobench-pattern "BenchmarkAPI"
 
 Control benchmark duration with --gobench-time (e.g., "10s" or "100x"):
-    grafana-bench test --test-runner gobench --gobench-time 10s
+    grafana-bench test \
+      --suite-name my-project/benchmarks \
+      --test-runner gobench \
+      --gobench-time 10s
 
 Memory statistics are enabled by default. Disable with --gobench-mem=false:
-    grafana-bench test --test-runner gobench --gobench-mem=false
+    grafana-bench test \
+      --suite-name my-project/benchmarks \
+      --test-runner gobench \
+      --gobench-mem=false
 
 Run benchmarks multiple times with --gobench-count:
-    grafana-bench test --test-runner gobench --gobench-count 5
+    grafana-bench test \
+      --suite-name my-project/benchmarks \
+      --test-runner gobench \
+      --gobench-count 5
 
 Additional go test arguments can be passed using --gobench-args:
-    grafana-bench test --test-runner gobench \
+    grafana-bench test \
+       --suite-name my-project/benchmarks \
+       --test-runner gobench \
        --gobench-args "-tags=integration -timeout=30m"
 
 Arguments for the benchmark itself can be passed using --gobench-bench-args:
-    grafana-bench test --test-runner gobench \
+    grafana-bench test \
+       --suite-name my-project/benchmarks \
+       --test-runner gobench \
        --gobench-bench-args "-cpuprofile=cpu.prof"
 
 Complete example with Prometheus metrics:
     grafana-bench test \
+       --suite-name my-project/benchmarks \
        --service bench \
        --service-version abc123 \
        --test-runner gobench \
@@ -219,13 +251,19 @@ bench test [flags]
 ```
 
 # run a k6 smoke test from the test suite directory
-bench test --suite-path /path/to/test/folder
+bench test \
+  --suite-name my-project/smoke-tests \
+  --suite-path /path/to/test/folder
 
 # run a k6 load test using a single test
-bench test --test-type load --suite-path /path/to/test.js"
+bench test \
+  --suite-name my-project/load-test \
+  --test-type load \
+  --suite-path /path/to/test.js"
 
 # checkout a test from a repo and run tests from my-branch branch
 bench test \
+  --suite-name my-project/integration-tests \
   --suite-repo-url https://url/to/test-repo.git \
   --suite-base path/to/local/repo/directory \
   --suite-revision my-branch \
@@ -233,6 +271,7 @@ bench test \
 
 # run k6 test with cloud output
 bench test \
+  --suite-name my-project/k6-tests \
   --grafana-url "http://host.docker.internal:3000" \
   --suite-path /home/bench/work/grafana-plugin-tests \
   --test-runner k6
@@ -240,12 +279,14 @@ bench test \
 
 # run k6 test with custom environment variables
 bench test \
+  --suite-name my-project/k6-tests \
   --suite-path /home/bench/work/grafana-plugin-tests \
   --test-env VAR=value,ANOTHER_VAR=value        \
   --test-runner k6
 
 # run playwright test
 bench test  \
+  --suite-name my-project/e2e-tests \
   --grafana-url "http://host.docker.internal:3000" \
   --suite-path grafana-plugin-tests \
   --test-runner playwright \
@@ -254,11 +295,13 @@ bench test  \
 
 # run go test
 bench test  \
+  --suite-name my-project/go-tests \
   --suite-path ./path/to/test/... \
   --test-runner go
 
 # run go benchmarks with prometheus metrics
 bench test \
+  --suite-name my-project/benchmarks \
   --service bench \
   --service-version v1.0.0 \
   --test-runner gobench \
@@ -332,9 +375,9 @@ bench test \
                                           The token requires chat:write and channels:read scopes
       --suite-base string                 base directory for searching test suites. Defaults to current directory
                                           If specified, it is prefixed to the --suite-path. (default ".")
-      --suite-name string                 test suite name. If not specified, SUITE_NAME environment variable is used.
-                                          Defaults to the last component of -suite-path.
-                                          For example --suite--path path/to/testsuite will give a test suite name of 'testsuite'.
+      --suite-name string                 [REQUIRED] Test suite name used for identifying and labeling test results in logs and metrics.
+                                          If not specified, SUITE_NAME environment variable is used.
+                                          Example: 'grafana-bench/go-tests' or 'my-project/smoke-tests'
       --suite-path string                 path to the tests to be executed.
                                           The path must be relative to the base dir (which defaults to the current directory).
                                           A single .js file or a directory can be specified.
