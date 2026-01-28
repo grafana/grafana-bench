@@ -21,6 +21,77 @@ func NewTextReporter(report io.Writer) *TextReporter {
 	}
 }
 
+// reportBenchmarks displays benchmark results with metrics in a table format
+func (r *TextReporter) reportBenchmarks(tw *tabwriter.Writer, summary executor.SuiteRunSummary) {
+	// Create a map of benchmark name -> metrics
+	type benchMetrics struct {
+		status     executor.TestStatus
+		duration   float64
+		iterations float64
+		nsPerOp    float64
+		bytesPerOp float64
+		allocsPerOp float64
+	}
+
+	benchmarks := make(map[string]*benchMetrics)
+
+	// Initialize from test runs
+	for _, testRun := range summary.TestRuns {
+		key := testRun.TestFolder + ":" + testRun.TestFile
+		benchmarks[key] = &benchMetrics{
+			status:   testRun.Status,
+			duration: testRun.TotalDuration.Seconds(),
+		}
+	}
+
+	// Populate metrics
+	for _, metric := range summary.Metrics {
+		benchName, ok := metric.Labels["benchmark"]
+		if !ok {
+			continue
+		}
+		pkg := metric.Labels["package"]
+		key := pkg + ":" + benchName
+
+		bench, exists := benchmarks[key]
+		if !exists {
+			continue
+		}
+
+		switch metric.Name {
+		case "bench_go_benchmark_iterations":
+			bench.iterations = metric.Value
+		case "bench_go_benchmark_ns_per_op":
+			bench.nsPerOp = metric.Value
+		case "bench_go_benchmark_bytes_per_op":
+			bench.bytesPerOp = metric.Value
+		case "bench_go_benchmark_allocs_per_op":
+			bench.allocsPerOp = metric.Value
+		}
+	}
+
+	// Display header
+	fmt.Fprintf(tw, "\n----------------BENCHMARK RESULTS----------------\n")
+	fmt.Fprintf(tw, "Benchmark\tStatus\tIterations\tns/op\tB/op\tallocs/op\n")
+	fmt.Fprintf(tw, "---------\t------\t----------\t-----\t----\t---------\n")
+
+	// Display each benchmark
+	for _, testRun := range summary.TestRuns {
+		key := testRun.TestFolder + ":" + testRun.TestFile
+		bench := benchmarks[key]
+
+		fmt.Fprintf(tw, "%s\t%s\t%.0f\t%.2f\t%.0f\t%.0f\n",
+			testRun.TestFile,
+			strings.ToUpper(string(bench.status)),
+			bench.iterations,
+			bench.nsPerOp,
+			bench.bytesPerOp,
+			bench.allocsPerOp,
+		)
+	}
+	fmt.Fprintf(tw, "\n")
+}
+
 func (r *TextReporter) Report(
 	_ context.Context,
 	suiteRun executor.SuiteRun,
@@ -29,29 +100,35 @@ func (r *TextReporter) Report(
 	tw := tabwriter.NewWriter(r.report, 5, 0, 1, ' ', 0)
 	defer tw.Flush()
 
-	for _, testRun := range suiteRunSummary.TestRuns {
-		fmt.Fprintf(
-			tw,
-			"[%s]\t%.2f sec\t%s:\t%s\n",
-			strings.ToUpper(string(testRun.Status)),
-			testRun.TotalDuration.Seconds(),
-			testRun.TestFolder,
-			testRun.TestFile,
-		)
+	// Check if this is a benchmark run by looking for benchmark metrics
+	hasBenchmarkMetrics := false
+	for _, metric := range suiteRunSummary.Metrics {
+		if strings.HasPrefix(metric.Name, "bench_go_benchmark_") {
+			hasBenchmarkMetrics = true
+			break
+		}
+	}
+
+	if hasBenchmarkMetrics {
+		// Display benchmark results with metrics
+		r.reportBenchmarks(tw, suiteRunSummary)
+	} else {
+		// Display regular test results
+		for _, testRun := range suiteRunSummary.TestRuns {
+			fmt.Fprintf(
+				tw,
+				"[%s]\t%.2f sec\t%s:\t%s\n",
+				strings.ToUpper(string(testRun.Status)),
+				testRun.TotalDuration.Seconds(),
+				testRun.TestFolder,
+				testRun.TestFile,
+			)
+		}
 	}
 
 	testsByStatus := make(map[executor.TestStatus][]string, 0)
 	for _, testRun := range suiteRunSummary.TestRuns {
-		fmt.Fprintf(
-			tw,
-			"[%s]\t%.2f sec\t%s:\t%s\n",
-			strings.ToUpper(string(testRun.Status)),
-			testRun.TotalDuration.Seconds(),
-			testRun.TestFolder,
-			testRun.TestFile,
-		)
-
-		if testRun.Status == executor.TestPassed && testRun.Status != executor.TestSkipped {
+		if testRun.Status == executor.TestPassed || testRun.Status == executor.TestSkipped {
 			continue
 		}
 

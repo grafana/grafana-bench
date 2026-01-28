@@ -61,9 +61,8 @@ type BenchRunAttributes struct {
 	Trigger        string `json:"testTrigger"`
 	Executor       string `json:"testExecutor"`
 	BenchRevision  string `json:"benchRevision"`
-	GrafanaURL     string `json:"grafanaUrl"`
-	GrafanaSlug    string `json:"grafanaSlug"`
-	GrafanaVersion string `json:"grafanaVersion"`
+	ServiceURL     string `json:"serviceUrl"`
+	ServiceVersion string `json:"serviceVersion"`
 }
 
 type SuiteRunAttributes struct {

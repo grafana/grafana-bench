@@ -79,7 +79,7 @@ func (p *PrometheusReporter) Report(
 	labels := map[string]string{
 		"job":             "bench",
 		"service":         suiteRun.Service,
-		"grafana_version": suiteRun.GrafanaVersion,
+		"service_version": suiteRun.ServiceVersion,
 		"status":          string(summary.Status),
 		"suite_name":      summary.SuiteName,
 		"run_stage":       suiteRun.RunStage,

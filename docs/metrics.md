@@ -61,13 +61,14 @@ Go benchmark metrics include additional labels:
 
 Built-in labels describe the known details about the service and test run:
 
-- `service` - The service being tested (e.g., "grafana")
+- `service` - The service being tested (e.g., "grafana", "bench")
 - `service_version` - Version of the service (e.g., "11.0.0")
-- `service_url` - URL of the service instance
 - `suite_name` - Name of the test suite
 - `run_stage` - Stage where tests are running (e.g., "ci", "local", "production")
 - `suite_run_id` - Unique identifier for this test run
 - `status` - Test result status (failed, passed)
+
+Note: `service_url` is only included for service endpoint tests (k6, playwright), not for code tests (go, gobench)
 
 ## Custom Metrics
 

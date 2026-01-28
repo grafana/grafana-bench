@@ -30,9 +30,8 @@ type SuiteRun struct {
 	TestExecutor   string
 	RunStage       string
 	Service        string
-	GrafanaVersion string
-	GrafanaURL     string
-	GrafanaSlug    string
+	ServiceVersion string
+	ServiceURL     string
 	BenchRevision  string
 	Attributes     map[string]string `json:"attributes"`
 }

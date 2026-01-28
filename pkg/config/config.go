@@ -676,10 +676,11 @@ func (config *BenchConfig) BuildTestSuite(log *slog.Logger) (*executor.TestSuite
 }
 
 func (benchConfig *BenchConfig) BuildSuiteRun(log *slog.Logger) (executor.SuiteRun, error) {
-	grafanaSlug := ""
-	if benchConfig.Service.Url != "" {
-		// in case of error, slug it will be empty
-		grafanaSlug, _ = grafana.Slug(benchConfig.Service.Url)
+	// Only set service URL for executors that test service endpoints (k6, playwright)
+	// For go/gobench, this doesn't make sense since they're testing code directly
+	serviceURL := ""
+	if benchConfig.Test.Executor == "k6" || benchConfig.Test.Executor == "playwright" {
+		serviceURL = benchConfig.Service.Url
 	}
 
 	// Validate required service field
@@ -768,9 +769,8 @@ func (benchConfig *BenchConfig) BuildSuiteRun(log *slog.Logger) (executor.SuiteR
 		TestExecutor:   benchConfig.Report.Input,
 		Attributes:     attributes,
 		BenchRevision:  benchConfig.Revision,
-		GrafanaURL:     benchConfig.Service.Url,
-		GrafanaSlug:    grafanaSlug,
-		GrafanaVersion: serviceVersion,
+		ServiceURL:     serviceURL,
+		ServiceVersion: serviceVersion,
 	}, nil
 }
 

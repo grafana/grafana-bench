@@ -87,7 +87,8 @@ func parseBenchmarkRuns(report io.Reader) (benchmarkRuns, error) {
 		}
 
 		// Process benchmark result lines from output
-		if line.Action == "output" && line.Test == "" {
+		// Note: benchmark results appear in output lines with Test field set to the benchmark name
+		if line.Action == "output" {
 			parseBenchmarkOutputLine(line.Output, line.Package, globalStartTime, benchmarks)
 		}
 
@@ -149,6 +150,8 @@ func parseBenchmarkOutputLine(output, pkg string, startTime time.Time, benchmark
 
 	matches := benchResultRegex.FindStringSubmatch(output)
 	if matches == nil {
+		// Debug: log lines that start with "Benchmark" but don't match the regex
+		// This will help identify parsing issues
 		return
 	}
 

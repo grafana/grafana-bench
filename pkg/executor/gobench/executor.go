@@ -40,7 +40,12 @@ func (e *GoBenchExecutor) ExecTestSuite(
 	suite executor.TestSuite,
 	env map[string]string,
 ) (executor.SuiteRunSummary, error) {
-	workDir := filepath.Join(suite.BaseDir, suite.Path)
+	// Use suite.Path directly if it's absolute, otherwise join with BaseDir
+	workDir := suite.Path
+	if !filepath.IsAbs(suite.Path) {
+		workDir = filepath.Join(suite.BaseDir, suite.Path)
+	}
+	e.log.Debug("executing benchmarks", "workDir", workDir, "baseDir", suite.BaseDir, "path", suite.Path)
 	stdOut, err := e.runGoBench(ctx, workDir)
 	if err != nil {
 		return executor.SuiteRunSummary{}, fmt.Errorf("failed to execute benchmarks: %w", err)
@@ -88,10 +93,11 @@ func (e *GoBenchExecutor) runGoBench(ctx context.Context, workdir string) (io.Re
 	// Add custom go test arguments
 	cmdArgs = append(cmdArgs, e.opts.GoArgs...)
 
-	// Add package patterns (default to current directory)
+	// Add package patterns (default to current directory only, not recursive)
+	// Using "." instead of "./..." to support test-only packages
 	packages := e.opts.Packages
 	if len(packages) == 0 {
-		packages = []string{"./..."}
+		packages = []string{"."}
 	}
 	cmdArgs = append(cmdArgs, packages...)
 
@@ -115,6 +121,9 @@ func (e *GoBenchExecutor) runGoBench(ctx context.Context, workdir string) (io.Re
 
 	e.log.Debug("executing go benchmark", "args", cmd.Args)
 	err := cmd.Run()
+
+	// Log output for debugging
+	e.log.Debug("go benchmark output", "stdout", stdOut.String(), "stderr", stdErr.String())
 
 	// Benchmarks can fail (exit code 1) if tests fail, but we still want to parse results
 	if err != nil && cmd.ProcessState.ExitCode() != 1 {
