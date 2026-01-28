@@ -118,10 +118,10 @@ jobs:
           go-version-file: go.mod
           cache: false
 
-      - name: Setup Grafana Bench with Prometheus secrets
+      - name: Setup Prometheus secrets
         uses: ./.github/actions/setup-grafana-bench
         with:
-          version: 'latest'  # Will use go install as fallback
+          version: false  # Only setup secrets, skip installation
 
       - name: Install latest grafana-bench with gobench support
         run: go install
