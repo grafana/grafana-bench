@@ -2,7 +2,7 @@
 
 **Bench** provides test observability and standardized test execution for the Grafana ecosystem.
 
-**Latest Version:** v1.0.0
+**Latest Version:** v0.6.11
 
 ---
 

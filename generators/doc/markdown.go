@@ -51,7 +51,7 @@ func buildDocVersionRegex() *regexp.Regexp {
 	// 2. Backtick pattern: `v1.2.3`
 	regexStr := `(?:` +
 		// Prefix patterns with optional quotes
-		`(Latest Version: |grafana-bench:|benchRevision: |bench:|version: )\s*('|\"|\x60)?` + semverPattern + `('|\"|\x60)?` +
+		`(Latest Version: |grafana-bench-playwright:|grafana-bench:|benchRevision: |bench:|version: )\s*('|\"|\x60)?` + semverPattern + `('|\"|\x60)?` +
 		`|` +
 		// Standalone backtick pattern
 		`\x60` + semverPattern + `\x60` +
@@ -73,6 +73,7 @@ func updateSemverInMarkdown(dirPath string, newVersion string) error {
 
 		// Find all semantic versions referenced in the docs
 		// Latest Version: v1.1.1
+		// grafana-bench-playwright:v1.1.1
 		// grafana-bench:v1.1.1
 		// benchRevision: 'v1.1.1'
 		// bench:v1.1.1
