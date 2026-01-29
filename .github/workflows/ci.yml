@@ -108,7 +108,7 @@ jobs:
         run: go build -v ./...
 
   test-benchmarks:
-    runs-on: ubuntu-x64-medium
+    runs-on: ubuntu-x64-2xlarge
     permissions:
       id-token: write
       contents: read
