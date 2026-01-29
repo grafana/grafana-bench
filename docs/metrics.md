@@ -25,7 +25,7 @@ PROMETHEUS_PASSWORD=MYSUPERSECRETPROMTOKEN grafana-bench test \
         --test-runner k6 \
         --test-type smoke \
         --suite-path myMetricsTest.ts \
-        --suite-name my-project/metrics \
+        --suite-name my-repo/metrics \
         --run-stage ci \
         --report-output log \
         --prometheus-metrics \
@@ -38,24 +38,35 @@ PROMETHEUS_PASSWORD=MYSUPERSECRETPROMTOKEN grafana-bench test \
 
 Built-in metrics are prefixed with `bench_` and describe your test suite.
 
-bench_tests_error
-bench_tests_executed
-bench_tests_failed
-bench_tests_flakey
-bench_tests_passed
-bench_total_duration_seconds
+**Test Suite Metrics:**
+- `bench_tests_error` - Number of tests with errors
+- `bench_tests_executed` - Total number of tests executed
+- `bench_tests_failed` - Number of failed tests
+- `bench_tests_flakey` - Number of flaky tests (passed after retry)
+- `bench_tests_passed` - Number of passed tests
+- `bench_total_duration_seconds` - Total duration of test suite execution
+
+**Go Benchmark Metrics** (when using `--test-runner gobench`):
+- `bench_go_benchmark_ns_per_op` - Nanoseconds per operation
+- `bench_go_benchmark_bytes_per_op` - Bytes allocated per operation (requires --gobench-mem)
+- `bench_go_benchmark_allocs_per_op` - Number of allocations per operation (requires --gobench-mem)
+- `bench_go_benchmark_iterations` - Number of benchmark iterations (N)
+
+Go benchmark metrics include an additional label:
+- `benchmark` - Benchmark function name
 
 ### Default Labels
 
 Built-in labels describe the known details about the service and test run:
 
-- `service` - The service being tested (e.g., "grafana")
+- `service` - The service being tested (e.g., "grafana", "bench")
 - `service_version` - Version of the service (e.g., "11.0.0")
-- `service_url` - URL of the service instance
 - `suite_name` - Name of the test suite
 - `run_stage` - Stage where tests are running (e.g., "ci", "local", "production")
 - `suite_run_id` - Unique identifier for this test run
 - `status` - Test result status (failed, passed)
+
+Note: `service_url` is only included for service endpoint tests (k6, playwright), not for code tests (go, gobench)
 
 ## Custom Metrics
 

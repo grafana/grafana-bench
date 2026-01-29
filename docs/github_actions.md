@@ -39,7 +39,7 @@ jobs:
             --service-version latest \
             --test-type smoke \
             --suite-path CI/k6 \
-            --suite-name my-project/ci/k6 \
+            --suite-name my-repo/ci/k6 \
             --run-stage ci \
             --report-output log \
             --log-level info
@@ -53,7 +53,7 @@ jobs:
             --test-runner playwright \
             --test-type smoke \
             --suite-path ./CI/playwright \
-            --suite-name my-project/ci/playwright \
+            --suite-name my-repo/ci/playwright \
             --run-stage ci \
             --report-output log \
             --pw-prepare "npm install; npx playwright install" \
@@ -61,6 +61,25 @@ jobs:
 ```
 
 > **Note:** For Playwright troubleshooting (including common permission errors), see the [Playwright Troubleshooting Guide](writing_pw_tests.md#troubleshooting).
+
+### Suite Naming Best Practices
+
+The `--suite-name` flag is **required** and identifies your tests in logs and Prometheus metrics. Use a consistent naming convention:
+
+**Recommended Format:** `<project>/<test-type>`
+
+**Examples:**
+- `grafana-bench/go-tests` - Go unit/integration tests
+- `grafana-bench/benchmarks` - Performance benchmarks
+- `my-plugin/e2e-tests` - End-to-end browser tests
+- `api-service/smoke-tests` - API smoke tests
+- `grafana/k6-load-tests` - Load testing suite
+
+**Why This Matters:**
+- Suite names become Prometheus metric labels (`suite_name="grafana-bench/go-tests"`)
+- Enables filtering and grouping in dashboards
+- Makes it easy to track metrics over time per test suite
+- Helps identify which tests are failing in aggregate views
 
 ### Action Inputs
 
@@ -91,7 +110,7 @@ After the setup step completes, the tokens are available in your environment. Si
       --test-runner playwright \
       --test-type smoke \
       --suite-path ./CI/playwright \
-      --suite-name my-project/ci/playwright \
+      --suite-name my-repo/ci/playwright \
       --run-stage ci \
       --report-output log \
       --prometheus-metrics
@@ -122,7 +141,7 @@ When using Docker, you need to explicitly pass the Prometheus environment variab
       --test-runner playwright \
       --test-type smoke \
       --suite-path /tests/CI/playwright \
-      --suite-name my-project/ci/playwright \
+      --suite-name my-repo/ci/playwright \
       --run-stage ci \
       --report-output log \
       --prometheus-metrics
@@ -233,7 +252,7 @@ This allows your CI workflows to handle test failures differently from internal 
       --test-runner gotest \
       --test-type smoke \
       --suite-path ./tests \
-      --suite-name my-project/tests \
+      --suite-name my-repo/tests \
       --run-stage ci \
       --report-output log
 ```
@@ -253,7 +272,7 @@ This allows your CI workflows to handle test failures differently from internal 
       --test-runner playwright \
       --test-type smoke \
       --suite-path /tests/CI/playwright \
-      --suite-name my-project/ci/playwright \
+      --suite-name my-repo/ci/playwright \
       --run-stage ci \
       --report-output log
 ```
@@ -296,7 +315,7 @@ jobs:
             --test-runner "playwright" \
             --test-type smoke \
             --suite-path "/tests/CI/plugin-e2e" \
-            --suite-name my-project/ci/plugin-e2e \
+            --suite-name my-repo/ci/plugin-e2e \
             --run-stage ci \
             --report-output log \
             --pw-prepare "yarn install; playwright install chromium" \

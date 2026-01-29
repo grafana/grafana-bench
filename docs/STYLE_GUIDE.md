@@ -41,14 +41,18 @@ Content without spacing.
 **Good:**
 ````markdown
 ```sh
-grafana-bench test --suite-path ./tests
+grafana-bench test \
+  --suite-name my-repo/tests \
+  --suite-path ./tests
 ```
 ````
 
 **Bad:**
 ````markdown
 ```
-    grafana-bench test --suite-path ./tests  # Indented
+    grafana-bench test \
+      --suite-name my-repo/tests \
+      --suite-path ./tests  # Indented
 ```
 ````
 
@@ -56,7 +60,9 @@ or
 
 ````markdown
 ```shell  # Use sh not shell
-grafana-bench test
+grafana-bench test \
+  --suite-name my-repo/tests \
+  --suite-path ./tests
 ```
 ````
 
@@ -179,6 +185,7 @@ Run the command from your project root: `./tests/`
 # Run K6 tests with verbose output
 grafana-bench test \
   --test-runner k6 \
+  --suite-name my-repo/k6-tests \
   --suite-path ./tests \
   --log-level debug
 ```
@@ -303,7 +310,9 @@ Content with examples.
 
 ```bash
 # Example command
-grafana-bench test --suite-path ./tests
+grafana-bench test \
+  --suite-name my-repo/tests \
+  --suite-path ./tests
 ```
 
 > **Note:** Important information about this command.
@@ -356,7 +365,9 @@ export default function () {
 3. Run the test:
 
 ```bash
-grafana-bench test --suite-path test.ts
+grafana-bench test \
+  --suite-name my-repo/quickstart \
+  --suite-path test.ts
 ```
 
 > **Note:** The test connects to Grafana on port 3000 by default.

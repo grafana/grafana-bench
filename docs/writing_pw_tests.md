@@ -229,7 +229,7 @@ docker run --rm \
   --test-runner playwright \
   --test-type smoke \
   --suite-path /tests \
-  --suite-name my-project/e2e \
+  --suite-name my-repo/e2e \
   --run-stage local \
   --report-output log \
   --pw-prepare "yarn install --frozen-lockfile; yarn playwright install chromium" \

@@ -1,14 +1,16 @@
-trigger: "ci"
+run:
+  stage: "ci"
 
 test:
   type: "smoke"
   runner: "playwright"
 
 suite:
-  name: "CI"
+  name: "grafana-bench/playwright-tests"
   base: "/tests/CI/playwright"
 
-grafana:
+service:
+  name: "grafana"
   url: "http://localhost:3000"
   admin:
     user: "admin"

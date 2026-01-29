@@ -47,17 +47,24 @@ func (r *LogReporter) Report(
 	summary executor.SuiteRunSummary,
 ) error {
 
-	log := r.Log.With(
+	// Build log attributes, conditionally including serviceUrl only for service endpoint tests
+	logAttrs := []any{
 		"runId", suiteRun.Id,
 		"suiteName", summary.SuiteName,
 		"suiteRevision", summary.SuiteRevision,
 		"runStage", suiteRun.RunStage,
 		"testExecutor", suiteRun.TestExecutor,
 		"benchRevision", suiteRun.BenchRevision,
-		"grafanaUrl", suiteRun.GrafanaURL,
-		"grafanaSlug", suiteRun.GrafanaSlug,
-		"grafanaVersion", suiteRun.GrafanaVersion,
-	)
+	}
+
+	// Only include serviceUrl for service endpoint tests (k6, playwright)
+	if suiteRun.ServiceURL != "" {
+		logAttrs = append(logAttrs, "serviceUrl", suiteRun.ServiceURL)
+	}
+
+	logAttrs = append(logAttrs, "serviceVersion", suiteRun.ServiceVersion)
+
+	log := r.Log.With(logAttrs...)
 
 	for order, testRun := range summary.TestRuns {
 		testRunId := fmt.Sprintf("%s-%d", suiteRun.Id, order)

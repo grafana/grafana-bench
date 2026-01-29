@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-Grafana Bench is a Go-based CLI tool for testing Grafana across multiple architectures and configurations. It provides test observability and standardized test execution/reporting for the Grafana ecosystem, supporting both K6 API tests and Playwright browser tests.
+Grafana Bench is a Go-based CLI tool for testing Grafana across multiple architectures and configurations. It provides test observability and standardized test execution/reporting for the Grafana ecosystem, supporting K6 API tests, Playwright browser tests, Go tests, and Go benchmarks.
 
 ## Build and Test Commands
 
@@ -26,6 +26,17 @@ grafana-bench test \
   --test-suite CI/k6 \
   --log-level info
 
+# Run Go benchmarks with Prometheus metrics
+grafana-bench test \
+  --service bench \
+  --service-version v1.0.0 \
+  --test-runner gobench \
+  --suite-path ./benchmarks \
+  --gobench-pattern "BenchmarkAPI" \
+  --gobench-time 10s \
+  --prometheus-metrics \
+  --run-stage ci
+
 # Validate Slack permissions
 grafana-bench validate --check-slack-permissions
 ```
@@ -43,7 +54,8 @@ grafana-bench validate --check-slack-permissions
 ### Core Packages
 - **executor/**: Test execution engines for different frameworks:
   - `gotest/` - Go test execution and parsing
-  - `k6/` - K6 JavaScript test execution 
+  - `gobench/` - Go benchmark execution with performance metrics
+  - `k6/` - K6 JavaScript test execution
   - `playwright/` - Playwright browser test execution
 - **reporter/**: Multiple output formats (log, text, Prometheus metrics)
 - **notifier/**: Slack integration with CODEOWNERS mapping
@@ -55,6 +67,7 @@ grafana-bench validate --check-slack-permissions
 1. **K6 API Tests**: JavaScript-based API testing in `CI/k6/`
 2. **Playwright Browser Tests**: End-to-end browser testing in `CI/playwright/`
 3. **Go Tests**: Standard Go unit/integration tests throughout codebase
+4. **Go Benchmarks**: Performance benchmarks with metrics export to Prometheus
 
 ## Configuration
 

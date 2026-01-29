@@ -2,7 +2,7 @@
 
 **Bench** provides test observability and standardized test execution for the Grafana ecosystem.
 
-**Latest Version:** v1.0.0
+**Latest Version:** v0.6.11
 
 ---
 
@@ -11,20 +11,31 @@
 - **Upgrading from v0.6.x?** See the [Migration Guide](../MIGRATION_GUIDE_v1.md) 🚀
 - **New to Bench?** Start with the [5-minute Quickstart](quickstart.md)
 - **Ready to dive in?** Read the [Installation Guide](installation.md)
-- **Want examples?** Check out [Templates](templates.md)
-- **Need help?** See [Troubleshooting](troubleshooting.md)
+- [bench slack](https://grafanalabs.enterprise.slack.com/archives/C069CQCLDCG)
+- [bench ops](https://grafanalabs.enterprise.slack.com/archives/C08THJTL552)
 
 ---
 
 ## What is Bench?
 
-Bench is a CLI tool that wraps your testing frameworks (K6, Playwright, Go) and provides:
+Bench is a **labeling strategy** with a CLI to execute your tests in a consistent environment (container), get test output into a consistent format (reporter), plus glue to handle transport, discovery (dashboards), and alerting (metrics / slack) on your test runs.
+
+**Benefits:**
 
 - ✅ **Standardized test execution** across local, CI, and release pipelines
 - 📊 **Test observability** with structured logging and metrics
 - 🔔 **Smart notifications** via Slack with CODEOWNERS integration
 - 🎯 **Multi-architecture testing** for Grafana's diverse deployment targets
 - 📈 **Load testing** with Grafana Cloud K6 integration
+
+**Components:**
+
+- CLI
+- Docker containers (dev/prod, base/playwright - 4 variants)
+- [K6 API testing framework](https://github.com/grafana/grafana-api-tests) with support for HTTP, gRPC, and load testing
+- [Dashboards](https://ops.grafana-ops.net/d/effb289a-04f8-418f-b948-f47ea2e1c0fd/suite-runs?orgId=1&from=now-24h&to=now&timezone=utc&var-suiteRunIdentifier=&var-argoWorkflowIdentifier=$__all)
+- [Metrics](https://ops.grafana-ops.net/a/grafana-metricsdrilldown-app/drilldown?nativeHistogramMetric=&layout=grid&filters-rule=&filters-prefix=&filters-suffix=&from=now-1h&to=now&timezone=utc&var-otel_resources=&var-filters=job%7C%3D%7Cbench&var-otel_and_metric_filters=&var-deployment_environment=undefined&var-labelsWingman=%28none%29&search_txt=&var-metrics-reducer-sort-by=default&var-ds=edprtf91hz01se&var-other_metric_filters=)
+- [versioned libsonnet libraries with argo templates](https://github.com/grafana/deployment_tools/tree/master/ksonnet/lib/bench)
 
 ---
 
@@ -44,10 +55,12 @@ Modern applications need testing across many environments, architectures, and co
 Bench is simple: it wraps your testing tools and standardizes the output.
 
 **Architecture:**
+
 - **Test Executors** (K6, Playwright, Go) - Each executor includes a parser for that framework
 - **Reporters** - Output results via structured logs, Prometheus metrics, and Slack notifications
 
 You either:
+
 1. **Let bench run your tests** - It executes and parses automatically
 2. **Pass bench your test output** - It normalizes and reports for you
 
@@ -66,10 +79,26 @@ For background on testing observability, read: [Delivery Targets and the need fo
 
 ### 1. Install Bench (2 minutes)
 
-**Docker** (recommended):
+**Docker**:
+
+For **local development** (dev variants):
 
 ```sh
+# Base image (K6, Go tests, Go benchmarks)
+docker pull us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-dev/grafana-bench:v0.6.11
+
+# Playwright image (includes Chromium for browser tests)
+docker pull us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-dev/grafana-bench-playwright:v0.6.11
+```
+
+For **CI/production** (prod variants - hardened for security):
+
+```sh
+# Base image (K6, Go tests, Go benchmarks)
 docker pull us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.6.11
+
+# Playwright image (includes Chromium for browser tests)
+docker pull us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench-playwright:v0.6.11
 ```
 
 **Binary**:
@@ -101,8 +130,13 @@ Add Bench to your GitHub Actions workflow:
     version: 'v0.6.11'
 
 - name: Run Tests
-  run: grafana-bench test --suite-path ./tests
+  run: |
+    grafana-bench test \
+      --suite-name my-repo/tests \
+      --suite-path ./tests
 ```
+
+> **Note on Suite Names:** Use the format `<project>/<test-type>` for clear organization in logs and metrics. Examples: `grafana-bench/go-tests`, `my-plugin/e2e-tests`, `api-service/benchmarks`.
 
 📖 [GitHub Actions Integration Guide](github_actions.md)
 

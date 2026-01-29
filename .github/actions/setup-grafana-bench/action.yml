@@ -1,19 +1,21 @@
 name: 'Setup Grafana Bench'
-description: 'Install grafana-bench binary'
+description: 'Install grafana-bench binary and setup Prometheus secrets'
 inputs:
   version:
-    description: 'Version of grafana-bench to install (e.g., "v0.6.1")'
+    description: 'Version of grafana-bench to install (e.g., "v0.6.1" or "latest"). Set to "false" to skip installation and only setup secrets.'
     required: true
 runs:
   using: 'composite'
   steps:
     - name: Setup Go
+      if: inputs.version != 'false'
       uses: actions/setup-go@v5
       with:
         go-version: '>=1.23.x'
         cache: false
-        
+
     - name: Install grafana-bench
+      if: inputs.version != 'false'
       shell: bash
       env:
         VERSION: ${{ inputs.version }}

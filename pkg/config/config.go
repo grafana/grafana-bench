@@ -5,15 +5,14 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"net/url"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/grafana/grafana-bench/pkg/compile"
 	"github.com/grafana/grafana-bench/pkg/executor"
+	"github.com/grafana/grafana-bench/pkg/executor/gobench"
 	"github.com/grafana/grafana-bench/pkg/executor/gotest"
 	"github.com/grafana/grafana-bench/pkg/executor/k6"
 	"github.com/grafana/grafana-bench/pkg/executor/playwright"
@@ -37,6 +36,7 @@ type BenchConfig struct {
 	SuiteRun   SuiteRunConfig
 	Service    ServiceConfig
 	Go         GoTestConfig
+	GoBench    GoBenchConfig
 	K6         K6Config
 	Playwright PWConfig
 	Slack      SlackNotifierConfig
@@ -193,6 +193,61 @@ func AddGoExecutorFlags(fs *pflag.FlagSet, config *GoTestConfig) {
 	)
 }
 
+type GoBenchConfig struct {
+	GoArgs       []string
+	BenchArgs    []string
+	Packages     []string
+	BenchPattern string
+	BenchTime    string
+	BenchMem     bool
+	Count        int
+}
+
+func AddGoBenchExecutorFlags(fs *pflag.FlagSet, config *GoBenchConfig) {
+	fs.StringArrayVar(
+		&config.Packages,
+		"gobench-packages",
+		nil,
+		"Package patterns for benchmarks (e.g., './...', './pkg/...'). If not specified, defaults to './...'",
+	)
+	fs.StringVar(
+		&config.BenchPattern,
+		"gobench-pattern",
+		".",
+		"Benchmark name pattern (regex). Use '.' to run all benchmarks",
+	)
+	fs.StringVar(
+		&config.BenchTime,
+		"gobench-time",
+		"",
+		"Benchmark duration (e.g., '10s', '100x'). If not set, uses Go's default",
+	)
+	fs.BoolVar(
+		&config.BenchMem,
+		"gobench-mem",
+		true,
+		"Enable memory statistics (B/op, allocs/op)",
+	)
+	fs.IntVar(
+		&config.Count,
+		"gobench-count",
+		1,
+		"Number of times to run each benchmark",
+	)
+	fs.StringArrayVar(
+		&config.GoArgs,
+		"gobench-args",
+		nil,
+		"Additional arguments passed to 'go test' (e.g., '-tags=integration')",
+	)
+	fs.StringArrayVar(
+		&config.BenchArgs,
+		"gobench-bench-args",
+		nil,
+		"Arguments passed to benchmarks via -args",
+	)
+}
+
 type SuiteRunConfig struct {
 	RunStage      string
 	Id            string
@@ -313,7 +368,7 @@ func AddTestRunnerFlag(fs *pflag.FlagSet, test *TestConfig) {
 		&test.Executor,
 		"test-runner",
 		"k6",
-		"test runner. Allowed values: 'k6', 'playwright', 'go'",
+		"test runner. Allowed values: 'k6', 'playwright', 'go', 'gobench'",
 	)
 }
 
@@ -349,9 +404,9 @@ func AddSuiteNameFlag(fs *pflag.FlagSet, config *TestSuiteConfig) {
 		&config.Name,
 		"suite-name",
 		"",
-		"test suite name. If not specified, SUITE_NAME environment variable is used."+
-			"\nDefaults to the last component of -suite-path."+
-			"\nFor example --suite--path path/to/testsuite will give a test suite name of 'testsuite'.",
+		"[REQUIRED] Test suite name used for identifying and labeling test results in logs and metrics."+
+			"\nIf not specified, SUITE_NAME environment variable is used."+
+			"\nExample: 'grafana-bench/go-tests' or 'my-repo/smoke-tests'",
 	)
 }
 
@@ -537,6 +592,19 @@ func (config BenchConfig) BuildTestExecutor(
 				Retries:  config.Go.Retries,
 			},
 		)
+	case "gobench":
+		executor = gobench.NewGoBenchExecutor(
+			log,
+			gobench.GoBenchExecutorOptions{
+				GoArgs:       config.GoBench.GoArgs,
+				BenchArgs:    config.GoBench.BenchArgs,
+				Packages:     config.GoBench.Packages,
+				BenchPattern: config.GoBench.BenchPattern,
+				BenchTime:    config.GoBench.BenchTime,
+				BenchMem:     config.GoBench.BenchMem,
+				Count:        config.GoBench.Count,
+			},
+		)
 	case "k6":
 		executor = k6.NewK6TestExecutor(
 			log,
@@ -587,14 +655,15 @@ func (config *BenchConfig) BuildTestSuite(log *slog.Logger) (*executor.TestSuite
 		}
 	}
 
-	// if the test suite name was not given, use repo name (if Any) and the last element of the test suite path
+	// Validate required test suite name
 	if config.TestSuite.Name == "" {
-		name := strings.TrimSuffix(path.Base(config.TestSuite.Path), path.Ext(config.TestSuite.Path))
-		if config.TestSuite.Repo != "" {
-			repoURL, _ := url.Parse(config.TestSuite.Repo)
-			name, _ = strings.CutPrefix(filepath.Join(repoURL.Path, name), "/")
-		}
-		config.TestSuite.Name = name
+		return nil, fmt.Errorf("--suite-name is required\n" +
+			"The suite name identifies your tests in logs and metrics.\n" +
+			"Use format: <project>/<test-type>\n" +
+			"Examples:\n" +
+			"  --suite-name grafana-bench/go-tests\n" +
+			"  --suite-name my-plugin/e2e-tests\n" +
+			"  --suite-name api-service/benchmarks")
 	}
 
 	return &executor.TestSuite{
@@ -606,10 +675,11 @@ func (config *BenchConfig) BuildTestSuite(log *slog.Logger) (*executor.TestSuite
 }
 
 func (benchConfig *BenchConfig) BuildSuiteRun(log *slog.Logger) (executor.SuiteRun, error) {
-	grafanaSlug := ""
-	if benchConfig.Service.Url != "" {
-		// in case of error, slug it will be empty
-		grafanaSlug, _ = grafana.Slug(benchConfig.Service.Url)
+	// Only set service URL for executors that test service endpoints (k6, playwright)
+	// For go/gobench, this doesn't make sense since they're testing code directly
+	serviceURL := ""
+	if benchConfig.Test.Executor == "k6" || benchConfig.Test.Executor == "playwright" {
+		serviceURL = benchConfig.Service.Url
 	}
 
 	// Validate required service field
@@ -698,9 +768,8 @@ func (benchConfig *BenchConfig) BuildSuiteRun(log *slog.Logger) (executor.SuiteR
 		TestExecutor:   benchConfig.Report.Input,
 		Attributes:     attributes,
 		BenchRevision:  benchConfig.Revision,
-		GrafanaURL:     benchConfig.Service.Url,
-		GrafanaSlug:    grafanaSlug,
-		GrafanaVersion: serviceVersion,
+		ServiceURL:     serviceURL,
+		ServiceVersion: serviceVersion,
 	}, nil
 }
 
@@ -757,6 +826,17 @@ func (config *BenchConfig) BuildReporter() (reporter.SuiteRunReporter, error) {
 	}
 
 	if config.Prometheus.Metrics {
+		// Validate required Prometheus configuration
+		if config.Prometheus.URL == "" {
+			return nil, fmt.Errorf("--prometheus-metrics requires PROMETHEUS_URL environment variable or --prometheus-url flag to be set")
+		}
+		if config.Prometheus.User == "" {
+			return nil, fmt.Errorf("--prometheus-metrics requires PROMETHEUS_USER environment variable or --prometheus-user flag to be set")
+		}
+		if config.Prometheus.Password == "" {
+			return nil, fmt.Errorf("--prometheus-metrics requires PROMETHEUS_PASSWORD environment variable or --prometheus-password flag to be set")
+		}
+
 		prometheusReporter := reporter.NewPrometheusReporter(reporter.PrometheusConfig{
 			URL:      config.Prometheus.URL,
 			User:     config.Prometheus.User,
@@ -770,7 +850,6 @@ func (config *BenchConfig) BuildReporter() (reporter.SuiteRunReporter, error) {
 
 	return reporter.NewChainReporter(reporters...), nil
 }
-
 
 func (config *BenchConfig) GetRunMetrics(log *slog.Logger) ([]metrics.Metric, error) {
 	metricList := []metrics.Metric{}

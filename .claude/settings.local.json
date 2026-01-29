@@ -28,7 +28,14 @@
       "Bash(git rebase:*)",
       "Bash(git stash:*)",
       "Bash(git grep:*)",
-      "Bash(go build:*)"
+      "Bash(go build:*)",
+      "Bash(LOG_LEVEL=DEBUG grafana-bench test:*)",
+      "Bash(grafana-bench test:*)",
+      "Bash(go install)",
+      "Bash(for file in /Users/jeff/projects/bench-jalevin-bench-go-test/docs/*.md)",
+      "Bash(do if grep -q \"grafana-bench test\" \"$file\")",
+      "Bash(fi)",
+      "Bash(done)"
     ],
     "deny": []
   }

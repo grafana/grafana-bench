@@ -23,9 +23,8 @@ func TestRunStageInLogOutput(t *testing.T) {
 		Service:        "grafana",
 		TestExecutor:   "k6",
 		BenchRevision:  "v1.0.0",
-		GrafanaURL:     "http://localhost:3000",
-		GrafanaSlug:    "localhost",
-		GrafanaVersion: "11.0.0",
+		ServiceURL:     "http://localhost:3000",
+		ServiceVersion: "11.0.0",
 	}
 
 	summary := executor.SuiteRunSummary{

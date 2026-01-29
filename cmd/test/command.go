@@ -15,13 +15,19 @@ import (
 
 const examples = `
 # run a k6 smoke test from the test suite directory
-bench test --suite-path /path/to/test/folder
+bench test \
+  --suite-name my-repo/smoke-tests \
+  --suite-path /path/to/test/folder
 
 # run a k6 load test using a single test
-bench test --test-type load --suite-path /path/to/test.js"
+bench test \
+  --suite-name my-repo/load-test \
+  --test-type load \
+  --suite-path /path/to/test.js"
 
 # checkout a test from a repo and run tests from my-branch branch
 bench test \
+  --suite-name my-repo/integration-tests \
   --suite-repo-url https://url/to/test-repo.git \
   --suite-base path/to/local/repo/directory \
   --suite-revision my-branch \
@@ -29,6 +35,7 @@ bench test \
 
 # run k6 test with cloud output
 bench test \
+  --suite-name my-repo/k6-tests \
   --grafana-url "http://host.docker.internal:3000" \
   --suite-path /home/bench/work/grafana-plugin-tests \
   --test-runner k6
@@ -36,12 +43,14 @@ bench test \
 
 # run k6 test with custom environment variables
 bench test \
+  --suite-name my-repo/k6-tests \
   --suite-path /home/bench/work/grafana-plugin-tests \
   --test-env VAR=value,ANOTHER_VAR=value        \
   --test-runner k6
 
 # run playwright test
 bench test  \
+  --suite-name my-repo/e2e-tests \
   --grafana-url "http://host.docker.internal:3000" \
   --suite-path grafana-plugin-tests \
   --test-runner playwright \
@@ -50,8 +59,21 @@ bench test  \
 
 # run go test
 bench test  \
+  --suite-name my-repo/go-tests \
   --suite-path ./path/to/test/... \
   --test-runner go
+
+# run go benchmarks with prometheus metrics
+bench test \
+  --suite-name my-repo/benchmarks \
+  --service bench \
+  --service-version v1.0.0 \
+  --test-runner gobench \
+  --suite-path ./benchmarks \
+  --gobench-pattern "BenchmarkAPI" \
+  --gobench-time 10s \
+  --prometheus-metrics \
+  --run-stage ci
 `
 
 const longDescription = `
@@ -113,29 +135,104 @@ It also provides the possibility of retrying failed test and report flaky tests.
 
 The --go-test-packages argument defines the packages to be tested using the same format as the go test command.
 If not specified, only the tests under the current working directory are executed.
-    grafana-bench test --test-runner go --go-test-packages ./path/to/packages/...
+    grafana-bench test \
+      --suite-name my-repo/go-tests \
+      --test-runner go \
+      --go-test-packages ./path/to/packages/...
 
 The '--suite-path' can be used to change the working directory for the go test command.
 The following command will search for tests under the 'tests' directory using the pattern defined by
 the --go-test-packages:
-    grafana-bench test --test-runner go \
-      --suite-path tests --go-test-packages ./path/to/package/...
+    grafana-bench test \
+      --suite-name my-repo/go-tests \
+      --test-runner go \
+      --suite-path tests \
+      --go-test-packages ./path/to/package/...
 
 Additional arguments such as build tags can be passed using the --go-args flag.
-    grafana-bench test --test-runner go \
+    grafana-bench test \
+       --suite-name my-repo/go-tests \
+       --test-runner go \
        --go-test-packages ./path/to/package/... \
        --go-args "-tags=slow -race -timeout=30m"
 
 For passing flags to configure the test, use the --go-test-args flag
-    grafana-bench test --test-runner go \
-       --go-test-packages ./path/to/package/... \ 
+    grafana-bench test \
+       --suite-name my-repo/go-tests \
+       --test-runner go \
+       --go-test-packages ./path/to/package/... \
        --go-test-args "-slow 1"
 
 The go test executor can retry failed tests. Test that pass after retrying are reported as flaky.
 The number of retries is defined by the go-retries option.
-    grafana-bench test --test-runner go \
+    grafana-bench test \
+       --suite-name my-repo/go-tests \
+       --test-runner go \
        --go-test-packages ./path/to/package/... \
        --go-retries 3
+
+Go Benchmarks
+-------------
+
+Execute Go benchmarks with 'go test -bench' and export performance metrics (ns/op, B/op, allocs/op) to
+Prometheus and test reports. Use --test-runner gobench to run benchmarks instead of tests.
+
+The --gobench-packages argument defines the packages to benchmark using the same format as go test.
+If not specified, defaults to './...' (all packages).
+    grafana-bench test \
+      --suite-name my-repo/benchmarks \
+      --test-runner gobench \
+      --gobench-packages ./pkg/...
+
+Use --gobench-pattern to filter benchmarks by name (regex):
+    grafana-bench test \
+      --suite-name my-repo/benchmarks \
+      --test-runner gobench \
+      --gobench-pattern "BenchmarkAPI"
+
+Control benchmark duration with --gobench-time (e.g., "10s" or "100x"):
+    grafana-bench test \
+      --suite-name my-repo/benchmarks \
+      --test-runner gobench \
+      --gobench-time 10s
+
+Memory statistics are enabled by default. Disable with --gobench-mem=false:
+    grafana-bench test \
+      --suite-name my-repo/benchmarks \
+      --test-runner gobench \
+      --gobench-mem=false
+
+Run benchmarks multiple times with --gobench-count:
+    grafana-bench test \
+      --suite-name my-repo/benchmarks \
+      --test-runner gobench \
+      --gobench-count 5
+
+Additional go test arguments can be passed using --gobench-args:
+    grafana-bench test \
+       --suite-name my-repo/benchmarks \
+       --test-runner gobench \
+       --gobench-args "-tags=integration -timeout=30m"
+
+Arguments for the benchmark itself can be passed using --gobench-bench-args:
+    grafana-bench test \
+       --suite-name my-repo/benchmarks \
+       --test-runner gobench \
+       --gobench-bench-args "-cpuprofile=cpu.prof"
+
+Complete example with Prometheus metrics:
+    grafana-bench test \
+       --suite-name my-repo/benchmarks \
+       --service bench \
+       --service-version abc123 \
+       --test-runner gobench \
+       --suite-path ./benchmarks \
+       --gobench-pattern "BenchmarkAPI" \
+       --gobench-time 10s \
+       --gobench-count 3 \
+       --prometheus-metrics \
+       --prometheus-url https://prometheus.example.com/api/v1/write \
+       --run-stage ci
 
 [1] https://github.com/grafana/grafana-bench/blob/main/docs/writing_pw_tests.md
 
@@ -191,10 +288,12 @@ suite:
   path: "/path/to/tests"
   repo: "https://github.com/org/test-repo.git"
   revision: "main"
-  
-grafana:
+
+service:
+  name: "grafana"
   url: "http://localhost:3000"
-  admin
+  version: "11.0.0"
+  admin:
     user: "admin"
     password: "secret"
 
@@ -214,7 +313,7 @@ slack:
   token: "xoxb-your-token"
 
 run:
-  trigger: "ci"
+  stage: "ci"
 `
 
 // TestFailureError represents a test suite failure (exit code 1)
@@ -344,6 +443,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	config.AddK6Flags(fs, &benchConfig.K6)
 	config.AddPlaywrightFlags(fs, &benchConfig.Playwright)
 	config.AddGoExecutorFlags(fs, &benchConfig.Go)
+	config.AddGoBenchExecutorFlags(fs, &benchConfig.GoBench)
 	config.AddSlackFlags(fs, &benchConfig.Slack)
 	config.AddReportOutputFlags(fs, &benchConfig.Report)
 	config.AddPrometheusFlags(fs, &benchConfig.Prometheus)
