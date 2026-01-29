@@ -406,7 +406,7 @@ func AddSuiteNameFlag(fs *pflag.FlagSet, config *TestSuiteConfig) {
 		"",
 		"[REQUIRED] Test suite name used for identifying and labeling test results in logs and metrics."+
 			"\nIf not specified, SUITE_NAME environment variable is used."+
-			"\nExample: 'grafana-bench/go-tests' or 'my-project/smoke-tests'",
+			"\nExample: 'grafana-bench/go-tests' or 'my-repo/smoke-tests'",
 	)
 }
 
@@ -850,7 +850,6 @@ func (config *BenchConfig) BuildReporter() (reporter.SuiteRunReporter, error) {
 
 	return reporter.NewChainReporter(reporters...), nil
 }
-
 
 func (config *BenchConfig) GetRunMetrics(log *slog.Logger) ([]metrics.Metric, error) {
 	metricList := []metrics.Metric{}

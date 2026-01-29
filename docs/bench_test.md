@@ -377,7 +377,7 @@ bench test \
                                           If specified, it is prefixed to the --suite-path. (default ".")
       --suite-name string                 [REQUIRED] Test suite name used for identifying and labeling test results in logs and metrics.
                                           If not specified, SUITE_NAME environment variable is used.
-                                          Example: 'grafana-bench/go-tests' or 'my-project/smoke-tests'
+                                          Example: 'grafana-bench/go-tests' or 'my-repo/smoke-tests'
       --suite-path string                 path to the tests to be executed.
                                           The path must be relative to the base dir (which defaults to the current directory).
                                           A single .js file or a directory can be specified.
