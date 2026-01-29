@@ -86,7 +86,10 @@ jobs:
 
       - uses: ./.github/actions/setup-grafana-bench
         with:
-          version: 'v0.6.11'
+          version: false
+
+      - name: install bench
+        run: go install .
 
       - name: test
         env:
