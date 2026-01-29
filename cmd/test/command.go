@@ -288,10 +288,12 @@ suite:
   path: "/path/to/tests"
   repo: "https://github.com/org/test-repo.git"
   revision: "main"
-  
-grafana:
+
+service:
+  name: "grafana"
   url: "http://localhost:3000"
-  admin
+  version: "11.0.0"
+  admin:
     user: "admin"
     password: "secret"
 
@@ -311,7 +313,7 @@ slack:
   token: "xoxb-your-token"
 
 run:
-  trigger: "ci"
+  stage: "ci"
 `
 
 // TestFailureError represents a test suite failure (exit code 1)

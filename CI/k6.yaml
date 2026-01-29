@@ -1,12 +1,12 @@
-suiteRun:
-  runStage: "ci"
+run:
+  stage: "ci"
 
 test:
   type: "smoke"
-  executor: "k6"
+  runner: "k6"
 
-testSuite:
-  name: "CI"
+suite:
+  name: "grafana-bench/k6-tests"
   path: "/tests/CI/k6"
 
 service:
