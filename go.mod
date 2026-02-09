@@ -7,7 +7,7 @@ toolchain go1.25.6
 require (
 	buf.build/gen/go/prometheus/prometheus/protocolbuffers/go v1.36.9-20250320161912-af2aab87b1b3.1
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
-	github.com/go-git/go-git/v5 v5.16.4
+	github.com/go-git/go-git/v5 v5.16.5
 	github.com/golang/snappy v1.0.0
 	github.com/grafana/nanogit v0.3.0
 	github.com/joho/godotenv v1.5.1
