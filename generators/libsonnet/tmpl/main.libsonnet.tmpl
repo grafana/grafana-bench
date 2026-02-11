@@ -45,7 +45,7 @@ local benchPlaywrightImage = '{{.PlaywrightImageURL}}';
       benchImage,
 
   // Helper function to build script array from bench options
-  buildScript(grafanaURL, bench_options)::
+  buildScript({{.URLParamName}}, bench_options)::
     // testEnv contains key=value pairs to pass directly to bench via --test-env
     // Bench will handle env var expansion with os.ExpandEnv() if values contain $VAR references
     [
