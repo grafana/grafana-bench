@@ -41,6 +41,7 @@ type TemplateData struct {
 	ScriptFlags        string
 	BaseImageURL       string
 	PlaywrightImageURL string
+	URLParamName       string // grafanaURL for v0.6.11, serviceURL for v1.0.0+
 }
 
 type VersionsTemplateData struct {
@@ -186,13 +187,20 @@ func generateMain() {
 
 	fmt.Printf("Extracted %d non-deprecated flags\n", len(flags))
 
+	// Determine URL parameter name based on version
+	urlParamName := "serviceURL"
+	if targetVersion == "v0.6.11" {
+		urlParamName = "grafanaURL"
+	}
+
 	// Generate template data
 	data := TemplateData{
 		Version:            targetVersion,
 		SuiteOptions:       generateSuiteOptions(flags),
-		ScriptFlags:        generateScriptFlags(flags),
+		ScriptFlags:        generateScriptFlags(flags, targetVersion),
 		BaseImageURL:       baseImageURL,
 		PlaywrightImageURL: playwrightImageURL,
+		URLParamName:       urlParamName,
 	}
 
 	// Load templates from files
@@ -591,17 +599,27 @@ func generateLibsonnetOption(flag FlagInfo) string {
 	return fmt.Sprintf("%s\n      %s: %s", comment, camelCase, defaultValue)
 }
 
-func generateScriptFlags(flags []FlagInfo) string {
+func generateScriptFlags(flags []FlagInfo, version string) string {
 	var baseArrayParts []string
 	var concatenationParts []string
+
+	// Check if this is v0.6.11 (uses old deprecated flags)
+	isLegacyVersion := version == "v0.6.11"
 
 	// Always include basic required flags in the base array
 	baseArrayParts = append(baseArrayParts, "                     'grafana-bench',")
 	baseArrayParts = append(baseArrayParts, "                     'test',")
 
-	// Add required string flags to base array
-	baseArrayParts = append(baseArrayParts, "                     '--grafana-url',")
-	baseArrayParts = append(baseArrayParts, "                     grafanaURL,")
+	// Add required string flags to base array (version-specific)
+	if isLegacyVersion {
+		// v0.6.11 uses old flags
+		baseArrayParts = append(baseArrayParts, "                     '--grafana-url',")
+		baseArrayParts = append(baseArrayParts, "                     grafanaURL,")
+	} else {
+		// v1.0.0+ uses new flags
+		baseArrayParts = append(baseArrayParts, "                     '--service-url',")
+		baseArrayParts = append(baseArrayParts, "                     serviceURL,")
+	}
 	baseArrayParts = append(baseArrayParts, "                     '--suite-path',")
 	baseArrayParts = append(baseArrayParts, "                     bench_options.suitePath,")
 
@@ -626,7 +644,13 @@ func generateScriptFlags(flags []FlagInfo) string {
 	// Always include these required flags in base array
 	baseArrayParts = append(baseArrayParts, "                     '--log-level',")
 	baseArrayParts = append(baseArrayParts, "                     'info',")
-	baseArrayParts = append(baseArrayParts, "                     '--test-report-format',")
+	if isLegacyVersion {
+		// v0.6.11 uses old flag name
+		baseArrayParts = append(baseArrayParts, "                     '--test-report-format',")
+	} else {
+		// v1.0.0+ uses new flag name
+		baseArrayParts = append(baseArrayParts, "                     '--report-output',")
+	}
 	baseArrayParts = append(baseArrayParts, "                     'log',")
 
 	// Join base array

@@ -201,7 +201,7 @@ Tests failed 0
 ### Version References
 
 - Use semantic versioning: `vX.Y.Z`
-- Reference version in code examples: `grafana-bench:`v0.6.11`
+- Reference version in code examples: `grafana-bench:`v1.0.0`
 - Note: Version references are auto-updated by running `make docs`
 
 ## Content Style Guidelines
