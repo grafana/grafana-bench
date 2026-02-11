@@ -85,20 +85,20 @@ For **local development** (dev variants):
 
 ```sh
 # Base image (K6, Go tests, Go benchmarks)
-docker pull us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-dev/grafana-bench:v0.6.11
+docker pull us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-dev/grafana-bench:v1.0.0
 
 # Playwright image (includes Chromium for browser tests)
-docker pull us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-dev/grafana-bench-playwright:v0.6.11
+docker pull us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-dev/grafana-bench-playwright:v1.0.0
 ```
 
 For **CI/production** (prod variants - hardened for security):
 
 ```sh
 # Base image (K6, Go tests, Go benchmarks)
-docker pull us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.6.11
+docker pull us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v1.0.0
 
 # Playwright image (includes Chromium for browser tests)
-docker pull us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench-playwright:v0.6.11
+docker pull us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench-playwright:v1.0.0
 ```
 
 **Binary**:
@@ -125,9 +125,9 @@ Add Bench to your GitHub Actions workflow:
 
 ```yaml
 - name: Setup Grafana Bench
-  uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@057477c3d586996c1fc3f38772760c34a68d2859
+  uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@3ffbaeeb1a4ecd0892b0e3daa66c9fd652854849
   with:
-    version: 'v0.6.11'
+    version: 'v1.0.0'
 
 - name: Run Tests
   run: |

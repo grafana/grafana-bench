@@ -222,7 +222,7 @@ Bench provides reasonable defaults for specifying the grafana instance. In v1.0.
 docker run --rm \
   --network=host \
   --volume="./:/tests/" \
-  us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.6.11 test \
+  us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v1.0.0 test \
   --service grafana \
   --service-url "http://localhost:3000" \
   --service-version latest \
@@ -243,7 +243,7 @@ docker run --rm \
 1. `docker run --rm` invokes docker. `--rm` tells docker to remove the container when we're done
 2. `--network=host` connects the docker container to the same network that the host is on. This is important as the the docker-compose file in the previous step mounts the grafana container to port 3000. So to make grafana accessible from the bench container, we need to connect the bench container to the same network.
 3. `--volume="./:/tests/"` mounts the current directory of the host machine inside the bench container. In this case, the checkout command from step 1 in the workflow grabs all of the plugin code and puts it in the current directory. So we're mounting everything inside the container in the `/tests` directory
-4. `us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v0.6.11 test` says use the bench container tagged with bench:`v0.6.11`. The container specificies the bench binary as the default execution script, so `test` the subcommand and effectively runs `grafana-bench test`
+4. `us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v1.0.0 test` says use the bench container tagged with bench:`v1.0.0`. The container specificies the bench binary as the default execution script, so `test` the subcommand and effectively runs `grafana-bench test`
 5. `--service grafana` specifies that we're testing a Grafana service
 6. `--service-url "http://localhost:3000"` sets the URL of the Grafana instance to test
 7. `--service-version latest` specifies the version of Grafana being tested
