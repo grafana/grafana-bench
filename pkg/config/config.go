@@ -765,7 +765,7 @@ func (benchConfig *BenchConfig) BuildSuiteRun(log *slog.Logger) (executor.SuiteR
 		Id:             runId,
 		RunStage:       benchConfig.SuiteRun.RunStage,
 		Service:        benchConfig.Service.Name,
-		TestExecutor:   benchConfig.Report.Input,
+		TestExecutor:   benchConfig.Test.Executor,
 		Attributes:     attributes,
 		BenchRevision:  benchConfig.Revision,
 		ServiceURL:     serviceURL,
