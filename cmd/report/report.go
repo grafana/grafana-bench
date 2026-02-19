@@ -9,6 +9,7 @@ import (
 	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/executor/gotest"
 	"github.com/grafana/grafana-bench/pkg/executor/playwright"
+	"github.com/grafana/grafana-bench/pkg/executor/zizmor"
 	"github.com/spf13/cobra"
 )
 
@@ -133,6 +134,11 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				suiteRunSummary, err = gotest.ParseJsonOutput(input)
 				if err != nil {
 					return fmt.Errorf("parsing go-json input %w", err)
+				}
+			case "zizmor":
+				suiteRunSummary, err = zizmor.ParseSARIF(input)
+				if err != nil {
+					return fmt.Errorf("parsing zizmor SARIF input %w", err)
 				}
 			default:
 				if benchConfig.Report.Input == "" {

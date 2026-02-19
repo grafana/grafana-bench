@@ -1,0 +1,24 @@
+{
+  "$schema": "https://docs.oasis-open.org/sarif/sarif/v2.1.0/os/schemas/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "zizmor",
+          "version": "1.14.2",
+          "semanticVersion": "1.14.2",
+          "informationUri": "https://docs.zizmor.sh",
+          "downloadUri": "https://github.com/zizmorcore/zizmor",
+          "rules": []
+        }
+      },
+      "invocations": [
+        {
+          "executionSuccessful": true
+        }
+      ],
+      "results": []
+    }
+  ]
+}
