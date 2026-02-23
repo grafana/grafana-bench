@@ -3,8 +3,11 @@ package utils
 import (
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"regexp"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/go-git/go-git/v5"
@@ -15,12 +18,77 @@ import (
 // semVerRegex matches semantic version with optional v prefix. eg: v1.1.1
 var semVerRegex = regexp.MustCompile(`v?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?`)
 
+// resolveMainRepoPath resolves the root of the main git repository from any
+// path, including git worktrees where .git is a file pointer rather than a
+// directory. In a worktree the .git file points to a worktree-specific gitdir
+// (e.g. .git/worktrees/<name>/) which does not contain tags; tags live in the
+// main .git directory. This function follows the chain:
+//
+//	<worktree>/.git  →  gitdir: <main>/.git/worktrees/<name>
+//	                     commondir: ../..           →  <main>/.git
+//
+// and returns the parent of the main .git directory.
+func resolveMainRepoPath(path string) (string, error) {
+	dir := path
+	for {
+		gitPath := filepath.Join(dir, ".git")
+		fi, err := os.Stat(gitPath)
+		if err == nil {
+			if fi.IsDir() {
+				// Normal repo – already at the main root.
+				return dir, nil
+			}
+			// .git is a file (worktree or submodule).
+			content, err := os.ReadFile(gitPath)
+			if err != nil {
+				return path, nil
+			}
+			line := strings.TrimSpace(string(content))
+			if !strings.HasPrefix(line, "gitdir: ") {
+				return path, nil
+			}
+			gitdir := strings.TrimPrefix(line, "gitdir: ")
+			if !filepath.IsAbs(gitdir) {
+				gitdir = filepath.Join(dir, gitdir)
+			}
+			gitdir = filepath.Clean(gitdir)
+
+			// In a worktree, gitdir contains a "commondir" file that points
+			// to the main .git directory (e.g. "../..").
+			commondirContent, err := os.ReadFile(filepath.Join(gitdir, "commondir"))
+			if err != nil {
+				// Not a worktree (submodule etc.) – fall back to original path.
+				return path, nil
+			}
+			commondir := strings.TrimSpace(string(commondirContent))
+			if !filepath.IsAbs(commondir) {
+				commondir = filepath.Join(gitdir, commondir)
+			}
+			// commondir is the main .git directory; its parent is the repo root.
+			return filepath.Dir(filepath.Clean(commondir)), nil
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			break
+		}
+		dir = parent
+	}
+	return path, nil
+}
+
 // GetLatestBenchTag gets the latest semantic version tag from the repo.
 // This is used for getting the latest tag for bench when updating docs or generating libsonnet.
 func GetLatestBenchTag(repoPath string) (string, error) {
+	// Resolve the main repo root so that tags are accessible even when running
+	// from a git worktree (where .git is a file pointer, not a directory).
+	mainRepoPath, err := resolveMainRepoPath(repoPath)
+	if err != nil {
+		mainRepoPath = repoPath
+	}
+
 	// Open the repository
 	repo, err := git.PlainOpenWithOptions(
-		repoPath,
+		mainRepoPath,
 		&git.PlainOpenOptions{DetectDotGit: true},
 	)
 	if err != nil {
@@ -97,8 +165,13 @@ func GetLatestBenchTag(repoPath string) (string, error) {
 
 // GetShortCommitSHA returns the short SHA of the current git commit
 func GetShortCommitSHA(repoPath string) (string, error) {
+	mainRepoPath, err := resolveMainRepoPath(repoPath)
+	if err != nil {
+		mainRepoPath = repoPath
+	}
+
 	repo, err := git.PlainOpenWithOptions(
-		repoPath,
+		mainRepoPath,
 		&git.PlainOpenOptions{DetectDotGit: true},
 	)
 	if err != nil {
@@ -120,8 +193,13 @@ var ErrFoundCommit = errors.New("found commit")
 
 // GetLatestCommitForFile returns the full SHA of the latest commit that modified a specific file
 func GetLatestCommitForFile(repoPath string, filePath string) (string, error) {
+	mainRepoPath, err := resolveMainRepoPath(repoPath)
+	if err != nil {
+		mainRepoPath = repoPath
+	}
+
 	repo, err := git.PlainOpenWithOptions(
-		repoPath,
+		mainRepoPath,
 		&git.PlainOpenOptions{DetectDotGit: true},
 	)
 	if err != nil {
@@ -175,8 +253,13 @@ func GetLatestCommitForFile(repoPath string, filePath string) (string, error) {
 
 // GetLatestCommitForFileOnMain returns the full SHA of the latest commit on the main branch that modified a specific file
 func GetLatestCommitForFileOnMain(repoPath string, filePath string) (string, error) {
+	mainRepoPath, err := resolveMainRepoPath(repoPath)
+	if err != nil {
+		mainRepoPath = repoPath
+	}
+
 	repo, err := git.PlainOpenWithOptions(
-		repoPath,
+		mainRepoPath,
 		&git.PlainOpenOptions{DetectDotGit: true},
 	)
 	if err != nil {
