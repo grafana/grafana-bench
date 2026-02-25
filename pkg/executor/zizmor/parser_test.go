@@ -45,6 +45,63 @@ func TestParseSARIF(t *testing.T) {
 				assert.Equal(t, "tests passed", int32(0), summary.TestsPassed)
 				assert.Equal(t, "tests error", int32(0), summary.TestsError)
 
+				// Check Prometheus metrics are created
+				if len(summary.Metrics) == 0 {
+					t.Fatal("Expected metrics to be created, got none")
+				}
+
+				// Verify core metrics exist
+				metricNames := make(map[string]float64)
+				for _, m := range summary.Metrics {
+					metricNames[m.Name] = m.Value
+				}
+
+				// Check expected metrics
+				if val, ok := metricNames["bench_zizmor_total_vulnerabilities"]; !ok {
+					t.Error("Missing bench_zizmor_total_vulnerabilities metric")
+				} else {
+					assert.Equal(t, "total vulnerabilities metric", 4.0, val)
+				}
+
+				if val, ok := metricNames["bench_zizmor_high_severity"]; !ok {
+					t.Error("Missing bench_zizmor_high_severity metric")
+				} else {
+					assert.Equal(t, "high severity metric", 2.0, val)
+				}
+
+				if val, ok := metricNames["bench_zizmor_medium_severity"]; !ok {
+					t.Error("Missing bench_zizmor_medium_severity metric")
+				} else {
+					assert.Equal(t, "medium severity metric", 2.0, val)
+				}
+
+				if val, ok := metricNames["bench_zizmor_low_severity"]; !ok {
+					t.Error("Missing bench_zizmor_low_severity metric")
+				} else {
+					assert.Equal(t, "low severity metric", 0.0, val)
+				}
+
+				if val, ok := metricNames["bench_zizmor_unique_rules_violated"]; !ok {
+					t.Error("Missing bench_zizmor_unique_rules_violated metric")
+				} else {
+					assert.Equal(t, "unique rules metric", 3.0, val)
+				}
+
+				// Check per-rule metrics exist (should have 3 rule violation metrics)
+				ruleViolationCount := 0
+				for _, m := range summary.Metrics {
+					if m.Name == "bench_zizmor_rule_violations" {
+						ruleViolationCount++
+						// Each rule violation should have value 1.0
+						assert.Equal(t, "rule violation value", 1.0, m.Value)
+						// Should have rule_id label
+						if _, ok := m.Labels["rule_id"]; !ok {
+							t.Error("Rule violation metric missing rule_id label")
+						}
+					}
+				}
+				assert.Equal(t, "rule violation metrics count", 3, ruleViolationCount)
+
 				// Check individual test runs
 				if len(summary.TestRuns) != 4 {
 					t.Fatalf("Expected 4 test runs, got %d", len(summary.TestRuns))
@@ -91,6 +148,30 @@ func TestParseSARIF(t *testing.T) {
 				assert.Equal(t, "tests failed", int32(0), summary.TestsFailed)
 				assert.Equal(t, "tests passed", int32(0), summary.TestsPassed)
 				assert.Equal(t, "tests error", int32(0), summary.TestsError)
+
+				// Check metrics are still created (with zero values)
+				if len(summary.Metrics) == 0 {
+					t.Fatal("Expected metrics to be created even with no findings")
+				}
+
+				// Verify zero-value metrics
+				metricNames := make(map[string]float64)
+				for _, m := range summary.Metrics {
+					metricNames[m.Name] = m.Value
+				}
+
+				assert.Equal(t, "total vulnerabilities metric", 0.0, metricNames["bench_zizmor_total_vulnerabilities"])
+				assert.Equal(t, "high severity metric", 0.0, metricNames["bench_zizmor_high_severity"])
+				assert.Equal(t, "medium severity metric", 0.0, metricNames["bench_zizmor_medium_severity"])
+				assert.Equal(t, "low severity metric", 0.0, metricNames["bench_zizmor_low_severity"])
+				assert.Equal(t, "unique rules metric", 0.0, metricNames["bench_zizmor_unique_rules_violated"])
+
+				// No rule violation metrics when there are no findings
+				for _, m := range summary.Metrics {
+					if m.Name == "bench_zizmor_rule_violations" {
+						t.Error("Should not have rule violation metrics when there are no findings")
+					}
+				}
 
 				// No test runs
 				if len(summary.TestRuns) != 0 {

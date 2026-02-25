@@ -5,9 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strconv"
 	"time"
 
 	"github.com/grafana/grafana-bench/pkg/executor"
+	"github.com/grafana/grafana-bench/pkg/metrics"
 )
 
 var (
@@ -194,16 +196,61 @@ func ParseSARIF(report io.Reader) (executor.SuiteRunSummary, error) {
 		summary.TestRuns = append(summary.TestRuns, testRun)
 	}
 
-	// Add summary attributes for metrics
+	// Add summary attributes for logging/display
 	if summary.Attributes == nil {
 		summary.Attributes = make(map[string]string)
 	}
 	summary.Attributes["tool_version"] = run.Tool.Driver.Version
-	summary.Attributes["high_severity"] = fmt.Sprintf("%d", severityCounts["error"])
-	summary.Attributes["medium_severity"] = fmt.Sprintf("%d", severityCounts["warning"])
-	summary.Attributes["low_severity"] = fmt.Sprintf("%d", severityCounts["note"])
-	summary.Attributes["total_vulnerabilities"] = fmt.Sprintf("%d", len(run.Results))
-	summary.Attributes["unique_rules_violated"] = fmt.Sprintf("%d", len(rulesViolated))
+	summary.Attributes["high_severity"] = strconv.Itoa(severityCounts["error"])
+	summary.Attributes["medium_severity"] = strconv.Itoa(severityCounts["warning"])
+	summary.Attributes["low_severity"] = strconv.Itoa(severityCounts["note"])
+	summary.Attributes["total_vulnerabilities"] = strconv.Itoa(len(run.Results))
+	summary.Attributes["unique_rules_violated"] = strconv.Itoa(len(rulesViolated))
+
+	// Create Prometheus metrics for security findings
+	timestamp := summary.StartTime.UnixMilli()
+	summary.Metrics = []metrics.Metric{
+		{
+			Name:      "bench_zizmor_total_vulnerabilities",
+			Value:     float64(len(run.Results)),
+			Labels:    map[string]string{"tool_version": run.Tool.Driver.Version},
+			Timestamp: timestamp,
+		},
+		{
+			Name:      "bench_zizmor_high_severity",
+			Value:     float64(severityCounts["error"]),
+			Labels:    map[string]string{"severity": "high"},
+			Timestamp: timestamp,
+		},
+		{
+			Name:      "bench_zizmor_medium_severity",
+			Value:     float64(severityCounts["warning"]),
+			Labels:    map[string]string{"severity": "medium"},
+			Timestamp: timestamp,
+		},
+		{
+			Name:      "bench_zizmor_low_severity",
+			Value:     float64(severityCounts["note"]),
+			Labels:    map[string]string{"severity": "low"},
+			Timestamp: timestamp,
+		},
+		{
+			Name:      "bench_zizmor_unique_rules_violated",
+			Value:     float64(len(rulesViolated)),
+			Labels:    map[string]string{},
+			Timestamp: timestamp,
+		},
+	}
+
+	// Add per-rule metrics
+	for ruleID := range rulesViolated {
+		summary.Metrics = append(summary.Metrics, metrics.Metric{
+			Name:      "bench_zizmor_rule_violations",
+			Value:     1.0,
+			Labels:    map[string]string{"rule_id": ruleID},
+			Timestamp: timestamp,
+		})
+	}
 
 	// Check if execution was successful
 	if len(run.Invocations) > 0 && !run.Invocations[0].ExecutionSuccessful {
