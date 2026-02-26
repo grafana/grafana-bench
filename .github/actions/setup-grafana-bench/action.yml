@@ -8,7 +8,7 @@ runs:
   using: 'composite'
   steps:
     - name: Setup Go
-      if: inputs.version != 'false'
+      if: inputs.version == 'latest'
       uses: actions/setup-go@v5
       with:
         go-version: '>=1.23.x'
@@ -19,75 +19,43 @@ runs:
       shell: bash
       env:
         VERSION: ${{ inputs.version }}
-        GITHUB_TOKEN: ${{ github.token }}
+        GH_TOKEN: ${{ github.token }}
       run: |
-        echo "Installing grafana-bench version: $VERSION"
-        
-        # Determine platform and architecture
+        if [ "$VERSION" = "latest" ]; then
+          git config --global url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
+          GOPRIVATE="github.com/grafana/grafana-bench" GOPROXY="direct" GOSUMDB="off" \
+            go install "github.com/grafana/grafana-bench@latest"
+          grafana-bench version
+          exit 0
+        fi
+
         OS=$(uname -s | tr '[:upper:]' '[:lower:]')
         ARCH=$(uname -m)
-        
+
         case $ARCH in
           x86_64) ARCH="amd64" ;;
           aarch64|arm64) ARCH="arm64" ;;
           *) echo "Unsupported architecture: $ARCH" && exit 1 ;;
         esac
-        
+
         case $OS in
           linux) PLATFORM="linux" ;;
           darwin) PLATFORM="darwin" ;;
           mingw*|msys*|cygwin*) PLATFORM="windows"; ARCH="${ARCH}.exe" ;;
           *) echo "Unsupported platform: $OS" && exit 1 ;;
         esac
-        
+
         BINARY_NAME="grafana-bench-${PLATFORM}-${ARCH}"
-        echo "Looking for binary: $BINARY_NAME"
-        
-        # Get release info from GitHub API
-        RELEASE_INFO=$(curl -fsSL \
-          -H "Authorization: token ${GITHUB_TOKEN}" \
-          -H "Accept: application/vnd.github+json" \
-          "https://api.github.com/repos/grafana/grafana-bench/releases/tags/${VERSION}")
-        
-        # Extract asset ID for the binary we need
-        ASSET_ID=$(echo "$RELEASE_INFO" | jq -r ".assets[] | select(.name == \"$BINARY_NAME\") | .id")
-        
-        if [ "$ASSET_ID" != "null" ] && [ -n "$ASSET_ID" ]; then
-          echo "Found asset ID: $ASSET_ID"
-          echo "Downloading $BINARY_NAME..."
-          
-          # Download using authenticated GitHub API
-          curl -fsSL \
-            -H "Authorization: token ${GITHUB_TOKEN}" \
-            -H "Accept: application/octet-stream" \
-            "https://api.github.com/repos/grafana/grafana-bench/releases/assets/${ASSET_ID}" \
-            -o grafana-bench
-          
-          chmod +x grafana-bench
-          sudo mv grafana-bench /usr/local/bin/
-          grafana-bench version
-        else
-          echo "Could not find binary $BINARY_NAME in release $VERSION"
-          echo "Falling back to go install with authentication..."
-          
-          # Configure git to use GitHub token for private repositories
-          git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
-          
-          # Set Go environment variables for private repositories
-          export GOPRIVATE="github.com/grafana/grafana-bench"
-          export GOPROXY="direct"
-          export GOSUMDB="off"
-          
-          # Install using go install
-          if go install "github.com/grafana/grafana-bench@${VERSION}"; then
-            echo "Successfully installed grafana-bench using go install"
-            grafana-bench version
-          else
-            echo "Failed to install grafana-bench using go install"
-            echo "Please ensure the version ${VERSION} exists and is accessible"
-            exit 1
-          fi
-        fi
+        echo "Downloading $BINARY_NAME from release $VERSION..."
+
+        gh release download "${VERSION}" \
+          --repo grafana/grafana-bench \
+          --pattern "${BINARY_NAME}" \
+          --output grafana-bench
+
+        chmod +x grafana-bench
+        sudo mv grafana-bench /usr/local/bin/
+        grafana-bench version
     - id: get-secrets
       uses: grafana/shared-workflows/actions/get-vault-secrets@078c4a8af09e06d646077550f9e0f68171d5881e
       with:
