@@ -35,7 +35,8 @@
       "Bash(for file in /Users/jeff/projects/bench-jalevin-bench-go-test/docs/*.md)",
       "Bash(do if grep -q \"grafana-bench test\" \"$file\")",
       "Bash(fi)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(git worktree:*)"
     ],
     "deny": []
   }

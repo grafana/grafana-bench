@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Setup Grafana Bench
-        uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@3ffbaeeb1a4ecd0892b0e3daa66c9fd652854849
+        uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@281b943dbbdf2a30aa0fd2e5fd07503a49734f44
         with:
           version: 'v1.0.0'
 
@@ -97,7 +97,7 @@ After the setup step completes, the tokens are available in your environment. Si
 
 ```yaml
 - name: Setup Grafana Bench
-  uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@3ffbaeeb1a4ecd0892b0e3daa66c9fd652854849
+  uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@281b943dbbdf2a30aa0fd2e5fd07503a49734f44
   with:
     version: 'v1.0.0'
 
@@ -122,7 +122,7 @@ When using Docker, you need to explicitly pass the Prometheus environment variab
 
 ```yaml
 - name: Setup Grafana Bench
-  uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@3ffbaeeb1a4ecd0892b0e3daa66c9fd652854849
+  uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@281b943dbbdf2a30aa0fd2e5fd07503a49734f44
   with:
     version: 'v1.0.0'
 
@@ -185,7 +185,7 @@ Reference the action using a specific commit hash (required for private reposito
 
 ```yaml
 - name: Setup Grafana Bench
-  uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@3ffbaeeb1a4ecd0892b0e3daa66c9fd652854849
+  uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@281b943dbbdf2a30aa0fd2e5fd07503a49734f44
   with:
     version: 'v1.0.0'
 ```
@@ -239,7 +239,7 @@ This allows your CI workflows to handle test failures differently from internal 
 
 ```yaml
 - name: Setup Grafana Bench
-  uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@3ffbaeeb1a4ecd0892b0e3daa66c9fd652854849
+  uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@281b943dbbdf2a30aa0fd2e5fd07503a49734f44
   with:
     version: 'v1.0.0'
 

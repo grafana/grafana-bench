@@ -125,7 +125,7 @@ Add Bench to your GitHub Actions workflow:
 
 ```yaml
 - name: Setup Grafana Bench
-  uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@3ffbaeeb1a4ecd0892b0e3daa66c9fd652854849
+  uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@281b943dbbdf2a30aa0fd2e5fd07503a49734f44
   with:
     version: 'v1.0.0'
 
