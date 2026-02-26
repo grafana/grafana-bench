@@ -45,8 +45,9 @@ runs:
         
         # Get release info from GitHub API
         RELEASE_INFO=$(curl -fsSL \
-          -H "Authorization: token ${GITHUB_TOKEN}" \
           -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
           "https://api.github.com/repos/grafana/grafana-bench/releases/tags/${VERSION}")
         
         # Extract asset ID for the binary we need
@@ -58,8 +59,9 @@ runs:
           
           # Download using authenticated GitHub API
           curl -fsSL \
-            -H "Authorization: token ${GITHUB_TOKEN}" \
             -H "Accept: application/octet-stream" \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
             "https://api.github.com/repos/grafana/grafana-bench/releases/assets/${ASSET_ID}" \
             -o grafana-bench
           
