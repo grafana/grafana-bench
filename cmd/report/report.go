@@ -9,6 +9,7 @@ import (
 	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/executor/gotest"
 	"github.com/grafana/grafana-bench/pkg/executor/playwright"
+	"github.com/grafana/grafana-bench/pkg/executor/zizmor"
 	"github.com/spf13/cobra"
 )
 
@@ -134,6 +135,11 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				if err != nil {
 					return fmt.Errorf("parsing go-json input %w", err)
 				}
+			case "zizmor":
+				suiteRunSummary, err = zizmor.ParseSARIF(input)
+				if err != nil {
+					return fmt.Errorf("parsing zizmor SARIF input %w", err)
+				}
 			default:
 				if benchConfig.Report.Input == "" {
 					return fmt.Errorf("invalid input format - no input type specified: %q", benchConfig.Report.Input)
@@ -143,6 +149,15 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			}
 			suiteRunSummary.SuiteName = benchConfig.TestSuite.Name
 			suiteRunSummary.SuiteRevision = benchConfig.Revision
+
+			// Inject repo label into all parser-generated metrics so every metric
+			// can be filtered/grouped by repo in Grafana dashboards.
+			for i := range suiteRunSummary.Metrics {
+				if suiteRunSummary.Metrics[i].Labels == nil {
+					suiteRunSummary.Metrics[i].Labels = make(map[string]string)
+				}
+				suiteRunSummary.Metrics[i].Labels["repo"] = benchConfig.TestSuite.Name
+			}
 
 			runMetrics, err := benchConfig.GetRunMetrics(log)
 			if err != nil {

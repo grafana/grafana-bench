@@ -158,7 +158,7 @@ func AddPlaywrightFlags(fs *pflag.FlagSet, config *PWConfig) {
 	)
 }
 
-type GoTestConfig struct {
+type GoTestConfig struct{
 	GoArgs   []string
 	TestArgs []string
 	Packages []string
@@ -324,7 +324,7 @@ func AddReportInputFlags(fs *pflag.FlagSet, config *ReportConfig) {
 		&config.Input,
 		"report-input",
 		"",
-		"report input format. Valid values are 'playwright' and 'go'",
+		"report input format. Valid values are 'playwright', 'go', and 'zizmor'",
 	)
 }
 

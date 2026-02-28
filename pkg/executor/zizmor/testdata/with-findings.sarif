@@ -1,0 +1,168 @@
+{
+  "$schema": "https://docs.oasis-open.org/sarif/sarif/v2.1.0/os/schemas/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "zizmor",
+          "version": "1.14.2",
+          "semanticVersion": "1.14.2",
+          "informationUri": "https://docs.zizmor.sh",
+          "downloadUri": "https://github.com/zizmorcore/zizmor",
+          "rules": [
+            {
+              "id": "artipacked",
+              "shortDescription": {
+                "text": "Artifact poisoning"
+              },
+              "fullDescription": {
+                "text": "Detects artifact poisoning vulnerabilities in GitHub Actions workflows"
+              },
+              "help": {
+                "text": "See https://docs.zizmor.sh/rules/artipacked"
+              },
+              "properties": {
+                "tags": ["security", "artifact"]
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              }
+            },
+            {
+              "id": "dangerous-triggers",
+              "shortDescription": {
+                "text": "Dangerous workflow triggers"
+              },
+              "fullDescription": {
+                "text": "Detects dangerous workflow trigger configurations"
+              },
+              "help": {
+                "text": "See https://docs.zizmor.sh/rules/dangerous-triggers"
+              },
+              "properties": {
+                "tags": ["security", "trigger"]
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              }
+            },
+            {
+              "id": "template-injection",
+              "shortDescription": {
+                "text": "Template injection"
+              },
+              "fullDescription": {
+                "text": "Detects potential template injection vulnerabilities"
+              },
+              "help": {
+                "text": "See https://docs.zizmor.sh/rules/template-injection"
+              },
+              "properties": {
+                "tags": ["security", "injection"]
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              }
+            }
+          ]
+        }
+      },
+      "invocations": [
+        {
+          "executionSuccessful": true
+        }
+      ],
+      "results": [
+        {
+          "ruleId": "artipacked",
+          "level": "error",
+          "message": {
+            "text": "Workflow uses artifacts without integrity validation, allowing potential artifact poisoning attacks"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": ".github/workflows/ci.yml"
+                },
+                "region": {
+                  "startLine": 42,
+                  "startColumn": 7,
+                  "endLine": 45,
+                  "endColumn": 20
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "dangerous-triggers",
+          "level": "warning",
+          "message": {
+            "text": "Workflow uses pull_request_target trigger without proper authorization checks"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": ".github/workflows/pr-check.yml"
+                },
+                "region": {
+                  "startLine": 3,
+                  "startColumn": 3,
+                  "endLine": 3,
+                  "endColumn": 25
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "template-injection",
+          "level": "error",
+          "message": {
+            "text": "Potential template injection via ${{ github.event.pull_request.title }} in run command"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": ".github/workflows/deploy.yml"
+                },
+                "region": {
+                  "startLine": 28,
+                  "startColumn": 9,
+                  "endLine": 28,
+                  "endColumn": 60
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "dangerous-triggers",
+          "level": "warning",
+          "message": {
+            "text": "Workflow_run trigger may allow unauthorized code execution"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": ".github/workflows/release.yml"
+                },
+                "region": {
+                  "startLine": 5,
+                  "startColumn": 3,
+                  "endLine": 5,
+                  "endColumn": 17
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
