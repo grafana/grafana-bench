@@ -7,9 +7,9 @@ import (
 
 	"github.com/grafana/grafana-bench/pkg/config"
 	"github.com/grafana/grafana-bench/pkg/executor"
-	"github.com/grafana/grafana-bench/pkg/executor/gotest"
-	"github.com/grafana/grafana-bench/pkg/executor/playwright"
 	"github.com/grafana/grafana-bench/pkg/executor/zizmor"
+	"github.com/grafana/grafana-bench/pkg/parser/gotest"
+	"github.com/grafana/grafana-bench/pkg/parser/playwright"
 	"github.com/spf13/cobra"
 )
 

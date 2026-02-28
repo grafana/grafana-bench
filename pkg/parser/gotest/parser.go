@@ -150,3 +150,18 @@ func parseTestRuns(report io.Reader) (testRuns, error) {
 
 	return testRuns, nil
 }
+
+// ParseSingleTestRun parses output from go test -json and returns the result for a specific test.
+// This is used by the executor retry logic to re-run and look up a single failed test.
+func ParseSingleTestRun(report io.Reader, pkg, test string) (executor.TestRunSummary, error) {
+	runs, err := parseTestRuns(report)
+	if err != nil {
+		return executor.TestRunSummary{}, err
+	}
+	key := testkey{pkg: pkg, test: test}
+	tr, ok := runs[key]
+	if !ok {
+		return executor.TestRunSummary{}, fmt.Errorf("test %s/%s not found in output", pkg, test)
+	}
+	return *tr, nil
+}

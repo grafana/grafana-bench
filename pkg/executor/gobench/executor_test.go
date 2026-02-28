@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/grafana/grafana-bench/pkg/executor"
+	gobenchparser "github.com/grafana/grafana-bench/pkg/parser/gobench"
 )
 
 func TestNewGoBenchExecutor(t *testing.T) {
@@ -32,7 +33,7 @@ func TestCreateBenchmarkMetrics(t *testing.T) {
 	log := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	exec := NewGoBenchExecutor(log, GoBenchExecutorOptions{})
 
-	bench := BenchmarkRunSummary{
+	bench := gobenchparser.BenchmarkRunSummary{
 		BenchmarkFolder: "github.com/example/pkg",
 		BenchmarkName:   "BenchmarkTest",
 		Status:          executor.TestPassed,
@@ -87,7 +88,7 @@ func TestConvertToSuiteRunSummary(t *testing.T) {
 	log := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	exec := NewGoBenchExecutor(log, GoBenchExecutorOptions{})
 
-	benchmarks := []BenchmarkRunSummary{
+	benchmarks := []gobenchparser.BenchmarkRunSummary{
 		{
 			BenchmarkFolder: "pkg1",
 			BenchmarkName:   "BenchmarkA",

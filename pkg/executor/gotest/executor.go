@@ -14,6 +14,7 @@ import (
 
 	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/metrics"
+	gotestparser "github.com/grafana/grafana-bench/pkg/parser/gotest"
 )
 
 // GoExecutorOptions defines the options for a GoExecutor
@@ -64,7 +65,7 @@ func (e *GoExecutor) ExecTestSuite(
 		return executor.SuiteRunSummary{}, fmt.Errorf("failed to execute tests  %w", err)
 	}
 
-	summary, err := ParseJsonOutput(stdOut)
+	summary, err := gotestparser.ParseJsonOutput(stdOut)
 	if err != nil {
 		return executor.SuiteRunSummary{}, fmt.Errorf("failed to parse go test output %w", err)
 	}
@@ -134,12 +135,12 @@ func retryTest(
 		return executor.TestRunSummary{}, fmt.Errorf("failed to execute go test %w", err)
 	}
 
-	testRuns, err := parseTestRuns(result)
+	tr, err := gotestparser.ParseSingleTestRun(result, pkg, test)
 	if err != nil {
 		return executor.TestRunSummary{}, fmt.Errorf("failed to parse go test output %w", err)
 	}
 
-	return *testRuns[testkey{pkg: pkg, test: test}], nil
+	return tr, nil
 }
 
 func runGoTest(ctx context.Context, log *slog.Logger, workdir string, packages []string, goArgs []string, testArgs []string) (io.Reader, error) {
