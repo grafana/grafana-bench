@@ -36,7 +36,9 @@
       "Bash(do if grep -q \"grafana-bench test\" \"$file\")",
       "Bash(fi)",
       "Bash(done)",
-      "Bash(git worktree:*)"
+      "Bash(git worktree:*)",
+      "Bash(gh pr view:*)",
+      "Bash(git fetch:*)"
     ],
     "deny": []
   }
