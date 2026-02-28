@@ -150,6 +150,15 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			suiteRunSummary.SuiteName = benchConfig.TestSuite.Name
 			suiteRunSummary.SuiteRevision = benchConfig.Revision
 
+			// Inject repo label into all parser-generated metrics so every metric
+			// can be filtered/grouped by repo in Grafana dashboards.
+			for i := range suiteRunSummary.Metrics {
+				if suiteRunSummary.Metrics[i].Labels == nil {
+					suiteRunSummary.Metrics[i].Labels = make(map[string]string)
+				}
+				suiteRunSummary.Metrics[i].Labels["repo"] = benchConfig.TestSuite.Name
+			}
+
 			runMetrics, err := benchConfig.GetRunMetrics(log)
 			if err != nil {
 				return err

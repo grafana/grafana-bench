@@ -57,50 +57,65 @@ func TestParseSARIF(t *testing.T) {
 				}
 
 				// Check expected metrics
-				if val, ok := metricNames["bench_zizmor_total_vulnerabilities"]; !ok {
-					t.Error("Missing bench_zizmor_total_vulnerabilities metric")
+				if val, ok := metricNames["zizmor_total_vulnerabilities"]; !ok {
+					t.Error("Missing zizmor_total_vulnerabilities metric")
 				} else {
 					assert.Equal(t, "total vulnerabilities metric", 4.0, val)
 				}
 
-				if val, ok := metricNames["bench_zizmor_high_severity"]; !ok {
-					t.Error("Missing bench_zizmor_high_severity metric")
+				if val, ok := metricNames["zizmor_high_severity"]; !ok {
+					t.Error("Missing zizmor_high_severity metric")
 				} else {
 					assert.Equal(t, "high severity metric", 2.0, val)
 				}
 
-				if val, ok := metricNames["bench_zizmor_medium_severity"]; !ok {
-					t.Error("Missing bench_zizmor_medium_severity metric")
+				if val, ok := metricNames["zizmor_medium_severity"]; !ok {
+					t.Error("Missing zizmor_medium_severity metric")
 				} else {
 					assert.Equal(t, "medium severity metric", 2.0, val)
 				}
 
-				if val, ok := metricNames["bench_zizmor_low_severity"]; !ok {
-					t.Error("Missing bench_zizmor_low_severity metric")
+				if val, ok := metricNames["zizmor_low_severity"]; !ok {
+					t.Error("Missing zizmor_low_severity metric")
 				} else {
 					assert.Equal(t, "low severity metric", 0.0, val)
 				}
 
-				if val, ok := metricNames["bench_zizmor_unique_rules_violated"]; !ok {
-					t.Error("Missing bench_zizmor_unique_rules_violated metric")
+				if val, ok := metricNames["zizmor_unique_rules_violated"]; !ok {
+					t.Error("Missing zizmor_unique_rules_violated metric")
 				} else {
 					assert.Equal(t, "unique rules metric", 3.0, val)
 				}
 
 				// Check per-rule metrics exist (should have 3 rule violation metrics)
-				ruleViolationCount := 0
+				// with actual violation counts (dangerous-triggers fires twice)
+				ruleViolationValues := make(map[string]float64)
 				for _, m := range summary.Metrics {
-					if m.Name == "bench_zizmor_rule_violations" {
-						ruleViolationCount++
-						// Each rule violation should have value 1.0
-						assert.Equal(t, "rule violation value", 1.0, m.Value)
-						// Should have rule_id label
-						if _, ok := m.Labels["rule_id"]; !ok {
+					if m.Name == "zizmor_rule_violations" {
+						ruleID, ok := m.Labels["rule_id"]
+						if !ok {
 							t.Error("Rule violation metric missing rule_id label")
+							continue
 						}
+						ruleViolationValues[ruleID] = m.Value
 					}
 				}
-				assert.Equal(t, "rule violation metrics count", 3, ruleViolationCount)
+				assert.Equal(t, "rule violation metrics count", 3, len(ruleViolationValues))
+				assert.Equal(t, "artipacked violations", 1.0, ruleViolationValues["artipacked"])
+				assert.Equal(t, "dangerous-triggers violations", 2.0, ruleViolationValues["dangerous-triggers"])
+				assert.Equal(t, "template-injection violations", 1.0, ruleViolationValues["template-injection"])
+
+				// Check scan_completed marker is always present
+				scanCompleted := false
+				for _, m := range summary.Metrics {
+					if m.Name == "zizmor_scan_completed" {
+						scanCompleted = true
+						assert.Equal(t, "scan completed value", 1.0, m.Value)
+					}
+				}
+				if !scanCompleted {
+					t.Error("Missing zizmor_scan_completed metric")
+				}
 
 				// Check individual test runs
 				if len(summary.TestRuns) != 4 {
@@ -160,17 +175,29 @@ func TestParseSARIF(t *testing.T) {
 					metricNames[m.Name] = m.Value
 				}
 
-				assert.Equal(t, "total vulnerabilities metric", 0.0, metricNames["bench_zizmor_total_vulnerabilities"])
-				assert.Equal(t, "high severity metric", 0.0, metricNames["bench_zizmor_high_severity"])
-				assert.Equal(t, "medium severity metric", 0.0, metricNames["bench_zizmor_medium_severity"])
-				assert.Equal(t, "low severity metric", 0.0, metricNames["bench_zizmor_low_severity"])
-				assert.Equal(t, "unique rules metric", 0.0, metricNames["bench_zizmor_unique_rules_violated"])
+				assert.Equal(t, "total vulnerabilities metric", 0.0, metricNames["zizmor_total_vulnerabilities"])
+				assert.Equal(t, "high severity metric", 0.0, metricNames["zizmor_high_severity"])
+				assert.Equal(t, "medium severity metric", 0.0, metricNames["zizmor_medium_severity"])
+				assert.Equal(t, "low severity metric", 0.0, metricNames["zizmor_low_severity"])
+				assert.Equal(t, "unique rules metric", 0.0, metricNames["zizmor_unique_rules_violated"])
 
 				// No rule violation metrics when there are no findings
 				for _, m := range summary.Metrics {
-					if m.Name == "bench_zizmor_rule_violations" {
+					if m.Name == "zizmor_rule_violations" {
 						t.Error("Should not have rule violation metrics when there are no findings")
 					}
+				}
+
+				// scan_completed should still be emitted even with no findings
+				scanCompleted := false
+				for _, m := range summary.Metrics {
+					if m.Name == "zizmor_scan_completed" {
+						scanCompleted = true
+						assert.Equal(t, "scan completed value", 1.0, m.Value)
+					}
+				}
+				if !scanCompleted {
+					t.Error("Missing zizmor_scan_completed metric")
 				}
 
 				// No test runs

@@ -128,8 +128,8 @@ func ParseSARIF(report io.Reader) (executor.SuiteRunSummary, error) {
 		"none":    0,
 	}
 
-	// Track unique rules violated
-	rulesViolated := make(map[string]bool)
+	// Track violation counts per rule
+	rulesViolated := make(map[string]int)
 
 	// Process each result as a test
 	for _, result := range run.Results {
@@ -142,7 +142,7 @@ func ParseSARIF(report io.Reader) (executor.SuiteRunSummary, error) {
 		severityCounts[level]++
 
 		// Track rule
-		rulesViolated[result.RuleID] = true
+		rulesViolated[result.RuleID]++
 
 		// Determine test status based on severity
 		var status executor.TestStatus
@@ -211,46 +211,54 @@ func ParseSARIF(report io.Reader) (executor.SuiteRunSummary, error) {
 	timestamp := summary.StartTime.UnixMilli()
 	summary.Metrics = []metrics.Metric{
 		{
-			Name:      "bench_zizmor_total_vulnerabilities",
+			Name:      "zizmor_total_vulnerabilities",
 			Value:     float64(len(run.Results)),
 			Labels:    map[string]string{"tool_version": run.Tool.Driver.Version},
 			Timestamp: timestamp,
 		},
 		{
-			Name:      "bench_zizmor_high_severity",
+			Name:      "zizmor_high_severity",
 			Value:     float64(severityCounts["error"]),
 			Labels:    map[string]string{"severity": "high"},
 			Timestamp: timestamp,
 		},
 		{
-			Name:      "bench_zizmor_medium_severity",
+			Name:      "zizmor_medium_severity",
 			Value:     float64(severityCounts["warning"]),
 			Labels:    map[string]string{"severity": "medium"},
 			Timestamp: timestamp,
 		},
 		{
-			Name:      "bench_zizmor_low_severity",
+			Name:      "zizmor_low_severity",
 			Value:     float64(severityCounts["note"]),
 			Labels:    map[string]string{"severity": "low"},
 			Timestamp: timestamp,
 		},
 		{
-			Name:      "bench_zizmor_unique_rules_violated",
+			Name:      "zizmor_unique_rules_violated",
 			Value:     float64(len(rulesViolated)),
 			Labels:    map[string]string{},
 			Timestamp: timestamp,
 		},
 	}
 
-	// Add per-rule metrics
-	for ruleID := range rulesViolated {
+	// Add per-rule violation count metrics and a scan_completed marker
+	for ruleID, count := range rulesViolated {
 		summary.Metrics = append(summary.Metrics, metrics.Metric{
-			Name:      "bench_zizmor_rule_violations",
-			Value:     1.0,
+			Name:      "zizmor_rule_violations",
+			Value:     float64(count),
 			Labels:    map[string]string{"rule_id": ruleID},
 			Timestamp: timestamp,
 		})
 	}
+
+	// Always emit scan_completed so repos that run zizmor are visible even with zero findings
+	summary.Metrics = append(summary.Metrics, metrics.Metric{
+		Name:      "zizmor_scan_completed",
+		Value:     1.0,
+		Labels:    map[string]string{},
+		Timestamp: timestamp,
+	})
 
 	// Check if execution was successful
 	if len(run.Invocations) > 0 && !run.Invocations[0].ExecutionSuccessful {
