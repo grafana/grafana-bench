@@ -29,7 +29,7 @@ jobs:
       - name: Setup Grafana Bench
         uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@281b943dbbdf2a30aa0fd2e5fd07503a49734f44
         with:
-          version: 'v1.0.0'
+          version: 'v1.0.1'
 
       - name: Run K6 API Tests
         run: |
@@ -85,7 +85,7 @@ The `--suite-name` flag is **required** and identifies your tests in logs and Pr
 
 | Input | Description | Required | Default |
 |-------|-------------|----------|---------|
-| `version` | Version to install (e.g., `v1.0.0`) | Yes | N/A |
+| `version` | Version to install (e.g., `v1.0.1`) | Yes | N/A |
 
 ### Authentication and CI Tokens
 
@@ -99,7 +99,7 @@ After the setup step completes, the tokens are available in your environment. Si
 - name: Setup Grafana Bench
   uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@281b943dbbdf2a30aa0fd2e5fd07503a49734f44
   with:
-    version: 'v1.0.0'
+    version: 'v1.0.1'
 
 - name: Run tests with Prometheus metrics
   run: |
@@ -124,7 +124,7 @@ When using Docker, you need to explicitly pass the Prometheus environment variab
 - name: Setup Grafana Bench
   uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@281b943dbbdf2a30aa0fd2e5fd07503a49734f44
   with:
-    version: 'v1.0.0'
+    version: 'v1.0.1'
 
 - name: Run tests in Docker with Prometheus metrics
   run: |
@@ -134,7 +134,7 @@ When using Docker, you need to explicitly pass the Prometheus environment variab
       -e PROMETHEUS_URL="${PROMETHEUS_URL}" \
       -e PROMETHEUS_USER="${PROMETHEUS_USER}" \
       -e PROMETHEUS_PASSWORD="${PROMETHEUS_PASSWORD}" \
-      us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v1.0.0 test \
+      us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v1.0.1 test \
       --service grafana \
       --service-url "http://localhost:3000" \
       --service-version latest \
@@ -187,7 +187,7 @@ Reference the action using a specific commit hash (required for private reposito
 - name: Setup Grafana Bench
   uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@281b943dbbdf2a30aa0fd2e5fd07503a49734f44
   with:
-    version: 'v1.0.0'
+    version: 'v1.0.1'
 ```
 
 The action automatically uses the workflow's `GITHUB_TOKEN` to authenticate with the GitHub API for downloading release binaries from the private repository. The token is passed implicitly via `${{ github.token }}` - no additional configuration is required for repositories within the Grafana organization.
@@ -241,7 +241,7 @@ This allows your CI workflows to handle test failures differently from internal 
 - name: Setup Grafana Bench
   uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@281b943dbbdf2a30aa0fd2e5fd07503a49734f44
   with:
-    version: 'v1.0.0'
+    version: 'v1.0.1'
 
 - name: Run Go tests with bench reporter
   run: |
@@ -265,7 +265,7 @@ This allows your CI workflows to handle test failures differently from internal 
     docker run --rm \
       --network=host \
       --volume="./:/tests/" \
-      us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v1.0.0 test \
+      us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v1.0.1 test \
       --service grafana \
       --service-url "http://localhost:3000" \
       --service-version latest \
@@ -308,7 +308,7 @@ jobs:
           docker run --rm \
             --network=host \
             --volume="./CI/:/tests/CI/" \
-            us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v1.0.0 test \
+            us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v1.0.1 test \
             --service grafana \
             --service-url "http://localhost:3000" \
             --service-version latest \
@@ -387,7 +387,7 @@ jobs:
           docker run --rm \
             --network=host \
             --volume="./:/tests/" \
-            us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v1.0.0 test \
+            us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v1.0.1 test \
             --service grafana \
             --service-url "http://localhost:3000" \
             --service-version latest \
