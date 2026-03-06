@@ -22,8 +22,8 @@ type TestDurations struct {
 	TotalDuration    time.Duration
 }
 
-// parseK6CloudIdentifiersFromCLIOutput parses cloud run id and url output of k6 cli
-func parseK6CloudIdentifiersFromCLIOutput(b []byte) (string, string, error) {
+// ParseK6CloudIdentifiersFromCLIOutput parses cloud run id and url output of k6 cli
+func ParseK6CloudIdentifiersFromCLIOutput(b []byte) (string, string, error) {
 	// Find the first match of the pattern in the input
 	match := k6CloudOutputURLPattern.FindSubmatch(b)
 
@@ -49,8 +49,8 @@ func parseK6CloudIdentifiersFromCLIOutput(b []byte) (string, string, error) {
 // iterations.....................: 1       50.271466/s
 var iterationPattern = regexp.MustCompile(`iterations\.*?:\s*(\d+)`)
 
-// parseIterationCountFromCLIOutput parses iteration count from output of k6 cli
-func parseIterationCountFromCLIOutput(b []byte) (string, error) {
+// ParseIterationCountFromCLIOutput parses iteration count from output of k6 cli
+func ParseIterationCountFromCLIOutput(b []byte) (string, error) {
 	match := iterationPattern.FindSubmatch(b)
 	if len(match) > 1 {
 		return string(match[1]), nil
@@ -75,7 +75,7 @@ type Metric struct {
 // {"metric":"iteration_duration","type":"Point","data":{"time":"2023-08-09T09:02:13.291575-08:00","value":325.78425,"tags":{"SUITE_RUN":"08bf3d97-155e-42d0-a709-bab1d8c08941","group":"::setup"}}
 // {"metric":"iteration_duration","type":"Point","data":{"time":"2023-08-09T09:02:13.650349-08:00","value":358.328625,"tags":{"SUITE_RUN":"08bf3d97-155e-42d0-a709-bab1d8c08941","group":"","scenario":"createDashboard"}}}
 // {"metric":"iteration_duration","type":"Point","data":{"time":"2023-08-09T09:02:16.191412-08:00","value":2149.020291,"tags":{"SUITE_RUN":"08bf3d97-155e-42d0-a709-bab1d8c08941","group":"::teardown"}}}
-func parseDurationFromJsonFile(scenarioName, jsonFile string) (TestDurations, error) {
+func ParseDurationFromJsonFile(scenarioName, jsonFile string) (TestDurations, error) {
 	var td TestDurations
 
 	file, err := os.Open(jsonFile)

@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/grafana/grafana-bench/pkg/executor"
+	k6parser "github.com/grafana/grafana-bench/pkg/parser/k6"
 	"github.com/grafana/grafana-bench/pkg/utils"
 	"github.com/grafana/grafana-bench/pkg/utils/format"
 	"golang.org/x/text/cases"
@@ -64,7 +65,7 @@ func NewK6TestExecutor(
 
 type k6Output struct {
 	iterations string
-	durations  TestDurations
+	durations  k6parser.TestDurations
 	cloudId    string
 	cloudURL   string
 }
@@ -75,7 +76,7 @@ type K6TestRun struct {
 	ExitCode    int
 	ExitMessage string
 	Iterations  string
-	Durations   TestDurations
+	Durations   k6parser.TestDurations
 	CloudID     string
 	CloudURL    string
 }
@@ -429,7 +430,7 @@ func (t *K6TestExecutor) prepareK6Command(testFile, jsonFile string, env map[str
 // parses the execution outputs and returns a summary
 func (t *K6TestExecutor) getOutput(buf *bytes.Buffer, jsonFile string, scenarioName string) (k6Output, error) {
 	// scenario + testDuration will be in milliseconds
-	duration, err := parseDurationFromJsonFile(scenarioName, jsonFile)
+	duration, err := k6parser.ParseDurationFromJsonFile(scenarioName, jsonFile)
 	if err != nil {
 		return k6Output{}, fmt.Errorf("error processing json file %w", err)
 	}
@@ -439,13 +440,13 @@ func (t *K6TestExecutor) getOutput(buf *bytes.Buffer, jsonFile string, scenarioN
 		cloudURL string
 	)
 	if t.CloudOutput {
-		cloudId, cloudURL, err = parseK6CloudIdentifiersFromCLIOutput(buf.Bytes())
+		cloudId, cloudURL, err = k6parser.ParseK6CloudIdentifiersFromCLIOutput(buf.Bytes())
 		if err != nil {
 			return k6Output{}, fmt.Errorf("error parsing cloud run from K6 summary %w", err)
 		}
 	}
 
-	iterations, err := parseIterationCountFromCLIOutput(buf.Bytes())
+	iterations, err := k6parser.ParseIterationCountFromCLIOutput(buf.Bytes())
 	if err != nil {
 		return k6Output{}, fmt.Errorf("error parsing iterations from k6 summary %w", err)
 	}

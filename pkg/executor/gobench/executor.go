@@ -15,6 +15,7 @@ import (
 
 	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/metrics"
+	gobenchparser "github.com/grafana/grafana-bench/pkg/parser/gobench"
 )
 
 // GoBenchExecutor implements a TestExecutor for go benchmarks
@@ -53,7 +54,7 @@ func (e *GoBenchExecutor) ExecTestSuite(
 	}
 
 	// Parse benchmark results
-	benchmarks, err := ParseJsonOutput(stdOut)
+	benchmarks, err := gobenchparser.ParseJsonOutput(stdOut)
 	if err != nil {
 		return executor.SuiteRunSummary{}, fmt.Errorf("failed to parse benchmark output: %w", err)
 	}
@@ -137,7 +138,7 @@ func (e *GoBenchExecutor) runGoBench(ctx context.Context, workdir string) (io.Re
 
 // convertToSuiteRunSummary converts benchmark results to SuiteRunSummary
 func (e *GoBenchExecutor) convertToSuiteRunSummary(
-	benchmarks []BenchmarkRunSummary,
+	benchmarks []gobenchparser.BenchmarkRunSummary,
 	suite executor.TestSuite,
 ) executor.SuiteRunSummary {
 	summary := executor.SuiteRunSummary{
@@ -190,7 +191,7 @@ func (e *GoBenchExecutor) convertToSuiteRunSummary(
 }
 
 // createBenchmarkMetrics creates Prometheus metrics for a benchmark result
-func (e *GoBenchExecutor) createBenchmarkMetrics(bench BenchmarkRunSummary) []metrics.Metric {
+func (e *GoBenchExecutor) createBenchmarkMetrics(bench gobenchparser.BenchmarkRunSummary) []metrics.Metric {
 	// Benchmark-specific labels (standard labels like service, service_version, etc.
 	// are automatically added by the Prometheus reporter)
 	labels := map[string]string{

@@ -45,7 +45,7 @@ func TestParseK6CloudIdentifiersFromCLIOutput(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.title, func(t *testing.T) {
-			id, url, err := parseK6CloudIdentifiersFromCLIOutput(testCase.input)
+			id, url, err := ParseK6CloudIdentifiersFromCLIOutput(testCase.input)
 
 			if (err != nil) != testCase.wantErr {
 				t.Errorf("Expected error: %v, but got error: %v", testCase.wantErr, err)
@@ -171,7 +171,7 @@ func TestParseIterationCountFromCLIOutput(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.title, func(t *testing.T) {
-			actual, err := parseIterationCountFromCLIOutput(testCase.input)
+			actual, err := ParseIterationCountFromCLIOutput(testCase.input)
 
 			if (err != nil) != testCase.wantErr {
 				t.Errorf("Expected error: %v, but got error: %v", testCase.wantErr, err)

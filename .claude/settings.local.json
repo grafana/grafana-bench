@@ -38,7 +38,8 @@
       "Bash(done)",
       "Bash(git worktree:*)",
       "Bash(gh pr view:*)",
-      "Bash(git fetch:*)"
+      "Bash(git fetch:*)",
+      "Bash(git push:*)"
     ],
     "deny": []
   }

@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/grafana/grafana-bench/pkg/executor"
+	playwrightparser "github.com/grafana/grafana-bench/pkg/parser/playwright"
 )
 
 const (
@@ -111,7 +112,7 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 	}
 
 	//parse output or report any problem
-	summary, err := ParseJsonOutput(t.Log, jsonOutput)
+	summary, err := playwrightparser.ParseJsonOutput(t.Log, jsonOutput)
 	if err != nil {
 		return executor.SuiteRunSummary{}, err
 	}
