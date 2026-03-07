@@ -64,8 +64,15 @@ func resolveMainRepoPath(path string) (string, error) {
 			if !filepath.IsAbs(commondir) {
 				commondir = filepath.Join(gitdir, commondir)
 			}
-			// commondir is the main .git directory; its parent is the repo root.
-			return filepath.Dir(filepath.Clean(commondir)), nil
+			// In a normal repo, commondir is the .git directory and its parent
+			// is the repo root. In a bare repo, commondir IS the repo root
+			// (there is no separate working tree .git subdir), so return it
+			// directly.
+			cleanCommondir := filepath.Clean(commondir)
+			if filepath.Base(cleanCommondir) == ".git" {
+				return filepath.Dir(cleanCommondir), nil
+			}
+			return cleanCommondir, nil
 		}
 		parent := filepath.Dir(dir)
 		if parent == dir {
@@ -87,10 +94,7 @@ func GetLatestBenchTag(repoPath string) (string, error) {
 	}
 
 	// Open the repository
-	repo, err := git.PlainOpenWithOptions(
-		mainRepoPath,
-		&git.PlainOpenOptions{DetectDotGit: true},
-	)
+	repo, err := git.PlainOpen(mainRepoPath)
 	if err != nil {
 		return "", err
 	}
@@ -170,10 +174,7 @@ func GetShortCommitSHA(repoPath string) (string, error) {
 		mainRepoPath = repoPath
 	}
 
-	repo, err := git.PlainOpenWithOptions(
-		mainRepoPath,
-		&git.PlainOpenOptions{DetectDotGit: true},
-	)
+	repo, err := git.PlainOpen(mainRepoPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to open git repository: %w", err)
 	}
@@ -198,10 +199,7 @@ func GetLatestCommitForFile(repoPath string, filePath string) (string, error) {
 		mainRepoPath = repoPath
 	}
 
-	repo, err := git.PlainOpenWithOptions(
-		mainRepoPath,
-		&git.PlainOpenOptions{DetectDotGit: true},
-	)
+	repo, err := git.PlainOpen(mainRepoPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to open git repository: %w", err)
 	}
@@ -258,10 +256,7 @@ func GetLatestCommitForFileOnMain(repoPath string, filePath string) (string, err
 		mainRepoPath = repoPath
 	}
 
-	repo, err := git.PlainOpenWithOptions(
-		mainRepoPath,
-		&git.PlainOpenOptions{DetectDotGit: true},
-	)
+	repo, err := git.PlainOpen(mainRepoPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to open git repository: %w", err)
 	}

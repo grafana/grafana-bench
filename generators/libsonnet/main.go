@@ -42,6 +42,7 @@ type TemplateData struct {
 	BaseImageURL       string
 	PlaywrightImageURL string
 	URLParamName       string // grafanaURL for v0.6.11, serviceURL for v1.0.0+
+	URLFlagName        string // --grafana-url for v0.6.11, --service-url for v1.0.0+
 }
 
 type VersionsTemplateData struct {
@@ -189,8 +190,10 @@ func generateMain() {
 
 	// Determine URL parameter name based on version
 	urlParamName := "serviceURL"
+	urlFlagName := "--service-url"
 	if targetVersion == "v0.6.11" {
 		urlParamName = "grafanaURL"
+		urlFlagName = "--grafana-url"
 	}
 
 	// Generate template data
@@ -201,6 +204,7 @@ func generateMain() {
 		BaseImageURL:       baseImageURL,
 		PlaywrightImageURL: playwrightImageURL,
 		URLParamName:       urlParamName,
+		URLFlagName:        urlFlagName,
 	}
 
 	// Load templates from files
@@ -674,7 +678,7 @@ func generateOptionalScriptFlag(flag FlagInfo) string {
 		return fmt.Sprintf("+ (if bench_options.%s then ['--%s'] else [])", camelCase, flag.Name)
 	case "string":
 		// Skip required strings - they're handled in the base array
-		if isRequiredStringFlag(flag.Name) {
+		if isRequiredStringFlag(flag.Name) || isBaseArrayFlag(flag.Name) {
 			return ""
 		}
 		// Handle special string escaping cases
@@ -682,7 +686,7 @@ func generateOptionalScriptFlag(flag FlagInfo) string {
 			return fmt.Sprintf("+ (if bench_options.%s != '' then ['--%s', std.escapeStringBash(bench_options.%s)] else [])", camelCase, flag.Name, camelCase)
 		}
 		if flag.Name == "run-dashboard" {
-			return fmt.Sprintf("+ (if bench_options.%s != '' then ['--%s', escapeString(bench_options.%s)] else [])", camelCase, flag.Name, camelCase)
+			return fmt.Sprintf("+ (if bench_options.%s != '' then ['--%s', std.escapeStringBash(bench_options.%s)] else [])", camelCase, flag.Name, camelCase)
 		}
 		return fmt.Sprintf("+ (if bench_options.%s != '' then ['--%s', bench_options.%s] else [])", camelCase, flag.Name, camelCase)
 	case "stringArray", "stringSlice":
@@ -795,6 +799,12 @@ func isRequiredStringFlag(flagName string) bool {
 		"suite-path":  true,
 	}
 	return requiredFlags[flagName]
+}
+
+// isBaseArrayFlag returns true for flags that are hardcoded in the base script
+// array and must not also be emitted as optional concatenations.
+func isBaseArrayFlag(flagName string) bool {
+	return flagName == "report-output"
 }
 
 func cleanUsage(usage string) string {
