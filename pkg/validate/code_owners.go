@@ -39,8 +39,7 @@ func isMember(client *slack.Client, channelID string) ChannelStatus {
 	})
 
 	channelStatus := ChannelStatus{
-		ID:   channelID,
-		Name: channel.Name,
+		ID: channelID,
 	}
 
 	if err != nil {
@@ -53,9 +52,13 @@ func isMember(client *slack.Client, channelID string) ChannelStatus {
 			default:
 				channelStatus.Err = fmt.Errorf("error accessing channel: %s", slackErr.Err)
 			}
+		} else {
+			channelStatus.Err = err
 		}
-		channelStatus.Err = err
+		return channelStatus
 	}
+
+	channelStatus.Name = channel.Name
 
 	// Check if bot is a member
 	if !channel.IsMember {

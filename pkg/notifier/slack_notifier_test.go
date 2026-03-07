@@ -24,12 +24,14 @@ type mockServer struct {
 	mutext   *sync.Mutex
 	channels map[string]string
 	messages map[string][]string
+	apiErr   string // if non-empty, chat.postMessage returns this Slack API error
 }
 
-func newMockServer() *mockServer {
+func newMockServerWithError(apiErr string) *mockServer {
 	return &mockServer{
 		mutext:   &sync.Mutex{},
 		messages: map[string][]string{},
+		apiErr:   apiErr,
 	}
 }
 
@@ -46,9 +48,22 @@ func (m *mockServer) Messages(channel string) []string {
 // server. It takes the channel, channel_id, and text form values and
 // stores them in the messages map. It then responds with a JSON object
 // that contains the channel, ts, and text.
+// If the server was configured with an apiErr, it returns an error response instead.
 func (m *mockServer) HandleChatPostMessage(w http.ResponseWriter, r *http.Request) {
 	m.mutext.Lock()
 	defer m.mutext.Unlock()
+
+	if m.apiErr != "" {
+		resp := &struct {
+			Ok    bool   `json:"ok"`
+			Error string `json:"error"`
+		}{
+			Ok:    false,
+			Error: m.apiErr,
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+		return
+	}
 
 	channel := r.FormValue("channel")
 	text := r.FormValue("text")
@@ -69,12 +84,12 @@ func (m *mockServer) HandleChatPostMessage(w http.ResponseWriter, r *http.Reques
 	_ = json.NewEncoder(w).Encode(resp)
 }
 
-// TODO: test errors from slack server
 func TestNotify(t *testing.T) {
 	testCases := []struct {
 		title        string
 		recipient    string
 		testRuns     []executor.TestRunSummary
+		serverErr    string // Slack API error code to simulate (e.g. "not_in_channel")
 		expectedMsgs map[string][]string
 		expectedErr  error
 	}{
@@ -101,6 +116,26 @@ func TestNotify(t *testing.T) {
 			expectedMsgs: map[string][]string{},
 			expectedErr:  ErrNoMappingForCodeowner,
 		},
+		{
+			title:     "bot not in channel returns posting error",
+			recipient: "codeowner-team",
+			testRuns: []executor.TestRunSummary{
+				{TestFolder: "test-suite", TestFile: "failed.js", Status: executor.TestFailed},
+			},
+			serverErr:    "not_in_channel",
+			expectedMsgs: map[string][]string{},
+			expectedErr:  ErrPostingMessage,
+		},
+		{
+			title:     "channel not found returns posting error",
+			recipient: "codeowner-team",
+			testRuns: []executor.TestRunSummary{
+				{TestFolder: "test-suite", TestFile: "failed.js", Status: executor.TestFailed},
+			},
+			serverErr:    "channel_not_found",
+			expectedMsgs: map[string][]string{},
+			expectedErr:  ErrPostingMessage,
+		},
 	}
 
 	mapping := CodeownersMapping{
@@ -111,7 +146,7 @@ func TestNotify(t *testing.T) {
 		t.Run(tc.title, func(t *testing.T) {
 			t.Parallel()
 
-			mock := newMockServer()
+			mock := newMockServerWithError(tc.serverErr)
 
 			handler := http.NewServeMux()
 			handler.HandleFunc("/chat.postMessage", mock.HandleChatPostMessage)
