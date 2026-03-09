@@ -179,8 +179,7 @@ The workflow ensures:
 
 ### Special Cases
 - **Required flags**: `grafana-url`, `suite-path` - Generate `error` defaults
-- **Escaped strings**: `pw-execute`, `pw-prepare` - Use `std.escapeStringBash`  
-- **URL escaping**: `run-dashboard` - Use custom `escapeString` function
+- **Escaped strings**: `pw-execute`, `pw-prepare`, `run-dashboard` - Use `std.escapeStringBash`
 - **Test environment**: `test-env` - Special array-to-comma-separated handling
 
 ### Deprecated Flags

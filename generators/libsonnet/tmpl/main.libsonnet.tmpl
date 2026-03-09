@@ -13,14 +13,6 @@ local benchImage = '{{.BaseImageURL}}';
 local benchPlaywrightImage = '{{.PlaywrightImageURL}}';
 
 {
-  // URL escaping utility function (copied from jsonnet-libs/xtd for dependency-free operation)
-  local escapeString(str, excludedChars=[]) = (
-    local allowedChars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    local utf8(char) = std.foldl(function(a, b) a + '%%%02X' % b, std.encodeUTF8(char), '');
-    local escapeChar(char) = if std.member(excludedChars, char) || std.member(allowedChars, char) then char else utf8(char);
-    std.join('', std.map(escapeChar, std.stringChars(str)))
-  ),
-  
   // Suite template with version-specific defaults and documentation
   // Users can extend this template: local mySuite = benchFunctions.Suite + { suitePath: 'my/tests' };
   Suite:: {
