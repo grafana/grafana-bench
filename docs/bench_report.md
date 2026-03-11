@@ -99,7 +99,7 @@ grafana:
       --prometheus-timeout duration    prometheus remote write timeout. If not set PROMETHEUS_TIMEOUT environment variable is used.
       --prometheus-url string          prometheus remote write URL. If not set PROMETHEUS_URL environment variable is used.
       --prometheus-user string         prometheus remote write user. If not set PROMETHEUS_USER environment variable is used.
-      --report-input string            report input format. Valid values are 'playwright', 'go', and 'zizmor'
+      --report-input string            report input format. Valid values are 'playwright', 'go', 'zizmor', and 'trufflehog'
       --report-output string           format of the test execution report. Allowed values 'log' or 'text'.
                                         'log' produced a structure log. 'text' produced an human readable output (default "text")
       --run-attribute stringArray      adds custom attributes to a suite run. Good for descriptive information. Format: --run-attribute="key=value,key=value". Attributes with no value will be skipped. You can either use the comma separated format shown here or call --run-attribute multiple times to add additional attributes
