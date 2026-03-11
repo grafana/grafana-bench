@@ -114,7 +114,8 @@ func (c *Client) Push(ctx context.Context, series []*prompb.TimeSeries) error {
 		slog.Default().Debug("response: \n%s", string(responseDump))
 	}
 
-	if resp.StatusCode != 200 {
+	// Prometheus remote write returns 200 (older versions) or 204 (Prometheus 3.x)
+	if resp.StatusCode != 200 && resp.StatusCode != 204 {
 		bodyBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return err
