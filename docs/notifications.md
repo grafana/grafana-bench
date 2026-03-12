@@ -4,7 +4,6 @@ Bench can send Slack notifications when test suites fail (or pass). Notification
 
 ## Prerequisites
 
-- A Slack workspace where you have permission to install apps
 - Test suites with a `.github/CODEOWNERS` file
 
 ## How it works
@@ -19,17 +18,17 @@ By default, bench only notifies on failure. Use `--slack-passing` to also notify
 
 ---
 
-## Step 1: Create a Slack app and get a token
+## Step 1: Invite the grafana-bench bot to your channel
 
-Create a Slack app with the following bot token scopes:
+The Grafana org already has a Slack bot — **`grafana-bench`** — with the necessary permissions. You don't need to create your own.
 
-- `chat:write` — to post messages
-- `channels:read` — to look up public channel IDs
-- `groups:read` — to look up private channel IDs
+Invite it to each channel that should receive notifications:
 
-After creating the app, install it to your workspace and copy the **Bot User OAuth Token** (starts with `xoxb-`).
+```text
+/invite @grafana-bench
+```
 
-> **Important:** Invite the bot to every channel it needs to post in. The bot cannot post to channels it has not been added to.
+Do this for every channel you add to your `codeowners-mapping.yaml`. The bot cannot post to channels it hasn't been invited to.
 
 ## Step 2: Store the token in your secrets manager
 
@@ -112,7 +111,7 @@ Example output:
 +------------------+--------------------------+--------+-------+
 ```
 
-If a channel shows an error, the bot has not been invited to that channel. Invite it with `/invite @your-bot-name` in Slack.
+If a channel shows an error, the bot has not been invited to that channel. Run `/invite @grafana-bench` in that channel and re-validate.
 
 ## Step 6: Add Slack flags to your bench command
 
@@ -184,3 +183,17 @@ slack:
 - [bench validate reference](bench_validate.md) - Validate command details
 - [Configuration guide](configuration.md) - bench.yaml configuration
 - [GitHub Actions integration](github_actions.md) - CI setup examples
+
+---
+
+## Appendix: Setting up your own Slack bot
+
+If you're outside the Grafana org or need a dedicated bot, you can create your own Slack app.
+
+Create a Slack app with the following bot token scopes:
+
+- `chat:write` — to post messages
+- `channels:read` — to look up public channel IDs
+- `groups:read` — to look up private channel IDs
+
+After creating the app, install it to your workspace and copy the **Bot User OAuth Token** (starts with `xoxb-`). Use this as your `SLACK_TOKEN` value and invite the bot to each channel with `/invite @your-bot-name`.
