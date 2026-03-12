@@ -220,6 +220,8 @@ Grafana Bench uses distinct exit codes to help CI systems differentiate between 
 
 This allows your CI workflows to handle test failures differently from internal errors. For example, test failures might trigger notifications to developers, while internal errors might page the infrastructure team.
 
+See the [Slack notifications guide](notifications.md) to route failure alerts to the right team channels automatically.
+
 ### When to Use Setup Action vs Docker
 
 **Use the Setup Action when:**
@@ -432,3 +434,9 @@ Then we run Bench:
 ## Exporting logs to centralized loki database
 
 In development
+
+## Related pages
+
+- [Slack notifications guide](notifications.md) - Route test failure alerts to team Slack channels
+- [Metrics guide](metrics.md) - Export test results to Prometheus
+- [bench test reference](bench_test.md) - Full flag reference
