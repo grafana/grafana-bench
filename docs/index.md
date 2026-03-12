@@ -116,6 +116,7 @@ Choose your testing framework:
 - **[K6 API Tests](writing_k6_api_tests.md)** - Fast API testing with JavaScript
 - **[Playwright Browser Tests](writing_pw_tests.md)** - End-to-end browser testing
 - **[Go Tests](writing_go_tests.md)** - Unit and integration tests
+- **[Go Benchmarks](writing_go_benchmarks.md)** - Performance benchmarks with metrics export
 
 Or follow the [Complete Quickstart](quickstart.md) for a guided experience.
 
@@ -156,6 +157,7 @@ Add Bench to your GitHub Actions workflow:
 - [Writing K6 Tests](writing_k6_api_tests.md) - API testing guide
 - [Writing Playwright Tests](writing_pw_tests.md) - Browser testing guide
 - [Writing Go Tests](writing_go_tests.md) - Go testing guide
+- [Writing Go Benchmarks](writing_go_benchmarks.md) - Performance benchmarking guide
 - [Templates](templates.md) - Starter templates and examples
 - [Configuration Guide](configuration.md) - Configure bench.yaml
 
