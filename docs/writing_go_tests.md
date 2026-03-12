@@ -207,7 +207,7 @@ jobs:
       - name: Setup Grafana Bench
         uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@281b943dbbdf2a30aa0fd2e5fd07503a49734f44
         with:
-          version: 'v1.0.0'
+          version: 'v1.0.1'
 
       - name: Run tests
         run: |
@@ -235,7 +235,7 @@ suite:
 
 service:
   name: "my-service"
-  version: "v1.0.0"
+  version: "v1.0.1"
 
 test:
   runner: "go"
