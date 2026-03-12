@@ -30,6 +30,8 @@ func TestHealthEndpoint(t *testing.T) {
 
 ```sh
 grafana-bench test \
+  --service my-service \
+  --service-version v1.0.0 \
   --suite-name my-repo/go-tests \
   --test-runner go \
   --suite-path ./
@@ -58,18 +60,24 @@ By default bench runs tests in the directory specified by `--suite-path`. Use `-
 ```sh
 # Run all packages recursively
 grafana-bench test \
+  --service my-service \
+  --service-version v1.0.0 \
   --suite-name my-repo/go-tests \
   --test-runner go \
   --go-test-packages ./...
 
 # Run a specific package
 grafana-bench test \
+  --service my-service \
+  --service-version v1.0.0 \
   --suite-name my-repo/go-tests \
   --test-runner go \
   --go-test-packages ./pkg/api/...
 
 # Run multiple package patterns
 grafana-bench test \
+  --service my-service \
+  --service-version v1.0.0 \
   --suite-name my-repo/go-tests \
   --test-runner go \
   --go-test-packages ./pkg/api/... \
@@ -80,6 +88,8 @@ Use `--suite-path` to change the working directory for the `go test` command:
 
 ```sh
 grafana-bench test \
+  --service my-service \
+  --service-version v1.0.0 \
   --suite-name my-repo/go-tests \
   --test-runner go \
   --suite-path ./tests \
@@ -93,6 +103,8 @@ Use `--go-args` for flags that go to the `go test` command itself (build tags, r
 ```sh
 # Run with build tags
 grafana-bench test \
+  --service my-service \
+  --service-version v1.0.0 \
   --suite-name my-repo/integration-tests \
   --test-runner go \
   --go-test-packages ./... \
@@ -100,13 +112,17 @@ grafana-bench test \
 
 # Run with race detector and custom timeout
 grafana-bench test \
+  --service my-service \
+  --service-version v1.0.0 \
   --suite-name my-repo/go-tests \
   --test-runner go \
   --go-test-packages ./... \
   --go-args "-race -timeout=10m"
 
-# Combine multiple flags (repeat the flag or use a single quoted string)
+# Combine multiple flags
 grafana-bench test \
+  --service my-service \
+  --service-version v1.0.0 \
   --suite-name my-repo/go-tests \
   --test-runner go \
   --go-test-packages ./... \
@@ -119,6 +135,8 @@ Use `--go-test-args` for flags consumed by the test code itself (passed via `go 
 
 ```sh
 grafana-bench test \
+  --service my-service \
+  --service-version v1.0.0 \
   --suite-name my-repo/integration-tests \
   --test-runner go \
   --go-test-packages ./... \
@@ -143,6 +161,8 @@ Use `--go-retries` to retry failed tests automatically. Tests that fail on the f
 
 ```sh
 grafana-bench test \
+  --service my-service \
+  --service-version v1.0.0 \
   --suite-name my-repo/go-tests \
   --test-runner go \
   --go-test-packages ./... \
@@ -163,6 +183,8 @@ Tests flaky 1
 Flaky results are also exported as the `bench_test_run_flaky` Prometheus metric, letting you track flakiness trends over time.
 
 ## GitHub Actions example
+
+For `--service-version`, use the version of the service under test if available. For self-contained unit tests with no external service, use the git SHA:
 
 ```yaml
 name: Go Tests
@@ -190,6 +212,8 @@ jobs:
       - name: Run tests
         run: |
           grafana-bench test \
+            --service my-service \
+            --service-version ${{ github.sha }} \
             --suite-name my-repo/go-tests \
             --test-runner go \
             --go-test-packages ./... \
@@ -209,6 +233,10 @@ suite:
   name: "my-repo/go-tests"
   path: "."
 
+service:
+  name: "my-service"
+  version: "v1.0.0"
+
 test:
   runner: "go"
 
@@ -227,7 +255,10 @@ go:
 
 | Flag | Description |
 |---|---|
+| `--service` | **Required.** Name of the service being tested |
+| `--service-version` | **Required.** Version of the service (use git SHA if no explicit version) |
 | `--test-runner go` | Select the Go test runner |
+| `--suite-name` | **Required.** Test suite name for logs and metrics |
 | `--suite-path` | Working directory for `go test` (default: `.`) |
 | `--go-test-packages` | Package patterns to test (repeatable) |
 | `--go-args` | Arguments for `go test` (e.g., `-tags=integration -race`) |
