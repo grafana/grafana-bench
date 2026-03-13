@@ -1,4 +1,4 @@
-name: update docs on release
+name: release: update docs
 
 on:
   workflow_call:

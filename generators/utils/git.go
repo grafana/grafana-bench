@@ -64,15 +64,15 @@ func resolveMainRepoPath(path string) (string, error) {
 			if !filepath.IsAbs(commondir) {
 				commondir = filepath.Join(gitdir, commondir)
 			}
-			// In a normal repo, commondir is the .git directory and its parent
-			// is the repo root. In a bare repo, commondir IS the repo root
-			// (there is no separate working tree .git subdir), so return it
-			// directly.
-			cleanCommondir := filepath.Clean(commondir)
-			if filepath.Base(cleanCommondir) == ".git" {
-				return filepath.Dir(cleanCommondir), nil
+			commondir = filepath.Clean(commondir)
+			// In a normal (non-bare) worktree, commondir is the main .git
+			// directory (e.g. /repo/.git) and its parent is the repo root.
+			// In a bare worktree, commondir IS the bare repo directory itself
+			// (e.g. /repos/.bare/org/repo) and should be opened directly.
+			if filepath.Base(commondir) == ".git" {
+				return filepath.Dir(commondir), nil
 			}
-			return cleanCommondir, nil
+			return commondir, nil
 		}
 		parent := filepath.Dir(dir)
 		if parent == dir {

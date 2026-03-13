@@ -48,6 +48,7 @@ test:
 # Generate documentation
 docs: install-deps
 	@echo "📚 Generating documentation..."
+	git fetch --tags
 	go run ./generators/doc -o docs
 
 # Generate libsonnet library (local versions only)

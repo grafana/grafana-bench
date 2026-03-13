@@ -85,20 +85,20 @@ For **local development** (dev variants):
 
 ```sh
 # Base image (K6, Go tests, Go benchmarks)
-docker pull us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-dev/grafana-bench:v1.0.1
+docker pull us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-dev/grafana-bench:v1.0.2
 
 # Playwright image (includes Chromium for browser tests)
-docker pull us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-dev/grafana-bench-playwright:v1.0.1
+docker pull us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-dev/grafana-bench-playwright:v1.0.2
 ```
 
 For **CI/production** (prod variants - hardened for security):
 
 ```sh
 # Base image (K6, Go tests, Go benchmarks)
-docker pull us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v1.0.1
+docker pull us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v1.0.2
 
 # Playwright image (includes Chromium for browser tests)
-docker pull us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench-playwright:v1.0.1
+docker pull us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench-playwright:v1.0.2
 ```
 
 **Binary**:
@@ -116,6 +116,7 @@ Choose your testing framework:
 - **[K6 API Tests](writing_k6_api_tests.md)** - Fast API testing with JavaScript
 - **[Playwright Browser Tests](writing_pw_tests.md)** - End-to-end browser testing
 - **[Go Tests](writing_go_tests.md)** - Unit and integration tests
+- **[Go Benchmarks](writing_go_benchmarks.md)** - Performance benchmarks with metrics export
 
 Or follow the [Complete Quickstart](quickstart.md) for a guided experience.
 
@@ -127,7 +128,7 @@ Add Bench to your GitHub Actions workflow:
 - name: Setup Grafana Bench
   uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@281b943dbbdf2a30aa0fd2e5fd07503a49734f44
   with:
-    version: 'v1.0.1'
+    version: 'v1.0.2'
 
 - name: Run Tests
   run: |
@@ -156,6 +157,7 @@ Add Bench to your GitHub Actions workflow:
 - [Writing K6 Tests](writing_k6_api_tests.md) - API testing guide
 - [Writing Playwright Tests](writing_pw_tests.md) - Browser testing guide
 - [Writing Go Tests](writing_go_tests.md) - Go testing guide
+- [Writing Go Benchmarks](writing_go_benchmarks.md) - Performance benchmarking guide
 - [Templates](templates.md) - Starter templates and examples
 - [Configuration Guide](configuration.md) - Configure bench.yaml
 
