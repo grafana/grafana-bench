@@ -10,7 +10,7 @@ Grafana Bench is a Go-based CLI tool for standardized test execution and observa
 
 ### Core Commands
 - **Build**: `go build -v ./...`
-- **Test**: `go test -v ./...`
+- **Test**: `make test`
 - **Install**: `go install`
 - **Run locally**: `go run bench.go [command] [flags]`
 
