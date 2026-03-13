@@ -51,7 +51,7 @@ local steps = aw.group.steps;
 
 runBenchSuite(grafana_url): [
     local suite = {
-        benchRevision: 'v1.0.1',
+        benchRevision: 'v1.0.2',
         testType: 'smoke',
         path: 'tests/playlists',
         testRepo: 'https://github.com/grafana/grafana-api-tests.git',
