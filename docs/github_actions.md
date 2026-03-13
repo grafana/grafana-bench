@@ -134,7 +134,7 @@ When using Docker, you need to explicitly pass the Prometheus environment variab
       -e PROMETHEUS_URL="${PROMETHEUS_URL}" \
       -e PROMETHEUS_USER="${PROMETHEUS_USER}" \
       -e PROMETHEUS_PASSWORD="${PROMETHEUS_PASSWORD}" \
-      us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v1.0.3 test \
+      ghcr.io/grafana/grafana-bench:v1.0.3 test \
       --service grafana \
       --service-url "http://localhost:3000" \
       --service-version latest \
@@ -267,7 +267,7 @@ See the [Slack notifications guide](notifications.md) to route failure alerts to
     docker run --rm \
       --network=host \
       --volume="./:/tests/" \
-      us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v1.0.3 test \
+      ghcr.io/grafana/grafana-bench:v1.0.3 test \
       --service grafana \
       --service-url "http://localhost:3000" \
       --service-version latest \
@@ -310,7 +310,7 @@ jobs:
           docker run --rm \
             --network=host \
             --volume="./CI/:/tests/CI/" \
-            us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v1.0.3 test \
+            ghcr.io/grafana/grafana-bench:v1.0.3 test \
             --service grafana \
             --service-url "http://localhost:3000" \
             --service-version latest \
@@ -389,7 +389,7 @@ jobs:
           docker run --rm \
             --network=host \
             --volume="./:/tests/" \
-            us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v1.0.3 test \
+            ghcr.io/grafana/grafana-bench:v1.0.3 test \
             --service grafana \
             --service-url "http://localhost:3000" \
             --service-version latest \

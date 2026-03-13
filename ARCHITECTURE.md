@@ -535,9 +535,8 @@ codeowners:
 - Production: `v0.6.11` (semantic versioning)
 - Development: `experimental` / `dev-{commit}` (latest main)
 
-**Image Registries**:
-- Production: `us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/`
-- Development: `us-docker.pkg.dev/grafanalabs-dev/docker-grafana-bench-dev/`
+**Image Registry**:
+- `ghcr.io/grafana/`
 
 **Image Variants**:
 - `grafana-bench:{version}` - Standard (includes K6)

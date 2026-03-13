@@ -76,24 +76,12 @@ You either:
 
 **Docker**:
 
-For **local development** (dev variants):
-
 ```sh
 # Base image (K6, Go tests, Go benchmarks)
-docker pull us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-dev/grafana-bench:v1.0.3
+docker pull ghcr.io/grafana/grafana-bench:v1.0.3
 
 # Playwright image (includes Chromium for browser tests)
-docker pull us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-dev/grafana-bench-playwright:v1.0.3
-```
-
-For **CI/production** (prod variants - hardened for security):
-
-```sh
-# Base image (K6, Go tests, Go benchmarks)
-docker pull us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench:v1.0.3
-
-# Playwright image (includes Chromium for browser tests)
-docker pull us-docker.pkg.dev/grafanalabs-global/docker-grafana-bench-prod/grafana-bench-playwright:v1.0.3
+docker pull ghcr.io/grafana/grafana-bench-playwright:v1.0.3
 ```
 
 **Binary**:

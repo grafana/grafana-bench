@@ -78,7 +78,7 @@ Use the built-in `fixuid` for seamless file permission handling:
 
 ```sh
     docker run --rm --network=host --volume="./CI/:/tests/CI/" \
-     us-docker.pkg.dev/grafanalabs-dev/docker-grafana-bench-playwright/grafana-bench-playwright:dev-latest test \
+     ghcr.io/grafana/grafana-bench-playwright:dev-latest test \
       --service grafana \
       --service-url http://localhost:3000 \
       --service-version 11.0.0 \
@@ -101,7 +101,7 @@ Use explicit user mapping to avoid permission issues on large runners:
 ```sh
     docker run --rm --network=host --volume="./CI/:/tests/CI/" \
      --user "$(id -u):$(id -g)" --env "HOME=/tmp" \
-     localhost:5000/grafana-bench-test-playwright-dev:latest test \
+     ghcr.io/grafana/grafana-bench-playwright:latest test \
       --service grafana \
       --service-url http://localhost:3000 \
       --service-version 11.0.0 \
@@ -123,7 +123,7 @@ Docker Desktop handles permissions automatically:
 
 ```powershell
     docker run --rm --network=host --volume="./CI/:/tests/CI/" `
-     us-docker.pkg.dev/grafanalabs-dev/docker-grafana-bench-playwright/grafana-bench-playwright:dev-latest test `
+     ghcr.io/grafana/grafana-bench-playwright:dev-latest test `
       --log-level debug `
       --pw-prepare "yarn install; yarn playwright install" `
       --pw-execute "yarn playwright test --grep-invert @performance" `
