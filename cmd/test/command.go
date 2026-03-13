@@ -36,7 +36,7 @@ bench test \
 # run k6 test with cloud output
 bench test \
   --suite-name my-repo/k6-tests \
-  --grafana-url "http://host.docker.internal:3000" \
+  --service-url "http://host.docker.internal:3000" \
   --suite-path /home/bench/work/grafana-plugin-tests \
   --test-runner k6
   --k6-cloud-output=true
@@ -51,7 +51,7 @@ bench test \
 # run playwright test
 bench test  \
   --suite-name my-repo/e2e-tests \
-  --grafana-url "http://host.docker.internal:3000" \
+  --service-url "http://host.docker.internal:3000" \
   --suite-path grafana-plugin-tests \
   --test-runner playwright \
   --pw-prepare "yarn install; playwright install chromium" \
@@ -122,7 +122,7 @@ Executes a test suite using playwright.
 The --pw-prepare and --pw-execute arguments define the commands to be execute for 
 preparing and executing the tests
 
-The url to the grafana instance defined in the --grafana-url cli arguments will 
+The service url defined in the --service-url cli argument will
 be passed to the test in the PLAYWRIGHT_BASE_URL environment variable.
 See [1] for details on how to develop playwright tests compatible with the bench
 test runner.

@@ -140,17 +140,17 @@ grafana-bench test \
   --suite-name my-repo/integration-tests \
   --test-runner go \
   --go-test-packages ./... \
-  --go-test-args "-grafana-url=http://localhost:3000" \
-  --go-test-args "-grafana-user=admin"
+  --go-test-args "-service-url=http://localhost:3000" \
+  --go-test-args "-service-user=admin"
 ```
 
 Your test reads them with `flag`:
 
 ```go
-var grafanaURL = flag.String("grafana-url", "http://localhost:3000", "Grafana URL")
+var serviceURL = flag.String("service-url", "http://localhost:3000", "Service URL")
 
 func TestDashboard(t *testing.T) {
-    resp, err := http.Get(*grafanaURL + "/api/dashboards/home")
+    resp, err := http.Get(*serviceURL + "/api/dashboards/home")
     // ...
 }
 ```

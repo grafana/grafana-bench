@@ -1,6 +1,6 @@
 # Grafana Bench - Architecture & Integration Guide
 
-**Version:** v0.6.11
+**Version:** v1.0.3
 **Last Updated:** 2026-01-21
 
 This document provides comprehensive architectural knowledge about Grafana Bench, its internal implementation, deployment integration, and observability setup. This is the definitive reference for understanding how bench works end-to-end.
@@ -269,7 +269,7 @@ bench_total_duration_seconds
 ```
 CLI (grafana-bench binary)
   ↓
-libsonnet/bench/v0.6.11/main.libsonnet (config builder)
+libsonnet/bench/v1.0.3/main.libsonnet (config builder)
   ↓
 argo-workflows-util/bench-v2.libsonnet (Argo integration)
   ↓
@@ -280,7 +280,7 @@ Deployment Workflows (hosted-grafana-cd, unified-storage-cd, etc.)
 
 ### 2. Bench Libsonnet Code
 
-**File**: `ksonnet/lib/bench/v0.6.11/main.libsonnet`
+**File**: `ksonnet/lib/bench/v1.0.3/main.libsonnet`
 
 **Auto-generated from CLI**:
 - ~50+ configuration options
@@ -289,7 +289,7 @@ Deployment Workflows (hosted-grafana-cd, unified-storage-cd, etc.)
 
 **Example Usage**:
 ```jsonnet
-local bench = import 'ksonnet/lib/bench/v0.6.11/main.libsonnet';
+local bench = import 'ksonnet/lib/bench/v1.0.3/main.libsonnet';
 
 bench.suite({
   suitePath: 'CI/k6',
@@ -304,15 +304,15 @@ bench.suite({
 **Version Management** (`ksonnet/lib/bench/versions.libsonnet`):
 - Registry of available versions
 - Dynamic import based on version string
-- Available: `experimental`, `v0.6.11`
+- Available: `experimental`, `v1.0.3`
 
 **Image Selection**:
 ```
 Test Runner → Image
 ─────────────────────
-k6          → grafana-bench:v0.6.11
-playwright  → grafana-bench-playwright:v0.6.11
-go          → grafana-bench:v0.6.11
+k6          → grafana-bench:v1.0.3
+playwright  → grafana-bench-playwright:v1.0.3
+go          → grafana-bench:v1.0.3
 ```
 
 ### 3. Argo Workflow Integration
@@ -321,7 +321,7 @@ go          → grafana-bench:v0.6.11
 ```jsonnet
 local aw = import 'argo-workflows-util/index.libsonnet';
 
-aw.testingSteps.benchV2('test-step', 'v0.6.11')
+aw.testingSteps.benchV2('test-step', 'v1.0.3')
   .withBenchTest('http://grafana:3000', {
     suitePath: 'CI/k6',
     testType: 'smoke',
@@ -372,7 +372,7 @@ Bench runs during hosted Grafana deployments to validate releases:
 4. **slo-app** - SLO application tests
 
 **Configuration**:
-- Bench version: v0.6.11
+- Bench version: v1.0.3
 - Prometheus metrics: Enabled
 - Slack notifications: Per-team routing via CODEOWNERS
 - Dashboard links: Argo Workflows dashboard
@@ -532,7 +532,7 @@ codeowners:
 ### 1. Version Management
 
 **Bench Versions**:
-- Production: `v0.6.11` (semantic versioning)
+- Production: `v1.0.3` (semantic versioning)
 - Development: `experimental` / `dev-{commit}` (latest main)
 
 **Image Registry**:
@@ -678,7 +678,7 @@ ksonnet/lib/
   bench/
     versions.libsonnet            # Version registry
     template.libsonnet            # Pre-configured builder
-    v0.6.11/main.libsonnet        # Production version
+    v1.0.3/main.libsonnet        # Production version
     experimental/main.libsonnet   # Development version
 
   argo-workflows-util/

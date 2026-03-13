@@ -2,7 +2,7 @@
 
 **Bench** provides standardized test execution and observability for any service. It wraps K6, Playwright, Go tests, and Go benchmarks and normalizes results into consistent structured logs and Prometheus metrics.
 
-**Latest Version:** v0.6.11
+**Latest Version:** v1.0.3
 
 ---
 
@@ -106,7 +106,7 @@ docker pull ghcr.io/grafana/grafana-bench-playwright:v1.0.3
 **Binary**:
 
 ```sh
-go install github.com/grafana/grafana-bench@v0.6.11
+go install github.com/grafana/grafana-bench@v1.0.3
 ```
 
 📖 [Full Installation Guide](installation.md)
