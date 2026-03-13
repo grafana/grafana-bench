@@ -109,7 +109,7 @@ Key changes in v1.0.0:
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for build instructions, development setup, and contribution guidelines.
+See [docs/contributing.md](docs/contributing.md) for build instructions, development setup, and contribution guidelines.
 
 ```sh
 go build -v ./...

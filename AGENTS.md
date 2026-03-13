@@ -4,7 +4,7 @@ This file provides guidance to AI coding agents (Claude Code, Codex, etc.) when 
 
 ## Overview
 
-Grafana Bench is a Go-based CLI tool for standardized test execution and observability. It normalizes test output into structured logs and Prometheus metrics. Every test runner has a driver (executes tests) and a parser (normalizes output) — bench can handle both, or you can run tests yourself and pipe the output to bench with a built-in or custom parser. It is service-agnostic and works with any HTTP service, gRPC API, or CLI.
+Grafana Bench is a Go-based CLI tool for standardized test execution and observability. It normalizes test output into structured logs and Prometheus metrics. Every test runner has a driver (executes tests) and a parser (normalizes output) — bench can handle both, or you can run tests yourself and pipe the output to bench with a built-in or custom parser. It is service-agnostic and works with any testing service provided there is an executor and a parser.
 
 ## Build and Test Commands
 
@@ -112,7 +112,3 @@ Look in pkg/parsers to see a current list of parsers we can support
    git status  # MUST show "up to date with origin"
    ```
 4. **Verify** - All changes committed AND pushed
-
-**CRITICAL RULES:**
-- Work is NOT complete until `git push` succeeds
-- NEVER stop before pushing - that leaves work stranded locally

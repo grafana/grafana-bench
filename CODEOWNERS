@@ -14,4 +14,4 @@
 # BENCH - make sure you add a channel mapping in the codeowners-mapping.yaml file
 # Then add the bench bot to the channel you want to alert `/invite @grafana-bench`
 
-* @grafana/grafana-developer-enablement-squad
+* @grafana/grafana-backend-services-squad

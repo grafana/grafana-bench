@@ -184,7 +184,7 @@ Add Bench to your GitHub Actions workflow:
 
 ### Contributing
 
-- [Contributing Guide](../CONTRIBUTING.md) - Build setup, testing, and how to contribute
+- [Contributing Guide](contributing.md) - Build setup, testing, and how to contribute
 
 ---
 
