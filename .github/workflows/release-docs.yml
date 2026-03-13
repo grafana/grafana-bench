@@ -107,7 +107,7 @@ jobs:
         run: |
           echo "Auto-merging PR #$PR_NUMBER"
 
-          # Try to merge the PR using squash merge
-          gh pr merge $PR_NUMBER --squash --delete-branch
+          # Enable auto-merge so the PR merges once branch protection requirements are met
+          gh pr merge $PR_NUMBER --squash --delete-branch --auto
 
-          echo "✅ PR #$PR_NUMBER has been merged"
+          echo "✅ PR #$PR_NUMBER auto-merge enabled"
