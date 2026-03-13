@@ -17,8 +17,7 @@ Key changes in v1.0.0:
 
 ## Docs
 
-We keep updated docs in the docs/ directory which is published to
-[enghub](https://enghub.grafana-ops.net/docs/default/component/grafana-bench).
+We keep updated docs in the docs/ directory.
 
 ## A note on the Bench docker images
 

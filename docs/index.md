@@ -11,8 +11,6 @@
 - **Upgrading from v0.6.x?** See the [Migration Guide](../MIGRATION_GUIDE_v1.md) 🚀
 - **New to Bench?** Start with the [5-minute Quickstart](quickstart.md)
 - **Ready to dive in?** Read the [Installation Guide](installation.md)
-- [bench slack](https://grafanalabs.enterprise.slack.com/archives/C069CQCLDCG)
-- [bench ops](https://grafanalabs.enterprise.slack.com/archives/C08THJTL552)
 
 ---
 
@@ -33,9 +31,8 @@ Bench is a **labeling strategy** with a CLI to execute your tests in a consisten
 - CLI
 - Docker containers (dev/prod, base/playwright - 4 variants)
 - [K6 API testing framework](https://github.com/grafana/grafana-api-tests) with support for HTTP, gRPC, and load testing
-- [Dashboards](https://ops.grafana-ops.net/d/effb289a-04f8-418f-b948-f47ea2e1c0fd/suite-runs?orgId=1&from=now-24h&to=now&timezone=utc&var-suiteRunIdentifier=&var-argoWorkflowIdentifier=$__all)
-- [Metrics](https://ops.grafana-ops.net/a/grafana-metricsdrilldown-app/drilldown?nativeHistogramMetric=&layout=grid&filters-rule=&filters-prefix=&filters-suffix=&from=now-1h&to=now&timezone=utc&var-otel_resources=&var-filters=job%7C%3D%7Cbench&var-otel_and_metric_filters=&var-deployment_environment=undefined&var-labelsWingman=%28none%29&search_txt=&var-metrics-reducer-sort-by=default&var-ds=edprtf91hz01se&var-other_metric_filters=)
-- [versioned libsonnet libraries with argo templates](https://github.com/grafana/deployment_tools/tree/master/ksonnet/lib/bench)
+- Dashboards and metrics via your own Prometheus/Grafana stack
+- [versioned libsonnet libraries with argo templates](libsonnet.md)
 
 ---
 
@@ -70,8 +67,6 @@ You either:
 - **Team autonomy** with self-service test authoring and feedback
 - **Unified observability** across all your tests and environments
 - **Faster feedback** with standardized reporting and alerting
-
-For background on testing observability, read: [Delivery Targets and the need for Testing Observability](https://docs.google.com/document/d/1pQoU3sccwayVK_LLzQUnOQLq-0jduH-4FibpdaAztX8/edit?tab=t.0)
 
 ---
 
@@ -181,10 +176,8 @@ Add Bench to your GitHub Actions workflow:
 
 ## Support
 
-- **Questions?** Ask in [#grafana-bench](https://grafana.slack.com/archives/grafana-bench) Slack channel
 - **Bug reports:** [GitHub Issues](https://github.com/grafana/grafana-bench/issues)
 - **Roadmap:** [GitHub Project](https://github.com/orgs/grafana/projects/554)
-- **Design docs:** [Product DNA](https://docs.google.com/document/d/1rs1RN8UHKAowcQX-cqJ5ilhOnykAMUSoqakWICOGtcY/edit?tab=t.0#heading=h.soj854l81770)
 
 ---
 
