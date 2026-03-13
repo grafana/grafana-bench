@@ -493,4 +493,4 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-    uses: ./.github/workflows/update-docs.yml
+    uses: ./.github/workflows/release-docs.yml
