@@ -4,7 +4,7 @@ This file provides guidance to AI coding agents (Claude Code, Codex, etc.) when 
 
 ## Overview
 
-Grafana Bench is a Go-based CLI tool for standardized test execution and observability. It wraps K6, Playwright, Go tests, and Go benchmarks and normalizes results into consistent structured logs and Prometheus metrics. It is service-agnostic and can test any HTTP service, gRPC API, or CLI.
+Grafana Bench is a Go-based CLI tool for standardized test execution and observability. It normalizes test output into structured logs and Prometheus metrics. Every test runner has a driver (executes tests) and a parser (normalizes output) — bench can handle both, or you can run tests yourself and pipe the output to bench with a built-in or custom parser. It is service-agnostic and works with any HTTP service, gRPC API, or CLI.
 
 ## Build and Test Commands
 
@@ -68,11 +68,9 @@ grafana-bench validate --check-slack-permissions
 - **git/**: Git repository operations and revision detection
 - **metrics/**: Prometheus metrics handling and validation
 
-### Test Framework Support
-1. **K6 API Tests**: JavaScript-based API/load testing
-2. **Playwright Browser Tests**: End-to-end browser testing
-3. **Go Tests**: Standard Go unit/integration tests
-4. **Go Benchmarks**: Performance benchmarks with metrics export to Prometheus
+### Test Executors and Reporting Support
+Look in pkg/executors to see a current list of testing tools we can execute.
+Look in pkg/parsers to see a current list of parsers we can support
 
 ## Configuration
 
