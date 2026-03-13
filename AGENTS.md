@@ -1,40 +1,118 @@
 # Agent Instructions
 
-This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get started.
+This file provides guidance to AI coding agents (Claude Code, Codex, etc.) when working with this repository.
 
-## Quick Reference
+## Overview
 
+Grafana Bench is a Go-based CLI tool for standardized test execution and observability. It wraps K6, Playwright, Go tests, and Go benchmarks and normalizes results into consistent structured logs and Prometheus metrics. It is service-agnostic and can test any HTTP service, gRPC API, or CLI.
+
+## Build and Test Commands
+
+### Core Commands
+- **Build**: `go build -v ./...`
+- **Test**: `go test -v ./...`
+- **Install**: `go install`
+- **Run locally**: `go run bench.go [command] [flags]`
+
+### Documentation Generation
+- **Update docs**: `make docs` (regenerates CLI docs and updates version refs)
+
+### Test Execution Examples
 ```bash
-bd ready              # Find available work
-bd show <id>          # View issue details
-bd update <id> --status in_progress  # Claim work
-bd close <id>         # Complete work
-bd sync               # Sync with git
+# Run K6 smoke tests against a local service
+grafana-bench test \
+  --service my-api \
+  --service-url http://localhost:3000 \
+  --service-version 1.0.0 \
+  --test-runner k6 \
+  --suite-name my-repo/smoke \
+  --suite-path ./tests/k6 \
+  --run-stage ci
+
+# Run Go benchmarks with Prometheus metrics
+grafana-bench test \
+  --service bench \
+  --service-version v1.0.0 \
+  --test-runner gobench \
+  --suite-path ./benchmarks \
+  --gobench-pattern "BenchmarkAPI" \
+  --gobench-time 10s \
+  --prometheus-metrics \
+  --run-stage ci
+
+# Validate Slack permissions
+grafana-bench validate --check-slack-permissions
 ```
 
-## Landing the Plane (Session Completion)
+## Architecture
+
+### CLI Structure
+- **Entry point**: `bench.go` - main executable that initializes logger and root command
+- **Commands**: `cmd/` directory contains all subcommands:
+  - `test/` - Test execution with K6, Playwright, Go, and gobench support
+  - `report/` - Test result reporting and formatting
+  - `validate/` - Configuration and permission validation
+  - `version/` - Version information
+
+### Core Packages
+- **executor/**: Test execution engines for different frameworks:
+  - `gotest/` - Go test execution and parsing
+  - `gobench/` - Go benchmark execution with performance metrics
+  - `k6/` - K6 JavaScript test execution
+  - `playwright/` - Playwright browser test execution
+- **reporter/**: Multiple output formats (log, text, Prometheus metrics)
+- **notifier/**: Slack integration with CODEOWNERS mapping
+- **config/**: Configuration management with Viper
+- **git/**: Git repository operations and revision detection
+- **metrics/**: Prometheus metrics handling and validation
+
+### Test Framework Support
+1. **K6 API Tests**: JavaScript-based API/load testing
+2. **Playwright Browser Tests**: End-to-end browser testing
+3. **Go Tests**: Standard Go unit/integration tests
+4. **Go Benchmarks**: Performance benchmarks with metrics export to Prometheus
+
+## Configuration
+
+### Environment Variables
+- `BENCH_LOG_LEVEL`: Override log level (ERROR, WARN, INFO, DEBUG)
+- `SLACK_TOKEN`: Required for Slack notifications
+- `TEST_SUITE_REPO_TOKEN`: GitHub token for repository access
+- `PROMETHEUS_PASSWORD`: Token for Prometheus remote write
+
+### Configuration Files
+- `bench.yaml`: Main configuration file (default)
+- `.env`: Environment variables (loaded automatically if present)
+- `codeowners-mapping.yaml`: Maps GitHub teams to Slack channels for notifications
+
+## Testing Strategy
+
+- Unit tests for individual components (parsers, executors, utilities)
+- Integration tests for full workflow scenarios
+- Test data in `testdata/` directories for parser validation
+
+## Development Notes
+
+- Uses Cobra for CLI framework and Viper for configuration
+- Docker images published to `ghcr.io/grafana/grafana-bench` and `ghcr.io/grafana/grafana-bench-playwright`
+- Auto-generated docs in `docs/bench*.md` — do not edit directly, run `make docs` instead
+
+---
+
+## Session Completion
 
 **When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
 
-**MANDATORY WORKFLOW:**
-
-1. **File issues for remaining work** - Create issues for anything that needs follow-up
-2. **Run quality gates** (if code changed) - Tests, linters, builds
-3. **Update issue status** - Close finished work, update in-progress items
-4. **PUSH TO REMOTE** - This is MANDATORY:
+1. **File issues for remaining work** - Use [GitHub Issues](https://github.com/grafana/grafana-bench/issues) for anything that needs follow-up
+2. **Run quality gates** (if code changed) - `go test -v ./...`, `go build -v ./...`
+3. **PUSH TO REMOTE** - This is MANDATORY:
    ```bash
    git pull --rebase
-   bd sync
    git push
    git status  # MUST show "up to date with origin"
    ```
-5. **Clean up** - Clear stashes, prune remote branches
-6. **Verify** - All changes committed AND pushed
-7. **Hand off** - Provide context for next session
+4. **Verify** - All changes committed AND pushed
 
 **CRITICAL RULES:**
 - Work is NOT complete until `git push` succeeds
 - NEVER stop before pushing - that leaves work stranded locally
-- NEVER say "ready to push when you are" - YOU must push
-- If push fails, resolve and retry until it succeeds
-

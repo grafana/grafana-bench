@@ -400,6 +400,6 @@ Both versions can run side-by-side (different metric labels).
 ## Getting Help
 
 - **Documentation:** [README.md](README.md) and [docs/](docs/)
-- **Breaking Changes:** [BENCH_V1_BREAKING_CHANGES.md](BENCH_V1_BREAKING_CHANGES.md)
+- **Breaking Changes:** [breaking_changes_v1.md](breaking_changes_v1.md)
 - **Issues:** https://github.com/grafana/grafana-bench/issues
 - **Examples:** [.github/workflows/](.github/workflows/)

@@ -1,6 +1,6 @@
 # Grafana Bench
 
-**Bench** provides test observability and standardized test execution for the Grafana ecosystem.
+**Bench** provides standardized test execution and observability for any service. It wraps K6, Playwright, Go tests, and Go benchmarks and normalizes results into consistent structured logs and Prometheus metrics.
 
 **Latest Version:** v0.6.11
 
@@ -8,7 +8,7 @@
 
 ## Quick Links
 
-- **Upgrading from v0.6.x?** See the [Migration Guide](../MIGRATION_GUIDE_v1.md) 🚀
+- **Upgrading from v0.6.x?** See the [Migration Guide](migration_v1.md) 🚀
 - **New to Bench?** Start with the [5-minute Quickstart](quickstart.md)
 - **Ready to dive in?** Read the [Installation Guide](installation.md)
 
@@ -21,10 +21,10 @@ Bench is a **labeling strategy** with a CLI to execute your tests in a consisten
 **Benefits:**
 
 - ✅ **Standardized test execution** across local, CI, and release pipelines
-- 📊 **Test observability** with structured logging and metrics
+- 📊 **Test observability** with structured logging and Prometheus metrics
 - 🔔 **Smart notifications** via Slack with CODEOWNERS integration
-- 🎯 **Multi-architecture testing** for Grafana's diverse deployment targets
-- 📈 **Load testing** with Grafana Cloud K6 integration
+- 🎯 **Service-agnostic** — test any HTTP service, gRPC API, or CLI
+- 📈 **Load testing** with k6 and k6 Cloud integration
 
 **Components:**
 
@@ -61,10 +61,29 @@ You either:
 1. **Let bench run your tests** - It executes and parses automatically
 2. **Pass bench your test output** - It normalizes and reports for you
 
+### Output
+
+Every bench run produces a **structured log line**:
+
+```text
+level=info msg="suite complete" suite_name=my-api/smoke service=my-api service_version=1.2.0 run_stage=ci tests_executed=12 tests_passed=11 tests_failed=1 duration_seconds=4.2
+```
+
+With `--prometheus-metrics`, bench pushes standard **Prometheus metrics**:
+
+```text
+bench_tests_executed{service="my-api",service_version="1.2.0",suite_name="my-api/smoke",run_stage="ci"} 12
+bench_tests_passed{service="my-api",service_version="1.2.0",suite_name="my-api/smoke",run_stage="ci"} 11
+bench_tests_failed{service="my-api",service_version="1.2.0",suite_name="my-api/smoke",run_stage="ci"} 1
+bench_total_duration_seconds{service="my-api",service_version="1.2.0",suite_name="my-api/smoke",run_stage="ci"} 4.2
+```
+
+These labels are the same across every test runner, so you can query and compare results uniformly.
+
 ### Benefits
 
 - **Portable tests** that run the same everywhere (local → CI → release)
-- **Team autonomy** with self-service test authoring and feedback
+- **Service-agnostic** — works with any service, not just Grafana
 - **Unified observability** across all your tests and environments
 - **Faster feedback** with standardized reporting and alerting
 
@@ -156,9 +175,16 @@ Add Bench to your GitHub Actions workflow:
 ### Reference
 
 - [CLI Reference](bench.md) - All commands and flags
+- [Architecture](architecture.md) - How bench is structured internally
+- [Migration Guide v1.0](migration_v1.md) - Upgrading from v0.6.x
+- [Breaking Changes v1.0](breaking_changes_v1.md) - Full changelog of breaking changes
 - [Troubleshooting](troubleshooting.md) - Common issues and solutions
 - [Glossary](glossary.md) - Key terms and concepts
 - [Cheat Sheet](cheat-sheet.md) - Quick reference
+
+### Contributing
+
+- [Contributing Guide](../CONTRIBUTING.md) - Build setup, testing, and how to contribute
 
 ---
 
@@ -185,6 +211,6 @@ Bench is **semantically versioned** and uses explicit version tags (no `:latest`
 
 ## Project Status
 
-Bench is under active development. Our basic feature set and value proposition is defined along with a mostly stable API, however, we are trying to move fast to accommodate teams across Grafana and do release breaking changes.
+Bench is under active development. Our basic feature set and value proposition is defined along with a mostly stable API, however, we are trying to move fast and do release breaking changes.
 
 We recognize that as teams are using Bench in CI and for their release pipelines that Bench is critical infrastructure. In order to reduce the blast radius of any change, we provide semantically versioned releases.

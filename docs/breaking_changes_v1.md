@@ -8,7 +8,7 @@
 
 This document tracks all breaking changes being made for the v1.0.0 release. We're fixing long-standing issues with suite/test run identification and consolidating the data model.
 
-**Looking for migration instructions?** See [MIGRATION_GUIDE_v1.md](MIGRATION_GUIDE_v1.md) for step-by-step migration examples and use cases.
+**Looking for migration instructions?** See [migration_v1.md](migration_v1.md) for step-by-step migration examples and use cases.
 
 ---
 
@@ -473,8 +473,8 @@ return executor.SuiteRun{
 - [x] `generators/libsonnet/main_test.go` - Updated all tests for new flag names
 
 ### Documentation
-- [x] `BENCH_V1_BREAKING_CHANGES.md` - Complete breaking changes documentation ✅ **DONE**
-- [x] `MIGRATION_GUIDE_v1.md` - User-focused migration guide with examples ✅ **DONE**
+- [x] `breaking_changes_v1.md` - Complete breaking changes documentation ✅ **DONE**
+- [x] `migration_v1.md` - User-focused migration guide with examples ✅ **DONE**
 - [x] `README.md` - Updated all examples with v1.0.0 flags ✅ **DONE**
 - [x] `docs/github_actions.md` - Updated all examples with v1.0.0 flags ✅ **DONE**
 - [x] `docs/writing_pw_tests.md` - Updated all examples with v1.0.0 flags ✅ **DONE**

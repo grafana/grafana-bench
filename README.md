@@ -1,13 +1,105 @@
 # Grafana Bench
 
-Grafana bench is a tool for testing Grafana.
+**Bench** is a CLI tool for standardized test execution and observability. It wraps your
+testing tools (K6, Playwright, Go tests, Go benchmarks) and produces consistent structured
+logs and Prometheus metrics regardless of what you're testing.
 
-It's built on top of k6, and [Grafana API Tests](https://github.com/grafana/grafana-api-tests)
-to build and test a grafana on the platform and architecture of your choosing.
+## What it does
 
-## 🚀 Upgrading to v1.0.0?
+Bench normalizes test output into two things:
 
-**See [MIGRATION_GUIDE_v1.md](MIGRATION_GUIDE_v1.md)** for step-by-step migration instructions from v0.6.x to v1.0.0.
+**Structured log** (every test run):
+
+```text
+level=info msg="suite complete" suite_name=my-api/smoke service=my-api service_version=1.2.0 run_stage=ci tests_executed=12 tests_passed=11 tests_failed=1 duration_seconds=4.2
+```
+
+**Prometheus metrics** (when `--prometheus-metrics` is set):
+
+```text
+bench_tests_executed{service="my-api",service_version="1.2.0",suite_name="my-api/smoke",run_stage="ci"} 12
+bench_tests_passed{service="my-api",service_version="1.2.0",suite_name="my-api/smoke",run_stage="ci"} 11
+bench_tests_failed{service="my-api",service_version="1.2.0",suite_name="my-api/smoke",run_stage="ci"} 1
+bench_total_duration_seconds{service="my-api",service_version="1.2.0",suite_name="my-api/smoke",run_stage="ci"} 4.2
+```
+
+## Quick start
+
+```sh
+# Install
+go install github.com/grafana/grafana-bench@latest
+
+# Run K6 tests
+grafana-bench test \
+  --service my-api \
+  --service-version 1.0.0 \
+  --service-url http://localhost:3000 \
+  --test-runner k6 \
+  --suite-name my-api/smoke \
+  --suite-path ./tests
+```
+
+## Docker images
+
+```sh
+# Base image (K6, Go tests, Go benchmarks)
+docker pull ghcr.io/grafana/grafana-bench:latest
+
+# Playwright image (includes Chromium for browser tests)
+docker pull ghcr.io/grafana/grafana-bench-playwright:latest
+```
+
+For versioned pulls (recommended in CI):
+
+```sh
+docker pull ghcr.io/grafana/grafana-bench:v1.0.3
+docker pull ghcr.io/grafana/grafana-bench-playwright:v1.0.3
+```
+
+## Running with Docker
+
+```sh
+docker run --rm -e SUITE_REPO_TOKEN --network=host \
+  ghcr.io/grafana/grafana-bench-playwright:v1.0.3 test \
+  --service my-api \
+  --service-url http://localhost:3000 \
+  --service-version 1.0.0 \
+  --test-runner playwright \
+  --suite-name my-repo/e2e \
+  --suite-path ./tests
+```
+
+For local development with volume mounts (Linux/macOS):
+
+```sh
+docker run --rm --network=host --volume="./tests/:/tests/" \
+  ghcr.io/grafana/grafana-bench-playwright:v1.0.3 test \
+  --service my-api \
+  --service-url http://localhost:3000 \
+  --service-version 1.0.0 \
+  --test-runner playwright \
+  --suite-name my-repo/e2e \
+  --suite-path ./tests
+```
+
+> **Note:** For Playwright troubleshooting (including permission errors with `--with-deps`), see [docs/writing_pw_tests.md#troubleshooting](docs/writing_pw_tests.md#troubleshooting)
+
+## Documentation
+
+- [Getting started & full docs](docs/index.md)
+- [Configuration reference](docs/configuration.md)
+- [GitHub Actions integration](docs/github_actions.md)
+- [Writing K6 tests](docs/writing_k6_api_tests.md)
+- [Writing Playwright tests](docs/writing_pw_tests.md)
+- [Writing Go tests](docs/writing_go_tests.md)
+- [Writing Go benchmarks](docs/writing_go_benchmarks.md)
+- [Metrics](docs/metrics.md)
+- [Notifications](docs/notifications.md)
+- [Architecture](docs/architecture.md)
+
+## Upgrading from v0.6.x?
+
+See the [Migration Guide](docs/migration_v1.md) for step-by-step instructions.
 
 Key changes in v1.0.0:
 - `--service` flag is now **required**
@@ -15,166 +107,12 @@ Key changes in v1.0.0:
 - Credentials passed via `--test-env` (secure passthrough)
 - New metric labels: `service`, `suite_name`, `run_stage`
 
-## Docs
-
-We keep updated docs in the docs/ directory.
-
-## A note on the Bench docker images
-
-You can install the binary or run the docker image. We generally prefer to run
-the docker image as that's what runs the tests in production CI.
-
-There are two images, grafana-bench and grafana-bench-playwright which each have
-a dev and prod version. The ONLY difference between the dev and prod images is
-we configure the uid's so that you can mount a volume to the container and run
-tests for local development. You don't need to use this image if you are
-having bench check out tests from a repo.
-
-* grafana-bench is a minimal image with grafana-bench and k6
-
-* grafana-bench-playwright is for browser testing and includes all the
-playwright dependencies preinstalled for you preinstalled for you.
-
-## Running locally
-
-1. build the container you need
-
-`docker build . -f Dockerfile-playwright.dev  -t bench-playwright:dev`
-
-2. start a grafana instance
-
-`docker run --rm grafana/grafana:latest -P 3000:3000`
-
-3. run your tests with bench
-
-If you're checking out tests from a repo include the SUITE_REPO_TOKEN with permissions
-to access the repo with tests
-
-```sh
-    docker run --rm -e SUITE_REPO_TOKEN --network=host bench-playwright:dev test\
-    --service grafana \
-    --service-url http://localhost:3000 \
-    --service-version 11.0.0 \
-    --log-level debug \
-    --pw-prepare "yarn install; yarn playwright install" \
-    --pw-execute "yarn playwright test" \
-    --report-output log \
-    --run-stage grafana-bench-ci \
-    --suite-path ./CI/playwright \
-    --suite-revision main \
-    --suite-name grafana-bench/ci/playwright \
-    --suite-repo-url https://github.com/grafana/grafana-bench.git \
-    --test-runner playwright \
-    --test-type smoke
-```
-
-> **Note:** For Playwright troubleshooting (including permission errors with `--with-deps`), see [docs/writing_pw_tests.md#troubleshooting](docs/writing_pw_tests.md#troubleshooting)
-
-If you're running local tests, mount the volume inside the container.
-
-### For Local Development (Linux/macOS)
-
-Use the built-in `fixuid` for seamless file permission handling:
-
-```sh
-    docker run --rm --network=host --volume="./CI/:/tests/CI/" \
-     ghcr.io/grafana/grafana-bench-playwright:dev-latest test \
-      --service grafana \
-      --service-url http://localhost:3000 \
-      --service-version 11.0.0 \
-      --log-level debug \
-      --pw-prepare "yarn install; yarn playwright install" \
-      --pw-execute "yarn playwright test --grep-invert @performance" \
-      --report-output log \
-      --run-stage grafana-bench-ci \
-      --suite-path ./CI/playwright \
-      --suite-revision main \
-      --suite-name grafana-bench-dev/ci/playwright \
-      --test-runner playwright \
-      --test-type smoke
-```
-
-### For CI/GitHub Runners (Linux)
-
-Use explicit user mapping to avoid permission issues on large runners:
-
-```sh
-    docker run --rm --network=host --volume="./CI/:/tests/CI/" \
-     --user "$(id -u):$(id -g)" --env "HOME=/tmp" \
-     ghcr.io/grafana/grafana-bench-playwright:latest test \
-      --service grafana \
-      --service-url http://localhost:3000 \
-      --service-version 11.0.0 \
-      --log-level debug \
-      --pw-prepare "yarn install; yarn playwright install" \
-      --pw-execute "yarn playwright test --grep-invert @performance" \
-      --report-output log \
-      --run-stage grafana-bench-ci \
-      --suite-path ./CI/playwright \
-      --suite-revision ${{ github.sha }} \
-      --suite-name grafana-bench-dev/ci/playwright \
-      --test-runner playwright \
-      --test-type smoke
-```
-
-### For Windows Development
-
-Docker Desktop handles permissions automatically:
-
-```powershell
-    docker run --rm --network=host --volume="./CI/:/tests/CI/" `
-     ghcr.io/grafana/grafana-bench-playwright:dev-latest test `
-      --log-level debug `
-      --pw-prepare "yarn install; yarn playwright install" `
-      --pw-execute "yarn playwright test --grep-invert @performance" `
-      --report-format log `
-      --run-trigger grafana-bench-ci `
-      --suite-path ./CI/playwright `
-      --suite-revision main `
-      --suite-name grafana-bench-dev/ci/playwright `
-      --test-report-format text `
-      --test-runner playwright `
-      --test-type smoke
-```
-
-## CLI interface
-
-Grafana bench provided a CLI interface for executing diverse actions implemented as sub-commands.
-
-To invoke the test runner use the following command from grafana bench's project root directory:
-
-```sh
-go run bench.go [options] <sub command> [subcommand options]
-```
-
-To get more details of the available options, use the command:
-
-```sh
-go run bench.go --help
-```
-
-To get more details of the available options for an specific subcommand, use the command:
-
-```sh
-go run bench.go <subcommand> --help
-```
-
-See [documentation online](https://github.com/grafana/grafana-bench/blob/main/docs/index.md)
-
 ## Contributing
 
-### Setup development dependencies
-
-Before running tests or generating libsonnet libraries, install the required development dependencies:
+See [CONTRIBUTING.md](CONTRIBUTING.md) for build instructions, development setup, and contribution guidelines.
 
 ```sh
-make install-deps
+go build -v ./...
+go test -v ./...
+make docs   # regenerate CLI docs and update version refs
 ```
-
-This installs:
-- `jsonnet` - Required for libsonnet generation and testing
-- `jsonnetfmt` - Required for formatting generated libsonnet files
-
-### Updating docs
-
-`go run ./gendoc -o docs`
