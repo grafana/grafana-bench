@@ -1,4 +1,4 @@
-name: release: update docs
+name: "release: update docs"
 
 on:
   workflow_call:
@@ -51,8 +51,8 @@ jobs:
             fi
             VERSION="$LATEST_TAG"
           else
-            echo "Unsupported event: $EVENT_NAME"
-            exit 1
+            echo "Skipping: triggered by $EVENT_NAME (expected workflow_call or workflow_dispatch)"
+            exit 0
           fi
           
           AUTHOR="$ACTOR"
