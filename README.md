@@ -6,7 +6,7 @@ logs and Prometheus metrics regardless of what you're testing.
 
 ## What it does
 
-Bench normalizes test output into two things:
+Bench normalizes test output into structured logs and Prometheus metrics. Every test runner has a driver (executes tests) and a parser (normalizes output) — you can let bench handle both, or run tests yourself and pipe the output to bench with a built-in or custom parser:
 
 **Structured log** (every test run):
 

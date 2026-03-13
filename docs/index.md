@@ -56,10 +56,10 @@ Bench is simple: it wraps your testing tools and standardizes the output.
 - **Test Executors** (K6, Playwright, Go) - Each executor includes a parser for that framework
 - **Reporters** - Output results via structured logs, Prometheus metrics, and Slack notifications
 
-You either:
+Every test runner has two components: a **driver** (executes the tests) and a **parser** (normalizes the output). You can use bench in two ways:
 
-1. **Let bench run your tests** - It executes and parses automatically
-2. **Pass bench your test output** - It normalizes and reports for you
+1. **Bench drives and parses** - bench executes your tests and parses the output using a built-in executor
+2. **You drive, bench parses** - run your tests yourself and pipe the output to `bench report` with a built-in or custom parser
 
 ### Output
 
