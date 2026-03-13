@@ -96,6 +96,7 @@ Look in pkg/parsers to see a current list of parsers we can support
 - Uses Cobra for CLI framework and Viper for configuration
 - Docker images published to `ghcr.io/grafana/grafana-bench` and `ghcr.io/grafana/grafana-bench-playwright`
 - Auto-generated docs in `docs/bench*.md` — do not edit directly, run `make docs` instead
+- When writing or editing documentation, follow the conventions in [DOCS_STYLE_GUIDE.md](DOCS_STYLE_GUIDE.md)
 
 ---
 
