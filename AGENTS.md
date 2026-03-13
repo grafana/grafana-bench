@@ -14,8 +14,10 @@ Grafana Bench is a Go-based CLI tool for standardized test execution and observa
 - **Install**: `go install`
 - **Run locally**: `go run bench.go [command] [flags]`
 
-### Documentation Generation
+### Make Targets
+- **Test**: `make test`
 - **Update docs**: `make docs` (regenerates CLI docs and updates version refs)
+- **Generate libsonnet**: `make libsonnet`
 
 ### Test Execution Examples
 ```bash
@@ -104,7 +106,7 @@ grafana-bench validate --check-slack-permissions
 **When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
 
 1. **File issues for remaining work** - Use [GitHub Issues](https://github.com/grafana/grafana-bench/issues) for anything that needs follow-up
-2. **Run quality gates** (if code changed) - `go test -v ./...`, `go build -v ./...`
+2. **Run quality gates** (if code changed) - `make test`, `go build -v ./...`; run `make docs` and `make libsonnet` if CLI flags or libsonnet changed
 3. **PUSH TO REMOTE** - This is MANDATORY:
    ```bash
    git pull --rebase
