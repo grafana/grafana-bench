@@ -110,9 +110,3 @@ Key changes in v1.0.0:
 ## Contributing
 
 See [docs/contributing.md](docs/contributing.md) for build instructions, development setup, and contribution guidelines.
-
-```sh
-go build -v ./...
-go test -v ./...
-make docs   # regenerate CLI docs and update version refs
-```

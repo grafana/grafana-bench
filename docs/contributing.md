@@ -1,6 +1,6 @@
 # Contributing to Grafana Bench
 
-Thank you for your interest in contributing! This guide covers how to build, test, and submit changes.
+Thank you for your interest in contributing! This guide covers how to build, test, and submit changes. For a deeper overview of how bench is structured, see [Architecture](architecture.md).
 
 ## Prerequisites
 
@@ -25,7 +25,7 @@ go build -v ./...
 ## Testing
 
 ```sh
-go test -v ./...
+make test
 ```
 
 ## Running locally
@@ -66,13 +66,11 @@ metrics/            # Prometheus metrics handling
 docs/               # Documentation
 ```
 
-For a deeper overview see [docs/architecture.md](docs/architecture.md).
-
 ## Submitting changes
 
 1. Fork the repository and create a branch from `main`
 2. Make your changes with tests
-3. Run `go test -v ./...` and ensure all tests pass
+3. Run `make test` and ensure all tests pass
 4. Run `make docs` if you changed any CLI flags or descriptions
 5. Open a pull request against `main`
 
