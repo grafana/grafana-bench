@@ -21,7 +21,7 @@ The `setup-grafana-bench` action downloads and installs the pre-built binary for
 |-------|-------------|----------|
 | `version` | Version to install (e.g. `v1.0.3`) | Yes |
 
-### When to use Docker instead
+### Setup action vs Docker
 
 **Use the setup action when:**
 - Running Go tests or benchmarks
