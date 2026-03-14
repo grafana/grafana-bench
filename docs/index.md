@@ -98,8 +98,6 @@ Bench is **semantically versioned** and uses explicit version tags (no `:latest`
 - Controlled upgrade process with clear changelog
 - Reduced blast radius of breaking changes
 
-> **Important:** Bench is under active development. We aim for API stability but may introduce breaking changes with version bumps. Always pin specific versions in production workflows.
-
 📖 [Release Notes](https://github.com/grafana/grafana-bench/releases)
 
 ---
