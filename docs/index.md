@@ -87,7 +87,6 @@ These labels are the same across every test runner, so you can query and compare
 ## Support
 
 - **Bug reports:** [GitHub Issues](https://github.com/grafana/grafana-bench/issues)
-- **Roadmap:** [GitHub Project](https://github.com/orgs/grafana/projects/554)
 
 ---
 
