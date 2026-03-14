@@ -39,29 +39,36 @@ A test suite is defined by the following Jsonnet object:
 
 ## Example
 
-The following code snipped shows how to use the bench jsonnet library to execute a test suite from the [grafana-api-tests](https://github.com/grafana/grafana-api-tests) test library against multiple grafana instances.
+Import the version mapping and configure a suite using the generated `Suite` template:
 
 ```js
-local aw = import 'argo-workflows-util/main.libsonnet';
-local steps = aw.group.steps;
+// Import the version mapping
+local benchVersions = import 'bench/versions.libsonnet';
 
-runBenchSuite(grafana_url): [
-    local suite = {
-        benchRevision: 'v1.0.3',
-        testType: 'smoke',
-        path: 'tests/playlists',
-        testRepo: 'https://github.com/grafana/grafana-api-tests.git',
-        testRevision: 'v0.3.0',
-    };
+// Get functions for a specific version
+local bench = benchVersions.getBenchFunctions('v1.0.3');
 
-    aw.testingSteps.benchTest()
-    // set environment variables for bench tests from environment secrets
-        .withEnvVars([
-            envVar.fromSecretRef('GRAFANA_ADMIN_USER', 'grafana-credentials-unified-storage', 'user'),
-            envVar.fromSecretRef('GRAFANA_ADMIN_PASSWORD', 'grafana-credentials-unified-storage', 'password'),
-            envVar.fromSecretRef('TEST_SUITE_REPO_TOKEN', 'grafana-api-repo-token', 'token'),
-        ])
-        .withBenchTest(grafana_url, suite)
-        .buildStep()
-]
+// Define a suite by extending the Suite template
+local suite = bench.Suite + {
+  service: 'my-service',
+  serviceUrl: 'http://my-service:3000',
+  serviceVersion: '1.2.0',
+  testRunner: 'k6',
+  testType: 'smoke',
+  suiteName: 'my-service/smoke',
+  suitePath: 'CI/k6',
+  runStage: 'ci',
+  prometheusMetrics: true,
+};
+
+// Build the script args for an Argo workflow container
+local script = bench.buildScript(suite.serviceUrl, suite);
+```
+
+The `buildScript` function returns an array of CLI arguments ready to use as a container command in an Argo workflow template. Fields not set on the suite use the defaults from the generated `Suite` object.
+
+New versions of the library are generated automatically on release via `make libsonnet`. To regenerate locally:
+
+```sh
+make libsonnet
 ```

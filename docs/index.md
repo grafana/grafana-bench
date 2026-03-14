@@ -1,21 +1,8 @@
 # Grafana Bench
 
-**Bench** provides standardized test execution and observability for any service. It wraps K6, Playwright, Go tests, and Go benchmarks and normalizes results into consistent structured logs and Prometheus metrics.
-
 **Latest Version:** v1.0.3
 
----
-
-## Quick Links
-
-- **Upgrading from v0.6.x?** See the [Migration Guide](migration_v1.md) 🚀
-- **New to Bench?** Start with the [Quickstart](quickstart.md)
-
----
-
-## What is Bench?
-
-Bench is a **labeling strategy** with a CLI to execute your tests in a consistent environment (container), get test output into a consistent format (reporter), plus glue to handle transport, discovery (dashboards), and alerting (metrics / slack) on your test runs.
+Bench is a CLI tool for standardized test execution and observability. It wraps K6, Playwright, Go tests, and Go benchmarks and normalizes results into consistent structured logs and Prometheus metrics. Every test runner has a driver (executes tests) and a parser (normalizes output) — bench can handle both, or you can run tests yourself and pipe the output to `bench report` with a built-in or custom parser.
 
 **Benefits:**
 
@@ -28,39 +15,20 @@ Bench is a **labeling strategy** with a CLI to execute your tests in a consisten
 **Components:**
 
 - CLI
-- Docker containers (dev/prod, base/playwright - 4 variants)
-- [K6 API testing framework](https://github.com/grafana/grafana-api-tests) with support for HTTP, gRPC, and load testing
+- Docker containers (base and Playwright variants)
 - Dashboards and metrics via your own Prometheus/Grafana stack
-- [versioned libsonnet libraries with argo templates](libsonnet.md)
+- [Versioned libsonnet libraries with Argo workflow templates](libsonnet.md)
 
 ---
 
-## Why Bench?
+## Quick Links
 
-Modern applications need testing across many environments, architectures, and configurations. Testing only in CI isn't enough. Bench provides:
+- **Upgrading from v0.6.x?** See the [Migration Guide](migration_v1.md) 🚀
+- **New to Bench?** Start with the [Quickstart](quickstart.md)
 
-### Value Proposition
+---
 
-1. **Standardized test execution** - Run K6, Playwright, or Go tests with a unified interface
-2. **Consistent structured output** - All test results normalized to common format
-3. **Built-in observability** - Automatic Prometheus metrics and structured logs
-4. **Smart notifications** - Slack alerts with team-based routing via CODEOWNERS
-
-### How It Works
-
-Bench is simple: it wraps your testing tools and standardizes the output.
-
-**Architecture:**
-
-- **Test Executors** (K6, Playwright, Go) - Each executor includes a parser for that framework
-- **Reporters** - Output results via structured logs, Prometheus metrics, and Slack notifications
-
-Every test runner has two components: a **driver** (executes the tests) and a **parser** (normalizes the output). You can use bench in two ways:
-
-1. **Bench drives and parses** - bench executes your tests and parses the output using a built-in executor
-2. **You drive, bench parses** - run your tests yourself and pipe the output to `bench report` with a built-in or custom parser
-
-### Output
+## Output
 
 Every bench run produces a **structured log line**:
 
@@ -78,13 +46,6 @@ bench_total_duration_seconds{service="my-api",service_version="1.2.0",suite_name
 ```
 
 These labels are the same across every test runner, so you can query and compare results uniformly.
-
-### Benefits
-
-- **Portable tests** that run the same everywhere (local → CI → release)
-- **Service-agnostic** — works with any service, not just Grafana
-- **Unified observability** across all your tests and environments
-- **Faster feedback** with standardized reporting and alerting
 
 ---
 
