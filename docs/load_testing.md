@@ -17,7 +17,7 @@ We've built out most of the tooling you need to perform load testing on your Gra
 
 ### Creating a Load Testing User
 
-For creating users and setting up authentication, follow the steps in [Configuring a Grafana instance for e2e tests](configuring_an_instance.md).
+
 
 ## Populating Your Instance
 

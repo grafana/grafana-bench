@@ -70,7 +70,7 @@ These labels are the same across every test runner, so you can query and compare
 - [Load Testing](load_testing.md) - Performance testing setup
 - [Metrics](metrics.md) - Prometheus metrics configuration
 - [Notifications](notifications.md) - Slack integration
-- [Hosted Grafana Setup](configuring_an_instance.md) - Configure hosted Grafana for e2e tests
+
 
 ### Reference
 
