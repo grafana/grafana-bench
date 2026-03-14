@@ -9,8 +9,7 @@
 ## Quick Links
 
 - **Upgrading from v0.6.x?** See the [Migration Guide](migration_v1.md) 🚀
-- **New to Bench?** Start with the [5-minute Quickstart](quickstart.md)
-- **Ready to dive in?** Read the [Installation Guide](installation.md)
+- **New to Bench?** Start with the [Quickstart](quickstart.md)
 
 ---
 
@@ -109,7 +108,7 @@ docker pull ghcr.io/grafana/grafana-bench-playwright:v1.0.3
 go install github.com/grafana/grafana-bench@v1.0.3
 ```
 
-📖 [Full Installation Guide](installation.md)
+📖 [Quickstart](quickstart.md)
 
 ### 2. Run Your First Test (5 minutes)
 
@@ -149,8 +148,7 @@ Add Bench to your GitHub Actions workflow:
 
 ### For New Users
 
-- [Quickstart](quickstart.md) - Get running in 5 minutes
-- [Installation](installation.md) - Detailed installation steps
+- [Quickstart](quickstart.md) - Install and run your first test
 
 ### For Test Authors
 
