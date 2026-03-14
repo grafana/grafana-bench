@@ -39,7 +39,14 @@
       "Bash(git worktree:*)",
       "Bash(gh pr view:*)",
       "Bash(git fetch:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(git -C /Users/jeff/.local/share/hive/repos/grafana-bench-wt-9pjcuu fetch origin main)",
+      "Bash(git -C /Users/jeff/.local/share/hive/repos/grafana-bench-wt-9pjcuu rebase origin/main)",
+      "Bash(git -C /Users/jeff/.local/share/hive/repos/grafana-bench-wt-9pjcuu branch:*)",
+      "Bash(git -C /Users/jeff/.local/share/hive/repos/grafana-bench-wt-9pjcuu log --oneline --all -- pkg/executor/gotest/)",
+      "Bash(git -C /Users/jeff/.local/share/hive/repos/grafana-bench-wt-9pjcuu show:*)",
+      "Bash(python3:*)",
+      "Bash(# Find the setup action file\\(s\\) find /Users/jeff/.local/share/hive/repos/grafana-bench-wt-9pjcuu -name \"\"*.yml\"\" -o -name \"\"*.yaml\"\" | xargs grep -l \"\"curl\"\")"
     ],
     "deny": []
   }

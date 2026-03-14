@@ -72,10 +72,6 @@ func (e *GoExecutor) ExecTestSuite(
 	summary.SuiteName = suite.Name
 	summary.SuiteRevision = suite.Revision
 
-	if summary.Metrics == nil {
-		summary.Metrics = make([]metrics.Metric, 0)
-	}
-
 	if summary.TestsFailed > 0 && e.retries > 0 {
 		for i, t := range summary.TestRuns {
 			if t.Status != executor.TestFailed {
@@ -102,7 +98,7 @@ func (e *GoExecutor) ExecTestSuite(
 					summary.TestsFlaky++
 
 					summary.Metrics = append(summary.Metrics, metrics.Metric{
-						Name:  "go_test_run_flaky",
+						Name:  "bench_test_run_flaky",
 						Value: 1,
 						Labels: map[string]string{
 							"test_full_path": summary.TestRuns[i].TestFolder + "/" + summary.TestRuns[i].TestFile,
