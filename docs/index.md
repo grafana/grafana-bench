@@ -84,19 +84,12 @@ These labels are the same across every test runner, so you can query and compare
 
 ---
 
-## Support
+## Releases & Support
 
-- **Bug reports:** [GitHub Issues](https://github.com/grafana/grafana-bench/issues)
-
----
-
-## Version & Release Policy
-
-Bench is **semantically versioned** and uses explicit version tags (no `:latest`). This ensures:
+Bench is semantically versioned with explicit version tags — there is no `:latest`. This ensures:
 
 - Predictable behavior in CI/CD pipelines
 - Controlled upgrade process with clear changelog
 - Reduced blast radius of breaking changes
 
-📖 [Release Notes](https://github.com/grafana/grafana-bench/releases)
-
+📖 [Release Notes](https://github.com/grafana/grafana-bench/releases) · 🐛 [Bug Reports](https://github.com/grafana/grafana-bench/issues)
