@@ -1,6 +1,6 @@
 module github.com/grafana/grafana-bench
 
-go 1.24.2
+go 1.25
 
 toolchain go1.25.6
 
@@ -14,7 +14,7 @@ require (
 	github.com/olekukonko/tablewriter v1.1.3
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/client_model v0.6.2
-	github.com/slack-go/slack v0.17.3
+	github.com/slack-go/slack v0.19.0
 	github.com/spf13/pflag v1.0.10
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56
 	golang.org/x/text v0.33.0
