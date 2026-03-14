@@ -216,7 +216,7 @@ jobs:
         run: |
           grafana-bench report \
             --service grafana \
-            --service-url "https://leeoniya.grafana.net" \
+            --service-url "https://my-stack.grafana.net" \
             --service-version "rrc-instant" \
             --suite-name "FrontendAssetSize" \
             --run-stage ci \
