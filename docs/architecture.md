@@ -79,24 +79,24 @@ Subcommands:
 **Config File Format** (`bench.yaml`):
 ```yaml
 test:
-  type: smoke           # or "load"
-  runner: k6            # or "playwright", "go"
+  runner: k6            # k6, playwright, go, gobench
+  type: smoke           # smoke or load
 
 suite:
-  name: my-test-suite
+  name: my-repo/smoke-tests
   path: ./tests
-  repo: https://github.com/org/repo.git
-  revision: main
 
-grafana:
+service:
+  name: my-service
   url: http://localhost:3000
-  admin:
-    user: admin
-    password: admin
+  version: 1.0.0
+
+run:
+  stage: ci
 
 prometheus:
   metrics: true
-  url: https://prometheus:9090/api/v1/push
+  url: https://prometheus.example.com/api/v1/write
 
 slack:
   notifications: true
