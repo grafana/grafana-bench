@@ -4,7 +4,7 @@ Thank you for your interest in contributing! This guide covers how to build, tes
 
 ## Prerequisites
 
-- [Go](https://go.dev/dl/) 1.21+
+- [Go](https://go.dev/dl/) 1.26+
 - [Docker](https://docs.docker.com/get-docker/) (for container tests)
 - [Make](https://www.gnu.org/software/make/)
 
@@ -57,12 +57,13 @@ This also updates version references throughout the documentation. Do not manual
 ```
 bench.go            # Entry point
 cmd/                # CLI subcommands (test, report, validate, version)
-executor/           # Test runners (k6, playwright, gotest, gobench)
-reporter/           # Output formatters (log, text, prometheus)
-notifier/           # Slack notifications
-config/             # Configuration management
-git/                # Git operations
-metrics/            # Prometheus metrics handling
+pkg/
+  executor/         # Test runners (k6, playwright, gotest, gobench)
+  reporter/         # Output formatters (log, text, prometheus)
+  notifier/         # Slack notifications
+  config/           # Configuration management
+  git/              # Git operations
+  metrics/          # Prometheus metrics handling
 docs/               # Documentation
 ```
 
