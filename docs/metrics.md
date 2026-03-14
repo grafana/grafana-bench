@@ -30,8 +30,8 @@ PROMETHEUS_PASSWORD=MYSUPERSECRETPROMTOKEN grafana-bench test \
         --report-output log \
         --prometheus-metrics \
         --prometheus-strict-lint \
-        --prometheus-url "https://prometheus-ops-03-ops-eu-south-0.grafana-ops.net/api/prom/push" \
-        --prometheus-user 10428
+        --prometheus-url "https://{YOUR_PROMETHEUS_REMOTE_WRITE_URL}" \
+        --prometheus-user {YOUR_PROMETHEUS_USER}
 ```
 
 ### Default Metrics
@@ -100,16 +100,14 @@ for querying metrics by service.
 * Custom metrics do not have the `bench_` prefix.
 * Use base units - bytes instead of megabytes, seconds instead of milliseconds, etc
 * Suffix describes the unit - http_request_duration_**seconds**
+* Add a `_completed = 1` gauge metric so you can detect when a scan or run never happened — a missing metric is different from a zero count
+* Add a `repo` label where meaningful (e.g. for scanner or coverage metrics scoped to a repository)
 
-The `--prometheus-strict-lint` lints metric and label names for to ensure they
- adhere to proper conventions. If your command fails linting, we will not shop
- the metrics.
+The `--prometheus-strict-lint` flag lints metric and label names to ensure they adhere to proper conventions. If linting fails, metrics will not be pushed.
 
 ### Labels on custom metrics
 
-Bench handles injecting labels for grafana url, grafana version, and bench. You can add your
-own labels in the text exposition format, however, you should not override them yourself
-and should instead pass those to the bench CLI.
+Bench automatically injects standard labels (`service`, `service_version`, `service_url`, `suite_name`, `run_stage`) onto all metrics. You can add your own labels in the text exposition format, but do not override the standard ones — pass those values to the bench CLI instead.
 
 ## Passing custom metrics to bench
 
@@ -128,40 +126,21 @@ http_requests_total{method="POST",path="/api"} 50 1678886400000
 cpu_usage_seconds_total 123.45
 ```
 
-## Generating an ops metrics key
+## Configuring Prometheus credentials
 
-### For GitHub Actions (Recommended)
+Set the following environment variables before running bench with `--prometheus-metrics`:
 
-If you're running bench in a GitHub Actions workflow, use the `setup-grafana-bench` action which automatically fetches shared Prometheus secrets from Vault. See the [GitHub Actions documentation](github_actions.md#authentication-and-ci-tokens) for details.
+- `PROMETHEUS_URL` - your Prometheus remote write endpoint
+- `PROMETHEUS_USER` - your Prometheus username or tenant ID
+- `PROMETHEUS_PASSWORD` - your Prometheus API token or password
 
-The action sets up these environment variables for you:
-- `PROMETHEUS_URL`: <https://prometheus-ops-03-ops-eu-south-0.grafana-ops.net/api/prom/push>
-- `PROMETHEUS_USER`: 10428
-- `PROMETHEUS_PASSWORD`: Fetched from shared Vault secret
+```sh
+export PROMETHEUS_URL="https://{YOUR_PROMETHEUS_REMOTE_WRITE_URL}"
+export PROMETHEUS_USER="{YOUR_PROMETHEUS_USER}"
+export PROMETHEUS_PASSWORD="{YOUR_PROMETHEUS_TOKEN}"
+```
 
-Simply add the `--prometheus-metrics` flag to your bench commands after the setup step if you're calling bench directly. If you are running the bench container, pass those in as environment variables to the docker command.
-
-### For Other Use Cases
-
-If you need to create your own token for local development or non-GitHub Action environments:
-
-1. Go to the Cloud Access Policy app: <https://ops.grafana-ops.net/a/grafana-auth-app>
-2. Create a new access policy with metrics:write permissions
-3. Name it after your app/domain/namespace
-4. Click create
-5. Create a token and copy it
-6. Add the token to vault (requires access to the deployment_tools repository):
-   ```bash
-   # From the root of the deployment_tools repository
-   # First, request timed access to vault
-   make timed-access-cli request-access
-
-   # Then add the token to vault
-   VAULT_INSTANCE=prod ./scripts/vault/vault-put secret/{namespace}/prometheus_token prometheus_token={token}
-   ```
-7. Use the token as the PROMETHEUS_PASSWORD environment variable with these additional settings:
-   - PROMETHEUS_URL: <https://prometheus-ops-03-ops-eu-south-0.grafana-ops.net/api/prom/push>
-   - PROMETHEUS_USER: 10428
+Any Prometheus-compatible remote write endpoint works, including Grafana Cloud, Mimir, Cortex, or a self-hosted Prometheus instance.
 
 ## Complete example
 
@@ -229,21 +208,15 @@ jobs:
       #    cat /tmp/results.json
       #    cat /tmp/asset-metrics.txt
 
-      - id: get-secrets
-        uses: grafana/shared-workflows/actions/get-vault-secrets@get-vault-secrets-v1.2.0
-        with:
-          # Secrets placed in ci/repo/grafana/grafana-bench vault
-          repo_secrets: |
-            PROMETHEUS_PASSWORD=prometheus_token:prometheus_token
-
       - name: report result
         env:
-          PROMETHEUS_URL: "https://prometheus-ops-03-ops-eu-south-0.grafana-ops.net/api/prom/push"
-          PROMETHEUS_USER: 10428
+          PROMETHEUS_URL: ${{ secrets.PROMETHEUS_URL }}
+          PROMETHEUS_USER: ${{ secrets.PROMETHEUS_USER }}
+          PROMETHEUS_PASSWORD: ${{ secrets.PROMETHEUS_PASSWORD }}
         run: |
           grafana-bench report \
             --service grafana \
-            --service-url "https://leeoniya.grafana.net" \
+            --service-url "https://my-stack.grafana.net" \
             --service-version "rrc-instant" \
             --suite-name "FrontendAssetSize" \
             --run-stage ci \

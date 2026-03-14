@@ -5,6 +5,7 @@ Bench can send Slack notifications when test suites fail (or pass). Notification
 ## Prerequisites
 
 - Test suites with a `.github/CODEOWNERS` file
+- A Slack bot token set as the `SLACK_TOKEN` environment variable
 
 ## How it works
 
@@ -18,14 +19,22 @@ By default, bench only notifies on failure. Use `--slack-passing` to also notify
 
 ---
 
-## Step 1: Invite the grafana-bench bot to your channel
+## Step 1: Create a Slack bot and generate an API token
 
-The Grafana org already has a Slack bot — **`grafana-bench`** — with the necessary permissions. You don't need to create your own.
+1. Go to [api.slack.com/apps](https://api.slack.com/apps) and click **Create New App → From scratch**.
+2. Give it a name (e.g. `bench`) and select your workspace.
+3. In the left sidebar, go to **OAuth & Permissions**.
+4. Under **Scopes → Bot Token Scopes**, add:
+   - `chat:write` — to post messages
+   - `channels:read` — to look up public channel IDs
+   - `groups:read` — to look up private channel IDs
+5. Scroll up and click **Install to Workspace**, then **Allow**.
+6. Copy the **Bot User OAuth Token** (starts with `xoxb-`). This is your `SLACK_TOKEN`.
 
-Invite it to each channel that should receive notifications:
+Invite the bot to each channel that should receive notifications:
 
 ```text
-/invite @grafana-bench
+/invite @your-bot-name
 ```
 
 Do this for every channel you add to your `codeowners-mapping.yaml`. The bot cannot post to channels it hasn't been invited to.
@@ -34,15 +43,18 @@ Do this for every channel you add to your `codeowners-mapping.yaml`. The bot can
 
 Do not put the Slack token in your config file or commit it to source control. Store it as a secret and expose it as the `SLACK_TOKEN` environment variable at runtime.
 
-**GitHub Actions example using Vault:**
+**GitHub Actions example:**
 
 ```yaml
-- name: Get Slack token from Vault
-  id: vault
-  uses: grafana/shared-workflows/actions/get-vault-secrets@main
-  with:
-    repo_secrets: |
-      SLACK_TOKEN=secret/path/to:slack_token
+- name: Run tests
+  env:
+    SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+  run: |
+    bench test \
+      --suite-name my-repo/smoke-tests \
+      --suite-path ./tests \
+      --slack-notifications \
+      --slack-codeowners-mapping .github/codeowners-mapping.yaml
 ```
 
 **Local development using a `.env` file:**
@@ -60,8 +72,8 @@ Add entries to your repository's `.github/CODEOWNERS` file mapping test paths to
 
 ```text
 # .github/CODEOWNERS
-/tests/api/          @grafana/my-team
-/tests/e2e/          @grafana/my-other-team
+/tests/api/          @your-org/your-team
+/tests/e2e/          @your-org/your-other-team
 ```
 
 ## Step 4: Create the codeowners mapping file
@@ -73,9 +85,9 @@ Create `codeowners-mapping.yaml` in your test suite directory. This file maps Gi
 ```yaml
 # codeowners-mapping.yaml
 mapping:
-  - github_team: "@grafana/my-team"
+  - github_team: "@your-org/your-team"
     slack_channel: "C0123ABCDEF"
-  - github_team: "@grafana/my-other-team"
+  - github_team: "@your-org/your-other-team"
     slack_channel: "C0456GHIJKL"
 ```
 
@@ -111,7 +123,7 @@ Example output:
 +------------------+--------------------------+--------+-------+
 ```
 
-If a channel shows an error, the bot has not been invited to that channel. Run `/invite @grafana-bench` in that channel and re-validate.
+If a channel shows an error, the bot has not been invited to that channel. Run `/invite @your-bot-name` in that channel and re-validate.
 
 ## Step 6: Add Slack flags to your bench command
 
@@ -134,20 +146,6 @@ bench test \
   --slack-notifications \
   --slack-passing \
   --slack-codeowners-mapping ./codeowners-mapping.yaml
-```
-
-### GitHub Actions example
-
-```yaml
-- name: Run tests
-  env:
-    SLACK_TOKEN: ${{ steps.vault.outputs.SLACK_TOKEN }}
-  run: |
-    bench test \
-      --suite-name my-repo/smoke-tests \
-      --suite-path ./tests \
-      --slack-notifications \
-      --slack-codeowners-mapping .github/codeowners-mapping.yaml
 ```
 
 ### Configuration file
@@ -183,17 +181,3 @@ slack:
 - [bench validate reference](bench_validate.md) - Validate command details
 - [Configuration guide](configuration.md) - bench.yaml configuration
 - [GitHub Actions integration](github_actions.md) - CI setup examples
-
----
-
-## Appendix: Setting up your own Slack bot
-
-If you're outside the Grafana org or need a dedicated bot, you can create your own Slack app.
-
-Create a Slack app with the following bot token scopes:
-
-- `chat:write` — to post messages
-- `channels:read` — to look up public channel IDs
-- `groups:read` — to look up private channel IDs
-
-After creating the app, install it to your workspace and copy the **Bot User OAuth Token** (starts with `xoxb-`). Use this as your `SLACK_TOKEN` value and invite the bot to each channel with `/invite @your-bot-name`.

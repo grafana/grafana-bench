@@ -8,7 +8,7 @@
 
 This document tracks all breaking changes being made for the v1.0.0 release. We're fixing long-standing issues with suite/test run identification and consolidating the data model.
 
-**Looking for migration instructions?** See [MIGRATION_GUIDE_v1.md](MIGRATION_GUIDE_v1.md) for step-by-step migration examples and use cases.
+**Looking for migration instructions?** See [migration_v1.md](migration_v1.md) for step-by-step migration examples and use cases.
 
 ---
 
@@ -207,11 +207,10 @@ grafana-bench test \
   --service-version 2.3.0
 ```
 
-### For deployment_tools Users
+### For Libsonnet Users
 
 #### Before (v0.6.11):
 ```jsonnet
-// In rrc-bench-suites.libsonnet
 local Suite = benchFunctions.Suite {
   runStage: 'rrc',  // This was creating "rrc-" prefixes
   // ...
@@ -224,7 +223,6 @@ local Suite = benchFunctions.Suite {
 
 #### After (v1.0.0):
 ```jsonnet
-// In rrc-bench-suites.libsonnet
 local Suite = benchFunctions.Suite {
   service: 'grafana',  // REQUIRED: New in v1.0.0
   runStage: 'rrc',     // Still set the stage
@@ -239,7 +237,7 @@ local Suite = benchFunctions.Suite {
 
 ### Query/Dashboard Updates
 
-#### Prometheus Metrics (Mimir-ops datasource)
+#### Prometheus Metrics
 
 If you have queries filtering on suite names or run IDs:
 
@@ -259,7 +257,7 @@ If you have queries filtering on suite names or run IDs:
 - `suite_name="<path>"` - Clean suite path without stage prefix
 - `run_stage="<stage>"` - The run stage (rrc, ci, local)
 
-#### Log Queries (Loki-ops datasource)
+#### Log Queries
 
 **Query for bench logs:**
 ```logql
@@ -271,13 +269,6 @@ If you have queries filtering on suite names or run IDs:
 - `service="<name>"` - The service being tested
 - `suiteName="<path>"` - The test suite name
 - `runStage="<stage>"` - The run stage
-
-#### Dashboards
-
-View bench metrics and logs in Ops Grafana:
-- **Dashboards:** https://ops.grafana-ops.net/dashboards/f/d9191c72-9361-4a3b-bb5a-1465e9a8802f/grafanabench
-- **Mimir-ops datasource:** Use `{job="bench"}` for Prometheus queries
-- **Loki-ops datasource:** Use `{tool="bench"}` for LogQL queries
 
 ---
 
@@ -426,82 +417,4 @@ return executor.SuiteRun{
 - `config_flag_compatibility_test.go`: Updated to verify `SuiteRun.Id` format instead of deprecated `SuiteRun.Name`
 - `log_reporter_test.go`: Removed expectations for deprecated `suiteRun` field
 - All reporter tests: Added `Service` field to test fixtures
-
----
-
-## Files Modified
-
-### Suite Identification (#740)
-- [x] `pkg/utils/id/id.go` - ID generation functions
-- [x] `pkg/config/config.go` - Updated to use new Run() signature, removed SuiteRun.Name
-- [x] `pkg/executor/executor.go` - Removed Name field from SuiteRun struct
-- [x] `pkg/reporter/log_reporter.go` - Removed deprecated suiteRun field
-- [x] `pkg/reporter/prometheus_reporter.go` - Changed to suite_name + run_stage labels
-- [x] `pkg/reporter/notification_reporter.go` - Use summary.SuiteName
-- [x] `pkg/config/config_flag_compatibility_test.go` - Updated test expectations
-- [x] `pkg/reporter/log_reporter_test.go` - Removed suiteRun expectations
-- [x] `pkg/reporter/text_reporter_test.go` - Updated test fixtures
-- [x] `pkg/reporter/prometheus_reporter_test.go` - Updated test fixtures
-- [x] `pkg/reporter/notification_reporter_test.go` - Updated test fixtures
-
-### Service Field Support (#667)
-- [x] `bench.go` - Changed logger from service=bench to tool=bench
-- [x] `pkg/config/config.go` - Added Service field, --service flag, validation, and logger attributes
-- [x] `pkg/executor/executor.go` - Added Service field to SuiteRun struct
-- [x] `pkg/reporter/prometheus_reporter.go` - Added service label
-- [x] All test files - Added Service field to test fixtures
-
-### Generic Service Flags (#666) ✅ **DONE**
-- [x] `pkg/config/config.go` - Renamed GrafanaConfig to ServiceConfig
-- [x] `cmd/test/command.go` - Updated AddGrafanaFlags → AddServiceFlags
-- [x] `cmd/report/report.go` - Updated AddGrafanaFlags → AddServiceFlags
-- [x] `pkg/config/config_flag_compatibility_test.go` - Updated GrafanaConfig → ServiceConfig
-- [x] `pkg/config/config.go` - Added `--service-url`, `--service-timeout`, `--service-version` flags
-- [x] `pkg/config/config.go` - Kept deprecated `--grafana-url`, `--grafana-version`, `--grafana-timeout` (backward compat)
-- [x] `pkg/config/config.go` - **REMOVED** `--grafana-admin-user` and `--grafana-admin-password` flags entirely
-- [x] `pkg/config/config.go` - **REMOVED** AdminUser and AdminPassword from ServiceConfig struct
-- [x] `pkg/config/config.go` - **REMOVED** unused GetGrafanaInstance() function
-- [x] `pkg/config/config.go` - Added `--fetch-grafana-version` flag with user:password parsing
-- [x] `pkg/config/config.go` - Updated BuildSuiteRun to parse FetchVersion and fetch from API if needed
-- [x] `pkg/config/config.go` - Removed auto version detection (version now required)
-- [x] `pkg/config/config.go` - Added `--service-health-check` flag and health check logic in BuildSuiteRun
-- [x] `cmd/test/command.go` - Updated to get credentials from environment/--test-env instead of config flags
-- [x] `cmd/test/command.go` - Added health check before running tests (when flag enabled)
-- [x] `pkg/service/healthcheck.go` - NEW: Generic service health check implementation
-- [x] `pkg/service/healthcheck_test.go` - NEW: Health check tests
-- [x] `generators/libsonnet/main.go` - Updated isRequiredStringFlag to use service-url
-- [x] `generators/libsonnet/main_test.go` - Updated all tests for new flag names
-
-### Documentation
-- [x] `BENCH_V1_BREAKING_CHANGES.md` - Complete breaking changes documentation ✅ **DONE**
-- [x] `MIGRATION_GUIDE_v1.md` - User-focused migration guide with examples ✅ **DONE**
-- [x] `README.md` - Updated all examples with v1.0.0 flags ✅ **DONE**
-- [x] `docs/github_actions.md` - Updated all examples with v1.0.0 flags ✅ **DONE**
-- [x] `docs/writing_pw_tests.md` - Updated all examples with v1.0.0 flags ✅ **DONE**
-- [x] `docs/metrics.md` - Updated labels and examples with v1.0.0 changes ✅ **DONE**
-- [x] Update libsonnet codegen - Already completed in earlier work ✅ **DONE**
-
----
-
-## Testing Plan
-
-- [x] Unit tests for new ID format - ALL PASS ✅
-- [x] Config tests updated and passing ✅
-- [x] Reporter tests updated and passing ✅
-- [x] All existing tests pass with changes ✅
-- [ ] Integration tests with deployment_tools (next step)
-- [ ] Verify metrics/logs with new format in RRC
-- [ ] Test migration path from v0.6.11 → v1.0.0
-
----
-
-## Rollout Plan
-
-1. Complete all changes in bench repo
-2. Update bench to v1.0.0
-3. Test with experimental libsonnet in deployment_tools
-4. Update deployment_tools to use v1.0.0
-5. Deploy to RRC environment
-6. Monitor for issues
-7. Update documentation
 

@@ -2,5 +2,4 @@
 # from the channel you want alerts in: `/invite @grafana-bench`
 mapping:
   - slack_channel: "C08THJTL552" #grafana-bench-ops
-    github_team: "@grafana/grafana-developer-enablement-squad"
-  #- slack_channel: "C093LP7HDJ5" #hackathon-13-playwright
+    github_team: "@grafana/grafana-backend-services-squad"

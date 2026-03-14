@@ -391,5 +391,5 @@ import { check } from 'k6';
 If you have questions about documentation style:
 
 - Check existing documentation for examples
-- Ask in #grafana-bench Slack channel
+- Open a [GitHub Issue](https://github.com/grafana/grafana-bench/issues)
 - Refer to [MkDocs Material documentation](https://squidfunk.github.io/mkdocs-material/)

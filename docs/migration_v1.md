@@ -146,7 +146,7 @@ docker run --rm \
   --network=host \
   -e GRAFANA_ADMIN_USER \
   -e GRAFANA_ADMIN_PASSWORD \
-  grafana-bench:v1.0.0 test \
+  grafana-bench:v1.0.3 test \
   --service grafana \
   --service-url http://localhost:3000 \
   --service-version 11.0.0 \
@@ -225,7 +225,7 @@ Loki logs use new attributes.
 - `suiteRun` → `suiteName` (cleaner naming)
 - Added `runStage` field
 
-### F. Jsonnet Configuration (deployment_tools)
+### F. Jsonnet Configuration
 
 **Before (v0.6.x):**
 ```jsonnet
@@ -320,7 +320,7 @@ grafana-bench test \
 docker run --rm \
   --network=host \
   --volume="./:/tests/" \
-  grafana-bench:v0.6.11 test \
+  grafana-bench:v1.0.3 test \
   --grafana-url http://localhost:3000 \
   --test-suite-base /tests
 ```
@@ -330,7 +330,7 @@ docker run --rm \
 docker run --rm \
   --network=host \
   --volume="./:/tests/" \
-  grafana-bench:v1.0.0 test \
+  grafana-bench:v1.0.3 test \
   --service grafana \
   --service-url http://localhost:3000 \
   --service-version 11.0.0 \
@@ -389,17 +389,9 @@ Update to new labels: `suite_name`, `run_stage`, `service` instead of `suite_run
 ### GitHub Actions: 401 errors with suite-revision
 Use PR head SHA: `${{ github.event.pull_request.head.sha || github.sha }}`
 
-## Rollback
-
-To rollback to v0.6.x:
-1. Change image tags: `v1.0.0` → `v0.6.11`
-2. Revert flag changes in commands/configs
-
-Both versions can run side-by-side (different metric labels).
-
 ## Getting Help
 
 - **Documentation:** [README.md](README.md) and [docs/](docs/)
-- **Breaking Changes:** [BENCH_V1_BREAKING_CHANGES.md](BENCH_V1_BREAKING_CHANGES.md)
+- **Breaking Changes:** [breaking_changes_v1.md](breaking_changes_v1.md)
 - **Issues:** https://github.com/grafana/grafana-bench/issues
 - **Examples:** [.github/workflows/](.github/workflows/)
