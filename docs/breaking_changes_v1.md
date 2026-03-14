@@ -207,11 +207,10 @@ grafana-bench test \
   --service-version 2.3.0
 ```
 
-### For deployment_tools Users
+### For Libsonnet Users
 
 #### Before (v0.6.11):
 ```jsonnet
-// In rrc-bench-suites.libsonnet
 local Suite = benchFunctions.Suite {
   runStage: 'rrc',  // This was creating "rrc-" prefixes
   // ...
@@ -224,7 +223,6 @@ local Suite = benchFunctions.Suite {
 
 #### After (v1.0.0):
 ```jsonnet
-// In rrc-bench-suites.libsonnet
 local Suite = benchFunctions.Suite {
   service: 'grafana',  // REQUIRED: New in v1.0.0
   runStage: 'rrc',     // Still set the stage
@@ -239,7 +237,7 @@ local Suite = benchFunctions.Suite {
 
 ### Query/Dashboard Updates
 
-#### Prometheus Metrics (Mimir-ops datasource)
+#### Prometheus Metrics
 
 If you have queries filtering on suite names or run IDs:
 
@@ -259,7 +257,7 @@ If you have queries filtering on suite names or run IDs:
 - `suite_name="<path>"` - Clean suite path without stage prefix
 - `run_stage="<stage>"` - The run stage (rrc, ci, local)
 
-#### Log Queries (Loki-ops datasource)
+#### Log Queries
 
 **Query for bench logs:**
 ```logql
@@ -271,13 +269,6 @@ If you have queries filtering on suite names or run IDs:
 - `service="<name>"` - The service being tested
 - `suiteName="<path>"` - The test suite name
 - `runStage="<stage>"` - The run stage
-
-#### Dashboards
-
-View bench metrics and logs in Ops Grafana:
-- **Dashboards:** https://ops.grafana-ops.net/dashboards/f/d9191c72-9361-4a3b-bb5a-1465e9a8802f/grafanabench
-- **Mimir-ops datasource:** Use `{job="bench"}` for Prometheus queries
-- **Loki-ops datasource:** Use `{tool="bench"}` for LogQL queries
 
 ---
 
@@ -489,8 +480,7 @@ return executor.SuiteRun{
 - [x] Config tests updated and passing ✅
 - [x] Reporter tests updated and passing ✅
 - [x] All existing tests pass with changes ✅
-- [ ] Integration tests with deployment_tools (next step)
-- [ ] Verify metrics/logs with new format in RRC
+- [ ] Verify metrics/logs with new format
 - [ ] Test migration path from v0.6.11 → v1.0.0
 
 ---
@@ -499,9 +489,7 @@ return executor.SuiteRun{
 
 1. Complete all changes in bench repo
 2. Update bench to v1.0.0
-3. Test with experimental libsonnet in deployment_tools
-4. Update deployment_tools to use v1.0.0
-5. Deploy to RRC environment
-6. Monitor for issues
-7. Update documentation
+3. Deploy to CI environment
+4. Monitor for issues
+5. Update documentation
 

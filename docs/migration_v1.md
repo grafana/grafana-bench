@@ -225,7 +225,7 @@ Loki logs use new attributes.
 - `suiteRun` → `suiteName` (cleaner naming)
 - Added `runStage` field
 
-### F. Jsonnet Configuration (deployment_tools)
+### F. Jsonnet Configuration
 
 **Before (v0.6.x):**
 ```jsonnet
@@ -392,7 +392,7 @@ Use PR head SHA: `${{ github.event.pull_request.head.sha || github.sha }}`
 ## Rollback
 
 To rollback to v0.6.x:
-1. Change image tags: `v1.0.3` → `v1.0.3`
+1. Change image tags: `v1.0.3` → `v0.6.11`
 2. Revert flag changes in commands/configs
 
 Both versions can run side-by-side (different metric labels).
