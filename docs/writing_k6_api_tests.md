@@ -32,7 +32,11 @@ export default function () {
 3. **Run the tests:**
    ```sh
    grafana-bench test \
-     --suite-name quickstart/k6 \
+     --service my-service \
+     --service-version 1.0.0 \
+     --service-url http://localhost:3000 \
+     --test-runner k6 \
+     --suite-name my-repo/k6 \
      --suite-path check_grafana_instance.ts
    ```
 
