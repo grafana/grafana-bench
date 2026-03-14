@@ -2,8 +2,6 @@
 
 ## Quickstart
 
-### [Install Bench](index.md#installing-bench)
-
 1. **Start a Grafana instance to test against:**
    ```sh
    docker run -d --name=grafana -p 3000:3000 grafana/grafana
@@ -57,27 +55,3 @@ K6 tests are written in JavaScript and run in the Goja runtime. This is a small 
 
 For instance, we do not have access to writing or reading files, but we do have a super fast implementation for generating random data. Additionally K6 handles concurrency for us during load testing.
 
-## Structure
-
-An API test suite is broken into 4 logical layers:
-
-1. **Utilities for making requests**
-2. **Implementation of the API**
-3. **Utilities for tests**
-4. **Implementation of tests**
-
-### Directory Structure
-
-```
-/lib              # API implementation and utils
-/lib/config.ts
-/lib/dashboards.ts
-/lib/playlists.ts
-/lib/session.ts
-
-/tests            # test implementation and utils
-/tests/dashboards/dashboard_crud.ts
-/tests/playlists/playlist_crud.ts
-```
-
-This structure is still in development, however, we have a pretty good idea of where we need boundaries for each of these pieces. We are actively working on tooling to help us generate API implementations and ensuring we have these boundaries will give us the ability to regenerate our API files as needed.
