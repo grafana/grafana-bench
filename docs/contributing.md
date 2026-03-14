@@ -69,6 +69,12 @@ pkg/
 docs/               # Documentation
 ```
 
+## Writing a new parser
+
+Parsers live in `pkg/parser/` and convert tool output into a `SuiteRunSummary` that bench can report, log, or push as Prometheus metrics. This is the right place to add support for a new tool — whether it's a linter, scanner, coverage tool, or anything else that produces structured output.
+
+See [`pkg/parser/README.md`](../pkg/parser/README.md) for the recommended workflow, including how to use an LLM to generate both the parser and its metrics from real tool output.
+
 ## Submitting changes
 
 1. Fork the repository and create a branch from `main`

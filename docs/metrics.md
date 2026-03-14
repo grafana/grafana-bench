@@ -100,16 +100,14 @@ for querying metrics by service.
 * Custom metrics do not have the `bench_` prefix.
 * Use base units - bytes instead of megabytes, seconds instead of milliseconds, etc
 * Suffix describes the unit - http_request_duration_**seconds**
+* Add a `_completed = 1` gauge metric so you can detect when a scan or run never happened — a missing metric is different from a zero count
+* Add a `repo` label where meaningful (e.g. for scanner or coverage metrics scoped to a repository)
 
-The `--prometheus-strict-lint` lints metric and label names for to ensure they
- adhere to proper conventions. If your command fails linting, we will not shop
- the metrics.
+The `--prometheus-strict-lint` flag lints metric and label names to ensure they adhere to proper conventions. If linting fails, metrics will not be pushed.
 
 ### Labels on custom metrics
 
-Bench handles injecting labels for grafana url, grafana version, and bench. You can add your
-own labels in the text exposition format, however, you should not override them yourself
-and should instead pass those to the bench CLI.
+Bench automatically injects standard labels (`service`, `service_version`, `service_url`, `suite_name`, `run_stage`) onto all metrics. You can add your own labels in the text exposition format, but do not override the standard ones — pass those values to the bench CLI instead.
 
 ## Passing custom metrics to bench
 
