@@ -2,41 +2,6 @@
 
 `grafana-bench` offers a libsonnet library that facilitates the execution of a bench test suite in ArgoCD workflows.
 
-## Suite Definition
-
-A test suite is defined by the following Jsonnet object:
-
-```js
-{
-      // bench image revision. Required
-      benchRevision: error 'must define the bench version',
-      // name of the test suite
-      name: '',
-      // test trigger (e.g. rcc for rolling release channels)
-      trigger: '',
-      // type of test 'smoke' or 'load'
-      testType: 'smoke',
-      // url to the repository to fetch the test from
-      testRepo: '',
-      // test revision. If omitted the main branch of the repository will be used
-      testRevision: '',
-      // path to the tests with respect of the root of the test repository. Required
-      path: error 'must define path to tests',
-      // List of environment variables to be passed to the test step in the workflow
-      // Used to override bench options. E.g. GRAFANA_URL
-      envVars: [],
-      // list of variables to be passed to the test
-      testEnvVars: [],
-      // generate test output
-      verbose: false,
-      // suite execution options
-      options: {
-        // prevent the workflow step to fail if the test suite fails
-        noFail: false,
-      },
-}
-```
-
 ## Example
 
 Import the version mapping and configure a suite using the generated `Suite` template:
