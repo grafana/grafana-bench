@@ -91,6 +91,14 @@ func TestParseJsonOutput(t *testing.T) {
 			testdata:  "./testdata/output_invalid.json",
 			expectErr: ErrInvalidFormat,
 		},
+		{
+			name:     "empty test suite returns zero duration",
+			testdata: "./testdata/output_no_tests.json",
+			expect: executor.SuiteRunSummary{
+				TestsExecuted: 0,
+				TotalDuration: 0,
+			},
+		},
 	}
 
 	for _, tc := range testcases {

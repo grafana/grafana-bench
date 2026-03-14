@@ -1,0 +1,2 @@
+{"Time":"2025-06-04T10:09:37.954333835+02:00","Action":"start","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests"}
+{"Time":"2025-06-04T10:09:38.004333835+02:00","Action":"pass","Package":"github.com/grafana/grafana-bench/pkg/executor/gotest/tests","Elapsed":0.05}
