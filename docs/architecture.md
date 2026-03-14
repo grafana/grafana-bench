@@ -1,47 +1,21 @@
-# Grafana Bench - Architecture & Integration Guide
+# Architecture
 
-**Version:** v1.0.3
-**Last Updated:** 2026-01-21
-
-This document provides comprehensive architectural knowledge about Grafana Bench, its internal implementation, deployment integration, and observability setup. This is the definitive reference for understanding how bench works end-to-end.
+This document covers how Grafana Bench is structured internally.
 
 ---
 
 ## Table of Contents
 
-1. [Overview](#overview)
-2. [Internal Architecture](#internal-architecture)
-3. [Deployment Integration](#deployment-integration)
-4. [Observability & Monitoring](#observability--monitoring)
-5. [Key Integration Points](#key-integration-points)
-6. [File Locations](#file-locations)
+1. [Entry Point & CLI Structure](#1-entry-point--cli-structure)
+2. [Configuration System](#2-configuration-system)
+3. [Test Suite Lifecycle](#3-test-suite-lifecycle)
+4. [Git Integration](#4-git-integration)
+5. [Observability Integration](#5-observability-integration)
+6. [File Locations](#6-file-locations)
 
 ---
 
-## Overview
-
-### What is Bench?
-
-Grafana Bench is a CLI tool that provides:
-- **Unified test execution** across K6, Playwright, and Go test frameworks
-- **Standardized structured logging** for test observability
-- **Metrics collection and reporting** to Prometheus
-- **Slack notifications** with CODEOWNERS-based routing
-- **Git-based test suite management** with sparse checkout support
-- **Multi-environment support** (local, CI, release pipelines)
-
-### Core Value Proposition
-
-1. **Portability**: Same tests run locally, in CI, and in production deployments
-2. **Observability**: Structured logs and metrics enable tracking test health over time
-3. **Team Autonomy**: Self-service test authoring with automatic team routing
-4. **Standardization**: Common interface across different test frameworks
-
----
-
-## Internal Architecture
-
-### 1. Entry Point & CLI Structure
+## 1. Entry Point & CLI Structure
 
 **Main Entry** (`bench.go`):
 ```
@@ -62,11 +36,13 @@ Subcommands:
 - `1` - Test failure (one or more tests failed)
 - `2` - Internal error (configuration, execution, system error)
 
-### 2. Configuration System
+---
+
+## 2. Configuration System
 
 **Precedence Order** (highest to lowest):
 1. **CLI Flags** - Explicit command-line arguments
-2. **Environment Variables** - Uppercase with underscores (e.g., `GRAFANA_URL`)
+2. **Environment Variables** - Uppercase with underscores (e.g., `SERVICE_URL`)
 3. **Config File** - YAML file (default: `bench.yaml`)
 4. **Defaults** - Hardcoded in flag definitions
 
@@ -103,7 +79,9 @@ slack:
   codeowners_mapping: ./codeowners-mapping.yaml
 ```
 
-### 3. Test Suite Lifecycle
+---
+
+## 3. Test Suite Lifecycle
 
 **Phase 1: Compilation & Fetching**
 ```
@@ -129,6 +107,7 @@ Based on --test-runner:
   - "k6" → K6TestExecutor
   - "playwright" → PlaywrightTestExecutor
   - "go" → GoTestExecutor
+  - "gobench" → GoBenchExecutor
 ```
 
 **Phase 3: Test Execution**
@@ -196,7 +175,9 @@ Executes in sequence:
 - **PrometheusReporter**: Pushes metrics to Prometheus remote write
 - **NotificationReporter**: Sends Slack messages via CODEOWNERS mapping
 
-### 4. Git Integration
+---
+
+## 4. Git Integration
 
 **Git Driver Abstraction** (`pkg/git/git.go`):
 ```go
@@ -218,12 +199,14 @@ type GitSource interface {
 - Default driver (faster)
 
 **Sparse Checkout**:
-```bash
+```sh
 --suite-repo-dirs CI/k6 --suite-repo-dirs CI/playwright
 ```
 Only checks out specified directories.
 
-### 5. Observability Integration
+---
+
+## 5. Observability Integration
 
 **Metrics** (`pkg/metrics/metric.go`):
 - Parses Prometheus text exposition format
@@ -257,364 +240,15 @@ bench_total_duration_seconds
 - Looks up Slack channels via codeowners-mapping.yaml
 - Sends formatted blocks with dashboard links
 
----
-
-## Deployment Integration
-
-### 1. Bench in deployment_tools
-
-**Location**: `/Users/jeff/projects/deployment_tools/ksonnet/`
-
-**Integration Layers**:
+**Dashboard URL Templates** (`pkg/dashboard/dashboard.go`):
 ```
-CLI (grafana-bench binary)
-  ↓
-libsonnet/bench/v1.0.3/main.libsonnet (config builder)
-  ↓
-argo-workflows-util/bench-v2.libsonnet (Argo integration)
-  ↓
-Argo Workflow Templates (bench_test template)
-  ↓
-Deployment Workflows (hosted-grafana-cd, unified-storage-cd, etc.)
+Template: http://grafana.example.com/d/dashboard?run={{.Id}}
+Rendered: http://grafana.example.com/d/dashboard?run=abc123
 ```
-
-### 2. Bench Libsonnet Code
-
-**File**: `ksonnet/lib/bench/v1.0.3/main.libsonnet`
-
-**Auto-generated from CLI**:
-- ~50+ configuration options
-- Maps CLI flags to libsonnet parameters
-- Builds complete bench command
-
-**Example Usage**:
-```jsonnet
-local bench = import 'ksonnet/lib/bench/v1.0.3/main.libsonnet';
-
-bench.suite({
-  suitePath: 'CI/k6',
-  testType: 'smoke',
-  testRunner: 'k6',
-  grafanaUrl: 'http://grafana:3000',
-  prometheusMetrics: true,
-  slackNotifications: true,
-})
-```
-
-**Version Management** (`ksonnet/lib/bench/versions.libsonnet`):
-- Registry of available versions
-- Dynamic import based on version string
-- Available: `experimental`, `v1.0.3`
-
-**Image Selection**:
-```
-Test Runner → Image
-─────────────────────
-k6          → grafana-bench:v1.0.3
-playwright  → grafana-bench-playwright:v1.0.3
-go          → grafana-bench:v1.0.3
-```
-
-### 3. Argo Workflow Integration
-
-**Modern Interface** (`bench-v2.libsonnet`):
-```jsonnet
-local aw = import 'argo-workflows-util/index.libsonnet';
-
-aw.testingSteps.benchV2('test-step', 'v1.0.3')
-  .withBenchTest('http://grafana:3000', {
-    suitePath: 'CI/k6',
-    testType: 'smoke',
-  })
-```
-
-**Features**:
-- Workflow-level version management
-- Automatic image selection
-- Simplified API
-
-**Legacy Interface** (`bench.libsonnet`):
-- Suite-level version via `benchRevision`
-- Still supported for backward compatibility
-
-### 4. Grafana Bench CD (Self-Testing)
-
-**Location**: `ksonnet/environments/grafana-bench-cd/`
-
-**Purpose**: Continuous integration for bench itself
-
-**Architecture**:
-- **Embedded Grafana**: Each test gets fresh Grafana container sidecar
-- **Parallel Execution**: All tests run in parallel
-- **Health Checks**: Waits for Grafana readiness (2min startup + 5min probe)
-- **Test Coverage**: K6 and Playwright runners validated
-
-**Test Suites**:
-1. `bench-k6-smoke` - Tests K6 API testing
-2. `bench-playwright-smoke` - Tests Playwright browser testing
-
-**Notifications**:
-- Slack: `#grafana-bench-ops`
-- Oncall: `@grafana-developer-enablement-squad`
-
-### 5. Hosted Grafana CD Integration
-
-**Location**: `ksonnet/environments/hosted-grafana-cd/`
-
-**Wave Deploy Testing**:
-
-Bench runs during hosted Grafana deployments to validate releases:
-
-**Test Suites** (from `rrc-bench-suites.libsonnet`):
-1. **grafana-api-tests** - Core API smoke tests
-2. **grafana-bench Playwright** - Browser tests
-3. **logs-drilldown** - Logs feature tests
-4. **slo-app** - SLO application tests
-
-**Configuration**:
-- Bench version: v1.0.3
-- Prometheus metrics: Enabled
-- Slack notifications: Per-team routing via CODEOWNERS
-- Dashboard links: Argo Workflows dashboard
-
-**Integration Point** (`deploy.libsonnet`):
-```jsonnet
-runBenchTest(step_name, instanceURL, suite)::
-  suiteConfig.benchStep(step_name)
-    .withBenchTest(instanceURL, suite)
-    .buildStep(useClusterWorkflowTemplate=false)
-```
-
-### 6. Other Deployment Uses
-
-**Unified Storage CD**:
-- Tests against 4 RRC versions (instant, fast, steady, slow)
-- Suite: `grafana-core/playlists` from grafana-api-tests
-- Validates unified storage deployment
-
-**Federal GE Grafana**:
-- Post-install validation
-- Runs as Helm hook
-- Validates deployment after upgrades
 
 ---
 
-## Observability & Monitoring
-
-### 1. Three-Layer Observability Stack
-
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| **Logs** | Loki | Workflow execution logs, debug info |
-| **Metrics** | Prometheus | Test counts, durations, trends |
-| **Traces** | Tempo | Distributed trace analysis |
-
-### 2. CI Log Flow (GitHub Actions → Loki)
-
-**Component**: `cicd-o11y` (OpenTelemetry Collector)
-
-**Flow**:
-```
-GitHub Actions Webhook
-  ↓
-OTel Collector (cicd-o11y)
-  - Receiver: githubactions (webhook on :3333/github/webhook)
-  - Processors: batch, resource/logs, filter
-  ↓
-Exporters (parallel):
-  - Loki (ops, dev, singlewave)
-  - Tempo (distributed traces)
-  - Prometheus (spanmetrics)
-```
-
-**Location**: `deployment_tools/ksonnet/lib/cicd-o11y/`
-
-**Configuration Files**:
-- `config-base.libsonnet` - Core pipeline
-- `config-ops.libsonnet` - Ops environment
-- `cicd-o11y.libsonnet` - Kubernetes deployment
-
-**Resource Labels**:
-- `ci.github.workflow.run.path` - Workflow file path
-- `ci.github.workflow.run.event` - Event type (push, PR)
-- `service.namespace` - Set to "cicd-o11y"
-- `scm.git.repo` - Repository name
-
-**Loki Credentials**:
-- Main: `LOKI_ENDPOINT`, `LOKI_USERNAME`, `LOKI_PASSWORD`
-- Dev: `LOKI_DEV_ENDPOINT` (dev environments only)
-- Singlewave: `LOKI_SINGLEWAVE_ENDPOINT`
-
-### 3. Metrics Collection
-
-**Bench → Prometheus**:
-```
-Bench CLI
-  ↓
-PrometheusReporter (pkg/reporter/prometheus_reporter.go)
-  ↓
-Protocol Buffers Remote Write
-  ↓
-Prometheus Push Endpoint (ops-03-ops-eu-south-0)
-```
-
-**Endpoint**: `https://prometheus-ops-03-ops-eu-south-0.grafana-ops.net/api/prom/push`
-
-**Authentication**:
-- User ID: 10428
-- Password: Token-based via `PROMETHEUS_PASSWORD`
-
-**Labels Applied**:
-```
-job="bench"
-grafana_version="{version}"
-suite_run="{run_name}"
-status="{passed|failed}"
-{custom attributes from --run-attribute}
-```
-
-### 4. Dashboard Architecture
-
-**Template-Based System**:
-
-Bench doesn't create dashboards itself. Instead:
-- Teams create dashboards in ops Grafana
-- Bench provides dashboard URL via `--run-dashboard` with template variables
-- URLs included in Slack notifications
-
-**Dashboard URL Template** (`pkg/dashboard/dashboard.go`):
-```
-Template: http://grafana.com/d/dashboard?run={{.Id}}
-Rendered: http://grafana.com/d/dashboard?run=abc123
-```
-
-**Common Dashboard Patterns**:
-- Filter by `suite_run` label
-- Visualize test trends over time
-- Alert on test failure rates
-- Track test duration trends
-
-### 5. Slack Notification Flow
-
-**Architecture**:
-```
-Test Execution
-  ↓
-Result Parsing
-  ↓
-CODEOWNERS File (maps files → teams)
-  ↓
-CodeownersMapping (maps teams → Slack channels)
-  ↓
-SlackNotifier (pkg/notifier/slack_notifier.go)
-  ↓
-Slack API (formatted blocks with dashboard link)
-```
-
-**CodeownersMapping Format** (`codeowners-mapping.yaml`):
-```yaml
-codeowners:
-  - github_team: "@grafana/backend-services"
-    slack_channel_id: "C123456"
-    slack_channel: "#backend-services"
-```
-
-**Notification Content**:
-- Suite run ID and status
-- Per-test results (file, duration, status)
-- Dashboard link (if configured)
-- Test failure details
-
----
-
-## Key Integration Points
-
-### 1. Version Management
-
-**Bench Versions**:
-- Production: `v1.0.3` (semantic versioning)
-- Development: `experimental` / `dev-{commit}` (latest main)
-
-**Image Registry**:
-- `ghcr.io/grafana/`
-
-**Image Variants**:
-- `grafana-bench:{version}` - Standard (includes K6)
-- `grafana-bench-playwright:{version}` - With Playwright + browsers
-
-**Version Selection in Libsonnet**:
-```jsonnet
-local bench = import 'ksonnet/lib/bench/versions.libsonnet';
-local benchV0_6_11 = bench.v0_6_11;  // Specific version
-local benchLatest = bench.experimental;  // Latest dev
-```
-
-### 2. Secret Management
-
-**Common Secrets Used**:
-- `grafana-credentials` - Admin user/password
-- `bench-credentials` - K6, GitHub, Prometheus, Slack tokens
-- `grafana-credentials-unified-storage` - Unified storage specific
-
-**Secret Injection**:
-```jsonnet
-// In Argo workflow
-envFrom: [
-  secretRef: { name: 'grafana-credentials' },
-  secretRef: { name: 'bench-credentials' },
-]
-```
-
-### 3. Test Suite Patterns
-
-**Common Patterns**:
-
-1. **Embedded Grafana Pattern** (grafana-bench-cd):
-   - Sidecar Grafana container
-   - Self-contained, no external deps
-   - Health checks before test execution
-
-2. **Instance URL Pattern** (hosted-grafana-cd):
-   - Tests against deployed Grafana instance
-   - Dynamic URL from deployment
-   - Credentials from secrets
-
-3. **RRC Validation Pattern** (unified-storage-cd):
-   - Test multiple release channels
-   - Validate rolling releases
-   - Channel-specific configuration
-
-4. **Post-Install Hook Pattern** (federal-ge-grafana):
-   - Helm hook job
-   - Validates deployment
-   - Fails upgrade if tests fail
-
-### 4. Error Handling Patterns
-
-**noFail Option**:
-```jsonnet
-suite {
-  noFail: true,  // Test failure doesn't fail workflow
-}
-```
-
-**Use Cases**:
-- Playwright tests (browser tests can be flaky)
-- Non-critical test suites
-- Gradual rollout of new tests
-
-**Exit Code Handling**:
-- Bench returns exit code 1 on test failure
-- Argo workflow fails step if exit code != 0
-- `noFail: true` ignores non-zero exit codes
-
----
-
-## File Locations
-
-### Bench Repository
-
-**Main Codebase**: `/Users/jeff/projects/bench-jalevin-cleanup-docs/`
+## 6. File Locations
 
 ```
 bench.go                          # Entry point
@@ -633,6 +267,7 @@ pkg/
     k6/                           # K6 executor + parser
     playwright/                   # Playwright executor + parser
     gotest/                       # Go executor + parser
+    gobench/                      # Go benchmark executor + parser
   git/
     git.go                        # Git interface
     gogit/                        # GoGit implementation
@@ -667,69 +302,7 @@ docs/                             # Documentation
 generators/
   doc/                            # Documentation generator
   libsonnet/                      # Libsonnet generator
+libsonnet/                        # Generated libsonnet libraries
+  versions.libsonnet
+  experimental/main.libsonnet
 ```
-
-### deployment_tools Repository
-
-**Location**: `/Users/jeff/projects/deployment_tools/`
-
-```
-ksonnet/lib/
-  bench/
-    versions.libsonnet            # Version registry
-    template.libsonnet            # Pre-configured builder
-    v1.0.3/main.libsonnet        # Production version
-    experimental/main.libsonnet   # Development version
-
-  argo-workflows-util/
-    common-steps/
-      bench-v2.libsonnet          # Modern Argo integration
-      bench.libsonnet             # Legacy Argo integration
-    utils/
-      templates.libsonnet         # bench_test template
-
-  cicd-o11y/
-    config-base.libsonnet         # OTel collector config
-    config-ops.libsonnet          # Ops environment
-    cicd-o11y.libsonnet           # Kubernetes deployment
-
-ksonnet/environments/
-  grafana-bench-cd/
-    main.jsonnet                  # Self-testing orchestrator
-    bench-test-suites.libsonnet   # Test suite definitions
-
-  hosted-grafana-cd/
-    rrc-bench-suites.libsonnet    # RRC test suites
-    deploy.libsonnet              # Deployment integration
-
-  unified-storage-cd/
-    deploy.libsonnet              # Unified storage testing
-
-  federal-ge-grafana/
-    deployment-validation.libsonnet # Post-install validation
-```
-
----
-
-## Summary
-
-Grafana Bench provides a unified testing platform with three key integration layers:
-
-1. **CLI Layer**: Flexible command-line tool with multi-framework support
-2. **Deployment Layer**: Libsonnet integration for Argo Workflows and Kubernetes
-3. **Observability Layer**: Logs (Loki), Metrics (Prometheus), Traces (Tempo)
-
-**Key Strengths**:
-- Portable tests across environments
-- Standardized reporting and observability
-- Team-based notification routing
-- Extensible architecture
-- Production-proven in Grafana deployment pipelines
-
-**Primary Use Cases**:
-- CI/CD validation (GitHub Actions)
-- Deployment validation (Argo Workflows)
-- Release channel testing (Wave deploys)
-- Continuous monitoring (Post-deploy smoke tests)
-
-This architecture enables Grafana teams to write tests once and run them everywhere with consistent observability and reporting.
