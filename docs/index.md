@@ -67,7 +67,7 @@ These labels are the same across every test runner, so you can query and compare
 
 - [GitHub Actions](github_actions.md) - CI integration
 - [Libsonnet Pipelines](libsonnet.md) - Deployment pipeline integration
-- [Load Testing](load_testing.md) - Performance testing setup
+
 - [Metrics](metrics.md) - Prometheus metrics configuration
 - [Notifications](notifications.md) - Slack integration
 
