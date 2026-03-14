@@ -202,13 +202,13 @@ func (e *GoBenchExecutor) createBenchmarkMetrics(bench gobenchparser.BenchmarkRu
 
 	metricsSlice := []metrics.Metric{
 		{
-			Name:      "bench_go_benchmark_ns_per_op",
+			Name:      "go_benchmark_ns_per_op",
 			Value:     bench.NsPerOp,
 			Labels:    copyLabels(labels),
 			Timestamp: timestamp,
 		},
 		{
-			Name:      "bench_go_benchmark_iterations",
+			Name:      "go_benchmark_iterations",
 			Value:     float64(bench.Iterations),
 			Labels:    copyLabels(labels),
 			Timestamp: timestamp,
@@ -218,7 +218,7 @@ func (e *GoBenchExecutor) createBenchmarkMetrics(bench gobenchparser.BenchmarkRu
 	// Add memory metrics if available
 	if bench.BytesPerOp > 0 {
 		metricsSlice = append(metricsSlice, metrics.Metric{
-			Name:      "bench_go_benchmark_bytes_per_op",
+			Name:      "go_benchmark_bytes_per_op",
 			Value:     bench.BytesPerOp,
 			Labels:    copyLabels(labels),
 			Timestamp: timestamp,
@@ -227,7 +227,7 @@ func (e *GoBenchExecutor) createBenchmarkMetrics(bench gobenchparser.BenchmarkRu
 
 	if bench.AllocsPerOp > 0 {
 		metricsSlice = append(metricsSlice, metrics.Metric{
-			Name:      "bench_go_benchmark_allocs_per_op",
+			Name:      "go_benchmark_allocs_per_op",
 			Value:     float64(bench.AllocsPerOp),
 			Labels:    copyLabels(labels),
 			Timestamp: timestamp,

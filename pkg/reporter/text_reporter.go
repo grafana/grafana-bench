@@ -59,13 +59,13 @@ func (r *TextReporter) reportBenchmarks(tw *tabwriter.Writer, summary executor.S
 		}
 
 		switch metric.Name {
-		case "bench_go_benchmark_iterations":
+		case "go_benchmark_iterations":
 			bench.iterations = metric.Value
-		case "bench_go_benchmark_ns_per_op":
+		case "go_benchmark_ns_per_op":
 			bench.nsPerOp = metric.Value
-		case "bench_go_benchmark_bytes_per_op":
+		case "go_benchmark_bytes_per_op":
 			bench.bytesPerOp = metric.Value
-		case "bench_go_benchmark_allocs_per_op":
+		case "go_benchmark_allocs_per_op":
 			bench.allocsPerOp = metric.Value
 		}
 	}

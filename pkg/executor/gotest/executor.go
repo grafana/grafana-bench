@@ -72,10 +72,6 @@ func (e *GoExecutor) ExecTestSuite(
 	summary.SuiteName = suite.Name
 	summary.SuiteRevision = suite.Revision
 
-	if summary.Metrics == nil {
-		summary.Metrics = make([]metrics.Metric, 0)
-	}
-
 	if summary.TestsFailed > 0 && e.retries > 0 {
 		for i, t := range summary.TestRuns {
 			if t.Status != executor.TestFailed {

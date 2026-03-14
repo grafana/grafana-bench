@@ -67,20 +67,20 @@ func TestCreateBenchmarkMetrics(t *testing.T) {
 	}
 
 	// Verify metric values
-	if metricMap["bench_go_benchmark_ns_per_op"] != 1234.5 {
-		t.Errorf("expected ns_per_op 1234.5, got %f", metricMap["bench_go_benchmark_ns_per_op"])
+	if metricMap["go_benchmark_ns_per_op"] != 1234.5 {
+		t.Errorf("expected ns_per_op 1234.5, got %f", metricMap["go_benchmark_ns_per_op"])
 	}
 
-	if metricMap["bench_go_benchmark_iterations"] != 1000000 {
-		t.Errorf("expected iterations 1000000, got %f", metricMap["bench_go_benchmark_iterations"])
+	if metricMap["go_benchmark_iterations"] != 1000000 {
+		t.Errorf("expected iterations 1000000, got %f", metricMap["go_benchmark_iterations"])
 	}
 
-	if metricMap["bench_go_benchmark_bytes_per_op"] != 456 {
-		t.Errorf("expected bytes_per_op 456, got %f", metricMap["bench_go_benchmark_bytes_per_op"])
+	if metricMap["go_benchmark_bytes_per_op"] != 456 {
+		t.Errorf("expected bytes_per_op 456, got %f", metricMap["go_benchmark_bytes_per_op"])
 	}
 
-	if metricMap["bench_go_benchmark_allocs_per_op"] != 7 {
-		t.Errorf("expected allocs_per_op 7, got %f", metricMap["bench_go_benchmark_allocs_per_op"])
+	if metricMap["go_benchmark_allocs_per_op"] != 7 {
+		t.Errorf("expected allocs_per_op 7, got %f", metricMap["go_benchmark_allocs_per_op"])
 	}
 }
 
