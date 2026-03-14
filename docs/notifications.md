@@ -19,15 +19,17 @@ By default, bench only notifies on failure. Use `--slack-passing` to also notify
 
 ---
 
-## Step 1: Create a Slack bot and invite it to your channels
+## Step 1: Create a Slack bot and generate an API token
 
-Create a Slack app with the following bot token scopes:
-
-- `chat:write` — to post messages
-- `channels:read` — to look up public channel IDs
-- `groups:read` — to look up private channel IDs
-
-After creating the app, install it to your workspace and copy the **Bot User OAuth Token** (starts with `xoxb-`). Use this as your `SLACK_TOKEN` value.
+1. Go to [api.slack.com/apps](https://api.slack.com/apps) and click **Create New App → From scratch**.
+2. Give it a name (e.g. `bench`) and select your workspace.
+3. In the left sidebar, go to **OAuth & Permissions**.
+4. Under **Scopes → Bot Token Scopes**, add:
+   - `chat:write` — to post messages
+   - `channels:read` — to look up public channel IDs
+   - `groups:read` — to look up private channel IDs
+5. Scroll up and click **Install to Workspace**, then **Allow**.
+6. Copy the **Bot User OAuth Token** (starts with `xoxb-`). This is your `SLACK_TOKEN`.
 
 Invite the bot to each channel that should receive notifications:
 
