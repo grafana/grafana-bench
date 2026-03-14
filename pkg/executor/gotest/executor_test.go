@@ -152,7 +152,7 @@ func TestFlakyTest(t *testing.T) {
 				},
 				Metrics: []metrics.Metric{
 					{
-						Name:  "test_run_flaky",
+						Name:  "go_test_run_flaky",
 						Value: 1,
 						Labels: map[string]string{
 							"test_full_path": "github.com/grafana/grafana-bench/pkg/executor/gotest/flaky/TestFlaky",
