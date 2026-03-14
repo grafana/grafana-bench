@@ -57,6 +57,21 @@ grafana-bench test \
   --suite-path ./
 ```
 
+Expected output:
+
+```text
+[PASSED] 0.05 sec myservice_test: TestHealthEndpoint
+
+----------------SUMMARY----------------
+Executed:       1
+Passed:         1
+Flaky:          0
+Failed:         0
+Errors:         0
+Suite:
+Total Run Time: 0.05 sec
+```
+
 ## Other runners
 
 Pick the runner that matches your tests:
