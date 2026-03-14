@@ -102,7 +102,7 @@ func (e *GoExecutor) ExecTestSuite(
 					summary.TestsFlaky++
 
 					summary.Metrics = append(summary.Metrics, metrics.Metric{
-						Name:  "bench_test_run_flaky",
+						Name:  "test_run_flaky",
 						Value: 1,
 						Labels: map[string]string{
 							"test_full_path": summary.TestRuns[i].TestFolder + "/" + summary.TestRuns[i].TestFile,

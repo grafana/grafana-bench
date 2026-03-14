@@ -203,10 +203,10 @@ func BenchmarkConcurrentMap(b *testing.B) {
 
 Grafana Bench exports the following metrics for each benchmark:
 
-- `bench_go_benchmark_ns_per_op` - Nanoseconds per operation
-- `bench_go_benchmark_iterations` - Number of iterations (N)
-- `bench_go_benchmark_bytes_per_op` - Bytes allocated per operation (with --gobench-mem)
-- `bench_go_benchmark_allocs_per_op` - Allocations per operation (with --gobench-mem)
+- `go_benchmark_ns_per_op` - Nanoseconds per operation
+- `go_benchmark_iterations` - Number of iterations (N)
+- `go_benchmark_bytes_per_op` - Bytes allocated per operation (with --gobench-mem)
+- `go_benchmark_allocs_per_op` - Allocations per operation (with --gobench-mem)
 
 Each metric includes these labels:
 

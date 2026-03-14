@@ -180,7 +180,7 @@ Tests failed 0
 Tests flaky 1
 ```
 
-Flaky results are also exported as the `bench_test_run_flaky` Prometheus metric, letting you track flakiness trends over time.
+Flaky results are also exported as the `test_run_flaky` Prometheus metric, letting you track flakiness trends over time.
 
 ## GitHub Actions example
 

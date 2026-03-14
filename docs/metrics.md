@@ -47,10 +47,10 @@ Built-in metrics are prefixed with `bench_` and describe your test suite.
 - `bench_total_duration_seconds` - Total duration of test suite execution
 
 **Go Benchmark Metrics** (when using `--test-runner gobench`):
-- `bench_go_benchmark_ns_per_op` - Nanoseconds per operation
-- `bench_go_benchmark_bytes_per_op` - Bytes allocated per operation (requires --gobench-mem)
-- `bench_go_benchmark_allocs_per_op` - Number of allocations per operation (requires --gobench-mem)
-- `bench_go_benchmark_iterations` - Number of benchmark iterations (N)
+- `go_benchmark_ns_per_op` - Nanoseconds per operation
+- `go_benchmark_bytes_per_op` - Bytes allocated per operation (requires --gobench-mem)
+- `go_benchmark_allocs_per_op` - Number of allocations per operation (requires --gobench-mem)
+- `go_benchmark_iterations` - Number of benchmark iterations (N)
 
 Go benchmark metrics include an additional label:
 - `benchmark` - Benchmark function name
