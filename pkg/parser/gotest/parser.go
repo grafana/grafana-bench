@@ -79,7 +79,9 @@ func ParseJsonOutput(report io.Reader) (executor.SuiteRunSummary, error) {
 		summary.TestRuns = append(summary.TestRuns, *test)
 	}
 
-	summary.TotalDuration += endTime.Sub(summary.StartTime)
+	if !endTime.IsZero() {
+		summary.TotalDuration += endTime.Sub(summary.StartTime)
+	}
 	summary.TestsExecuted = int32(len(summary.TestRuns))
 
 	return summary, nil
