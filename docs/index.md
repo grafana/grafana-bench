@@ -151,8 +151,6 @@ Add Bench to your GitHub Actions workflow:
 
 - [Quickstart](quickstart.md) - Get running in 5 minutes
 - [Installation](installation.md) - Detailed installation steps
-- [Your First Test](first-test.md) - Build your first test step-by-step
-- [Validation Guide](validation-guide.md) - Verify your setup
 
 ### For Test Authors
 
@@ -160,7 +158,6 @@ Add Bench to your GitHub Actions workflow:
 - [Writing Playwright Tests](writing_pw_tests.md) - Browser testing guide
 - [Writing Go Tests](writing_go_tests.md) - Go testing guide
 - [Writing Go Benchmarks](writing_go_benchmarks.md) - Performance benchmarking guide
-- [Templates](templates.md) - Starter templates and examples
 - [Configuration Guide](configuration.md) - Configure bench.yaml
 
 ### For DevOps/Platform Engineers
@@ -178,10 +175,6 @@ Add Bench to your GitHub Actions workflow:
 - [Architecture](architecture.md) - How bench is structured internally
 - [Migration Guide v1.0](migration_v1.md) - Upgrading from v0.6.x
 - [Breaking Changes v1.0](breaking_changes_v1.md) - Full changelog of breaking changes
-- [Troubleshooting](troubleshooting.md) - Common issues and solutions
-- [Glossary](glossary.md) - Key terms and concepts
-- [Cheat Sheet](cheat-sheet.md) - Quick reference
-
 ### Contributing
 
 - [Contributing Guide](contributing.md) - Build setup, testing, and how to contribute
