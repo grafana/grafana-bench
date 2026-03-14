@@ -14,7 +14,7 @@ Install development dependencies:
 make install-deps
 ```
 
-This installs `jsonnet` and `jsonnetfmt`, required for libsonnet generation and testing.
+This installs `jsonnet` and `jsonnetfmt`, required for doc generation.
 
 ## Building
 
@@ -51,6 +51,8 @@ make docs
 ```
 
 This also updates version references throughout the documentation. Do not manually edit files prefixed with `bench_` in `docs/` — they are overwritten on every `make docs` run.
+
+The libsonnet library in `libsonnet/` is also generated — run `make libsonnet` to regenerate it locally.
 
 ## Project structure
 

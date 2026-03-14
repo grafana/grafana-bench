@@ -300,8 +300,8 @@ CI/                               # Test suites
 
 docs/                             # Documentation
 generators/
-  doc/                            # Documentation generator
-  libsonnet/                      # Libsonnet generator
+  doc/                            # Documentation generator (make docs)
+  libsonnet/                      # Libsonnet generator (make libsonnet)
 libsonnet/                        # Generated libsonnet libraries
   versions.libsonnet
   experimental/main.libsonnet
