@@ -130,10 +130,20 @@ func ParseFindings(report io.Reader) (executor.SuiteRunSummary, error) {
 		}
 		exitMessage += lineInfo
 
-		// Only safe, non-secret fields: detector name, verified, file, line. Never Raw/RawV2/Redacted/ExtraData.
+		// Only safe, non-secret fields: detector name, verified, file, line. Never Raw/RawV2/Redacted.
+		// Selectively extract non-secret ExtraData fields: username, name, url.
 		attrs := map[string]string{
 			"detector": f.DetectorName,
 			"verified": strconv.FormatBool(f.Verified),
+		}
+		if v, ok := f.ExtraData["username"].(string); ok && v != "" {
+			attrs["username"] = v
+		}
+		if v, ok := f.ExtraData["name"].(string); ok && v != "" {
+			attrs["name"] = v
+		}
+		if v, ok := f.ExtraData["url"].(string); ok && v != "" {
+			attrs["url"] = v
 		}
 
 		// Verified findings are failures (critical); unverified are informational (like zizmor's note level).

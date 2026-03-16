@@ -79,6 +79,21 @@ func TestParseFindings(t *testing.T) {
 				assert.Equal(t, "first test file", "testfile", first.TestFile)
 				assert.Equal(t, "first detector", "Github", first.Attributes["detector"])
 				assert.Equal(t, "first verified", "true", first.Attributes["verified"])
+				assert.Equal(t, "first username", "test-user", first.Attributes["username"])
+				assert.Equal(t, "first name", "Test User", first.Attributes["name"])
+				assert.Equal(t, "first url", "https://github.com/test-user", first.Attributes["url"])
+
+				// unverified finding has no username/name/url — should not be present
+				second := summary.TestRuns[1]
+				if _, ok := second.Attributes["username"]; ok {
+					t.Error("unverified finding should not have username attribute")
+				}
+				if _, ok := second.Attributes["name"]; ok {
+					t.Error("unverified finding should not have name attribute")
+				}
+				if _, ok := second.Attributes["url"]; ok {
+					t.Error("unverified finding should not have url attribute")
+				}
 			},
 		},
 		{

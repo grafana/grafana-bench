@@ -21,6 +21,9 @@
     "RawV2": "",
     "Redacted": "",
     "ExtraData": {
+      "name": "Test User",
+      "url": "https://github.com/test-user",
+      "username": "test-user",
       "version": "2"
     },
     "StructuredData": null
