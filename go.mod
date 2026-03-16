@@ -9,7 +9,7 @@ require (
 	github.com/golang/snappy v1.0.0
 	github.com/grafana/nanogit v0.7.0
 	github.com/joho/godotenv v1.5.1
-	github.com/olekukonko/tablewriter v1.1.3
+	github.com/olekukonko/tablewriter v1.1.4
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/client_model v0.6.2
 	github.com/slack-go/slack v0.19.0
@@ -28,9 +28,8 @@ require (
 	github.com/ProtonMail/go-crypto v1.1.6 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/clipperhouse/displaywidth v0.6.2 // indirect
-	github.com/clipperhouse/stringish v0.1.1 // indirect
-	github.com/clipperhouse/uax29/v2 v2.3.0 // indirect
+	github.com/clipperhouse/displaywidth v0.10.0 // indirect
+	github.com/clipperhouse/uax29/v2 v2.6.0 // indirect
 	github.com/cloudflare/circl v1.6.3 // indirect
 	github.com/containerd/errdefs v1.0.0 // indirect
 	github.com/containerd/errdefs/pkg v0.3.0 // indirect
@@ -80,8 +79,8 @@ require (
 	github.com/moby/term v0.5.0 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/olekukonko/cat v0.0.0-20250911104152-50322a0618f6 // indirect
-	github.com/olekukonko/errors v1.1.0 // indirect
-	github.com/olekukonko/ll v0.1.4-0.20260115111900-9e59c2286df0 // indirect
+	github.com/olekukonko/errors v1.2.0 // indirect
+	github.com/olekukonko/ll v0.1.6 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
