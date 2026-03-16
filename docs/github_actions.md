@@ -12,14 +12,14 @@ The `setup-grafana-bench` action downloads and installs the pre-built binary for
 - name: Setup Grafana Bench
   uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@281b943dbbdf2a30aa0fd2e5fd07503a49734f44
   with:
-    version: 'v1.0.3'
+    version: 'v1.0.4'
 ```
 
 **Supported platforms:** Linux (amd64, arm64), macOS (amd64, arm64), Windows (amd64). If binary download fails, the action falls back to `go install`.
 
 | Input | Description | Required |
 |-------|-------------|----------|
-| `version` | Version to install (e.g. `v1.0.3`) | Yes |
+| `version` | Version to install (e.g. `v1.0.4`) | Yes |
 
 ### Setup action vs Docker
 
@@ -53,7 +53,7 @@ jobs:
       - name: Setup Grafana Bench
         uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@281b943dbbdf2a30aa0fd2e5fd07503a49734f44
         with:
-          version: 'v1.0.3'
+          version: 'v1.0.4'
 
       - name: Run K6 tests
         run: |
@@ -76,7 +76,7 @@ jobs:
           docker run --rm \
             --network=host \
             --volume="./:/tests/" \
-            ghcr.io/grafana/grafana-bench-playwright:v1.0.3 test \
+            ghcr.io/grafana/grafana-bench-playwright:v1.0.4 test \
             --service grafana \
             --service-url http://localhost:3000 \
             --service-version latest \
@@ -155,7 +155,7 @@ When using Docker, pass the variables explicitly with `-e`:
             -e PROMETHEUS_URL \
             -e PROMETHEUS_USER \
             -e PROMETHEUS_PASSWORD \
-            ghcr.io/grafana/grafana-bench:v1.0.3 test \
+            ghcr.io/grafana/grafana-bench:v1.0.4 test \
             --service grafana \
             --service-url http://localhost:3000 \
             --service-version latest \
@@ -237,7 +237,7 @@ jobs:
           docker run --rm \
             --network=host \
             --volume="./:/tests/" \
-            ghcr.io/grafana/grafana-bench:v1.0.3 test \
+            ghcr.io/grafana/grafana-bench:v1.0.4 test \
             --service grafana \
             --service-url "http://localhost:3000" \
             --service-version latest \

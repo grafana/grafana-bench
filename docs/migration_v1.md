@@ -146,7 +146,7 @@ docker run --rm \
   --network=host \
   -e GRAFANA_ADMIN_USER \
   -e GRAFANA_ADMIN_PASSWORD \
-  grafana-bench:v1.0.3 test \
+  grafana-bench:v1.0.4 test \
   --service grafana \
   --service-url http://localhost:3000 \
   --service-version 11.0.0 \
@@ -320,7 +320,7 @@ grafana-bench test \
 docker run --rm \
   --network=host \
   --volume="./:/tests/" \
-  grafana-bench:v1.0.3 test \
+  grafana-bench:v1.0.4 test \
   --grafana-url http://localhost:3000 \
   --test-suite-base /tests
 ```
@@ -330,7 +330,7 @@ docker run --rm \
 docker run --rm \
   --network=host \
   --volume="./:/tests/" \
-  grafana-bench:v1.0.3 test \
+  grafana-bench:v1.0.4 test \
   --service grafana \
   --service-url http://localhost:3000 \
   --service-version 11.0.0 \
