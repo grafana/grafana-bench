@@ -157,7 +157,7 @@ jobs:
             "destination_branch": "master",
             "pull_request_enabled": true,
             "pull_request_branch_prefix": "${BRANCH_PREFIX}",
-            "pull_request_existing_strategy": "ignore",
+            "pull_request_existing_strategy": "replace",
             "pull_request_title": "${PR_TITLE}",
             "pull_request_message": "${PR_MESSAGE}",
             "pull_request_reviewers": ["${PR_REVIEWER}"],
