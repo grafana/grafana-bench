@@ -39,8 +39,8 @@ jobs:
           REF_NAME: ${{ github.ref_name }}
           ACTOR: ${{ github.actor }}
         run: |
-          if [ "$EVENT_NAME" == "workflow_call" ]; then
-            # Called from CI on tag push - use the tag name
+          if [ "$EVENT_NAME" == "push" ]; then
+            # Called from CI on tag push (reusable workflows inherit caller's event name)
             VERSION="$REF_NAME"
           elif [ "$EVENT_NAME" == "workflow_dispatch" ]; then
             # Manual trigger - get the latest release tag
@@ -90,7 +90,7 @@ jobs:
 
             🤖 This PR was created automatically after successful release build and will be auto-merged.
 
-            /cc @${{ steps.get-info.outputs.author }}
+            /cc @${{ steps.get-info.outputs.author }} @jalevin
           branch: docs/update-${{ steps.get-info.outputs.safe_version }}
           branch-suffix: short-commit-hash
           delete-branch: true
