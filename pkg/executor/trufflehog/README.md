@@ -8,7 +8,7 @@ The integration model is the same as [zizmor](https://github.com/grafana/grafana
 
 TruffleHog finds secrets in code and history and outputs a JSON array of findings. This parser reads that JSON to generate metrics and structured logs.
 
-**Security:** The parser never sends credentials or secret material. It only uses detector name, generic detector description, file path, line number, and verified/unverified flag. The `Raw`, `RawV2`, `Redacted`, and `ExtraData` fields from the JSON are never included in report output, metrics, or logs.
+**Security:** The parser never sends credentials or secret material. The `Raw`, `RawV2`, and `Redacted` fields are never included in report output, metrics, or logs. From `ExtraData`, only the non-secret fields `username`, `name`, and `url` are selectively extracted. All other `ExtraData` fields (e.g. `expiry`, `rotation_guide`, `account_type`) are discarded.
 
 ## Usage
 
@@ -71,6 +71,9 @@ Each finding is reported as a test run with:
 - **verified**: Whether the finding was verified
 - **testFile**: Source file (from Filesystem, Git, or GitHub metadata when present)
 - **exitMessage**: Detector description and line number when available
+- **username**: Token owner's GitHub username (when present in ExtraData)
+- **name**: Token owner's display name (when present in ExtraData)
+- **url**: Token owner's GitHub profile URL (when present in ExtraData)
 
 ## Query Examples
 
