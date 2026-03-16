@@ -1,0 +1,57 @@
+[
+  {
+    "SourceMetadata": {
+      "Data": {
+        "Filesystem": {
+          "file": "testfile",
+          "line": 1
+        }
+      }
+    },
+    "SourceID": 1,
+    "SourceType": 15,
+    "SourceName": "trufflehog - filesystem",
+    "DetectorType": 8,
+    "DetectorName": "Github",
+    "DetectorDescription": "GitHub is a platform for version control and collaboration. Personal access tokens (PATs) can be used to access and modify repositories and other resources.",
+    "DecoderName": "PLAIN",
+    "Verified": true,
+    "VerificationFromCache": false,
+    "Raw": "",
+    "RawV2": "",
+    "Redacted": "",
+    "ExtraData": {
+      "name": "Test User",
+      "url": "https://github.com/test-user",
+      "username": "test-user",
+      "version": "2"
+    },
+    "StructuredData": null
+  },
+  {
+    "SourceMetadata": {
+      "Data": {
+        "Filesystem": {
+          "file": "testfile",
+          "line": 3
+        }
+      }
+    },
+    "SourceID": 1,
+    "SourceType": 15,
+    "SourceName": "trufflehog - filesystem",
+    "DetectorType": 8,
+    "DetectorName": "Github",
+    "DetectorDescription": "GitHub is a platform for version control and collaboration. Personal access tokens (PATs) can be used to access and modify repositories and other resources.",
+    "DecoderName": "PLAIN",
+    "Verified": false,
+    "VerificationFromCache": false,
+    "Raw": "",
+    "RawV2": "",
+    "Redacted": "",
+    "ExtraData": {
+      "version": "2"
+    },
+    "StructuredData": null
+  }
+]

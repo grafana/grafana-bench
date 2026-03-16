@@ -324,7 +324,7 @@ func AddReportInputFlags(fs *pflag.FlagSet, config *ReportConfig) {
 		&config.Input,
 		"report-input",
 		"",
-		"report input format. Valid values are 'playwright', 'go', and 'zizmor'",
+		"report input format. Valid values are 'playwright', 'go', 'zizmor', and 'trufflehog'",
 	)
 }
 
@@ -682,8 +682,12 @@ func (benchConfig *BenchConfig) BuildSuiteRun(log *slog.Logger) (executor.SuiteR
 		serviceURL = benchConfig.Service.Url
 	}
 
+	// Security scanner report types (trufflehog, zizmor) scan code, not a running service,
+	// so --service and --service-version are not required for them.
+	isScanner := benchConfig.Report.Input == "trufflehog" || benchConfig.Report.Input == "zizmor"
+
 	// Validate required service field
-	if benchConfig.Service.Name == "" {
+	if !isScanner && benchConfig.Service.Name == "" {
 		return executor.SuiteRun{}, fmt.Errorf("--service is required: specify the name of the service being tested (e.g., 'grafana', 'loki', 'tempo')")
 	}
 
@@ -741,8 +745,8 @@ func (benchConfig *BenchConfig) BuildSuiteRun(log *slog.Logger) (executor.SuiteR
 		log.Info("fetched grafana version from API", "version", serviceVersion)
 	}
 
-	// Validate that version is provided
-	if serviceVersion == "" {
+	// Validate that version is provided (not required for security scanner types)
+	if !isScanner && serviceVersion == "" {
 		return executor.SuiteRun{}, fmt.Errorf("--service-version is required: specify the version of the service being tested (e.g., '11.0.0'), or use --fetch-grafana-version for Grafana")
 	}
 

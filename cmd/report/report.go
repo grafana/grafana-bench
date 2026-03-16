@@ -7,6 +7,7 @@ import (
 
 	"github.com/grafana/grafana-bench/pkg/config"
 	"github.com/grafana/grafana-bench/pkg/executor"
+	"github.com/grafana/grafana-bench/pkg/executor/trufflehog"
 	"github.com/grafana/grafana-bench/pkg/executor/zizmor"
 	"github.com/grafana/grafana-bench/pkg/parser/gotest"
 	"github.com/grafana/grafana-bench/pkg/parser/playwright"
@@ -139,6 +140,11 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				suiteRunSummary, err = zizmor.ParseSARIF(input)
 				if err != nil {
 					return fmt.Errorf("parsing zizmor SARIF input %w", err)
+				}
+			case "trufflehog":
+				suiteRunSummary, err = trufflehog.ParseFindings(input)
+				if err != nil {
+					return fmt.Errorf("parsing trufflehog JSON input %w", err)
 				}
 			default:
 				if benchConfig.Report.Input == "" {
