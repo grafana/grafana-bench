@@ -634,6 +634,14 @@ func (config BenchConfig) BuildTestExecutor(
 			},
 		)
 	case "k6":
+		prometheusRWServerURL := config.K6.PrometheusRWServerURL
+		prometheusRWUsername := config.K6.PrometheusRWUsername
+		prometheusRWPassword := config.K6.PrometheusRWPassword
+		if config.K6.PrometheusRWOutput && prometheusRWServerURL == "" && config.Prometheus.URL != "" {
+			prometheusRWServerURL = config.Prometheus.URL
+			prometheusRWUsername = config.Prometheus.User
+			prometheusRWPassword = config.Prometheus.Password
+		}
 		executor = k6.NewK6TestExecutor(
 			log,
 			k6.K6ExecutorOptions{
@@ -642,9 +650,9 @@ func (config BenchConfig) BuildTestExecutor(
 				CloudToken:            config.K6.CloudToken,
 				CloudProjectID:        config.K6.CloudProjectId,
 				PrometheusRWOutput:    config.K6.PrometheusRWOutput,
-				PrometheusRWServerURL: config.K6.PrometheusRWServerURL,
-				PrometheusRWUsername:  config.K6.PrometheusRWUsername,
-				PrometheusRWPassword:  config.K6.PrometheusRWPassword,
+				PrometheusRWServerURL: prometheusRWServerURL,
+				PrometheusRWUsername:  prometheusRWUsername,
+				PrometheusRWPassword:  prometheusRWPassword,
 			},
 		)
 	case "playwright":
