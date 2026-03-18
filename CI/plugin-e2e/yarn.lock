@@ -2,30 +2,24 @@
 # yarn lockfile v1
 
 
-"@grafana/e2e-selectors@^11.6.0-226761":
-  version "11.6.0-228096"
-  resolved "https://registry.yarnpkg.com/@grafana/e2e-selectors/-/e2e-selectors-11.6.0-228096.tgz#60a820177712b699c66924176ebff5eb36a0d7dd"
-  integrity sha512-7SItTl/p8jL5aEIjjA/VuJf/6Tl3dURGrFbanEO1MCLCx1JLY/mod63jLao1J9tx1iop8ZDsfjEJXZOpsPHC6w==
+"@grafana/e2e-selectors@^12.1.0-240060":
+  version "12.4.1"
+  resolved "https://registry.yarnpkg.com/@grafana/e2e-selectors/-/e2e-selectors-12.4.1.tgz#63b1a6946261093aa6511f7337d775577956ce87"
+  integrity sha512-Joyr95YS/8H0IRfBJcyZl/nj4Ku0hBkxJzFXICwOpNv+T/5zdXw4v3n7rhsz3MVjzdwV02lAGazaIaNLX+6CUw==
   dependencies:
-    "@grafana/tsconfig" "^2.0.0"
     semver "^7.7.0"
     tslib "2.8.1"
-    typescript "5.7.3"
+    typescript "5.9.2"
 
-"@grafana/plugin-e2e@^1.8.3":
-  version "1.18.3"
-  resolved "https://registry.yarnpkg.com/@grafana/plugin-e2e/-/plugin-e2e-1.18.3.tgz#13cabbef8c89755a3a2ecc4cbf002270544cf047"
-  integrity sha512-iWDcPrMivW31BITD29V+Iu/phZdQ0zpFOvuIvHbt5+eK5W4ojo1J0b3YMNpqGL9oJVx16eqQFmj/l/5WkgrppQ==
+"@grafana/plugin-e2e@^1.18.3":
+  version "1.19.9"
+  resolved "https://registry.yarnpkg.com/@grafana/plugin-e2e/-/plugin-e2e-1.19.9.tgz#71c52005121ed0637285f1ac10c1fda7d3eaccee"
+  integrity sha512-f8qBQhqQ6PtqzFgTwiIRlVC3Obbad0sgugEfS4B8C0tziHW9akjjcP2fu0+qtPSlUXqQmDsusyAATZKM2MtiIw==
   dependencies:
-    "@grafana/e2e-selectors" "^11.6.0-226761"
+    "@grafana/e2e-selectors" "^12.1.0-240060"
     semver "^7.5.4"
     uuid "^11.0.2"
     yaml "^2.3.4"
-
-"@grafana/tsconfig@^2.0.0":
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/@grafana/tsconfig/-/tsconfig-2.0.0.tgz#277aba907ddbe0301dc37248923e6bd2b68f5151"
-  integrity sha512-cxC3Htv/GidI5FeVGAzj/lYZTMMz/Cfsc8VOQFO3Ichjx3hUjyjeoBUIpVSVMnIjKUdA5ycdxtMYPHIuIrk8+A==
 
 "@playwright/test@^1.42.1":
   version "1.58.2"
@@ -63,10 +57,10 @@ tslib@2.8.1:
   resolved "https://registry.yarnpkg.com/tslib/-/tslib-2.8.1.tgz#612efe4ed235d567e8aba5f2a5fab70280ade83f"
   integrity sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==
 
-typescript@5.7.3:
-  version "5.7.3"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-5.7.3.tgz#919b44a7dbb8583a9b856d162be24a54bf80073e"
-  integrity sha512-84MVSjMEHP+FQRPy3pX9sTVV/INIex71s9TL2Gm5FG/WG1SqXeKyZ0k7/blY/4FdOzI12CBy1vGc4og/eus0fw==
+typescript@5.9.2:
+  version "5.9.2"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-5.9.2.tgz#d93450cddec5154a2d5cabe3b8102b83316fb2a6"
+  integrity sha512-CWBzXQrc/qOkhidw1OzBTQuYRbfyxDXJMVJ1XNwUHGROVmuaeiEm3OslpZ1RV96d7SKKjZKrSJu3+t/xlw3R9A==
 
 uuid@^11.0.2:
   version "11.1.0"
