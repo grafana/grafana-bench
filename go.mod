@@ -125,7 +125,7 @@ require (
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
-	github.com/szkiba/k6pack v0.1.3
+	github.com/szkiba/k6pack v0.2.4
 	github.com/testcontainers/testcontainers-go v0.41.0
 	golang.org/x/net v0.49.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
