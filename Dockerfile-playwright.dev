@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.22.0-labs@sha256:4c116b618ed48404d579b5467127b20986f2a6b29e4b9be2fee841f632db6a86
 
-FROM golang:1.26-alpine AS builder
+FROM golang:1.26-alpine@sha256:2389ebfa5b7f43eeafbd6be0c3700cc46690ef842ad962f6c5bd6be49ed82039 AS builder
 
 ARG BENCH_REVISION 
 ARG TARGETOS=linux
@@ -34,10 +34,10 @@ RUN CGO_ENABLED=0 go build \
 RUN go get github.com/boxboat/fixuid@${FIXUID_VERSION} && \
   CGO_ENABLED=0 go build -o build/fixuid github.com/boxboat/fixuid
 
-FROM grafana/k6:latest AS k6
+FROM grafana/k6:latest@sha256:5e937f439684142ba7803722b42e3c9ac9233cfa01d561de0596c1c2794fd680 AS k6
 
 # Use Playwright base image which includes all browser dependencies
-FROM mcr.microsoft.com/playwright:v1.58.2-noble AS runtime
+FROM mcr.microsoft.com/playwright:v1.58.2-noble@sha256:6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d AS runtime
 
 USER root
 

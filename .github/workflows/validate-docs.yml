@@ -29,7 +29,7 @@ jobs:
         run: git fetch --tags
 
       - name: Setup Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6
         with:
           go-version-file: go.mod
 
@@ -44,7 +44,7 @@ jobs:
 
       - name: Comment if docs are out of date
         id: create-suggestions
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           script: |
             const { execSync } = require('child_process');
