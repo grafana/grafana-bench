@@ -29,7 +29,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: get vault secrets for prometheus monitoring  
-        uses: grafana/shared-workflows/actions/get-vault-secrets@ae92934a14a48b94494dbc06d74a81d47fe08a40
+        uses: grafana/shared-workflows/actions/get-vault-secrets@979bc5d3fd4ea82383d3f1362c34041687c74304
         with:
           repo_secrets: |
             PROMETHEUS_URL=prometheus_url:prometheus_url

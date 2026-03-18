@@ -69,7 +69,7 @@ runs:
       shell: bash
       run: grafana-bench version
     - id: get-secrets
-      uses: grafana/shared-workflows/actions/get-vault-secrets@078c4a8af09e06d646077550f9e0f68171d5881e
+      uses: grafana/shared-workflows/actions/get-vault-secrets@979bc5d3fd4ea82383d3f1362c34041687c74304
       with:
         common_secrets: |
           PROMETHEUS_URL=grafana-bench:prometheus_url

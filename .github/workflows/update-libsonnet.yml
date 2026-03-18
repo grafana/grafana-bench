@@ -55,7 +55,7 @@ jobs:
 
       # TODO this is jalevin PAT. replace this with github app that can read deployment_tools repo
       - name: Get secrets from vault
-        uses: grafana/shared-workflows/actions/get-vault-secrets@ae92934a14a48b94494dbc06d74a81d47fe08a40
+        uses: grafana/shared-workflows/actions/get-vault-secrets@979bc5d3fd4ea82383d3f1362c34041687c74304
         with:
           repo_secrets: |
             DEPLOYMENT_TOOLS_TOKEN=temporary-github-pat:temporary-github-pat
@@ -86,7 +86,7 @@ jobs:
           fi
 
       - name: authenticate with gar
-        uses: grafana/shared-workflows/actions/login-to-gar@ae92934a14a48b94494dbc06d74a81d47fe08a40
+        uses: grafana/shared-workflows/actions/login-to-gar@979bc5d3fd4ea82383d3f1362c34041687c74304
         with:
           registry: us-docker.pkg.dev
 
@@ -118,7 +118,7 @@ jobs:
       #     echo "🎉 All generated images validated successfully!"
 
       - name: get vault secrets for deployment_tools access
-        uses: grafana/shared-workflows/actions/get-vault-secrets@ae92934a14a48b94494dbc06d74a81d47fe08a40
+        uses: grafana/shared-workflows/actions/get-vault-secrets@979bc5d3fd4ea82383d3f1362c34041687c74304
         with:
           common_secrets: |
             GITHUB_APP_ID=updater-app:app-id
@@ -200,7 +200,7 @@ jobs:
           echo "Libsonnet update completed for ${VERSION}!"
 
       - name: get vault secrets for prometheus monitoring
-        uses: grafana/shared-workflows/actions/get-vault-secrets@ae92934a14a48b94494dbc06d74a81d47fe08a40
+        uses: grafana/shared-workflows/actions/get-vault-secrets@979bc5d3fd4ea82383d3f1362c34041687c74304
         with:
           repo_secrets: |
             PROMETHEUS_URL=prometheus_url:prometheus_url
@@ -276,13 +276,13 @@ jobs:
           exit 1
 
       - name: setup argo
-        uses: grafana/shared-workflows/actions/setup-argo@ae92934a14a48b94494dbc06d74a81d47fe08a40
+        uses: grafana/shared-workflows/actions/setup-argo@979bc5d3fd4ea82383d3f1362c34041687c74304
 
       - name: trigger grafana-bench-cd workflow
         id: trigger-workflow
         env:
           VERSION: ${{ inputs.version }}
-        uses: grafana/shared-workflows/actions/trigger-argo-workflow@ae92934a14a48b94494dbc06d74a81d47fe08a40
+        uses: grafana/shared-workflows/actions/trigger-argo-workflow@979bc5d3fd4ea82383d3f1362c34041687c74304
         with:
           instance: "ops"
           namespace: "grafana-bench-cd"
