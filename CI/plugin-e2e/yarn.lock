@@ -2,23 +2,23 @@
 # yarn lockfile v1
 
 
-"@grafana/e2e-selectors@^12.1.0-240060":
-  version "12.4.1"
-  resolved "https://registry.yarnpkg.com/@grafana/e2e-selectors/-/e2e-selectors-12.4.1.tgz#63b1a6946261093aa6511f7337d775577956ce87"
-  integrity sha512-Joyr95YS/8H0IRfBJcyZl/nj4Ku0hBkxJzFXICwOpNv+T/5zdXw4v3n7rhsz3MVjzdwV02lAGazaIaNLX+6CUw==
+"@grafana/e2e-selectors@13.0.0-22967232448":
+  version "13.0.0-22967232448"
+  resolved "https://registry.yarnpkg.com/@grafana/e2e-selectors/-/e2e-selectors-13.0.0-22967232448.tgz#f8e6ae2b33c748ecc5256ecb27812b03d5f82f9b"
+  integrity sha512-OQMfOIjj4HKVCR6f7a+ZS9sJbiiFsnHhGLI5LycJPJFwtGVLzGeDxislb9fd+a8WRBxvpdxGkxqedYGY+gQ17A==
   dependencies:
     semver "^7.7.0"
     tslib "2.8.1"
     typescript "5.9.2"
 
-"@grafana/plugin-e2e@^1.18.3":
-  version "1.19.9"
-  resolved "https://registry.yarnpkg.com/@grafana/plugin-e2e/-/plugin-e2e-1.19.9.tgz#71c52005121ed0637285f1ac10c1fda7d3eaccee"
-  integrity sha512-f8qBQhqQ6PtqzFgTwiIRlVC3Obbad0sgugEfS4B8C0tziHW9akjjcP2fu0+qtPSlUXqQmDsusyAATZKM2MtiIw==
+"@grafana/plugin-e2e@^3.0.0":
+  version "3.4.7"
+  resolved "https://registry.yarnpkg.com/@grafana/plugin-e2e/-/plugin-e2e-3.4.7.tgz#58cda6e0bc734805fa15326d50593a25dfe2c933"
+  integrity sha512-95el6IU992aX+5Jn5nUS7rlwov86bxXGJuWjpoJQwgsM214VHyW3G4rnsKqaJlbBDz9bMPxJSUSGBOSGjSeEAg==
   dependencies:
-    "@grafana/e2e-selectors" "^12.1.0-240060"
+    "@grafana/e2e-selectors" "13.0.0-22967232448"
     semver "^7.5.4"
-    uuid "^11.0.2"
+    uuid "^13.0.0"
     yaml "^2.3.4"
 
 "@playwright/test@^1.42.1":
@@ -62,10 +62,10 @@ typescript@5.9.2:
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-5.9.2.tgz#d93450cddec5154a2d5cabe3b8102b83316fb2a6"
   integrity sha512-CWBzXQrc/qOkhidw1OzBTQuYRbfyxDXJMVJ1XNwUHGROVmuaeiEm3OslpZ1RV96d7SKKjZKrSJu3+t/xlw3R9A==
 
-uuid@^11.0.2:
-  version "11.1.0"
-  resolved "https://registry.yarnpkg.com/uuid/-/uuid-11.1.0.tgz#9549028be1753bb934fc96e2bca09bb4105ae912"
-  integrity sha512-0/A9rDy9P7cJ+8w1c9WD9V//9Wj15Ce2MPz8Ri6032usz+NfePxx5AcN3bN+r6ZL6jEo066/yNYB3tn4pQEx+A==
+uuid@^13.0.0:
+  version "13.0.0"
+  resolved "https://registry.yarnpkg.com/uuid/-/uuid-13.0.0.tgz#263dc341b19b4d755eb8fe36b78d95a6b65707e8"
+  integrity sha512-XQegIaBTVUjSHliKqcnFqYypAd4S+WCYt5NIeRs6w/UAry7z8Y9j5ZwRRL4kzq9U3sD6v+85er9FvkEaBpji2w==
 
 yaml@^2.3.4:
   version "2.7.0"
