@@ -15,6 +15,6 @@
     "playwright": "^1.56.1"
   },
   "devDependencies": {
-    "@grafana/plugin-e2e": "^1.8.3"
+    "@grafana/plugin-e2e": "^3.0.0"
   }
 }
