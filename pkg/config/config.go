@@ -111,9 +111,13 @@ func AddServiceFlags(fs *pflag.FlagSet, config *ServiceConfig) {
 }
 
 type K6Config struct {
-	CloudToken     string
-	CloudProjectId string
-	CloudOutput    bool
+	CloudToken            string
+	CloudProjectId        string
+	CloudOutput           bool
+	PrometheusRWOutput    bool
+	PrometheusRWServerURL string
+	PrometheusRWUsername  string
+	PrometheusRWPassword  string
 }
 
 func AddK6Flags(fs *pflag.FlagSet, config *K6Config) {
@@ -134,6 +138,30 @@ func AddK6Flags(fs *pflag.FlagSet, config *K6Config) {
 		"k6-cloud-output",
 		false,
 		"send output to GCK6. Requires setting the GCK6 project ID and access token.",
+	)
+	fs.BoolVar(
+		&config.PrometheusRWOutput,
+		"k6-prometheus-rw-output",
+		false,
+		"send output via Prometheus remote write. Requires setting the server URL.",
+	)
+	fs.StringVar(
+		&config.PrometheusRWServerURL,
+		"k6-prometheus-rw-server-url",
+		"",
+		"Prometheus remote write server URL. If not set K6_PROMETHEUS_RW_SERVER_URL environment variable is used",
+	)
+	fs.StringVar(
+		&config.PrometheusRWUsername,
+		"k6-prometheus-rw-username",
+		"",
+		"Prometheus remote write username. If not set K6_PROMETHEUS_RW_USERNAME environment variable is used",
+	)
+	fs.StringVar(
+		&config.PrometheusRWPassword,
+		"k6-prometheus-rw-password",
+		"",
+		"Prometheus remote write password. If not set K6_PROMETHEUS_RW_PASSWORD environment variable is used",
 	)
 }
 
@@ -609,10 +637,14 @@ func (config BenchConfig) BuildTestExecutor(
 		executor = k6.NewK6TestExecutor(
 			log,
 			k6.K6ExecutorOptions{
-				Verbose:        config.Test.Verbose,
-				CloudOutput:    config.K6.CloudOutput,
-				CloudToken:     config.K6.CloudToken,
-				CloudProjectID: config.K6.CloudProjectId,
+				Verbose:               config.Test.Verbose,
+				CloudOutput:           config.K6.CloudOutput,
+				CloudToken:            config.K6.CloudToken,
+				CloudProjectID:        config.K6.CloudProjectId,
+				PrometheusRWOutput:    config.K6.PrometheusRWOutput,
+				PrometheusRWServerURL: config.K6.PrometheusRWServerURL,
+				PrometheusRWUsername:  config.K6.PrometheusRWUsername,
+				PrometheusRWPassword:  config.K6.PrometheusRWPassword,
 			},
 		)
 	case "playwright":

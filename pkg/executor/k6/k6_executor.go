@@ -31,8 +31,9 @@ const (
 )
 
 var (
-	missingK6CloudConfigError = errors.New("k6 Token and project ID are required for cloud output")
-	testFilesError            = errors.New("getting test files")
+	missingK6CloudConfigError      = errors.New("k6 Token and project ID are required for cloud output")
+	missingPrometheusRWConfigError = errors.New("k6 Prometheus remote write server URL is required for prometheus-rw output")
+	testFilesError                 = errors.New("getting test files")
 	testExts                  = []string{".js", ".ts"}
 	// used to replace strings.Title
 	caser = cases.Title(language.AmericanEnglish)
@@ -45,11 +46,15 @@ type K6TestExecutor struct {
 }
 
 type K6ExecutorOptions struct {
-	RetryFailed    int
-	Verbose        bool
-	CloudOutput    bool
-	CloudToken     string
-	CloudProjectID string
+	RetryFailed           int
+	Verbose               bool
+	CloudOutput           bool
+	CloudToken            string
+	CloudProjectID        string
+	PrometheusRWOutput    bool
+	PrometheusRWServerURL string
+	PrometheusRWUsername  string
+	PrometheusRWPassword  string
 }
 
 // NewK6TestExecutor creates a new instance of K6TestExecutor
@@ -93,6 +98,9 @@ func (t *K6TestExecutor) ExecTestSuite(
 ) (executor.SuiteRunSummary, error) {
 	if t.CloudOutput && (t.CloudToken == "" || t.CloudProjectID == "") {
 		return executor.SuiteRunSummary{}, missingK6CloudConfigError
+	}
+	if t.PrometheusRWOutput && t.PrometheusRWServerURL == "" {
+		return executor.SuiteRunSummary{}, missingPrometheusRWConfigError
 	}
 
 	// set common test execution variables
@@ -406,6 +414,14 @@ func (t *K6TestExecutor) prepareK6Command(testFile, jsonFile string, env map[str
 		env["K6_CLOUD_TRACES_ENABLED"] = "true"
 
 		args = append(args, "--out", "cloud")
+	}
+
+	if t.PrometheusRWOutput {
+		env["K6_PROMETHEUS_RW_SERVER_URL"] = t.PrometheusRWServerURL
+		env["K6_PROMETHEUS_RW_USERNAME"] = t.PrometheusRWUsername
+		env["K6_PROMETHEUS_RW_PASSWORD"] = t.PrometheusRWPassword
+
+		args = append(args, "--out", "experimental-prometheus-rw")
 	}
 
 	cmd := exec.Command("k6", args...)

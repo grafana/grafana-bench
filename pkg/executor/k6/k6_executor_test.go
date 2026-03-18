@@ -38,6 +38,22 @@ func WithK6Credentials() k6TestExecutorOption {
 	}
 }
 
+// configure TestRunner with prometheus remote write output
+func WithPrometheusRWOutput() k6TestExecutorOption {
+	return func(t *K6TestExecutor) error {
+		t.PrometheusRWOutput = true
+		return nil
+	}
+}
+
+// configure TestRunner with prometheus remote write server URL
+func WithPrometheusRWServerURL() k6TestExecutorOption {
+	return func(t *K6TestExecutor) error {
+		t.PrometheusRWServerURL = "http://prometheus:9090/api/v1/write"
+		return nil
+	}
+}
+
 func k6TestRunnerForTesting(
 	log *slog.Logger,
 	opts ...k6TestExecutorOption,
@@ -157,6 +173,29 @@ func TestK6Executor(t *testing.T) {
 			},
 			testSuite: "k6tests/pass.js",
 			expectErr: missingK6CloudConfigError,
+		},
+		{
+			testCase: "invalid prometheus rw config - missing server url",
+			k6options: []k6TestExecutorOption{
+				WithPrometheusRWOutput(),
+			},
+			testSuite: "k6tests/pass.js",
+			expectErr: missingPrometheusRWConfigError,
+		},
+		{
+			testCase: "with prometheus rw config",
+			k6options: []k6TestExecutorOption{
+				WithPrometheusRWOutput(),
+				WithPrometheusRWServerURL(),
+			},
+			testSuite: "k6tests/pass.js",
+			expect: &executor.SuiteRunSummary{
+				TestsExecuted: 1,
+				TestsPassed:   1,
+				TestRuns: []executor.TestRunSummary{
+					{TestFile: "pass.js", Status: executor.TestPassed},
+				},
+			},
 		},
 	}
 
