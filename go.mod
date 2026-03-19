@@ -7,7 +7,7 @@ require (
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
 	github.com/go-git/go-git/v5 v5.17.0
 	github.com/golang/snappy v1.0.0
-	github.com/grafana/nanogit v0.7.0
+	github.com/grafana/nanogit v0.8.1
 	github.com/joho/godotenv v1.5.1
 	github.com/olekukonko/tablewriter v1.1.4
 	github.com/prometheus/client_golang v1.23.2
