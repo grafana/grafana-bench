@@ -261,14 +261,15 @@ func GetLatestCommitForFileOnMain(repoPath string, filePath string) (string, err
 		return "", fmt.Errorf("failed to open git repository: %w", err)
 	}
 
-	// Try to get the main branch reference
-	mainRef, err := repo.Reference(plumbing.NewBranchReferenceName("main"), true)
+	// Prefer origin/main so local and CI behavior is consistent — local
+	// branches can be stale in bare/worktree setups, and CI never has a local
+	// main branch anyway.
+	mainRef, err := repo.Reference(plumbing.NewRemoteReferenceName("origin", "main"), true)
 	if err != nil {
-		// If we can't find main branch (e.g., in CI with detached HEAD),
-		// try to get the remote main branch
-		mainRef, err = repo.Reference(plumbing.NewRemoteReferenceName("origin", "main"), true)
+		// Fall back to local main branch
+		mainRef, err = repo.Reference(plumbing.NewBranchReferenceName("main"), true)
 		if err != nil {
-			// As a fallback, use current HEAD (this might happen in shallow clones)
+			// Last resort: use current HEAD (shallow clones, etc.)
 			mainRef, err = repo.Head()
 			if err != nil {
 				return "", fmt.Errorf("failed to get main branch reference or HEAD: %w", err)

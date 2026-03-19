@@ -79,6 +79,10 @@ jobs:
               return;
             }
 
+            // Separate libsonnet files from docs files for categorization
+            const libsonnetFiles = changedFiles.filter(f => f.startsWith('libsonnet/'));
+            const docsChangedFiles = changedFiles.filter(f => !f.startsWith('libsonnet/'));
+
             // Categorize changed docs files so the comment explains what happened
             const cliFiles = docsChangedFiles.filter(f => f.match(/bench_\w+\.md$/));
             const otherFiles = docsChangedFiles.filter(f => !f.match(/bench_\w+\.md$/));
@@ -102,10 +106,6 @@ jobs:
               const versionMatch = execSync('git diff -- docs/index.md').toString().match(/\+.*?(v\d+\.\d+\.\d+)/);
               if (versionMatch) newVersion = versionMatch[1];
             } catch {}
-
-            // Separate libsonnet files from docs files for categorization
-            const libsonnetFiles = changedFiles.filter(f => f.startsWith('libsonnet/'));
-            const docsChangedFiles = changedFiles.filter(f => !f.startsWith('libsonnet/'));
 
             const needsDocs = docsChangedFiles.length > 0;
             const needsLibsonnet = libsonnetFiles.length > 0;
