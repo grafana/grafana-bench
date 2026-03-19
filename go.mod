@@ -46,7 +46,7 @@ require (
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/ebitengine/purego v0.10.0 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
-	github.com/evanw/esbuild v0.20.2 // indirect
+	github.com/evanw/esbuild v0.24.2 // indirect
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
@@ -121,11 +121,11 @@ require (
 	github.com/go-playground/validator/v10 v10.30.1
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/google/go-cmp v0.7.0
+	github.com/grafana/k6pack v0.2.4
 	github.com/hairyhenderson/go-codeowners v0.7.0
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
-	github.com/szkiba/k6pack v0.1.3
 	github.com/testcontainers/testcontainers-go v0.41.0
 	golang.org/x/net v0.49.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect

@@ -23,7 +23,7 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
-	"github.com/szkiba/k6pack"
+	"github.com/grafana/k6pack"
 )
 
 const (
@@ -306,7 +306,7 @@ func transpileTest(testFile string) (string, error) {
 		return "", fmt.Errorf("creating temp test file %q: %w", testFile, err)
 	}
 
-	buf, err := k6pack.Pack(string(source), &k6pack.Options{
+	buf, _, err := k6pack.Pack(string(source), &k6pack.Options{
 		Filename:   testFile,
 		TypeScript: true,
 		SourceMap:  true,
