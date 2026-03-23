@@ -119,8 +119,8 @@ github.com/gorilla/websocket v1.5.3 h1:saDtZ6Pbx/0u+bgYQ3q96pZgCzfhKXGPqt7kZ72aN
 github.com/gorilla/websocket v1.5.3/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
 github.com/grafana/k6pack v0.2.4 h1:JzbaO/NnLBaM2Shbn59WynaGAYL+jMvnjsoj/VTr3es=
 github.com/grafana/k6pack v0.2.4/go.mod h1:JTG8lQRU4U4WNKkznSL6zYokviiFVIp1I9W7z7NmrLA=
-github.com/grafana/nanogit v0.9.0 h1:X696X9gaiEGe4lfGfgN9a14W85VrVY3teGIw6tX5VQA=
-github.com/grafana/nanogit v0.9.0/go.mod h1:HeWNMiPczWOezPY/cg2ICdvA3W6ndfvtwqGxVbJrOlY=
+github.com/grafana/nanogit v0.13.0 h1:E1YV8YYLOxoZTl6J7KqsReQ90Ww1lVfmd6kqhhUWYfA=
+github.com/grafana/nanogit v0.13.0/go.mod h1:s8TBdDiUZ9ZWEF/nsAP9HYwJXtLUYpgoQwF2uTTz9ZE=
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.2 h1:8Tjv8EJ+pM1xP8mK6egEbD1OgnVTyacbefKhmbLhIhU=
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.2/go.mod h1:pkJQ2tZHJ0aFOVEEot6oZmaVEZcRme73eIFmhiVuRWs=
 github.com/hairyhenderson/go-codeowners v0.7.0 h1:s0W4wF8bdsBEjTWzwzSlsatSthWtTAF2xLgo4a4RwAo=
