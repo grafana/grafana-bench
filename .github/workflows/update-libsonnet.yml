@@ -69,20 +69,26 @@ jobs:
           make libsonnet-fetch TARGET_VERSION="$VERSION"
 
       - name: validate generated versions.libsonnet
+        env:
+          VERSION: ${{ inputs.version }}
         run: |
-          CURRENT_SHA=$(git rev-parse HEAD)
-          echo "Current SHA: $CURRENT_SHA"
-          
-          # Extract latestVersionSha from generated versions.libsonnet
-          GENERATED_SHA=$(jsonnet -e "local versions = import 'libsonnet/versions.libsonnet'; versions.latestVersionSha" | tr -d '"')
-          echo "Generated SHA in versions.libsonnet: $GENERATED_SHA"
-          
-          if [ "$CURRENT_SHA" != "$GENERATED_SHA" ]; then
-            echo "❌ SHA mismatch! Expected: $CURRENT_SHA, Got: $GENERATED_SHA"
+          # For versioned releases use the version string; for experimental use the commit SHA
+          if [ "$VERSION" = "experimental" ]; then
+            EXPECTED_LABEL=$(git rev-parse HEAD)
+          else
+            EXPECTED_LABEL="$VERSION"
+          fi
+          echo "Expected label: $EXPECTED_LABEL"
+
+          GENERATED_LABEL=$(jsonnet -e "local versions = import 'libsonnet/versions.libsonnet'; versions.latestVersionSha" | tr -d '"')
+          echo "Generated label in versions.libsonnet: $GENERATED_LABEL"
+
+          if [ "$EXPECTED_LABEL" != "$GENERATED_LABEL" ]; then
+            echo "❌ Label mismatch! Expected: $EXPECTED_LABEL, Got: $GENERATED_LABEL"
             echo "This indicates a problem with the libsonnet generation process."
             exit 1
           else
-            echo "✅ SHA validation passed: Generated libsonnet contains correct SHA"
+            echo "✅ Label validation passed: Generated libsonnet contains correct label"
           fi
 
       - name: authenticate with gar
@@ -216,10 +222,13 @@ jobs:
           
           echo "🔍 Waiting for deployment metrics to appear in Prometheus..."
           
-          # Use test version SHA if provided, otherwise use current commit
+          # For versioned releases use the version string; for experimental use the commit SHA
           if [ -n "$TEST_VERSION_SHA" ]; then
             TARGET_SHA="$TEST_VERSION_SHA"
             echo "Using test version SHA: $TARGET_SHA"
+          elif [ "$VERSION" != "experimental" ]; then
+            TARGET_SHA="$VERSION"
+            echo "Using version string: $TARGET_SHA"
           else
             TARGET_SHA=$(git rev-parse HEAD)
             echo "Using current commit SHA: $TARGET_SHA"
