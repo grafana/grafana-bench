@@ -10,7 +10,7 @@ SLIM_PROD_TAG = grafana-bench:$(BENCH_REVISION)
 PLAYWRIGHT_DEV_TAG = grafana-bench-playwright:dev-$(BENCH_REVISION)
 PLAYWRIGHT_PROD_TAG = grafana-bench-playwright:$(BENCH_REVISION)
 
-.PHONY: build-all build-slim-dev build-slim-prod build-playwright-dev build-playwright-prod test docs libsonnet install-deps clean help
+.PHONY: build-all build-slim-dev build-slim-prod build-playwright-dev build-playwright-prod test docs libsonnet install-deps check-licenses clean help
 
 # Build all images
 build-all: build-slim-dev build-slim-prod build-playwright-dev build-playwright-prod
@@ -65,6 +65,16 @@ libsonnet-fetch: install-deps
 	@go run ./generators/libsonnet versions --target-version "$(or $(TARGET_VERSION),experimental)" --versions-list fetch --latest-version-sha "$(shell git rev-parse HEAD)" -o libsonnet >/dev/null 2>&1
 	@cd libsonnet && jsonnet "$(or $(TARGET_VERSION),experimental)/main_test.jsonnet" | grep -q '"allTestsPassed": true' && echo "✅ All tests passed" || echo "⚠️ Tests skipped"
 
+
+# Check dependency licenses for AGPL-3.0 compatibility
+check-licenses:
+	@if ! command -v go-licenses >/dev/null 2>&1; then \
+		echo "📦 Installing go-licenses..."; \
+		go install github.com/google/go-licenses@latest; \
+	fi
+	go-licenses check ./... \
+		--allowed_licenses=MIT,ISC,BSD-3-Clause,BSD-2-Clause,Apache-2.0,AGPL-3.0,MPL-2.0 \
+		--ignore buf.build/gen/go/prometheus/prometheus/protocolbuffers/go
 
 # Install development dependencies
 install-deps:

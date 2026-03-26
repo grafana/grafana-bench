@@ -379,15 +379,38 @@ jobs:
         with:
           version: 'v0.6.1'
 
+  check-licenses:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Install go-licenses
+        run: go install github.com/google/go-licenses@latest
+
+      - name: Check dependency licenses
+        run: |
+          go-licenses check ./... \
+            --allowed_licenses=MIT,ISC,BSD-3-Clause,BSD-2-Clause,Apache-2.0,AGPL-3.0,MPL-2.0 \
+            --ignore buf.build/gen/go/prometheus/prometheus/protocolbuffers/go
+
   release-binaries:
-    needs: [test-go, test-benchmarks, test-libsonnet, test-binary, test-validate, test-checkout, test-setup-action]
+    needs: [test-go, test-benchmarks, test-libsonnet, test-binary, test-validate, test-checkout, test-setup-action, check-licenses]
     if: startsWith(github.ref, 'refs/tags/v')
     permissions:
       contents: write
     uses: ./.github/workflows/release-binaries.yml
 
   build-base-image:
-    needs: [test-go, test-benchmarks, test-libsonnet, test-binary, test-validate, test-checkout, test-setup-action]
+    needs: [test-go, test-benchmarks, test-libsonnet, test-binary, test-validate, test-checkout, test-setup-action, check-licenses]
     permissions:
       contents: read
       packages: write
@@ -397,7 +420,7 @@ jobs:
       SUITE_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-playwright-image:
-    needs: [test-go, test-benchmarks, test-libsonnet, test-binary, test-validate, test-checkout, test-setup-action]
+    needs: [test-go, test-benchmarks, test-libsonnet, test-binary, test-validate, test-checkout, test-setup-action, check-licenses]
     permissions:
       contents: read
       packages: write
