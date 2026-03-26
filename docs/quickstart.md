@@ -13,13 +13,13 @@ go install github.com/grafana/grafana-bench@v1.0.3
 **Docker** — base image (K6, Go tests, Go benchmarks):
 
 ```sh
-docker pull ghcr.io/grafana/grafana-bench:v1.0.4
+docker pull ghcr.io/grafana/grafana-bench:v1.0.5
 ```
 
 **Docker** — Playwright image (includes Chromium for browser tests):
 
 ```sh
-docker pull ghcr.io/grafana/grafana-bench-playwright:v1.0.4
+docker pull ghcr.io/grafana/grafana-bench-playwright:v1.0.5
 ```
 
 ## Run your first test
