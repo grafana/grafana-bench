@@ -74,7 +74,8 @@ check-licenses:
 	fi
 	go-licenses check ./... \
 		--allowed_licenses=MIT,ISC,BSD-3-Clause,BSD-2-Clause,Apache-2.0,AGPL-3.0,MPL-2.0 \
-		--ignore buf.build/gen/go/prometheus/prometheus/protocolbuffers/go
+		--ignore buf.build/gen/go/prometheus/prometheus/protocolbuffers/go \
+		--ignore github.com/grafana/grafana-bench
 
 # Install development dependencies
 install-deps:
