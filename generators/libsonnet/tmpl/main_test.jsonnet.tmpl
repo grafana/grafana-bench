@@ -63,50 +63,50 @@ local tests = {
   testBasicScriptGeneration: (
     local options = benchFunctions.mapOptions(basicSuite);
     local script = benchFunctions.buildScript('http://grafana:3000', options);
-    
+
     // Check that required elements are present
-    std.member(script, 'grafana-bench') &&
-    std.member(script, 'test') &&
-    std.member(script, '{{.URLFlagName}}') &&
-    std.member(script, 'http://grafana:3000') &&
-    std.member(script, '--suite-path') &&
-    std.member(script, 'CI/k6') &&
-    std.member(script, '--test-runner') &&
-    std.member(script, 'k6')
+    std.assertEqual(std.member(script, 'grafana-bench'), true) &&
+    std.assertEqual(std.member(script, 'test'), true) &&
+    std.assertEqual(std.member(script, '{{.URLFlagName}}'), true) &&
+    std.assertEqual(std.member(script, 'http://grafana:3000'), true) &&
+    std.assertEqual(std.member(script, '--suite-path'), true) &&
+    std.assertEqual(std.member(script, 'CI/k6'), true) &&
+    std.assertEqual(std.member(script, '--test-runner'), true) &&
+    std.assertEqual(std.member(script, 'k6'), true)
   ),
 
   // Test 5: Script generation with optional flags
   testScriptWithOptionalFlags: (
     local options = benchFunctions.mapOptions(complexSuite);
     local script = benchFunctions.buildScript('http://grafana:3000', options);
-    
+
     // Check that optional flags are included when enabled
-    std.member(script, '--prometheus-metrics') &&
-    std.member(script, '--prometheus-url') &&
-    std.member(script, 'http://prometheus:9090') &&
-    std.member(script, '--slack-notifications') &&
-    std.member(script, '--slack-token') &&
-    std.member(script, 'test-token')
+    std.assertEqual(std.member(script, '--prometheus-metrics'), true) &&
+    std.assertEqual(std.member(script, '--prometheus-url'), true) &&
+    std.assertEqual(std.member(script, 'http://prometheus:9090'), true) &&
+    std.assertEqual(std.member(script, '--slack-notifications'), true) &&
+    std.assertEqual(std.member(script, '--slack-token'), true) &&
+    std.assertEqual(std.member(script, 'test-token'), true)
   ),
 
   // Test 6: Environment variable handling
   testEnvironmentVariables: (
     local options = benchFunctions.mapOptions(complexSuite);
     local script = benchFunctions.buildScript('http://grafana:3000', options);
-    
+
     // Check that test-env flags are passed as separate entries
-    std.member(script, '--test-env') &&
-    std.member(script, 'VAR1=value1') &&
-    std.member(script, 'VAR2=value2')
+    std.assertEqual(std.member(script, '--test-env'), true) &&
+    std.assertEqual(std.member(script, 'VAR1=value1'), true) &&
+    std.assertEqual(std.member(script, 'VAR2=value2'), true)
   ),
 
   // Test 7: Script generation excludes noFail when false
   testScriptNoFailFalse: (
     local options = benchFunctions.mapOptions(basicSuite);
     local script = benchFunctions.buildScript('http://grafana:3000', options);
-    
+
     // Check that || true is NOT included when noFail is false
-    !std.member(script, '|| true')
+    std.assertEqual(std.member(script, '|| true'), false)
   ),
 
   // Test 8: Script generation includes noFail when true
@@ -114,9 +114,9 @@ local tests = {
     local suiteWithNoFail = basicSuite + { options: { noFail: true } };
     local options = benchFunctions.mapOptions(suiteWithNoFail);
     local script = benchFunctions.buildScript('http://grafana:3000', options);
-    
+
     // Check that || true IS included when noFail is true
-    std.member(script, '|| true')
+    std.assertEqual(std.member(script, '|| true'), true)
   ),
 };
 
