@@ -34,23 +34,27 @@ func ParseCoverageJSON(report io.Reader, codeowner, pkg string) (executor.SuiteR
 	}
 
 	summary := executor.SuiteRunSummary{
-		StartTime: time.Now(),
-		Status:    executor.SuitePassed,
-		SuiteName: "jscoverage",
+	summary := executor.SuiteRunSummary{
+		StartTime:  time.Now(),
+		Status:     executor.SuitePassed,
+		Attributes: map[string]string{},
 	}
 
-	if summary.Attributes == nil {
-		summary.Attributes = make(map[string]string)
+	if codeowner != "" {
+		summary.Attributes["codeowner"] = codeowner
 	}
-	summary.Attributes["codeowner"] = codeowner
-	summary.Attributes["package"] = pkg
+	if pkg != "" {
+		summary.Attributes["package"] = pkg
+	}
 
 	timestamp := summary.StartTime.UnixMilli()
-	labels := map[string]string{
-		"codeowner": codeowner,
-		"package":   pkg,
+	labels := map[string]string{}
+	if codeowner != "" {
+		labels["codeowner"] = codeowner
 	}
-
+	if pkg != "" {
+		labels["package"] = pkg
+	}
 	if coverage.Summary.Lines != nil && coverage.Summary.Lines.Pct != nil {
 		summary.Metrics = append(summary.Metrics, metrics.Metric{
 			Name:      "js_coverage_lines_percent",
@@ -98,7 +102,5 @@ func ParseCoverageJSON(report io.Reader, codeowner, pkg string) (executor.SuiteR
 }
 
 func copyLabels(labels map[string]string) map[string]string {
-	copied := make(map[string]string, len(labels))
-	maps.Copy(copied, labels)
-	return copied
+	return maps.Clone(labels)
 }

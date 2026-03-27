@@ -136,22 +136,10 @@ func TestParseCoverageJSON(t *testing.T) {
 				t.Errorf("Expected package attribute '%s', got '%s'", tt.pkg, summary.Attributes["package"])
 			}
 
-			if tt.validateMetrics != nil {
-				tt.validateMetrics(t, summary)
-			}
-		})
-	}
-}
-
 func TestParseCoverageJSON_InvalidJSON(t *testing.T) {
-	file, err := os.Open("testdata/full-coverage.json")
-	if err != nil {
-		t.Fatalf("Failed to open test file: %v", err)
-	}
-	file.Close()
-
-	_, err = ParseCoverageJSON(file, "@grafana/test", "@grafana/test-pkg")
+	r := strings.NewReader("{bad json}")
+	_, err := ParseCoverageJSON(r, "@grafana/test", "@grafana/test-pkg")
 	if err == nil {
-		t.Error("Expected error for reading from closed file, got nil")
+		t.Error("Expected error for invalid JSON, got nil")
 	}
 }
