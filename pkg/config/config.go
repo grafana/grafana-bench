@@ -42,6 +42,7 @@ type BenchConfig struct {
 	Slack      SlackNotifierConfig
 	Prometheus Prometheus
 	Git        GitConfig
+	JSCoverage JSCoverageConfig
 }
 
 func AddBenchFlags(fs *pflag.FlagSet, config *BenchConfig) {
@@ -158,7 +159,27 @@ func AddPlaywrightFlags(fs *pflag.FlagSet, config *PWConfig) {
 	)
 }
 
-type GoTestConfig struct{
+type JSCoverageConfig struct {
+	Codeowner string
+	Package   string
+}
+
+func AddJSCoverageFlags(fs *pflag.FlagSet, config *JSCoverageConfig) {
+	fs.StringVar(
+		&config.Codeowner,
+		"js-coverage-codeowner",
+		"",
+		"Code owner for JavaScript coverage metrics (e.g., @grafana/datapro)",
+	)
+	fs.StringVar(
+		&config.Package,
+		"js-coverage-package",
+		"",
+		"Package name for JavaScript coverage metrics (e.g., @grafana/grafana)",
+	)
+}
+
+type GoTestConfig struct {
 	GoArgs   []string
 	TestArgs []string
 	Packages []string
