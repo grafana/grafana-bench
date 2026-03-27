@@ -148,6 +148,12 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 					return fmt.Errorf("parsing trufflehog JSON input %w", err)
 				}
 			case "jscoverage":
+				if benchConfig.JSCoverage.Codeowner == "" {
+					return fmt.Errorf("missing --js-coverage-codeowner flag for jscoverage input")
+				}
+				if benchConfig.JSCoverage.Package == "" {
+					return fmt.Errorf("missing --js-coverage-package flag for jscoverage input")
+				}
 				suiteRunSummary, err = jscoverage.ParseCoverageJSON(input, benchConfig.JSCoverage.Codeowner, benchConfig.JSCoverage.Package)
 				if err != nil {
 					return fmt.Errorf("parsing JavaScript coverage JSON input %w", err)
