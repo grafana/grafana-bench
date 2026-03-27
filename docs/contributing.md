@@ -86,3 +86,13 @@ See [`pkg/parser/README.md`](../pkg/parser/README.md) for the recommended workfl
 ## Reporting issues
 
 Please use [GitHub Issues](https://github.com/grafana/grafana-bench/issues) for bug reports and feature requests.
+
+## Releasing
+
+Releases follow [semantic versioning](https://semver.org/). To create a new release, [create a release on GitHub](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository#creating-a-release) with an appropriately incremented version tag (e.g., `v1.2.3`).
+
+This triggers CI to:
+- Build binaries and publish the release with auto-generated notes ([release-binaries.yml](../.github/workflows/release-binaries.yml))
+- Update documentation and libsonnet ([release-docs.yml](../.github/workflows/release-docs.yml))
+
+After the release is published, announce it in the [#grafana-bench](https://grafanalabs.enterprise.slack.com/archives/C069CQCLDCG) Slack channel.
