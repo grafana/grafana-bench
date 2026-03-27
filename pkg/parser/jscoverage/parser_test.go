@@ -130,6 +130,52 @@ func TestParseCoverageJSON(t *testing.T) {
 	}
 }
 
+func TestParseCoverageJSON_EmptyLabels(t *testing.T) {
+	file, err := os.Open("testdata/full-coverage.json")
+	if err != nil {
+		t.Fatalf("Failed to open test file: %v", err)
+	}
+	defer file.Close()
+
+	summary, err := ParseCoverageJSON(file, "", "")
+	if err != nil {
+		t.Fatalf("ParseCoverageJSON failed: %v", err)
+	}
+
+	if len(summary.Attributes) != 0 {
+		t.Errorf("Expected empty attributes map, got %d entries: %v", len(summary.Attributes), summary.Attributes)
+	}
+
+	for _, m := range summary.Metrics {
+		if len(m.Labels) != 0 {
+			t.Errorf("Expected empty labels for metric %s, got %v", m.Name, m.Labels)
+		}
+	}
+
+	if len(summary.Metrics) != 4 {
+		t.Errorf("Expected 4 metrics, got %d", len(summary.Metrics))
+	}
+}
+
+func TestParseCoverageJSON_NoScanCompletedMetric(t *testing.T) {
+	file, err := os.Open("testdata/full-coverage.json")
+	if err != nil {
+		t.Fatalf("Failed to open test file: %v", err)
+	}
+	defer file.Close()
+
+	summary, err := ParseCoverageJSON(file, "@grafana/test", "@grafana/test-pkg")
+	if err != nil {
+		t.Fatalf("ParseCoverageJSON failed: %v", err)
+	}
+
+	for _, m := range summary.Metrics {
+		if m.Name == "js_coverage_scan_completed" {
+			t.Error("js_coverage_scan_completed metric should not be emitted")
+		}
+	}
+}
+
 func TestParseCoverageJSON_InvalidJSON(t *testing.T) {
 	r := strings.NewReader("{bad json}")
 	_, err := ParseCoverageJSON(r, "@grafana/test", "@grafana/test-pkg")
