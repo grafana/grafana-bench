@@ -34,7 +34,6 @@ func ParseCoverageJSON(report io.Reader, codeowner, pkg string) (executor.SuiteR
 	}
 
 	summary := executor.SuiteRunSummary{
-	summary := executor.SuiteRunSummary{
 		StartTime:  time.Now(),
 		Status:     executor.SuitePassed,
 		Attributes: map[string]string{},
@@ -55,6 +54,7 @@ func ParseCoverageJSON(report io.Reader, codeowner, pkg string) (executor.SuiteR
 	if pkg != "" {
 		labels["package"] = pkg
 	}
+
 	if coverage.Summary.Lines != nil && coverage.Summary.Lines.Pct != nil {
 		summary.Metrics = append(summary.Metrics, metrics.Metric{
 			Name:      "js_coverage_lines_percent",
@@ -90,13 +90,6 @@ func ParseCoverageJSON(report io.Reader, codeowner, pkg string) (executor.SuiteR
 			Timestamp: timestamp,
 		})
 	}
-
-	summary.Metrics = append(summary.Metrics, metrics.Metric{
-		Name:      "js_coverage_scan_completed",
-		Value:     1.0,
-		Labels:    copyLabels(labels),
-		Timestamp: timestamp,
-	})
 
 	return summary, nil
 }

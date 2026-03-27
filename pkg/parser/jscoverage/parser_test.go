@@ -2,6 +2,7 @@ package jscoverage
 
 import (
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/grafana/grafana-bench/pkg/executor"
@@ -23,7 +24,7 @@ func TestParseCoverageJSON(t *testing.T) {
 			codeowner:       "@grafana/datapro",
 			pkg:             "@grafana/grafana",
 			expectedStatus:  executor.SuitePassed,
-			expectedMetrics: 5,
+			expectedMetrics: 4,
 			validateMetrics: func(t *testing.T, summary executor.SuiteRunSummary) {
 				metricMap := make(map[string]float64)
 				for _, m := range summary.Metrics {
@@ -49,9 +50,6 @@ func TestParseCoverageJSON(t *testing.T) {
 				if val, ok := metricMap["js_coverage_branches_percent"]; !ok || val != 81.29 {
 					t.Errorf("Expected branches coverage 81.29, got %v", val)
 				}
-				if val, ok := metricMap["js_coverage_scan_completed"]; !ok || val != 1.0 {
-					t.Errorf("Expected scan_completed 1.0, got %v", val)
-				}
 			},
 		},
 		{
@@ -60,7 +58,7 @@ func TestParseCoverageJSON(t *testing.T) {
 			codeowner:       "@grafana/frontend",
 			pkg:             "@grafana/ui",
 			expectedStatus:  executor.SuitePassed,
-			expectedMetrics: 4,
+			expectedMetrics: 3,
 			validateMetrics: func(t *testing.T, summary executor.SuiteRunSummary) {
 				metricMap := make(map[string]float64)
 				for _, m := range summary.Metrics {
@@ -80,29 +78,18 @@ func TestParseCoverageJSON(t *testing.T) {
 				if _, ok := metricMap["js_coverage_branches_percent"]; ok {
 					t.Error("Expected branches coverage to be missing")
 				}
-
-				if val, ok := metricMap["js_coverage_scan_completed"]; !ok || val != 1.0 {
-					t.Errorf("Expected scan_completed 1.0, got %v", val)
-				}
 			},
 		},
 		{
-			name:            "empty coverage - only scan_completed",
+			name:            "empty coverage - no metrics",
 			filename:        "testdata/empty-coverage.json",
 			codeowner:       "@grafana/test",
 			pkg:             "@grafana/test-pkg",
 			expectedStatus:  executor.SuitePassed,
-			expectedMetrics: 1,
+			expectedMetrics: 0,
 			validateMetrics: func(t *testing.T, summary executor.SuiteRunSummary) {
-				if len(summary.Metrics) != 1 {
-					t.Errorf("Expected 1 metric (scan_completed), got %d", len(summary.Metrics))
-				}
-
-				if summary.Metrics[0].Name != "js_coverage_scan_completed" {
-					t.Errorf("Expected scan_completed metric, got %s", summary.Metrics[0].Name)
-				}
-				if summary.Metrics[0].Value != 1.0 {
-					t.Errorf("Expected scan_completed value 1.0, got %v", summary.Metrics[0].Value)
+				if len(summary.Metrics) != 0 {
+					t.Errorf("Expected 0 metrics, got %d", len(summary.Metrics))
 				}
 			},
 		},
@@ -135,6 +122,13 @@ func TestParseCoverageJSON(t *testing.T) {
 			if summary.Attributes["package"] != tt.pkg {
 				t.Errorf("Expected package attribute '%s', got '%s'", tt.pkg, summary.Attributes["package"])
 			}
+
+			if tt.validateMetrics != nil {
+				tt.validateMetrics(t, summary)
+			}
+		})
+	}
+}
 
 func TestParseCoverageJSON_InvalidJSON(t *testing.T) {
 	r := strings.NewReader("{bad json}")
