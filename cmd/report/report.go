@@ -10,6 +10,7 @@ import (
 	"github.com/grafana/grafana-bench/pkg/executor/trufflehog"
 	"github.com/grafana/grafana-bench/pkg/executor/zizmor"
 	"github.com/grafana/grafana-bench/pkg/parser/gotest"
+	"github.com/grafana/grafana-bench/pkg/parser/jscoverage"
 	"github.com/grafana/grafana-bench/pkg/parser/playwright"
 	"github.com/spf13/cobra"
 )
@@ -146,6 +147,11 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				if err != nil {
 					return fmt.Errorf("parsing trufflehog JSON input %w", err)
 				}
+			case "jscoverage":
+				suiteRunSummary, err = jscoverage.ParseCoverageJSON(input, benchConfig.JSCoverage.Codeowner, benchConfig.JSCoverage.Package)
+				if err != nil {
+					return fmt.Errorf("parsing JavaScript coverage JSON input %w", err)
+				}
 			default:
 				if benchConfig.Report.Input == "" {
 					return fmt.Errorf("invalid input format - no input type specified: %q", benchConfig.Report.Input)
@@ -195,6 +201,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	config.AddReportOutputFlags(fs, &benchConfig.Report)
 	config.AddReportInputFlags(fs, &benchConfig.Report)
 	config.AddPrometheusFlags(fs, &benchConfig.Prometheus)
+	config.AddJSCoverageFlags(fs, &benchConfig.JSCoverage)
 
 	return &cmd
 }
