@@ -59,6 +59,7 @@ grafana-bench test \
 | `--test-executor` | `--test-runner` | Yes |
 | `--pw-prepare-cmd` | `--pw-prepare` | No |
 | `--pw-execute-cmd` | `--pw-execute` | No |
+| `--metrics-file` | `--run-metrics-file` | No |
 
 *Required unless using `--fetch-grafana-version`
 
