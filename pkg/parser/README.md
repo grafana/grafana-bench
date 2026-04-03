@@ -107,6 +107,7 @@ The recommended workflow:
 | `k6` | k6 load tests | JSON summary |
 | `playwright` | Playwright test runner | JSON report |
 | `jscoverage` | JavaScript coverage (NYC/Istanbul, Jest, Vitest, Monocart, Playwright) | JSON summary |
+| `eslint` | ESLint suppressions by codeowner | JSON summary |
 
 The zizmor parser lives in `pkg/executor/zizmor/` for now (bench does not run
 zizmor but the package predates this separation). It will move here in a future

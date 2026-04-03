@@ -9,6 +9,7 @@ import (
 	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/executor/trufflehog"
 	"github.com/grafana/grafana-bench/pkg/executor/zizmor"
+	"github.com/grafana/grafana-bench/pkg/parser/eslint"
 	"github.com/grafana/grafana-bench/pkg/parser/gotest"
 	"github.com/grafana/grafana-bench/pkg/parser/jscoverage"
 	"github.com/grafana/grafana-bench/pkg/parser/playwright"
@@ -157,6 +158,14 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				suiteRunSummary, err = jscoverage.ParseCoverageJSON(input, benchConfig.JSCoverage.Codeowner, benchConfig.JSCoverage.Package)
 				if err != nil {
 					return fmt.Errorf("parsing JavaScript coverage JSON input %w", err)
+				}
+			case "eslint":
+				if benchConfig.JSCoverage.Package == "" {
+					return fmt.Errorf("missing --js-coverage-package flag for eslint input")
+				}
+				suiteRunSummary, err = eslint.ParseESLintReport(input, benchConfig.JSCoverage.Package)
+				if err != nil {
+					return fmt.Errorf("parsing ESLint report JSON input %w", err)
 				}
 			default:
 				if benchConfig.Report.Input == "" {

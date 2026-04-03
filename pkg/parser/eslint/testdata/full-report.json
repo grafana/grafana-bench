@@ -1,0 +1,16 @@
+{
+  "summary": [
+    {
+      "codeowner": "@grafana/dashboards-squad",
+      "suppressions": 494
+    },
+    {
+      "codeowner": "@grafana/grafana-frontend-platform",
+      "suppressions": 465
+    },
+    {
+      "codeowner": "@grafana/grafana-fdataviz",
+      "suppressions": 345
+    }
+  ]
+}
