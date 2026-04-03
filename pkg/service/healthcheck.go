@@ -35,11 +35,21 @@ func WaitForServiceLive(ctx context.Context, serviceURL string, opts HealthCheck
 		return err
 	}
 
+	host := parsedURL.Host
+	if parsedURL.Port() == "" {
+		switch parsedURL.Scheme {
+		case "https":
+			host = parsedURL.Hostname() + ":443"
+		case "http":
+			host = parsedURL.Hostname() + ":80"
+		}
+	}
+
 	ctxTimeout, cancel := context.WithTimeout(ctx, opts.Timeout)
 	defer cancel()
 
 	// Check if already live
-	if isServiceLive(parsedURL.Host) {
+	if isServiceLive(host) {
 		return nil
 	}
 
@@ -49,7 +59,7 @@ func WaitForServiceLive(ctx context.Context, serviceURL string, opts HealthCheck
 	for {
 		select {
 		case <-ticker.C:
-			if isServiceLive(parsedURL.Host) {
+			if isServiceLive(host) {
 				return nil
 			}
 		case <-ctxTimeout.Done():
