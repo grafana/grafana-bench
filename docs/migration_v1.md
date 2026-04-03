@@ -376,6 +376,35 @@ Add `--service grafana` (or your service name).
 ### "Error: --service-version is required"
 Add `--service-version 11.0.0` or use `--fetch-grafana-version admin:admin`.
 
+### Service health check fails immediately when using `--fetch-grafana-version`
+
+**Cause:** In v1.0.x, when `--fetch-grafana-version` is used, bench always performs a TCP health check before calling the Grafana API. This check uses `--service-timeout` directly with no fallback default. In v0.6.x, omitting `--grafana-timeout` defaulted to 60s; in v1.0.x, omitting `--service-timeout` leaves the timeout at zero, causing the health check to fail immediately.
+
+**Fix:** Always pass `--service-timeout` explicitly:
+
+```bash
+# Before (v0.6.x) - timeout defaulted to 60s when omitted
+grafana-bench test \
+  --grafana-url http://localhost:3000 \
+  --grafana-admin-user admin \
+  --grafana-admin-password admin
+
+# After (v1.0.0) - must be explicit
+grafana-bench test \
+  --service grafana \
+  --service-url http://localhost:3000 \
+  --fetch-grafana-version admin:admin \
+  --service-timeout 60s
+```
+
+In Jsonnet:
+```jsonnet
+local Suite = benchFunctions.Suite {
+  service: 'grafana',
+  serviceTimeout: '60s',  // Required: no implicit default in v1
+};
+```
+
 ### Tests fail with authentication errors
 Use `--test-env` for credential passthrough:
 ```bash

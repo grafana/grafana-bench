@@ -58,6 +58,7 @@ This document tracks all breaking changes being made for the v1.0.0 release. We'
   - No auth required (matches Kubernetes health check patterns)
   - Automatically performed before `--fetch-grafana-version` API call
   - Health check logic extracted to `pkg/service/healthcheck.go` (service-agnostic)
+  - **BREAKING:** `--service-timeout` no longer has an implicit 60s fallback. In v0.6.x, omitting `--grafana-timeout` silently defaulted to 60s. In v1.0.x, omitting `--service-timeout` leaves the timeout at zero, causing the health check that runs before `--fetch-grafana-version` to fail immediately. **Always pass `--service-timeout` explicitly.**
 
 - **Why:**
   - Makes bench truly service-agnostic
