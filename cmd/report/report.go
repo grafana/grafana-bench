@@ -11,6 +11,7 @@ import (
 	"github.com/grafana/grafana-bench/pkg/executor/zizmor"
 	"github.com/grafana/grafana-bench/pkg/parser/gotest"
 	"github.com/grafana/grafana-bench/pkg/parser/playwright"
+
 	"github.com/spf13/cobra"
 )
 
@@ -141,11 +142,28 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				if err != nil {
 					return fmt.Errorf("parsing zizmor SARIF input %w", err)
 				}
-			case "trufflehog":
-				suiteRunSummary, err = trufflehog.ParseFindings(input)
-				if err != nil {
-					return fmt.Errorf("parsing trufflehog JSON input %w", err)
+		case "trufflehog":
+			suiteRunSummary, err = trufflehog.ParseFindings(input)
+			if err != nil {
+				return fmt.Errorf("parsing trufflehog JSON input %w", err)
+			}
+
+			if benchConfig.TruffleHog.ExcludeFile != "" {
+				exclusionStats, exErr := trufflehog.ParseExclusionFile(benchConfig.TruffleHog.ExcludeFile)
+				if exErr != nil {
+					log.Warn("could not parse exclusion file; skipping exclusion metrics",
+						"path", benchConfig.TruffleHog.ExcludeFile, "err", exErr)
+				} else {
+					log.Info("parsed exclusion patterns",
+						"total", exclusionStats.TotalPatterns,
+						"org", exclusionStats.OrgPatterns,
+						"repo", exclusionStats.RepoPatterns)
+					suiteRunSummary.Metrics = append(
+						suiteRunSummary.Metrics,
+						exclusionStats.Metrics(suiteRunSummary.StartTime.UnixMilli())...,
+					)
 				}
+			}
 			default:
 				if benchConfig.Report.Input == "" {
 					return fmt.Errorf("invalid input format - no input type specified: %q", benchConfig.Report.Input)
@@ -195,6 +213,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	config.AddReportOutputFlags(fs, &benchConfig.Report)
 	config.AddReportInputFlags(fs, &benchConfig.Report)
 	config.AddPrometheusFlags(fs, &benchConfig.Prometheus)
+	config.AddTruffleHogFlags(fs, &benchConfig.TruffleHog)
 
 	return &cmd
 }

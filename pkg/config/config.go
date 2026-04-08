@@ -42,6 +42,7 @@ type BenchConfig struct {
 	Slack      SlackNotifierConfig
 	Prometheus Prometheus
 	Git        GitConfig
+	TruffleHog TruffleHogConfig
 }
 
 func AddBenchFlags(fs *pflag.FlagSet, config *BenchConfig) {
@@ -515,12 +516,13 @@ func AddSlackCodeownersMapFlag(fs *pflag.FlagSet, config *SlackNotifierConfig) {
 }
 
 type Prometheus struct {
-	Metrics    bool
-	URL        string
-	User       string
-	Password   string
-	Timeout    time.Duration
-	StrictLint bool
+	Metrics       bool
+	URL           string
+	User          string
+	Password      string
+	Timeout       time.Duration
+	StrictLint    bool
+	ExtraHeaders  []string // key=value, e.g. X-Scope-OrgID=anonymous for Mimir
 }
 
 func AddPrometheusFlags(fs *pflag.FlagSet, prometheus *Prometheus) {
@@ -560,6 +562,12 @@ func AddPrometheusFlags(fs *pflag.FlagSet, prometheus *Prometheus) {
 		false,
 		"strict lint prometheus metrics. If set to true, will fail if metric does not pass linting",
 	)
+	fs.StringSliceVar(
+		&prometheus.ExtraHeaders,
+		"prometheus-extra-headers",
+		nil,
+		"extra HTTP headers for remote write (key=value). e.g. X-Scope-OrgID=anonymous for Mimir.",
+	)
 }
 
 type GitConfig struct {
@@ -572,6 +580,21 @@ func AddGitFlags(fs *pflag.FlagSet, git *GitConfig) {
 		"git-driver",
 		"nanogit",
 		"git driver used for downloading the test suite repo ('nanogit', 'gogit').",
+	)
+}
+
+type TruffleHogConfig struct {
+	ExcludeFile string
+}
+
+func AddTruffleHogFlags(fs *pflag.FlagSet, config *TruffleHogConfig) {
+	fs.StringVar(
+		&config.ExcludeFile,
+		"trufflehog-exclude-file",
+		"",
+		"path to the TruffleHog exclude-paths file. When set with --report-input trufflehog,"+
+			"\nexclusion pattern metrics are emitted alongside scan results."+
+			"\nThe file uses Go regexp syntax, one pattern per line (same format as --exclude-paths).",
 	)
 }
 
@@ -841,12 +864,15 @@ func (config *BenchConfig) BuildReporter() (reporter.SuiteRunReporter, error) {
 			return nil, fmt.Errorf("--prometheus-metrics requires PROMETHEUS_PASSWORD environment variable or --prometheus-password flag to be set")
 		}
 
+		extraHeaders := parsePrometheusExtraHeaders(config.Prometheus.ExtraHeaders)
+
 		prometheusReporter := reporter.NewPrometheusReporter(reporter.PrometheusConfig{
 			URL:      config.Prometheus.URL,
 			User:     config.Prometheus.User,
 			Password: config.Prometheus.Password,
 			Timeout:  config.Prometheus.Timeout,
 			Prefix:   config.SuiteRun.MetricsPrefix,
+			Headers:  extraHeaders,
 		})
 
 		reporters = append(reporters, prometheusReporter)
@@ -880,6 +906,26 @@ func (config *BenchConfig) GetRunMetrics(log *slog.Logger) ([]metrics.Metric, er
 	}
 
 	return metricList, nil
+}
+
+// parsePrometheusExtraHeaders parses --prometheus-extra-headers flag values
+// (each in "key=value" format) into a map suitable for HTTP headers.
+func parsePrometheusExtraHeaders(headers []string) map[string]string {
+	if len(headers) == 0 {
+		return nil
+	}
+	result := make(map[string]string, len(headers))
+	for _, h := range headers {
+		k, v, ok := strings.Cut(h, "=")
+		if !ok || strings.TrimSpace(k) == "" {
+			continue
+		}
+		result[strings.TrimSpace(k)] = strings.TrimSpace(v)
+	}
+	if len(result) == 0 {
+		return nil
+	}
+	return result
 }
 
 // parseAttributes parses the cobra stringArrayVar into a map[string]string of attributes

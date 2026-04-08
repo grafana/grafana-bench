@@ -20,6 +20,8 @@ type PrometheusConfig struct {
 	Password string
 	Timeout  time.Duration
 	Prefix   string
+	// Headers are optional HTTP headers (e.g. X-Scope-OrgID for Mimir).
+	Headers map[string]string
 }
 
 type PrometheusReporter struct {
@@ -33,16 +35,18 @@ func (r PrometheusReporter) Name() string {
 }
 
 func NewPrometheusReporter(config PrometheusConfig) *PrometheusReporter {
+	opts := prometheus.Options{
+		User:     config.User,
+		Password: config.Password,
+		Timeout:  config.Timeout,
+	}
+	if len(config.Headers) > 0 {
+		opts.Headers = config.Headers
+	}
 	return &PrometheusReporter{
 		name:   "prometheusReporter",
 		prefix: config.Prefix,
-		client: prometheus.New(
-			config.URL,
-			prometheus.Options{
-				User:     config.User,
-				Password: config.Password,
-				Timeout:  config.Timeout,
-			}),
+		client: prometheus.New(config.URL, opts),
 	}
 }
 
