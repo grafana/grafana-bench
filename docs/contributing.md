@@ -89,7 +89,7 @@ Please use [GitHub Issues](https://github.com/grafana/grafana-bench/issues) for 
 
 ## Releasing
 
-Releases follow [semantic versioning](https://semver.org/). To create a new release, [create a release on GitHub](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository#creating-a-release) with an appropriately incremented version tag (e.g., `v1.0.6`).
+Releases follow [semantic versioning](https://semver.org/). To create a new release, [create a release on GitHub](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository#creating-a-release) with an appropriately incremented version tag (e.g., `v1.0.7`).
 
 This triggers CI to:
 - Build binaries and publish the release with auto-generated notes ([release-binaries.yml](../.github/workflows/release-binaries.yml))
