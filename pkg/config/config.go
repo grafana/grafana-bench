@@ -43,6 +43,22 @@ type BenchConfig struct {
 	Prometheus Prometheus
 	Git        GitConfig
 	JSCoverage JSCoverageConfig
+	TruffleHog TruffleHogConfig
+}
+
+type TruffleHogConfig struct {
+	ExcludeFile string
+}
+
+func AddTruffleHogFlags(fs *pflag.FlagSet, config *TruffleHogConfig) {
+	fs.StringVar(
+		&config.ExcludeFile,
+		"trufflehog-exclude-file",
+		"",
+		"path to the TruffleHog exclude-paths file. When set with --report-input trufflehog,"+
+			"\nexclusion pattern metrics are emitted alongside scan results."+
+			"\nThe file uses Go regexp syntax, one pattern per line (same format as --exclude-paths).",
+	)
 }
 
 func AddBenchFlags(fs *pflag.FlagSet, config *BenchConfig) {
