@@ -3,6 +3,7 @@ package trufflehog
 import (
 	"bytes"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/grafana/grafana-bench/pkg/executor"
@@ -157,6 +158,142 @@ func TestParseFindings(t *testing.T) {
 				tc.checkExtra(t, summary)
 			}
 		})
+	}
+}
+
+func TestParseFindings_WithExcludeFile(t *testing.T) {
+	t.Parallel()
+
+	excludeContent := `# Dependencies
+(?i)node_modules/
+vendor/
+\.git/
+
+# Generated files
+.*\.pb\.go$
+.*_gen\.go$
+# Repo-local .trufflehogignore
+integrations/.*/vendor/
+config/secrets\.yaml
+`
+	dir := t.TempDir()
+	excludePath := filepath.Join(dir, "exclude.txt")
+	if err := os.WriteFile(excludePath, []byte(excludeContent), 0o644); err != nil {
+		t.Fatalf("writing exclude file: %v", err)
+	}
+
+	summary, err := ParseFindings(bytes.NewBufferString("[]"), excludePath, nil)
+	if err != nil {
+		t.Fatalf("ParseFindings: %v", err)
+	}
+
+	metricsByName := make(map[string][]float64)
+	for _, m := range summary.Metrics {
+		metricsByName[m.Name] = append(metricsByName[m.Name], m.Value)
+	}
+
+	assert.Equal(t, "exclusion total count", 1, len(metricsByName["trufflehog_exclusion_patterns_total"]))
+	assert.Equal(t, "exclusion total value", 7.0, metricsByName["trufflehog_exclusion_patterns_total"][0])
+
+	assert.Equal(t, "exclusion org count", 1, len(metricsByName["trufflehog_exclusion_patterns_org"]))
+	assert.Equal(t, "exclusion org value", 5.0, metricsByName["trufflehog_exclusion_patterns_org"][0])
+
+	assert.Equal(t, "exclusion repo count", 1, len(metricsByName["trufflehog_exclusion_patterns_repo"]))
+	assert.Equal(t, "exclusion repo value", 2.0, metricsByName["trufflehog_exclusion_patterns_repo"][0])
+
+	// 2 org categories (Dependencies, Generated files) + 1 repo category (repo-local)
+	assert.Equal(t, "by_category metric count", 3, len(metricsByName["trufflehog_exclusion_patterns_by_category"]))
+
+	// Verify category labels
+	categorySources := make(map[string]map[string]float64)
+	for _, m := range summary.Metrics {
+		if m.Name == "trufflehog_exclusion_patterns_by_category" {
+			source := m.Labels["source"]
+			if categorySources[source] == nil {
+				categorySources[source] = make(map[string]float64)
+			}
+			categorySources[source][m.Labels["category"]] = m.Value
+		}
+	}
+	assert.Equal(t, "org Dependencies count", 3.0, categorySources["org"]["Dependencies"])
+	assert.Equal(t, "org Generated files count", 2.0, categorySources["org"]["Generated files"])
+	assert.Equal(t, "repo repo-local count", 2.0, categorySources["repo"]["repo-local"])
+
+	// Verify individual repo exclusion pattern metrics
+	assert.Equal(t, "repo_exclusion metric count", 2, len(metricsByName["trufflehog_repo_exclusion"]))
+
+	repoPatterns := make(map[string]bool)
+	for _, m := range summary.Metrics {
+		if m.Name == "trufflehog_repo_exclusion" {
+			repoPatterns[m.Labels["pattern"]] = true
+			assert.Equal(t, "repo_exclusion value", 1.0, m.Value)
+		}
+	}
+	if !repoPatterns["integrations/.*/vendor/"] {
+		t.Error("missing repo exclusion pattern: integrations/.*/vendor/")
+	}
+	if !repoPatterns["config/secrets\\.yaml"] {
+		t.Error("missing repo exclusion pattern: config/secrets\\.yaml")
+	}
+
+	// Scan metrics should still be present alongside exclusion metrics
+	assert.Equal(t, "scan completed present", 1, len(metricsByName["trufflehog_scan_completed"]))
+}
+
+func TestParseFindings_WithOrgOnlyExcludeFile(t *testing.T) {
+	t.Parallel()
+
+	excludeContent := `# Dependencies
+(?i)node_modules/
+vendor/
+`
+	dir := t.TempDir()
+	excludePath := filepath.Join(dir, "exclude.txt")
+	if err := os.WriteFile(excludePath, []byte(excludeContent), 0o644); err != nil {
+		t.Fatalf("writing exclude file: %v", err)
+	}
+
+	summary, err := ParseFindings(bytes.NewBufferString("[]"), excludePath, nil)
+	if err != nil {
+		t.Fatalf("ParseFindings: %v", err)
+	}
+
+	metricsByName := make(map[string]float64)
+	for _, m := range summary.Metrics {
+		if len(metricsByName) == 0 || m.Labels == nil || len(m.Labels) == 0 {
+			metricsByName[m.Name] = m.Value
+		}
+	}
+
+	assert.Equal(t, "exclusion total", 2.0, metricsByName["trufflehog_exclusion_patterns_total"])
+	assert.Equal(t, "exclusion org", 2.0, metricsByName["trufflehog_exclusion_patterns_org"])
+	assert.Equal(t, "exclusion repo", 0.0, metricsByName["trufflehog_exclusion_patterns_repo"])
+
+	// No repo exclusion pattern metrics should exist
+	for _, m := range summary.Metrics {
+		if m.Name == "trufflehog_repo_exclusion" {
+			t.Errorf("unexpected trufflehog_repo_exclusion metric for org-only file: %v", m)
+		}
+	}
+}
+
+func TestParseFindings_WithoutExcludeFile(t *testing.T) {
+	t.Parallel()
+
+	summary, err := ParseFindings(bytes.NewBufferString("[]"), "", nil)
+	if err != nil {
+		t.Fatalf("ParseFindings: %v", err)
+	}
+
+	for _, m := range summary.Metrics {
+		switch m.Name {
+		case "trufflehog_exclusion_patterns_total",
+			"trufflehog_exclusion_patterns_org",
+			"trufflehog_exclusion_patterns_repo",
+			"trufflehog_exclusion_patterns_by_category",
+			"trufflehog_repo_exclusion":
+			t.Errorf("unexpected exclusion metric %q when no exclude file provided", m.Name)
+		}
 	}
 }
 
