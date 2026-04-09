@@ -1,0 +1,8 @@
+# Dependencies
+(?i)node_modules/
+vendor/
+\.git/
+
+# Generated files
+.*\.pb\.go$
+.*_gen\.go$
