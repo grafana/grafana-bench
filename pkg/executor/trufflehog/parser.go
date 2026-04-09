@@ -68,7 +68,10 @@ type GitHubSource struct {
 
 // ParseFindings parses TruffleHog native JSON output (array of findings)
 // and returns a SuiteRunSummary suitable for grafana-bench report.
-func ParseFindings(report io.Reader) (executor.SuiteRunSummary, error) {
+// If excludeFile is non-empty, exclusion pattern metrics are appended to
+// the summary; parse errors for the exclude file are silently ignored so
+// that scan metrics are always emitted.
+func ParseFindings(report io.Reader, excludeFile string) (executor.SuiteRunSummary, error) {
 	var findings []Finding
 	decoder := json.NewDecoder(report)
 	if err := decoder.Decode(&findings); err != nil {
@@ -227,6 +230,12 @@ func ParseFindings(report io.Reader) (executor.SuiteRunSummary, error) {
 		Labels:    map[string]string{},
 		Timestamp: timestamp,
 	})
+
+	if excludeFile != "" {
+		if exclusionStats, err := ParseExclusionFile(excludeFile); err == nil {
+			summary.Metrics = append(summary.Metrics, exclusionStats.Metrics(timestamp)...)
+		}
+	}
 
 	return summary, nil
 }

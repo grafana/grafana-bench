@@ -143,28 +143,11 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				if err != nil {
 					return fmt.Errorf("parsing zizmor SARIF input %w", err)
 				}
-		case "trufflehog":
-			suiteRunSummary, err = trufflehog.ParseFindings(input)
-			if err != nil {
-				return fmt.Errorf("parsing trufflehog JSON input %w", err)
-			}
-
-			if benchConfig.TruffleHog.ExcludeFile != "" {
-				exclusionStats, exErr := trufflehog.ParseExclusionFile(benchConfig.TruffleHog.ExcludeFile)
-				if exErr != nil {
-					log.Warn("could not parse exclusion file; skipping exclusion metrics",
-						"path", benchConfig.TruffleHog.ExcludeFile, "err", exErr)
-				} else {
-					log.Info("parsed exclusion patterns",
-						"total", exclusionStats.TotalPatterns,
-						"org", exclusionStats.OrgPatterns,
-						"repo", exclusionStats.RepoPatterns)
-					suiteRunSummary.Metrics = append(
-						suiteRunSummary.Metrics,
-						exclusionStats.Metrics(suiteRunSummary.StartTime.UnixMilli())...,
-					)
+			case "trufflehog":
+				suiteRunSummary, err = trufflehog.ParseFindings(input, benchConfig.TruffleHog.ExcludeFile)
+				if err != nil {
+					return fmt.Errorf("parsing trufflehog JSON input %w", err)
 				}
-			}
 			case "jscoverage":
 				if benchConfig.JSCoverage.Codeowner == "" {
 					return fmt.Errorf("missing --js-coverage-codeowner flag for jscoverage input")

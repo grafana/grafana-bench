@@ -142,7 +142,7 @@ func TestParseFindings(t *testing.T) {
 				t.Fatalf("Could not read test data file: %v", err)
 			}
 
-			summary, err := ParseFindings(bytes.NewBuffer(report))
+			summary, err := ParseFindings(bytes.NewBuffer(report), "")
 			if tc.expectErr != nil {
 				if err == nil {
 					t.Errorf("Expected error %v, got nil", tc.expectErr)
@@ -163,7 +163,7 @@ func TestParseFindings(t *testing.T) {
 func TestParseFindings_InvalidJSON(t *testing.T) {
 	t.Parallel()
 
-	_, err := ParseFindings(bytes.NewBufferString(`{"not": "an array"`))
+	_, err := ParseFindings(bytes.NewBufferString(`{"not": "an array"`), "")
 	if err == nil {
 		t.Fatal("Expected error for invalid JSON, got nil")
 	}
