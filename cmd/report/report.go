@@ -144,7 +144,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 					return fmt.Errorf("parsing zizmor SARIF input %w", err)
 				}
 			case "trufflehog":
-				suiteRunSummary, err = trufflehog.ParseFindings(input)
+				suiteRunSummary, err = trufflehog.ParseFindings(input, benchConfig.TruffleHog.ExcludeFile)
 				if err != nil {
 					return fmt.Errorf("parsing trufflehog JSON input %w", err)
 				}
@@ -217,6 +217,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 	config.AddReportInputFlags(fs, &benchConfig.Report)
 	config.AddPrometheusFlags(fs, &benchConfig.Prometheus)
 	config.AddJSCoverageFlags(fs, &benchConfig.JSCoverage)
+	config.AddTruffleHogFlags(fs, &benchConfig.TruffleHog)
 
 	return &cmd
 }
