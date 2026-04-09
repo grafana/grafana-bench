@@ -89,10 +89,19 @@ Please use [GitHub Issues](https://github.com/grafana/grafana-bench/issues) for 
 
 ## Releasing
 
-Releases follow [semantic versioning](https://semver.org/). To create a new release, [create a release on GitHub](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository#creating-a-release) with an appropriately incremented version tag (e.g., `v1.0.9`).
+Releases follow [semantic versioning](https://semver.org/). To create a new release, [create a release on GitHub](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository#creating-a-release) with an appropriately incremented version tag.
 
-This triggers CI to:
-- Build binaries and publish the release with auto-generated notes ([release-binaries.yml](../.github/workflows/release-binaries.yml))
-- Update documentation and libsonnet ([release-docs.yml](../.github/workflows/release-docs.yml))
+### Version numbering (`MAJOR.MINOR.PATCH`)
 
-After the release is published, announce it in the [#grafana-bench](https://grafanalabs.enterprise.slack.com/archives/C069CQCLDCG) Slack channel.
+- **Patch** — increment the third number: bug fixes, additional metrics on existing parsers, new test data, logging improvements, documentation updates — anything that doesn't change the parser interface.
+- **Minor** — increment the second number: new parsers (e.g. adding `--report-input <new-tool>`), new reporters, new CLI subcommands — features that extend what bench can do.
+- **Major** — increment the first number: breaking changes to the CLI interface, `SuiteRunSummary` contract, or reporter API that would require downstream consumers to update.
+
+### Release process
+
+1. Merge your changes to `main`
+2. Create a GitHub release with the next version tag
+3. CI automatically builds binaries and publishes the release ([release-binaries.yml](../.github/workflows/release-binaries.yml))
+4. CI updates documentation and libsonnet ([release-docs.yml](../.github/workflows/release-docs.yml))
+5. Update any downstream workflows that pin the Docker image tag (e.g. `ghcr.io/grafana/grafana-bench:v1.x.x`)
+6. Announce in [#grafana-bench](https://grafanalabs.enterprise.slack.com/archives/C069CQCLDCG)
