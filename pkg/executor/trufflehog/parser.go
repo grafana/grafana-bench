@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"strconv"
 	"time"
 
@@ -69,9 +70,10 @@ type GitHubSource struct {
 // ParseFindings parses TruffleHog native JSON output (array of findings)
 // and returns a SuiteRunSummary suitable for grafana-bench report.
 // If excludeFile is non-empty, exclusion pattern metrics are appended to
-// the summary; parse errors for the exclude file are silently ignored so
-// that scan metrics are always emitted.
-func ParseFindings(report io.Reader, excludeFile string) (executor.SuiteRunSummary, error) {
+// the summary and each repo-local pattern is logged individually so it
+// appears in log aggregation systems (e.g. Loki). Parse errors for the
+// exclude file are silently ignored so that scan metrics are always emitted.
+func ParseFindings(report io.Reader, excludeFile string, log *slog.Logger) (executor.SuiteRunSummary, error) {
 	var findings []Finding
 	decoder := json.NewDecoder(report)
 	if err := decoder.Decode(&findings); err != nil {
@@ -234,6 +236,11 @@ func ParseFindings(report io.Reader, excludeFile string) (executor.SuiteRunSumma
 	if excludeFile != "" {
 		if exclusionStats, err := ParseExclusionFile(excludeFile); err == nil {
 			summary.Metrics = append(summary.Metrics, exclusionStats.Metrics(timestamp)...)
+			if log != nil {
+				for _, pattern := range exclusionStats.RepoPatternList {
+					log.Info("repoExclusion", "pattern", pattern)
+				}
+			}
 		}
 	}
 
