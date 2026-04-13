@@ -2,21 +2,21 @@
 # yarn lockfile v1
 
 
-"@grafana/e2e-selectors@13.0.0-23624974663":
-  version "13.0.0-23624974663"
-  resolved "https://registry.yarnpkg.com/@grafana/e2e-selectors/-/e2e-selectors-13.0.0-23624974663.tgz#05e9700741907d406f6caf2bfa2087ea182e67e5"
-  integrity sha512-Bk9EQ63t5MJZL2BPe+WJ8PAUvb1x7/DD2DIQxm+i7ZTVlAYuP5SlnvBkWzUoKgiVerCbrYY6C3OCIUjUAgQoKA==
+"@grafana/e2e-selectors@13.1.0-24236083202":
+  version "13.1.0-24236083202"
+  resolved "https://registry.yarnpkg.com/@grafana/e2e-selectors/-/e2e-selectors-13.1.0-24236083202.tgz#d5b322f8c2111a0d7f68e9632d950b2911978586"
+  integrity sha512-AMkuNNxedKRvkSPbNKXEZk34crfr8B5lvRrn2I3EqOtknKf49GthDm7qyx5JtvdOSjK/g3pvlJtRHbY1Bvf9lg==
   dependencies:
     semver "^7.7.0"
     tslib "2.8.1"
     typescript "5.9.2"
 
-"@grafana/plugin-e2e@^3.4.11":
-  version "3.4.12"
-  resolved "https://registry.yarnpkg.com/@grafana/plugin-e2e/-/plugin-e2e-3.4.12.tgz#cae2484758e3f1f4377601a802621f76e4392f61"
-  integrity sha512-Cewa6lhJL4ayRllwnHU7F35Wia3VweBHVtW/3RKxBSg0Ml/11xv3PrProsD73V75WHVCa9sO73mtH66WS+IihQ==
+"@grafana/plugin-e2e@^3.4.12":
+  version "3.4.13"
+  resolved "https://registry.yarnpkg.com/@grafana/plugin-e2e/-/plugin-e2e-3.4.13.tgz#e99983f96fff15c8ce5b53b6d6a2af4bf1460f57"
+  integrity sha512-d+aMyBgS3+FnxVbKwx2kb0HwCbkQsH9Do66liwuQ6s4tQ/Y1stxochY2mR+fqyn1BwupSevvKhjvVxmTjoJ9RQ==
   dependencies:
-    "@grafana/e2e-selectors" "13.0.0-23624974663"
+    "@grafana/e2e-selectors" "13.1.0-24236083202"
     semver "^7.5.4"
     uuid "^13.0.0"
     yaml "^2.3.4"
