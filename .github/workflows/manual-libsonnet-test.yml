@@ -27,7 +27,7 @@ jobs:
 
     # TODO this is jalevin PAT. replace this with github app that can read deployment_tools repo
     - name: Get secrets from vault
-      uses: grafana/shared-workflows/actions/get-vault-secrets@979bc5d3fd4ea82383d3f1362c34041687c74304
+      uses: grafana/shared-workflows/actions/get-vault-secrets@5cec40ba1a943db268a9bb33f208c006b161d372
       with:
         repo_secrets: |
           DEPLOYMENT_TOOLS_TOKEN=temporary-github-pat:temporary-github-pat

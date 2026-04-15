@@ -14,11 +14,11 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: setup argo
-        uses: grafana/shared-workflows/actions/setup-argo@979bc5d3fd4ea82383d3f1362c34041687c74304
+        uses: grafana/shared-workflows/actions/setup-argo@5cec40ba1a943db268a9bb33f208c006b161d372
 
       - name: trigger grafana-bench-cd workflow
         id: trigger-workflow
-        uses: grafana/shared-workflows/actions/trigger-argo-workflow@979bc5d3fd4ea82383d3f1362c34041687c74304
+        uses: grafana/shared-workflows/actions/trigger-argo-workflow@5cec40ba1a943db268a9bb33f208c006b161d372
         with:
           instance: "ops"
           namespace: "grafana-bench-cd"
