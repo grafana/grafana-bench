@@ -231,6 +231,15 @@ The analyzer backs off exponentially with jitter and retries up to 3 times by de
 **"I'm seeing duplicate defects in the dashboard."**
 Dashboards should count distinct `signatureHash` values within the dedupe window, not rows. Multiple analyzer runs over overlapping windows will re-emit the same signature — that's intentional for freshness but needs `by (signatureHash)` on the panel query.
 
+**"`pulled=0` in DEBUG but I can see the records in Grafana Explore."**
+The default `--analyze-loki-selector` is `{service_name=~".+"} |= "tool=bench" |= "msg=testRun"` — logfmt-style substrings that match bench's default `--report-output=log` format. If your bench is shipping JSON (`--report-output=json`), those substrings won't appear in the raw line and the selector filters everything out. Either re-configure bench to emit logfmt, or override the selector with JSON-matching substrings, e.g.:
+
+```sh
+--analyze-loki-selector '{service_name=~".+"} |= "\"tool\":\"bench\"" |= "\"msg\":\"testRun\""'
+```
+
+The analyzer's record decoder auto-detects JSON vs logfmt per line, so the only thing that needs aligning is the stream-level LogQL filter.
+
 ---
 
 ## Related pages
@@ -239,3 +248,4 @@ Dashboards should count distinct `signatureHash` values within the dedupe window
 - [bench test reference](bench_test.md) — where `msg=testRun` events come from
 - [Architecture](architecture.md) — internal structure
 - [Metrics](metrics.md) — DER is computed from Prometheus counters; defectConfirmed is the Loki-side signal
+- [`test/analyze/` smoke harness](https://github.com/grafana/grafana-bench/tree/main/test/analyze) — `make analyze-smoke` runs the analyzer end-to-end against a local Loki

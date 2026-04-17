@@ -53,7 +53,6 @@ analyze-smoke: analyze-smoke-up
 	@echo "🔍 Running grafana-bench analyze..."
 	@OUT=$$(go run . analyze \
 		--analyze-loki-url http://localhost:3100 \
-		--analyze-loki-selector '{job="bench-analyze-smoke"}' \
 		--analyze-service grafana-pro \
 		--analyze-run-stage ci \
 		--analyze-window 24h); \

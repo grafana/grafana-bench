@@ -41,11 +41,8 @@ docker compose -f test/analyze/docker-compose.yml up -d
 go run ./test/analyze/seed -loki http://localhost:3100
 
 # 3. Run the analyzer
-# Override the default LogQL selector: bench's default matches logfmt output,
-# but the seeder pushes JSON lines that the analyzer's decoder needs.
 go run . analyze \
   --analyze-loki-url http://localhost:3100 \
-  --analyze-loki-selector '{job="bench-analyze-smoke"}' \
   --analyze-service grafana-pro \
   --analyze-run-stage ci \
   --analyze-window 24h

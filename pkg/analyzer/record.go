@@ -1,9 +1,12 @@
 package analyzer
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"time"
+
+	"github.com/go-logfmt/logfmt"
 )
 
 // TestRunRecord is a lenient decode target for msg=testRun events pulled from
@@ -61,11 +64,110 @@ func (k GroupKey) String() string {
 	return fmt.Sprintf("%s|%s|%s|%s", k.Service, k.RunStage, k.TestFile, k.GrafanaVersion)
 }
 
-// decodeRecord parses a single JSON log line from Loki into a TestRunRecord.
+// decodeRecord parses a single log line from Loki into a TestRunRecord.
+// It sniffs the first non-whitespace byte to decide between JSON (`{`) and
+// logfmt (everything else). bench's LogReporter emits logfmt when
+// --report-output=log and JSON when --report-output=json; both shapes land
+// in Loki and both need to be decodable here.
 func decodeRecord(line []byte) (TestRunRecord, error) {
+	trimmed := bytes.TrimLeft(line, " \t")
+	if len(trimmed) > 0 && trimmed[0] == '{' {
+		var rec TestRunRecord
+		if err := json.Unmarshal(trimmed, &rec); err != nil {
+			return TestRunRecord{}, fmt.Errorf("decoding testRun record as JSON: %w", err)
+		}
+		return rec, nil
+	}
+	return decodeLogfmt(trimmed)
+}
+
+// decodeLogfmt parses a single logfmt line (as produced by slog's text
+// handler) into a TestRunRecord. Unknown keys are silently ignored so new
+// fields added to bench's LogReporter don't break the analyzer.
+func decodeLogfmt(line []byte) (TestRunRecord, error) {
 	var rec TestRunRecord
-	if err := json.Unmarshal(line, &rec); err != nil {
-		return TestRunRecord{}, fmt.Errorf("decoding testRun record: %w", err)
+	dec := logfmt.NewDecoder(bytes.NewReader(line))
+	if !dec.ScanRecord() {
+		if err := dec.Err(); err != nil {
+			return TestRunRecord{}, fmt.Errorf("decoding testRun record as logfmt: %w", err)
+		}
+		return rec, nil
+	}
+	for dec.ScanKeyval() {
+		key := string(dec.Key())
+		val := string(dec.Value())
+		if err := rec.setLogfmtField(key, val); err != nil {
+			return TestRunRecord{}, err
+		}
+	}
+	if err := dec.Err(); err != nil {
+		return TestRunRecord{}, fmt.Errorf("decoding testRun record as logfmt: %w", err)
 	}
 	return rec, nil
+}
+
+// setLogfmtField assigns a single key/value pair onto the record. Unknown
+// keys are ignored; the only errors returned are for malformed typed fields.
+func (r *TestRunRecord) setLogfmtField(key, val string) error {
+	switch key {
+	case "time":
+		if val == "" {
+			return nil
+		}
+		t, err := time.Parse(time.RFC3339Nano, val)
+		if err != nil {
+			// slog's text handler emits an unquoted RFC3339 with no subsecond
+			// precision; try that too before giving up.
+			t, err = time.Parse(time.RFC3339, val)
+			if err != nil {
+				return fmt.Errorf("parsing logfmt time %q: %w", val, err)
+			}
+		}
+		r.Time = t
+	case "level":
+		r.Level = val
+	case "msg":
+		r.Msg = val
+	case "service":
+		r.Service = val
+	case "runId":
+		r.RunID = val
+	case "runStage":
+		r.RunStage = val
+	case "suiteName":
+		r.SuiteName = val
+	case "suiteRevision":
+		r.SuiteRevision = val
+	case "suiteRun":
+		r.SuiteRun = val
+	case "testExecutor":
+		r.TestExecutor = val
+	case "testTrigger":
+		r.TestTrigger = val
+	case "benchRevision":
+		r.BenchRevision = val
+	case "serviceUrl":
+		r.ServiceURL = val
+	case "serviceVersion":
+		r.ServiceVersion = val
+	case "grafanaUrl":
+		r.GrafanaURL = val
+	case "grafanaSlug":
+		r.GrafanaSlug = val
+	case "grafanaVersion":
+		r.GrafanaVersion = val
+	case "folder":
+		r.Folder = val
+	case "testFile":
+		r.TestFile = val
+	case "status":
+		r.Status = val
+	case "exitMessage":
+		r.ExitMessage = val
+	case "order":
+		r.Order = val
+	case "testRun":
+		r.TestRun = val
+	}
+	return nil
 }

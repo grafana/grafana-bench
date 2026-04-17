@@ -7,11 +7,14 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"strconv"
@@ -27,6 +30,12 @@ type stream struct {
 	Values [][]string        `json:"values"`
 }
 
+type fixtureRecord struct {
+	ts     time.Time
+	attrs  []any
+	status string
+}
+
 func main() {
 	lokiURL := flag.String("loki", "http://localhost:3100", "Loki base URL")
 	service := flag.String("service", "grafana-pro", "value for the service field")
@@ -39,63 +48,90 @@ func main() {
 	waitForLoki(*lokiURL)
 
 	start := time.Now().Add(-2 * time.Hour)
-	var records []map[string]any
+	var fixtures []fixtureRecord
 	for i := 0; i < 3; i++ {
-		records = append(records, testRunRecord(
-			start.Add(time.Duration(i)*10*time.Minute),
-			*service, *runStage, *testFile, *goodVersion,
-			"passed", "", fmt.Sprintf("run-good-%d", i),
-		))
+		fixtures = append(fixtures, fixtureRecord{
+			ts:     start.Add(time.Duration(i) * 10 * time.Minute),
+			status: "passed",
+			attrs: commonAttrs(*service, *runStage, *testFile, *goodVersion,
+				"passed", "", fmt.Sprintf("run-good-%d", i)),
+		})
 	}
 	for i := 0; i < 4; i++ {
-		records = append(records, testRunRecord(
-			start.Add(time.Duration(i+3)*10*time.Minute),
-			*service, *runStage, *testFile, *badVersion,
-			"failed",
-			fmt.Sprintf("check rate expected 1 got 0.87 pid=%d at %s",
-				1000+i, time.Now().Format(time.RFC3339)),
-			fmt.Sprintf("run-bad-%d", i),
-		))
+		fixtures = append(fixtures, fixtureRecord{
+			ts:     start.Add(time.Duration(i+3) * 10 * time.Minute),
+			status: "failed",
+			attrs: commonAttrs(*service, *runStage, *testFile, *badVersion,
+				"failed",
+				fmt.Sprintf("check rate expected 1 got 0.87 pid=%d at %s",
+					1000+i, time.Now().Format(time.RFC3339)),
+				fmt.Sprintf("run-bad-%d", i)),
+		})
 	}
 
-	if err := push(*lokiURL, *service, records); err != nil {
+	values := make([][]string, 0, len(fixtures))
+	for _, f := range fixtures {
+		line, err := renderLogfmt(f.ts, f.attrs)
+		if err != nil {
+			log.Fatalf("render record: %v", err)
+		}
+		values = append(values, []string{strconv.FormatInt(f.ts.UnixNano(), 10), line})
+	}
+	if err := push(*lokiURL, *service, values); err != nil {
 		log.Fatalf("push: %v", err)
 	}
-	fmt.Fprintf(os.Stdout, "seeded %d records into %s\n", len(records), *lokiURL)
+	fmt.Fprintf(os.Stdout, "seeded %d records into %s\n", len(fixtures), *lokiURL)
 }
 
-func testRunRecord(ts time.Time, svc, stage, file, version, status, exitMsg, runID string) map[string]any {
-	return map[string]any{
-		"time":           ts.Format(time.RFC3339Nano),
-		"level":          "INFO",
-		"msg":            "testRun",
-		"tool":           "bench",
-		"service":        svc,
-		"runStage":       stage,
-		"testFile":       file,
-		"folder":         "rrc-grafana-api-tests",
-		"grafanaVersion": version,
-		"grafanaSlug":    "k6testinstant1",
-		"grafanaUrl":     "k6testinstant1.grafana-dev.net",
-		"status":         status,
-		"exitMessage":    exitMsg,
-		"runId":          runID,
+func commonAttrs(svc, stage, file, version, status, exitMsg, runID string) []any {
+	return []any{
+		"tool", "bench",
+		"service", svc,
+		"runStage", stage,
+		"testFile", file,
+		"folder", "rrc-grafana-api-tests",
+		"grafanaVersion", version,
+		"grafanaSlug", "k6testinstant1",
+		"grafanaUrl", "k6testinstant1.grafana-dev.net",
+		"status", status,
+		"exitMessage", exitMsg,
+		"runId", runID,
 	}
 }
 
-func push(lokiURL, service string, records []map[string]any) error {
-	values := make([][]string, 0, len(records))
-	for _, rec := range records {
-		ts, err := time.Parse(time.RFC3339Nano, rec["time"].(string))
-		if err != nil {
-			return fmt.Errorf("parse record time: %w", err)
-		}
-		line, err := json.Marshal(rec)
-		if err != nil {
-			return fmt.Errorf("encode record: %w", err)
-		}
-		values = append(values, []string{strconv.FormatInt(ts.UnixNano(), 10), string(line)})
+// renderLogfmt matches exactly what bench's LogReporter produces via
+// slog.NewTextHandler: `time=... level=... msg=testRun key=value ...`.
+// Using slog directly (not a hand-rolled formatter) guarantees the smoke
+// environment stays in lockstep with whatever slog formats today.
+func renderLogfmt(ts time.Time, attrs []any) (string, error) {
+	var buf bytes.Buffer
+	h := slog.NewTextHandler(&buf, &slog.HandlerOptions{
+		ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
+			if a.Key == slog.TimeKey {
+				return slog.String(slog.TimeKey, ts.Format(time.RFC3339Nano))
+			}
+			return a
+		},
+	})
+	logger := slog.New(h)
+	logger.LogAttrs(context.Background(), slog.LevelInfo, "testRun", toSlogAttrs(attrs)...)
+	line, err := bufio.NewReader(&buf).ReadString('\n')
+	if err != nil {
+		return "", fmt.Errorf("read rendered line: %w", err)
 	}
+	return line[:len(line)-1], nil // strip trailing newline
+}
+
+func toSlogAttrs(kv []any) []slog.Attr {
+	out := make([]slog.Attr, 0, len(kv)/2)
+	for i := 0; i+1 < len(kv); i += 2 {
+		key, _ := kv[i].(string)
+		out = append(out, slog.Any(key, kv[i+1]))
+	}
+	return out
+}
+
+func push(lokiURL, service string, values [][]string) error {
 	body, err := json.Marshal(pushReq{
 		Streams: []stream{{
 			Stream: map[string]string{
