@@ -2,8 +2,8 @@ package analyze
 
 import (
 	"fmt"
+	"io"
 	"log/slog"
-	"os"
 	"time"
 
 	"github.com/grafana/grafana-bench/pkg/analyzer"
@@ -113,7 +113,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				return nil
 			}
 
-			return emit(defects, cfg)
+			return emit(defects, cfg, cmd.OutOrStdout())
 		},
 	}
 
@@ -170,8 +170,8 @@ func filterRecords(records []analyzer.TestRunRecord, cfg *config.AnalyzeConfig) 
 	return out
 }
 
-func emit(defects []analyzer.ConfirmedDefect, cfg *config.AnalyzeConfig) error {
-	emitter, err := analyzer.NewEmitter(os.Stdout, cfg.Output, []any{"tool", "bench", "service", cfg.Service})
+func emit(defects []analyzer.ConfirmedDefect, cfg *config.AnalyzeConfig, w io.Writer) error {
+	emitter, err := analyzer.NewEmitter(w, cfg.Output, []any{"tool", "bench", "service", cfg.Service})
 	if err != nil {
 		return fmt.Errorf("building emitter: %w", err)
 	}

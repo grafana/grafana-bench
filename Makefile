@@ -10,7 +10,7 @@ SLIM_PROD_TAG = grafana-bench:$(BENCH_REVISION)
 PLAYWRIGHT_DEV_TAG = grafana-bench-playwright:dev-$(BENCH_REVISION)
 PLAYWRIGHT_PROD_TAG = grafana-bench-playwright:$(BENCH_REVISION)
 
-.PHONY: build-all build-slim-dev build-slim-prod build-playwright-dev build-playwright-prod test docs libsonnet install-deps check-licenses clean help
+.PHONY: build-all build-slim-dev build-slim-prod build-playwright-dev build-playwright-prod test docs libsonnet install-deps check-licenses clean help analyze-smoke analyze-smoke-up analyze-smoke-down
 
 # Build all images
 build-all: build-slim-dev build-slim-prod build-playwright-dev build-playwright-prod
@@ -44,6 +44,33 @@ build-playwright-prod:
 test:
 	@echo "🧪 Running tests..."
 	go test ./...
+
+# End-to-end smoke test for `bench analyze` against a real Loki.
+# See test/analyze/README.md for what this does and how to debug failures.
+analyze-smoke: analyze-smoke-up
+	@echo "🌱 Seeding fixtures..."
+	@go run ./test/analyze/seed -loki http://localhost:3100
+	@echo "🔍 Running grafana-bench analyze..."
+	@OUT=$$(go run . analyze \
+		--analyze-loki-url http://localhost:3100 \
+		--analyze-loki-selector '{job="bench-analyze-smoke"}' \
+		--analyze-service grafana-pro \
+		--analyze-run-stage ci \
+		--analyze-window 24h); \
+	echo "$$OUT"; \
+	echo "$$OUT" | grep -q '"msg":"defectConfirmed"' || { echo "❌ no defectConfirmed event emitted"; $(MAKE) analyze-smoke-down; exit 1; }; \
+	echo "$$OUT" | grep -q '"confidence":"confirmed"' || { echo "❌ event was not confidence=confirmed"; $(MAKE) analyze-smoke-down; exit 1; }; \
+	echo "$$OUT" | grep -q '"grafanaVersion":"13.0.0-23542128402"' || { echo "❌ event missing expected bad version"; $(MAKE) analyze-smoke-down; exit 1; }
+	@$(MAKE) analyze-smoke-down
+	@echo "✅ analyze smoke test passed"
+
+analyze-smoke-up:
+	@echo "🐳 Starting Loki..."
+	@docker compose -f test/analyze/docker-compose.yml up -d --wait
+
+analyze-smoke-down:
+	@echo "🧹 Stopping Loki..."
+	@docker compose -f test/analyze/docker-compose.yml down -v >/dev/null 2>&1 || true
 
 # Generate documentation
 docs: install-deps
