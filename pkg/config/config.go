@@ -633,6 +633,98 @@ func AddGitFlags(fs *pflag.FlagSet, git *GitConfig) {
 	)
 }
 
+type AnalyzeConfig struct {
+	LokiURL         string
+	LokiUsername    string
+	LokiPassword    string
+	LokiBearerToken string
+	LokiSelector    string
+	Window          time.Duration
+	Service         string
+	RunStage        string
+	MinFailures     int
+	MinPriorPassing int
+	Emit            bool
+	Output          string
+}
+
+func AddAnalyzeFlags(fs *pflag.FlagSet, cfg *AnalyzeConfig) {
+	fs.StringVar(
+		&cfg.LokiURL,
+		"analyze-loki-url",
+		"",
+		"REQUIRED. Base URL for the Loki API (e.g. https://logs-prod-xxx.grafana.net)."+
+			"\nOverridden by the BENCH_LOKI_URL environment variable.",
+	)
+	fs.StringVar(
+		&cfg.LokiUsername,
+		"analyze-loki-username",
+		"",
+		"Basic-auth username for Loki. Overridden by BENCH_LOKI_USERNAME.",
+	)
+	fs.StringVar(
+		&cfg.LokiPassword,
+		"analyze-loki-password",
+		"",
+		"Basic-auth password for Loki. Overridden by BENCH_LOKI_PASSWORD.",
+	)
+	fs.StringVar(
+		&cfg.LokiBearerToken,
+		"analyze-loki-bearer-token",
+		"",
+		"Bearer token for Loki. Overridden by BENCH_LOKI_BEARER_TOKEN."+
+			"\nIf set, takes precedence over basic auth.",
+	)
+	fs.StringVar(
+		&cfg.LokiSelector,
+		"analyze-loki-selector",
+		`{service_name=~".+"} |= "tool=bench" |= "msg=testRun"`,
+		"LogQL stream selector for testRun events. Override for RRC/cluster context.",
+	)
+	fs.DurationVar(
+		&cfg.Window,
+		"analyze-window",
+		24*time.Hour,
+		"Lookback window for the Loki query_range request.",
+	)
+	fs.StringVar(
+		&cfg.Service,
+		"analyze-service",
+		"",
+		"REQUIRED. Restrict analysis to testRun records with this service value.",
+	)
+	fs.StringVar(
+		&cfg.RunStage,
+		"analyze-run-stage",
+		"",
+		"Restrict analysis to a single runStage. Empty evaluates each observed stage independently.",
+	)
+	fs.IntVar(
+		&cfg.MinFailures,
+		"analyze-min-failures",
+		3,
+		"Persistence threshold: consecutive failing testRun events required to confirm a defect.",
+	)
+	fs.IntVar(
+		&cfg.MinPriorPassing,
+		"analyze-min-prior-passing",
+		2,
+		"Regression-boundary threshold: passing runs required on the most recent prior grafanaVersion.",
+	)
+	fs.BoolVar(
+		&cfg.Emit,
+		"analyze-emit",
+		true,
+		"Emit msg=defectConfirmed events on stdout. Set false for dry-run.",
+	)
+	fs.StringVar(
+		&cfg.Output,
+		"analyze-output",
+		"json",
+		"Output format for emitted defectConfirmed events ('json' or 'text').",
+	)
+}
+
 func (config BenchConfig) BuildTestExecutor(
 	log *slog.Logger,
 	testExecutor string,
