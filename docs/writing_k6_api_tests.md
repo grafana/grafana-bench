@@ -53,6 +53,35 @@ Tests error 0
 Tests suite passed
 ```
 
+## Retrying failed tests
+
+If a test can fail transiently — for example, because the service under test briefly returns 5xx during a deploy — you can ask bench to retry failed tests before giving up:
+
+```sh
+grafana-bench test \
+  --test-runner k6 \
+  --k6-retries 3 \
+  --k6-retry-delay 10s \
+  ... other flags ...
+```
+
+- `--k6-retries` — maximum number of retries after the initial run (default `0`, retries off).
+- `--k6-retry-delay` — wait between attempts (default `0`). Accepts any Go duration (`500ms`, `5s`, `1m`).
+
+Each retry re-runs the entire test file (including setup and teardown). JSON output for attempt 1 keeps the historical `/tmp/<name>.json` path; retry attempts write to `/tmp/<name>-attempt-N.json` so prior runs are preserved for postmortem.
+
+### Reporting
+
+Each test logs `attempts` and `maxAttempts` on its `msg=testRun` summary line. Status is reported as:
+
+- `passed` — passed on the first attempt.
+- `flaky` — failed at least once but passed within the retry budget. A `bench_test_run_flaky` metric is emitted.
+- `failed` — failed every attempt.
+
+The `totalDuration` for a retried test is the sum of wall-clock time across all attempts, so a test that keeps retrying shows an increasing duration.
+
+> **Note:** `bench analyze` treats tests reported as `flaky` as not-a-defect by design. Enabling retries reduces the number of defects the analyzer can confirm — only tests that fail every attempt will surface as confirmed defects.
+
 ## Introduction
 
 K6 tests are written in JavaScript and run in the Goja runtime. This is a small but important detail. While it looks like standard JavaScript, we don't have all of the capabilities of Node and K6 has added a few of its own.

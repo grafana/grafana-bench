@@ -114,6 +114,8 @@ type K6Config struct {
 	CloudToken     string
 	CloudProjectId string
 	CloudOutput    bool
+	Retries        int
+	RetryDelay     time.Duration
 }
 
 func AddK6Flags(fs *pflag.FlagSet, config *K6Config) {
@@ -134,6 +136,18 @@ func AddK6Flags(fs *pflag.FlagSet, config *K6Config) {
 		"k6-cloud-output",
 		false,
 		"send output to GCK6. Requires setting the GCK6 project ID and access token.",
+	)
+	fs.IntVar(
+		&config.Retries,
+		"k6-retries",
+		0,
+		"number of retries for failed k6 tests. Retried tests that pass are reported as flaky",
+	)
+	fs.DurationVar(
+		&config.RetryDelay,
+		"k6-retry-delay",
+		0,
+		"delay between k6 test retries (e.g. 5s, 1m). Useful for letting the system under test recover between attempts",
 	)
 }
 
@@ -158,11 +172,12 @@ func AddPlaywrightFlags(fs *pflag.FlagSet, config *PWConfig) {
 	)
 }
 
-type GoTestConfig struct{
-	GoArgs   []string
-	TestArgs []string
-	Packages []string
-	Retries  int
+type GoTestConfig struct {
+	GoArgs     []string
+	TestArgs   []string
+	Packages   []string
+	Retries    int
+	RetryDelay time.Duration
 }
 
 func AddGoExecutorFlags(fs *pflag.FlagSet, config *GoTestConfig) {
@@ -177,6 +192,12 @@ func AddGoExecutorFlags(fs *pflag.FlagSet, config *GoTestConfig) {
 		"go-retries",
 		0,
 		"number of retries for failed tests. Retried tests that pass are reported as flaky",
+	)
+	fs.DurationVar(
+		&config.RetryDelay,
+		"go-retry-delay",
+		0,
+		"delay between go test retries (e.g. 5s, 1m). Useful for letting the system under test recover between attempts",
 	)
 	fs.StringArrayVar(
 		&config.TestArgs,
@@ -586,10 +607,11 @@ func (config BenchConfig) BuildTestExecutor(
 		executor = gotest.NewGoExecutor(
 			log,
 			gotest.GoExecutorOptions{
-				GoArgs:   config.Go.GoArgs,
-				Packages: config.Go.Packages,
-				TestArgs: config.Go.TestArgs,
-				Retries:  config.Go.Retries,
+				GoArgs:     config.Go.GoArgs,
+				Packages:   config.Go.Packages,
+				TestArgs:   config.Go.TestArgs,
+				Retries:    config.Go.Retries,
+				RetryDelay: config.Go.RetryDelay,
 			},
 		)
 	case "gobench":
@@ -613,6 +635,8 @@ func (config BenchConfig) BuildTestExecutor(
 				CloudOutput:    config.K6.CloudOutput,
 				CloudToken:     config.K6.CloudToken,
 				CloudProjectID: config.K6.CloudProjectId,
+				RetryFailed:    config.K6.Retries,
+				RetryDelay:     config.K6.RetryDelay,
 			},
 		)
 	case "playwright":

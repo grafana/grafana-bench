@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/grafana/grafana-bench/pkg/executor"
+	"github.com/grafana/grafana-bench/pkg/metrics"
 	k6parser "github.com/grafana/grafana-bench/pkg/parser/k6"
 	"github.com/grafana/grafana-bench/pkg/utils"
 	"github.com/grafana/grafana-bench/pkg/utils/format"
@@ -46,6 +47,7 @@ type K6TestExecutor struct {
 
 type K6ExecutorOptions struct {
 	RetryFailed    int
+	RetryDelay     time.Duration
 	Verbose        bool
 	CloudOutput    bool
 	CloudToken     string
@@ -125,6 +127,8 @@ func (t *K6TestExecutor) ExecTestSuite(
 	suiteSummary.SuiteName = suite.Name
 	suiteSummary.SuiteRevision = suite.Revision
 
+	maxAttempts := t.RetryFailed + 1
+
 	// run the tests
 	for _, testFile := range tests {
 		scenarioName := getScenarioName(testFile)
@@ -132,19 +136,26 @@ func (t *K6TestExecutor) ExecTestSuite(
 
 		var (
 			testStartTime time.Time
-			retries       int
+			attempts      int
+			totalDuration time.Duration
 			k6Summary     K6TestRun
 		)
 
+	retryLoop:
 		for {
-			// reset the start time for each test retry
-			testStartTime = time.Now()
+			attempts++
 
-			// run command send output to cloud
+			// record start time on the first attempt so wall-clock duration
+			// covers the initial run plus any retries and retry delays.
+			if attempts == 1 {
+				testStartTime = time.Now()
+			}
+
 			k6Summary, err = t.execTest(
 				ctx,
 				testFile,
 				scenarioName,
+				attempts,
 				k6env,
 			)
 			if err != nil {
@@ -152,17 +163,28 @@ func (t *K6TestExecutor) ExecTestSuite(
 				// TODO: maybe we should break the iteration here, as test result may not be relevant
 			}
 
-			if k6Summary.Status != executor.TestFailed || retries == t.RetryFailed {
+			// accumulate duration across every attempt so repeated retries
+			// show up as an increasing TotalDuration.
+			totalDuration += k6Summary.Durations.TotalDuration
+
+			if k6Summary.Status != executor.TestFailed || attempts >= maxAttempts {
 				break
 			}
-			retries++
+
+			if t.RetryDelay > 0 {
+				select {
+				case <-ctx.Done():
+					break retryLoop
+				case <-time.After(t.RetryDelay):
+				}
+			}
 		}
 
-		if k6Summary.Status == executor.TestPassed && retries > 0 {
+		if k6Summary.Status == executor.TestPassed && attempts > 1 {
 			k6Summary.Status = executor.TestFlaky
 		}
 
-		scenariosDuration += k6Summary.Durations.TotalDuration
+		scenariosDuration += totalDuration
 
 		// get the path to the test relative to the TestSuiteBase if any
 		// we don't need to check for errors because how the test path is constructed
@@ -174,9 +196,11 @@ func (t *K6TestExecutor) ExecTestSuite(
 			TestFile:         path.Base(testFile),
 			StartTime:        testStartTime,
 			Status:           k6Summary.Status,
-			TotalDuration:    k6Summary.Durations.TotalDuration,
+			TotalDuration:    totalDuration,
 			ScenarioDuration: k6Summary.Durations.ScenarioDuration,
 			Iterations:       k6Summary.Iterations,
+			Attempts:         attempts,
+			MaxAttempts:      maxAttempts,
 			ExitMessage:      k6Summary.ExitMessage,
 			Attributes: map[string]string{
 				"cloudId":          k6Summary.CloudID,
@@ -192,6 +216,14 @@ func (t *K6TestExecutor) ExecTestSuite(
 			suiteSummary.TestsPassed += 1
 		case executor.TestFlaky:
 			suiteSummary.TestsFlaky += 1
+			suiteSummary.Metrics = append(suiteSummary.Metrics, metrics.Metric{
+				Name:  "bench_test_run_flaky",
+				Value: 1,
+				Labels: map[string]string{
+					"test_full_path": summary.TestFolder + "/" + summary.TestFile,
+				},
+				Timestamp: summary.StartTime.UnixMilli(),
+			})
 		case executor.TestFailed:
 			suiteSummary.TestsFailed += 1
 		case executor.TestError:
@@ -217,6 +249,7 @@ func (t *K6TestExecutor) execTest(
 	ctx context.Context,
 	testFile string,
 	scenarioName string,
+	attempt int,
 	env map[string]string,
 ) (K6TestRun, error) {
 	testFile, err := transpileTest(testFile)
@@ -224,7 +257,7 @@ func (t *K6TestExecutor) execTest(
 		return K6TestRun{}, err
 	}
 
-	jsonFile := getJsonOutputFilename(testFile)
+	jsonFile := getJsonOutputFilename(testFile, attempt)
 
 	// build the command with buffer
 	cmd, buf := t.prepareK6Command(
@@ -459,9 +492,16 @@ func (t *K6TestExecutor) getOutput(buf *bytes.Buffer, jsonFile string, scenarioN
 	}, err
 }
 
-// dashboard_create.js -> /tmp/dashboard_create.json
-func getJsonOutputFilename(filename string) string {
+// getJsonOutputFilename returns a deterministic path under /tmp for k6's JSON output.
+// Attempt 1 keeps the historical /tmp/<name>.json path; retries are written to
+// /tmp/<name>-attempt-N.json so earlier runs are preserved for postmortem.
+// dashboard_create.js -> /tmp/dashboard_create.json (attempt 1)
+// dashboard_create.js -> /tmp/dashboard_create-attempt-2.json (attempt 2)
+func getJsonOutputFilename(filename string, attempt int) string {
 	jsonName := filepath.Base(filename)
 	jsonName = strings.TrimSuffix(jsonName, filepath.Ext(jsonName))
+	if attempt > 1 {
+		jsonName = fmt.Sprintf("%s-attempt-%d", jsonName, attempt)
+	}
 	return path.Join("/tmp", jsonName+".json")
 }
