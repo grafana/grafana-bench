@@ -9,6 +9,60 @@ import (
 	"github.com/grafana/grafana-bench/pkg/metrics"
 )
 
+func TestSumRetries(t *testing.T) {
+	tests := []struct {
+		name     string
+		testRuns []executor.TestRunSummary
+		expect   int
+	}{
+		{
+			name:     "no test runs",
+			testRuns: nil,
+			expect:   0,
+		},
+		{
+			name: "all passed on first attempt",
+			testRuns: []executor.TestRunSummary{
+				{Attempts: 1},
+				{Attempts: 1},
+			},
+			expect: 0,
+		},
+		{
+			name: "flaky test retried twice and a clean test",
+			testRuns: []executor.TestRunSummary{
+				{Attempts: 3}, // 2 retries
+				{Attempts: 1}, // 0 retries
+			},
+			expect: 2,
+		},
+		{
+			name: "multiple retried tests",
+			testRuns: []executor.TestRunSummary{
+				{Attempts: 4}, // 3 retries
+				{Attempts: 2}, // 1 retry
+			},
+			expect: 4,
+		},
+		{
+			name: "executor that does not track attempts",
+			testRuns: []executor.TestRunSummary{
+				{Attempts: 0},
+				{Attempts: 0},
+			},
+			expect: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := sumRetries(tt.testRuns); got != tt.expect {
+				t.Errorf("sumRetries() = %d, want %d", got, tt.expect)
+			}
+		})
+	}
+}
+
 func TestPrometheusReporter_Report_WithAttributes(t *testing.T) {
 	tests := []struct {
 		name        string

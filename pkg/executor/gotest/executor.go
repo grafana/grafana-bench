@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"time"
 
 	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/metrics"
@@ -27,24 +28,28 @@ type GoExecutorOptions struct {
 	TestArgs []string
 	// retries for failed tests
 	Retries int
+	// RetryDelay between retries
+	RetryDelay time.Duration
 }
 
 // GoExecutor implements an TestExecutor for go tests
 type GoExecutor struct {
-	log      *slog.Logger
-	goArgs   []string
-	testArgs []string
-	packages []string
-	retries  int
+	log        *slog.Logger
+	goArgs     []string
+	testArgs   []string
+	packages   []string
+	retries    int
+	retryDelay time.Duration
 }
 
 func NewGoExecutor(log *slog.Logger, opts GoExecutorOptions) *GoExecutor {
 	return &GoExecutor{
-		log:      log,
-		goArgs:   opts.GoArgs,
-		testArgs: opts.TestArgs,
-		retries:  opts.Retries,
-		packages: opts.Packages,
+		log:        log,
+		goArgs:     opts.GoArgs,
+		testArgs:   opts.TestArgs,
+		retries:    opts.Retries,
+		retryDelay: opts.RetryDelay,
+		packages:   opts.Packages,
 	}
 }
 
@@ -72,6 +77,12 @@ func (e *GoExecutor) ExecTestSuite(
 	summary.SuiteName = suite.Name
 	summary.SuiteRevision = suite.Revision
 
+	maxAttempts := e.retries + 1
+	for i := range summary.TestRuns {
+		summary.TestRuns[i].Attempts = 1
+		summary.TestRuns[i].MaxAttempts = maxAttempts
+	}
+
 	if summary.TestsFailed > 0 && e.retries > 0 {
 		for i, t := range summary.TestRuns {
 			if t.Status != executor.TestFailed {
@@ -79,6 +90,14 @@ func (e *GoExecutor) ExecTestSuite(
 			}
 
 			for range e.retries {
+				if e.retryDelay > 0 {
+					select {
+					case <-ctx.Done():
+						return summary, nil
+					case <-time.After(e.retryDelay):
+					}
+				}
+
 				tr, err := retryTest(ctx, e.log, workDir, t.TestFolder, e.goArgs, e.testArgs, t.TestFile)
 				if err != nil {
 					return executor.SuiteRunSummary{}, fmt.Errorf("failed to run go test %w", err)
@@ -86,6 +105,7 @@ func (e *GoExecutor) ExecTestSuite(
 
 				// account for additional duration of retries
 				summary.TestRuns[i].TotalDuration += tr.TotalDuration
+				summary.TestRuns[i].Attempts++
 
 				// adjust suite's total duration to account for retries
 				if tr.StartTime.Add(tr.TotalDuration).After(summary.StartTime.Add(summary.TotalDuration)) {

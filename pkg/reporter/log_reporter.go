@@ -76,6 +76,8 @@ func (r *LogReporter) Report(
 			"scenarioDuration", format.PrettyMS(testRun.ScenarioDuration),
 			"totalDuration", format.PrettyMS(testRun.TotalDuration),
 			"status", testRun.Status,
+			"attempts", testRun.Attempts,
+			"maxAttempts", testRun.MaxAttempts,
 			"exitMessage", testRun.ExitMessage,
 			"order", strconv.Itoa(order),
 		}
