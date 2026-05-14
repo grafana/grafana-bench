@@ -29,7 +29,7 @@ jobs:
         run: git fetch --tags
 
       - name: Setup Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
           go-version-file: go.mod
 
@@ -44,7 +44,7 @@ jobs:
 
       - name: Comment if docs are out of date
         id: create-suggestions
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           script: |
             const { execSync } = require('child_process');
@@ -187,7 +187,7 @@ jobs:
 
   publish-to-enghub:
     if: github.event_name == 'push'
-    uses: grafana/shared-workflows/.github/workflows/publish-techdocs.yaml@main
+    uses: grafana/shared-workflows/.github/workflows/publish-techdocs.yaml@3adde9659883b3cd0c65d6acaa356b78a5f8f7f4 # main
     secrets: inherit
     permissions:
       contents: read

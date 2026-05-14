@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.23.0-labs@sha256:7eca9451d94f9b8ad22e44988b92d595d3e4d65163794237949a8c3413fbed5d
 
-FROM golang:1.26-alpine AS builder
+FROM golang:1.26-alpine@sha256:91eda9776261207ea25fd06b5b7fed8d397dd2c0a283e77f2ab6e91bfa71079d AS builder
 
 ARG BENCH_REVISION 
 ARG TARGETOS=linux
@@ -34,8 +34,8 @@ RUN CGO_ENABLED=0 go build \
 RUN go get github.com/boxboat/fixuid@${FIXUID_VERSION} && \
   CGO_ENABLED=0 go build -o build/fixuid github.com/boxboat/fixuid
 
-FROM grafana/k6:latest AS k6
-FROM alpine:3.23 AS runtime
+FROM grafana/k6:latest@sha256:632ddbc81a4a9fdc9e597da91ab1d8fcf1916dd988b43b4a4559d2f8d8e73d47 AS k6
+FROM alpine:3.23@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11 AS runtime
 
 USER root
 RUN apk add --no-cache ca-certificates git wget
