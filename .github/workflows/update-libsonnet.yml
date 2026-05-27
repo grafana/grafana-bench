@@ -53,17 +53,16 @@ jobs:
       - name: install development dependencies
         run: make install-deps
 
-      # TODO this is jalevin PAT. replace this with github app that can read deployment_tools repo
-      - name: Get secrets from vault
-        uses: grafana/shared-workflows/actions/get-vault-secrets@979bc5d3fd4ea82383d3f1362c34041687c74304
+      - name: Get GitHub App token
+        id: get-github-app-token
+        uses: grafana/shared-workflows/actions/create-github-app-token@580590a644e82e79bb2598bdaba0be245a14dda0 # create-github-app-token/v0.2.2
         with:
-          repo_secrets: |
-            DEPLOYMENT_TOOLS_TOKEN=temporary-github-pat:temporary-github-pat
+          github_app: updater-for-ci
 
       - name: generate libsonnet
         env:
           VERSION: ${{ inputs.version }}
-          GITHUB_TOKEN: ${{ env.DEPLOYMENT_TOOLS_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.get-github-app-token.outputs.token }}
         run: |
           # Generate main libsonnet files and versions.libsonnet using make (with remote fetching)
           make libsonnet-fetch TARGET_VERSION="$VERSION"
@@ -123,14 +122,6 @@ jobs:
       #     
       #     echo "🎉 All generated images validated successfully!"
 
-      - name: get vault secrets for deployment_tools access
-        uses: grafana/shared-workflows/actions/get-vault-secrets@979bc5d3fd4ea82383d3f1362c34041687c74304
-        with:
-          common_secrets: |
-            GITHUB_APP_ID=updater-app:app-id
-            GITHUB_APP_INSTALLATION_ID=updater-app:app-installation-id
-            GITHUB_APP_PRIVATE_KEY=updater-app:private-key
-
       - name: update deployment_tools with libsonnet
         env:
           VERSION: ${{ inputs.version }}
@@ -138,6 +129,7 @@ jobs:
           PR_MESSAGE: ${{ inputs.pr_message }}
           COMMIT_MESSAGE: ${{ inputs.commit_message }}
           PR_REVIEWER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ steps.get-github-app-token.outputs.token }}
         run: |
           set -euo pipefail
 
@@ -197,9 +189,7 @@ jobs:
           # Run the Docker-based updater tool
           docker run --rm \
             -v "$(pwd):/workspace:ro" \
-            -e GITHUB_APP_ID="$GITHUB_APP_ID" \
-            -e GITHUB_APP_INSTALLATION_ID="$GITHUB_APP_INSTALLATION_ID" \
-            -e GITHUB_APP_PRIVATE_KEY="$GITHUB_APP_PRIVATE_KEY" \
+            -e GITHUB_TOKEN="$GITHUB_TOKEN" \
             -e CONFIG_JSON="$(cat config.json)" \
             us-docker.pkg.dev/grafanalabs-global/docker-deployment-tools-prod/updater |& tee updater-output.log
 
