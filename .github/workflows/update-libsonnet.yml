@@ -153,6 +153,10 @@ jobs:
           {
             "repo_owner": "grafana",
             "repo_name": "deployment_tools",
+            "git_author_name": "updater-for-ci[bot]",
+            "git_author_email": "119986603+updater-for-ci[bot]@users.noreply.github.com",
+            "git_committer_name": "updater-for-ci[bot]",
+            "git_committer_email": "119986603+updater-for-ci[bot]@users.noreply.github.com",
             "destination_branch": "master",
             "pull_request_enabled": true,
             "pull_request_branch_prefix": "${BRANCH_PREFIX}",
