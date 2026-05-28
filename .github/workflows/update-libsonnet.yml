@@ -214,69 +214,75 @@ jobs:
           TEST_VERSION_SHA: ${{ inputs.test_version_sha }}
         run: |
           set -euo pipefail
-          
-          echo "🔍 Waiting for deployment metrics to appear in Prometheus..."
-          
-          # For versioned releases use the version string; for experimental use the commit SHA
+
           if [ -n "$TEST_VERSION_SHA" ]; then
             TARGET_SHA="$TEST_VERSION_SHA"
-            echo "Using test version SHA: $TARGET_SHA"
           elif [ "$VERSION" != "experimental" ]; then
             TARGET_SHA="$VERSION"
-            echo "Using version string: $TARGET_SHA"
           else
             TARGET_SHA=$(git rev-parse HEAD)
-            echo "Using current commit SHA: $TARGET_SHA"
           fi
-          
-          # Convert timeout to seconds
-          TIMEOUT_SECONDS=1800  # 30 minutes
-          POLL_INTERVAL=10      # 10 seconds
-          
+
+          TIMEOUT_SECONDS=2700  # 45 minutes; covers libsonnet PR auto-merge + kube-manifests-exporter + flux + scrape
+          POLL_INTERVAL=10
+
           QUERY="argo_resource_info{exported_namespace=\"grafana-bench-cd\", version=\"$TARGET_SHA\"}"
-          
+          # PROMETHEUS_URL is the bare hostname; the Mimir Cortex-compat PromQL endpoint lives at /api/prom/api/v1/query.
+          PROM_QUERY_URL="${PROMETHEUS_URL}/api/prom/api/v1/query"
+
           echo "Target SHA: $TARGET_SHA"
           echo "Query: $QUERY"
-          echo "Timeout: 30 minutes, checking every ${POLL_INTERVAL}s"
+          echo "URL: $PROM_QUERY_URL"
+          echo "Timeout: ${TIMEOUT_SECONDS}s, polling every ${POLL_INTERVAL}s"
           echo ""
-          
-          # Test the query once first
-          PROMETHEUS_RESPONSE=$(curl -s -G "$PROMETHEUS_URL/prometheus/api/v1/query" \
-            --data-urlencode "query=$QUERY" \
-            -u "$PROMETHEUS_USER:$PROMETHEUS_TOKEN")
-          
-          RESULT_COUNT=$(echo "$PROMETHEUS_RESPONSE" | jq -r '.data.result | length' 2>/dev/null || echo "0")
-          
-          if [ "$RESULT_COUNT" -gt "0" ]; then
-            echo "✅ Success! Found $RESULT_COUNT metric(s) with version $TARGET_SHA"
-            echo "🎉 Deployment detected immediately"
-            exit 0
-          fi
-          
-          # Start polling
-          echo "🔄 Starting polling..."
+
           ELAPSED=0
-          while [ $ELAPSED -lt $TIMEOUT_SECONDS ]; do
-            ATTEMPT_NUM=$(($ELAPSED / $POLL_INTERVAL + 1))
-            echo "⏳ Attempt $ATTEMPT_NUM (${ELAPSED}s elapsed)..."
-            
-            PROMETHEUS_RESPONSE=$(curl -s -G "$PROMETHEUS_URL/prometheus/api/v1/query" \
+          ATTEMPT=0
+          while [ "$ELAPSED" -lt "$TIMEOUT_SECONDS" ]; do
+            ATTEMPT=$((ATTEMPT + 1))
+
+            RESPONSE=$(mktemp)
+            HTTP_STATUS=$(curl -sS -G -o "$RESPONSE" -w "%{http_code}" "$PROM_QUERY_URL" \
               --data-urlencode "query=$QUERY" \
-              -u "$PROMETHEUS_USER:$PROMETHEUS_TOKEN")
-            
-            RESULT_COUNT=$(echo "$PROMETHEUS_RESPONSE" | jq -r '.data.result | length' 2>/dev/null || echo "0")
-            
-            if [ "$RESULT_COUNT" -gt "0" ]; then
-              echo "✅ Success! Found $RESULT_COUNT metric(s) with version $TARGET_SHA"
-              echo "🎉 Deployment detected after ${ELAPSED}s"
+              -u "$PROMETHEUS_USER:$PROMETHEUS_TOKEN" || echo "000")
+
+            COUNT=0
+            if [ "$HTTP_STATUS" = "200" ]; then
+              COUNT=$(jq -r '.data.result | length // 0' "$RESPONSE" 2>/dev/null || echo "0")
+            fi
+
+            if [ "$COUNT" -gt 0 ]; then
+              echo "✅ Found $COUNT metric(s) for version $TARGET_SHA after ${ELAPSED}s (HTTP $HTTP_STATUS)"
+              rm -f "$RESPONSE"
               exit 0
             fi
-            
-            sleep $POLL_INTERVAL
-            ELAPSED=$(($ELAPSED + $POLL_INTERVAL))
+
+            # Auth or path failures won't get better by waiting — fail fast with the body so it's debuggable.
+            case "$HTTP_STATUS" in
+              401|403|404)
+                echo "❌ Prometheus query failed with HTTP $HTTP_STATUS (URL: $PROM_QUERY_URL)"
+                echo "Response (first 500 chars):"
+                head -c 500 "$RESPONSE"; echo
+                rm -f "$RESPONSE"
+                exit 1
+                ;;
+            esac
+
+            # Log status on the first attempt and once per minute thereafter; include a snippet on non-200.
+            if [ "$ATTEMPT" = "1" ] || [ "$((ATTEMPT % 6))" = "0" ]; then
+              echo "⏳ Attempt $ATTEMPT (${ELAPSED}s): HTTP $HTTP_STATUS, $COUNT results"
+              if [ "$HTTP_STATUS" != "200" ]; then
+                echo "  Response (first 300 chars):"
+                head -c 300 "$RESPONSE" | sed 's/^/  /'; echo
+              fi
+            fi
+
+            rm -f "$RESPONSE"
+            sleep "$POLL_INTERVAL"
+            ELAPSED=$((ELAPSED + POLL_INTERVAL))
           done
-          
-          echo "❌ Timeout: No metrics found after ${TIMEOUT_SECONDS}s"
+
+          echo "❌ Timeout: No matching metric after ${TIMEOUT_SECONDS}s"
           exit 1
 
       - name: setup argo
