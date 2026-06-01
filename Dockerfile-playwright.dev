@@ -58,6 +58,13 @@ RUN corepack install -g npm@latest yarn@latest pnpm@latest
 
 # Use existing pwuser from Playwright base image instead of creating bench user
 
+# Symlink the Playwright-managed chromium binary to stable names so k6's browser
+# module can auto-detect it via PATH. The Playwright path is version-pinned
+# (e.g. /ms-playwright/chromium-1208/chrome-linux/chrome), so resolving the glob
+# at build time avoids hardcoding it in K6_BROWSER_EXECUTABLE_PATH downstream.
+RUN ln -s /ms-playwright/chromium-*/chrome-linux/chrome /usr/bin/chromium-browser && \
+  ln -s /ms-playwright/chromium-*/chrome-linux/chrome /usr/bin/chromium
+
 # Copy binaries
 COPY --from=k6 /usr/bin/k6 /usr/local/bin/k6
 COPY --from=builder /app/build/grafana-bench /usr/local/bin/grafana-bench
