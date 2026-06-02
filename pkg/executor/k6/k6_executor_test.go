@@ -58,6 +58,40 @@ func k6TestRunnerForTesting(
 	return te, nil
 }
 
+func TestHasK6ScriptError(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name   string
+		output string
+		expect bool
+	}{
+		{
+			name:   "logfmt stacktrace",
+			output: `time="..." level=error msg="TypeError: ..." executor=per-vu-iterations scenario=default source=stacktrace`,
+			expect: true,
+		},
+		{
+			name:   "json stacktrace",
+			output: `{"level":"error","msg":"TypeError: ...","source":"stacktrace"}`,
+			expect: true,
+		},
+		{
+			name:   "clean passing output",
+			output: "running (00m00.0s), 0/1 VUs, 1 complete and 0 interrupted iterations",
+			expect: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, "has script error", tc.expect, hasK6ScriptError([]byte(tc.output)))
+		})
+	}
+}
+
 func TestK6Executor(t *testing.T) {
 	t.Parallel()
 
@@ -116,6 +150,19 @@ func TestK6Executor(t *testing.T) {
 			},
 		},
 		{
+			// k6 exits 0 on an uncaught script exception; bench must still
+			// surface it as an error rather than a pass.
+			testCase:  "script exception test",
+			testSuite: "k6tests/exception.js",
+			expect: &executor.SuiteRunSummary{
+				TestsExecuted: 1,
+				TestsError:    1,
+				TestRuns: []executor.TestRunSummary{
+					{TestFile: "exception.js", Status: executor.TestError},
+				},
+			},
+		},
+		{
 			testCase:  "missing test",
 			testSuite: "k6tests/missing.js",
 			expectErr: testFilesError,
@@ -124,12 +171,13 @@ func TestK6Executor(t *testing.T) {
 			testCase:  "test suite directory",
 			testSuite: "k6tests/",
 			expect: &executor.SuiteRunSummary{
-				TestsExecuted: 3,
-				TestsError:    1,
+				TestsExecuted: 4,
+				TestsError:    2,
 				TestsFailed:   1,
 				TestsPassed:   1,
 				TestRuns: []executor.TestRunSummary{
 					{TestFile: "abort.js", Status: executor.TestError},
+					{TestFile: "exception.js", Status: executor.TestError},
 					{TestFile: "fail.js", Status: executor.TestFailed},
 					{TestFile: "pass.js", Status: executor.TestPassed},
 				},
@@ -144,7 +192,7 @@ func TestK6Executor(t *testing.T) {
 			testSuite: "k6tests/pass.js",
 			expect: &executor.SuiteRunSummary{
 				TestsExecuted: 1,
-				TestsError:   1,
+				TestsError:    1,
 				TestRuns: []executor.TestRunSummary{
 					{TestFile: "pass.js", Status: executor.TestError},
 				},
