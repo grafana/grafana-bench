@@ -61,8 +61,7 @@ runs:
         GH_TOKEN: ${{ github.token }}
       run: |
         git config --global url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
-        GOPRIVATE="github.com/grafana/grafana-bench" GOPROXY="direct" GOSUMDB="off" \
-          go install "github.com/grafana/grafana-bench@${VERSION}"
+        go install "github.com/grafana/grafana-bench@${VERSION}"
 
     - name: Verify grafana-bench installation
       if: inputs.version != 'false'
