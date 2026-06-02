@@ -33,7 +33,7 @@ RUN CGO_ENABLED=0 go build \
 
 # Production slim image - no fixuid needed
 
-FROM grafana/k6:latest AS k6
+FROM grafana/k6:2.0.0 AS k6
 FROM alpine:3.23 AS runtime
 
 USER root
