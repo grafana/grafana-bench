@@ -5,7 +5,7 @@ go 1.25.8
 require (
 	buf.build/gen/go/prometheus/prometheus/protocolbuffers/go v1.36.11-20260331160422-eae785f0a21d.1
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
-	github.com/go-git/go-git/v5 v5.19.0
+	github.com/go-git/go-git/v5 v5.19.1
 	github.com/golang/snappy v1.0.0
 	github.com/grafana/nanogit v0.13.1
 	github.com/joho/godotenv v1.5.1
