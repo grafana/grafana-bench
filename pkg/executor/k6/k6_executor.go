@@ -34,6 +34,14 @@ var (
 	missingK6CloudConfigError = errors.New("k6 Token and project ID are required for cloud output")
 	testFilesError            = errors.New("getting test files")
 	testExts                  = []string{".js", ".ts"}
+	// k6 logs an uncaught script exception with a `source=stacktrace` field but
+	// still exits 0, so this field is the only reliable signal that a VU threw.
+	// Match both the default logfmt output and the JSON log format
+	// (--log-format=json) so detection survives a log-format change.
+	k6ScriptErrorMarkers = [][]byte{
+		[]byte("source=stacktrace"),
+		[]byte(`"source":"stacktrace"`),
+	}
 	// used to replace strings.Title
 	caser = cases.Title(language.AmericanEnglish)
 )
@@ -259,6 +267,20 @@ func (t *K6TestExecutor) execTest(
 		}
 	}
 
+	// k6 exits 0 when a VU throws an uncaught exception during an iteration: the
+	// error is logged with `source=stacktrace` and the iteration is counted as
+	// failed, but the run itself is not. Without this check such a test would be
+	// silently reported as passed.
+	if status == executor.TestPassed && hasK6ScriptError(buf.Bytes()) {
+		status = executor.TestError
+		cmdErr = "k6 reported an uncaught script exception (see stacktrace in output)"
+		t.Log.Error(cmdErr)
+		// surface the output that wasn't printed above (k6 exited 0)
+		if !t.Verbose {
+			fmt.Println(buf.String())
+		}
+	}
+
 	if status != executor.TestError {
 		output, err = t.getOutput(buf, jsonFile, scenarioName)
 	}
@@ -272,6 +294,18 @@ func (t *K6TestExecutor) execTest(
 		CloudID:     output.cloudId,
 		CloudURL:    output.cloudURL,
 	}, err
+}
+
+// hasK6ScriptError reports whether k6's output contains an uncaught script
+// exception. k6 logs these with a `source=stacktrace` field but still exits 0,
+// so scanning the output is the only reliable signal.
+func hasK6ScriptError(output []byte) bool {
+	for _, marker := range k6ScriptErrorMarkers {
+		if bytes.Contains(output, marker) {
+			return true
+		}
+	}
+	return false
 }
 
 // pattern to match k6 version output
