@@ -175,7 +175,7 @@ docker run --rm -p 3000:3000 grafana/grafana
 docker run --rm \
   --network=host \
   --volume="./:/tests/" \
-  ghcr.io/grafana/grafana-bench-playwright:v1.0.10 test \
+  ghcr.io/grafana/grafana-bench-playwright:v1.0.11 test \
   --service grafana \
   --service-url "http://localhost:3000" \
   --service-version latest \
@@ -196,7 +196,7 @@ docker run --rm \
 1. `docker run --rm` — removes the container when done
 2. `--network=host` — connects the bench container to the host network so it can reach Grafana on port 3000
 3. `--volume="./:/tests/"` — mounts the current directory into the container at `/tests`
-4. `ghcr.io/grafana/grafana-bench-playwright:v1.0.10 test` — uses the Playwright variant of the bench image (includes browsers and system dependencies)
+4. `ghcr.io/grafana/grafana-bench-playwright:v1.0.11 test` — uses the Playwright variant of the bench image (includes browsers and system dependencies)
 5. `--service-url "http://localhost:3000"` — passed to your tests as `process.env.GRAFANA_URL`
 6. `--pw-prepare` — commands to run before the test (use `;` to separate, `&&` is not supported)
 7. `--pw-execute` — command to run the tests
