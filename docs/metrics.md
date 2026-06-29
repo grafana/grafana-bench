@@ -42,9 +42,15 @@ Built-in metrics are prefixed with `bench_` and describe your test suite.
 - `bench_tests_error` - Number of tests with errors
 - `bench_tests_executed` - Total number of tests executed
 - `bench_tests_failed` - Number of failed tests
-- `bench_tests_flakey` - Number of flaky tests (passed after retry)
+- `bench_tests_flaky` - Number of flaky tests (passed after retry)
 - `bench_tests_passed` - Number of passed tests
+- `bench_test_retries_total` - Total retry attempts across the suite (extra runs beyond each test's first attempt)
 - `bench_total_duration_seconds` - Total duration of test suite execution
+
+**Per-test Metrics:**
+- `bench_test_run_flaky` - Emitted (value `1`) for each test that passed only after a retry. Carries an additional `test_full_path` label (`folder/testFile`) identifying the flaky test, so it is higher cardinality than the suite metrics above and is only present for tests that actually flaked.
+
+> Tip: use `bench_tests_flaky` / `bench_test_retries_total` (suite-level, low cardinality) for dashboards and alerts on the rate of flakiness and retry volume. To answer "which test is flaky and how many times did it run", prefer the `msg=testRun` logs (which carry `attempts` and `maxAttempts` per test) over high-cardinality metric labels.
 
 **Go Benchmark Metrics** (when using `--test-runner gobench`):
 - `go_benchmark_ns_per_op` - Nanoseconds per operation

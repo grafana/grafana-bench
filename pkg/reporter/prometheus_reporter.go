@@ -46,6 +46,19 @@ func NewPrometheusReporter(config PrometheusConfig) *PrometheusReporter {
 	}
 }
 
+// sumRetries returns the total number of retry attempts across a suite: for
+// each test run, the attempts beyond the first. Executors that don't track
+// attempts leave Attempts at 0, which contributes nothing.
+func sumRetries(testRuns []executor.TestRunSummary) int {
+	total := 0
+	for _, tr := range testRuns {
+		if tr.Attempts > 1 {
+			total += tr.Attempts - 1
+		}
+	}
+	return total
+}
+
 func makeTimeSeries(labels map[string]string, name string, timestamp time.Time, value float64) *prompb.TimeSeries {
 	tsLabels := []*prompb.Label{
 		{
@@ -95,6 +108,11 @@ func (p *PrometheusReporter) Report(
 		{Name: "bench_tests_failed", Value: float64(summary.TestsFailed), Labels: labels},
 		{Name: "bench_tests_error", Value: float64(summary.TestsError), Labels: labels},
 		{Name: "bench_tests_flaky", Value: float64(summary.TestsFlaky), Labels: labels},
+		// bench_test_retries_total counts retry attempts across the suite (the
+		// extra runs beyond each test's first attempt). It carries only the
+		// suite labels - deliberately not test_full_path - so it stays low
+		// cardinality and answers "how much retrying is the pipeline doing".
+		{Name: "bench_test_retries_total", Value: float64(sumRetries(summary.TestRuns)), Labels: labels},
 		{Name: "bench_total_duration_seconds", Value: float64(summary.TotalDuration / 1000.0), Labels: labels},
 	}
 

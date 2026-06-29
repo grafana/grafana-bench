@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/grafana/grafana-bench/pkg/executor"
 	"github.com/grafana/grafana-bench/pkg/metrics"
@@ -129,7 +130,7 @@ func TestFlakyTest(t *testing.T) {
 				TestsExecuted: 1,
 				TestsFailed:   1,
 				TestRuns: []executor.TestRunSummary{
-					{TestFile: "TestFlaky", Status: executor.TestFailed},
+					{TestFile: "TestFlaky", Status: executor.TestFailed, Attempts: 1, MaxAttempts: 1},
 				},
 			},
 		},
@@ -148,7 +149,36 @@ func TestFlakyTest(t *testing.T) {
 				TestsExecuted: 1,
 				TestsFlaky:    1,
 				TestRuns: []executor.TestRunSummary{
-					{TestFile: "TestFlaky", Status: executor.TestFlaky},
+					{TestFile: "TestFlaky", Status: executor.TestFlaky, Attempts: 2, MaxAttempts: 4},
+				},
+				Metrics: []metrics.Metric{
+					{
+						Name:  "bench_test_run_flaky",
+						Value: 1,
+						Labels: map[string]string{
+							"test_full_path": "github.com/grafana/grafana-bench/pkg/executor/gotest/flaky/TestFlaky",
+						},
+					},
+				},
+			},
+		},
+		{
+			title: "retry delay sleeps between attempts",
+			opts: GoExecutorOptions{
+				Packages:   []string{"./..."},
+				Retries:    1,
+				RetryDelay: 200 * time.Millisecond,
+			},
+			suite: executor.TestSuite{
+				Path: "flaky",
+			},
+			expectErr: nil,
+			expect: executor.SuiteRunSummary{
+				Status:        executor.SuiteFailed,
+				TestsExecuted: 1,
+				TestsFlaky:    1,
+				TestRuns: []executor.TestRunSummary{
+					{TestFile: "TestFlaky", Status: executor.TestFlaky, Attempts: 2, MaxAttempts: 2},
 				},
 				Metrics: []metrics.Metric{
 					{
@@ -181,9 +211,19 @@ func TestFlakyTest(t *testing.T) {
 
 			log := slog.New(slog.NewTextHandler(io.Discard, nil))
 			goExec := NewGoExecutor(log, opts)
+			start := time.Now()
 			summary, err := goExec.ExecTestSuite(context.TODO(), tc.suite, map[string]string{})
+			elapsed := time.Since(start)
 			if !errors.Is(err, tc.expectErr) {
 				t.Fatalf("expected %v got %v", tc.expectErr, err)
+			}
+
+			// wall-clock must cover at least retryDelay * (attempts - 1)
+			if opts.RetryDelay > 0 {
+				minSleep := opts.RetryDelay
+				if elapsed < minSleep {
+					t.Errorf("elapsed %v should be >= RetryDelay %v", elapsed, minSleep)
+				}
 			}
 
 			// we can't assert durations because are unpredictable
@@ -198,6 +238,8 @@ func TestFlakyTest(t *testing.T) {
 			for i, tr := range tc.expect.TestRuns {
 				assert.Equal(t, "test file", tr.TestFile, summary.TestRuns[i].TestFile)
 				assert.Equal(t, "test status", tr.Status, summary.TestRuns[i].Status)
+				assert.Equal(t, "test attempts", tr.Attempts, summary.TestRuns[i].Attempts)
+				assert.Equal(t, "test maxAttempts", tr.MaxAttempts, summary.TestRuns[i].MaxAttempts)
 			}
 
 			// assert metrics

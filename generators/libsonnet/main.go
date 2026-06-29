@@ -565,6 +565,7 @@ func shouldSkipFlag(name, usage string) bool {
 	goTestFlags := map[string]bool{
 		"go-args":          true, // arguments to go test command - not needed for libsonnet
 		"go-retries":       true, // number of retries for failed go tests - not needed for libsonnet
+		"go-retry-delay":   true, // delay between go test retries - not needed for libsonnet
 		"go-test-args":     true, // arguments to go test using arg flag - not needed for libsonnet
 		"go-test-packages": true, // packages for go testing - not needed for libsonnet
 	}

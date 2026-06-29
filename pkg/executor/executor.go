@@ -46,6 +46,11 @@ type TestRunSummary struct {
 	Iterations       string        `json:"iterations"`
 	TotalDuration    time.Duration `json:"totalDuration"`
 	ScenarioDuration time.Duration `json:"scenarioDuration"`
+	// Attempts is the number of times the test ran (initial run + retries).
+	// Always >= 1 for tests that executed.
+	Attempts int `json:"attempts"`
+	// MaxAttempts is the configured upper bound (1 + configured retries).
+	MaxAttempts int `json:"maxAttempts"`
 	// Attributes are provided by the test runner and not user configurable
 	Attributes map[string]string `json:"attributes"`
 }
