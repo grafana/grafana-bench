@@ -78,6 +78,10 @@ jobs:
         with:
           base: main
           token: ${{ steps.get-github-app-token.outputs.token }}
+          # Create the commit via the GitHub API so it is signed with GitHub's
+          # key and shows as Verified. The repo's ruleset rejects unsigned
+          # commits, which previously failed this push with GH013.
+          sign-commits: true
           commit-message: "docs: update documentation and libsonnet for ${{ steps.get-info.outputs.version }}"
           title: "📚 Update documentation and libsonnet for ${{ steps.get-info.outputs.version }}"
           body: |
