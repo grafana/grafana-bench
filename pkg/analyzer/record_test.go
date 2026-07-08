@@ -61,6 +61,56 @@ func TestDecodeRecordLogfmtLeadingWhitespace(t *testing.T) {
 	}
 }
 
+// TestDecodeRecordRetryFields covers the attempts/maxAttempts fields added by
+// #1005, in both logfmt and JSON, plus the RetryExhausted / RetriesEnabled
+// helpers that feed the v2 confidence rule.
+func TestDecodeRecordRetryFields(t *testing.T) {
+	logfmtLine := []byte(`time=2026-04-17T10:00:00Z level=INFO msg=testRun service=grafana-pro runStage=ci testFile=p.ts grafanaVersion=v1 status=failed attempts=3 maxAttempts=3 runId=r-1`)
+	rec, err := decodeRecord(logfmtLine)
+	if err != nil {
+		t.Fatalf("decode logfmt: %v", err)
+	}
+	if rec.Attempts != 3 || rec.MaxAttempts != 3 {
+		t.Errorf("logfmt attempts: got %d/%d want 3/3", rec.Attempts, rec.MaxAttempts)
+	}
+	if !rec.RetriesEnabled() {
+		t.Errorf("expected RetriesEnabled with maxAttempts=3")
+	}
+	if !rec.RetryExhausted() {
+		t.Errorf("expected RetryExhausted with failed attempts=3 maxAttempts=3")
+	}
+
+	jsonLine := []byte(`{"time":"2026-04-17T10:00:00Z","msg":"testRun","service":"grafana-pro","runStage":"ci","testFile":"p.ts","grafanaVersion":"v1","status":"failed","attempts":1,"maxAttempts":3,"runId":"r-1"}`)
+	rec, err = decodeRecord(jsonLine)
+	if err != nil {
+		t.Fatalf("decode json: %v", err)
+	}
+	if rec.Attempts != 1 || rec.MaxAttempts != 3 {
+		t.Errorf("json attempts: got %d/%d want 1/3", rec.Attempts, rec.MaxAttempts)
+	}
+	if rec.RetryExhausted() {
+		t.Errorf("attempts=1 < maxAttempts=3 must not count as exhausted")
+	}
+}
+
+// TestRetryHelpersLegacyRecords confirms the helpers treat missing retry data
+// (attempts/maxAttempts == 0) as "no retry signal" so they can never downgrade
+// a record that predates #1005.
+func TestRetryHelpersLegacyRecords(t *testing.T) {
+	rec := TestRunRecord{Status: "failed"} // no attempts/maxAttempts
+	if rec.RetriesEnabled() {
+		t.Errorf("legacy record must report RetriesEnabled=false")
+	}
+	if rec.RetryExhausted() {
+		t.Errorf("legacy record must report RetryExhausted=false")
+	}
+	// Retries off (maxAttempts=1) behaves the same as legacy.
+	rec.Attempts, rec.MaxAttempts = 1, 1
+	if rec.RetriesEnabled() || rec.RetryExhausted() {
+		t.Errorf("maxAttempts=1 (retries off) must report both helpers false")
+	}
+}
+
 func assertRec(t *testing.T, rec TestRunRecord, service, stage, file, version, status, runID string) {
 	t.Helper()
 	if rec.Service != service {

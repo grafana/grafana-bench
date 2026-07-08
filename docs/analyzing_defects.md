@@ -1,6 +1,6 @@
 # Detecting defects across runs with `bench analyze`
 
-`bench analyze` turns the logs that bench already emits into a signal about whether a failing test has caught a real defect. It queries Loki for `msg=testRun` events over a time window, applies a three-part rule to each `(service, runStage, testFile, grafanaVersion)` tuple, and emits a new `msg=defectConfirmed` event on stdout for every tuple that breaches the rule.
+`bench analyze` turns the logs that bench already emits into a signal about whether a failing test has caught a real defect. It queries Loki for `msg=testRun` events over a time window, applies a multi-part rule to each `(service, runStage, testFile, grafanaVersion)` tuple, and emits a new `msg=defectConfirmed` event on stdout for every tuple that breaches the rule.
 
 This is the automated, pre-deploy counterpart to the `invest:tests` label on `grafana/support-escalations`: `invest:tests` says "a human decided this should have been caught by tests," and `msg=defectConfirmed` says "bench flagged this as a regression before a customer escalated it." Put together, they give Defect Escape Rate (DER) a precision side — *of the defects that escaped to customers, how many did bench catch first?*
 
@@ -23,7 +23,7 @@ Don't use it for:
 
 ## How the rule works
 
-A `(service, runStage, testFile, grafanaVersion)` tuple is a **confirmed defect** only when all three conditions hold.
+A `(service, runStage, testFile, grafanaVersion)` tuple breaches the rule and produces an event when the first two conditions hold; it is labelled a **confirmed defect** (rather than **suspected**) only when all four conditions hold.
 
 ### 1. Persistence
 
@@ -47,10 +47,24 @@ sha256(testFile + "|" + canonicalize(exitMessage))[:12]
 
 `canonicalize` strips variable fragments that would otherwise break signature stability — ISO-8601 timestamps, UUIDs, process IDs, URL query strings, absolute paths, long hex blobs, and decimal numbers ≥3 digits are all rewritten to placeholder tokens before hashing.
 
-- All tail signatures identical → `confidence=confirmed`
+- All tail signatures identical → signature is stable
 - Signatures drift across the tail → `confidence=suspected`
 
-`suspected` events are useful for triage (the test is persistently failing and there *is* a clean prior version, but the failure mode is shifting) but should not be counted as confirmed regressions in DER math without manual review.
+### 4. Retry evidence
+
+As of [k6 retry support (#1005)](https://github.com/grafana/grafana-bench/pull/1005), every `msg=testRun` event carries `attempts` (initial run + retries) and `maxAttempts` (`1 + configured retries`). When retries are enabled (`maxAttempts > 1`), a `status=failed` run with `attempts == maxAttempts` burned its entire retry budget and still failed — a strong, deterministic-defect signal.
+
+The analyzer folds this into confidence:
+
+- Signature stable **and** every failure in the tail exhausted its retry budget (or retries were off) → `confidence=confirmed`, `retryExhausted=true` when a real budget was spent.
+- Signature stable but a tail failure gave up before spending its budget (`attempts < maxAttempts`) → `confidence=suspected`. The failure isn't reliably reproducing through the full budget.
+- Signature drifts → `confidence=suspected` regardless — exhausting retries cannot rescue an unstable signature. `retryExhausted` still reports whether the budget was spent.
+
+Records that predate #1005 or ran with retries off (`maxAttempts ≤ 1`) carry no retry signal: the gate never fires, so they behave exactly as they did under rule `v1`. This means the retry rule can only ever *withhold* confidence from a shaky failure — it never downgrades a clean historical regression.
+
+`suspected` events are useful for triage (the test is persistently failing and there *is* a clean prior version, but the failure mode is shifting or not reliably reproducing) but should not be counted as confirmed regressions in DER math without manual review.
+
+> **Retries vs recall.** Retries trade the analyzer's recall for precision. A real-but-intermittent regression that passes on a retry is reported as `flaky`, not `failed`, and is excluded from analysis by design (rule 1 only counts `failed`/`error`). The higher you set `--k6-retries` / `--go-retries`, the more intermittent regressions get masked as flakes and never reach the analyzer. Tune the retry count for the suite's flakiness with that trade-off in mind: enough retries to suppress genuine infrastructure flakes, not so many that a real regression that fails 1-in-N gets laundered into a pass.
 
 ---
 
@@ -69,6 +83,7 @@ Every confirmed or suspected defect produces one `msg=defectConfirmed` line. It 
 | `grafanaUrl` | Cluster URL |
 | `signatureHash` | 12-hex signature used to dedupe across runs |
 | `confidence` | `confirmed` or `suspected` |
+| `retryExhausted` | `true` when retries were enabled across the failing tail and every failure burned its full retry budget (`attempts == maxAttempts`); `false` when retries were off or the records predate #1005 |
 | `confidenceRuns` | Number of consecutive failing runs observed |
 | `priorPassingRuns` | Number of passing runs on the prior version |
 | `exitMessageCanonical` | Canonicalised exit message (≤500 chars) |
@@ -78,7 +93,7 @@ Every confirmed or suspected defect produces one `msg=defectConfirmed` line. It 
 | `sourceRunIds` | Comma-separated `runId`s of the failures — traceable back to raw `testRun` events |
 | `analyzeWindowSeconds` | Window the analyzer ran over |
 | `analyzedAt` | When the analysis was performed |
-| `ruleVersion` | `v1` — emitted so future rule changes can be retroactively segmented |
+| `ruleVersion` | `v2` — emitted so future rule changes can be retroactively segmented |
 
 ---
 
@@ -112,7 +127,7 @@ Sample debug output:
 time=... level=DEBUG msg="querying loki for testRun events" selector="{service_name=~\".+\"} |= \"tool=bench\" |= \"msg=testRun\"" start=... end=...
 time=... level=DEBUG msg="loaded testRun records" pulled=184 after_filter=41
 time=... level=DEBUG msg="analysis complete" defects=1
-time=... level=INFO  msg="dry-run defect" testFile=permissions.ts grafanaVersion=13.0.0-23542128402 priorPassingVersion=13.0.0-23563050832 confidence=confirmed signatureHash=a9c0f1b2d345 confidenceRuns=4
+time=... level=INFO  msg="dry-run defect" testFile=permissions.ts grafanaVersion=13.0.0-23542128402 priorPassingVersion=13.0.0-23563050832 confidence=confirmed retryExhausted=true signatureHash=a9c0f1b2d345 confidenceRuns=4
 ```
 
 ### Real emission

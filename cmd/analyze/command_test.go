@@ -114,7 +114,10 @@ func TestAnalyzeCommandReplaysPermissionsIncident(t *testing.T) {
 	assertString(t, d, "grafanaVersion", badVersion)
 	assertString(t, d, "priorPassingVersion", goodVersion)
 	assertString(t, d, "confidence", "confirmed")
-	assertString(t, d, "ruleVersion", "v1")
+	assertString(t, d, "ruleVersion", "v2")
+	// Legacy fixture has no attempts/maxAttempts, so retry evidence is absent:
+	// confidence stays confirmed (v1 behaviour) and retryExhausted is false.
+	assertBool(t, d, "retryExhausted", false)
 	assertNumber(t, d, "confidenceRuns", 3)
 	assertNumber(t, d, "priorPassingRuns", 3)
 	if sig, _ := d["signatureHash"].(string); len(sig) != 12 {
@@ -278,5 +281,17 @@ func assertNumber(t *testing.T, m map[string]any, key string, want int) {
 	}
 	if int(got) != want {
 		t.Errorf("expected %s=%d, got %v", key, want, got)
+	}
+}
+
+func assertBool(t *testing.T, m map[string]any, key string, want bool) {
+	t.Helper()
+	got, ok := m[key].(bool)
+	if !ok {
+		t.Errorf("expected field %q to be a bool, got %T", key, m[key])
+		return
+	}
+	if got != want {
+		t.Errorf("expected %s=%t, got %t", key, want, got)
 	}
 }

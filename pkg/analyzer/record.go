@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/go-logfmt/logfmt"
@@ -37,6 +38,14 @@ type TestRunRecord struct {
 	ExitMessage    string    `json:"exitMessage"`
 	Order          string    `json:"order"`
 	TestRun        string    `json:"testRun"`
+	// Attempts / MaxAttempts are emitted by bench's LogReporter as of the k6
+	// retry-support change (#1005). Attempts is the number of times the test
+	// ran (initial run + retries); MaxAttempts is the configured upper bound
+	// (1 + configured retries). Records that predate that change — or JSON
+	// emitted by an older bench — decode to 0, so any logic that reads them
+	// must treat 0 as "no retry data" and never downgrade on its absence.
+	Attempts    int `json:"attempts"`
+	MaxAttempts int `json:"maxAttempts"`
 }
 
 // Failed reports whether this record counts as a failure for rule evaluation.
@@ -50,6 +59,21 @@ func (r TestRunRecord) Failed() bool {
 // boundary rule.
 func (r TestRunRecord) Passed() bool {
 	return r.Status == "passed"
+}
+
+// RetriesEnabled reports whether a real retry budget existed for this run.
+// MaxAttempts is 1 when retries are off and 0 on legacy records that predate
+// the attempts field, so both collapse to "no retry signal".
+func (r TestRunRecord) RetriesEnabled() bool {
+	return r.MaxAttempts > 1
+}
+
+// RetryExhausted reports whether this failing run burned its full retry budget
+// and still failed — the strong, deterministic-defect signal described in
+// #961's review. It is only ever true when retries were enabled, so it can add
+// confidence but never remove it from records that lack retry data.
+func (r TestRunRecord) RetryExhausted() bool {
+	return r.Failed() && r.RetriesEnabled() && r.Attempts >= r.MaxAttempts
 }
 
 // GroupKey identifies the unit of regression analysis.
@@ -168,6 +192,31 @@ func (r *TestRunRecord) setLogfmtField(key, val string) error {
 		r.Order = val
 	case "testRun":
 		r.TestRun = val
+	case "attempts":
+		n, err := parseCount(key, val)
+		if err != nil {
+			return err
+		}
+		r.Attempts = n
+	case "maxAttempts":
+		n, err := parseCount(key, val)
+		if err != nil {
+			return err
+		}
+		r.MaxAttempts = n
 	}
 	return nil
+}
+
+// parseCount decodes a small non-negative integer logfmt value, tolerating an
+// empty value as 0 so a blank field doesn't fail the whole record.
+func parseCount(key, val string) (int, error) {
+	if val == "" {
+		return 0, nil
+	}
+	n, err := strconv.Atoi(val)
+	if err != nil {
+		return 0, fmt.Errorf("parsing logfmt %s %q: %w", key, val, err)
+	}
+	return n, nil
 }

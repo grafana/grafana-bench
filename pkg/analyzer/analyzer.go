@@ -7,7 +7,12 @@ import (
 
 // RuleVersion is emitted on every ConfirmedDefect event so that the rule can
 // be tuned without losing the ability to retroactively segment past data.
-const RuleVersion = "v1"
+//
+// v2 folds retry-budget exhaustion into the confidence label (#961 review):
+// when retries are enabled, a stable-signature failure only stays `confirmed`
+// if every failure in the tail burned its full retry budget. Records without
+// retry data (retries off / pre-#1005) are unaffected and behave as in v1.
+const RuleVersion = "v2"
 
 // Confidence levels for a ConfirmedDefect.
 const (
@@ -63,6 +68,11 @@ type ConfirmedDefect struct {
 	AnalyzeWindow        time.Duration
 	AnalyzedAt           time.Time
 	RuleVersion          string
+	// RetryExhausted is true when retries were enabled across the failing tail
+	// and every failure burned its full retry budget (attempts == maxAttempts).
+	// It is the strong deterministic-defect signal from #961's review; false
+	// when retries were off or the records predate the attempts field.
+	RetryExhausted bool
 }
 
 // Analyze applies the v1 defect-confirmation rule to a set of testRun records
@@ -245,12 +255,37 @@ func evaluateTest(recs []TestRunRecord, cfg RuleConfig, window time.Duration, no
 				rawSample = r.ExitMessage
 			}
 		}
-		confidence := ConfidenceConfirmed
+		// Confidence axis 1: signature stability across the failing tail.
+		sigStable := true
 		for _, s := range sigs {
 			if s != sigs[0] {
-				confidence = ConfidenceSuspected
+				sigStable = false
 				break
 			}
+		}
+
+		// Confidence axis 2: retry evidence (v2). Every tail record is a
+		// failure (rule 1). retryExhausted records the strong signal — retries
+		// were enabled on the whole tail and each failure burned its budget.
+		// retryGateOK downgrades confidence only when a failure had retries
+		// available but did NOT exhaust them (attempts < maxAttempts): the test
+		// isn't reliably reproducing through the full budget. Records without
+		// retry data (retries off / pre-#1005) never trip the gate, so v1
+		// behaviour is preserved for them.
+		retryExhausted := true
+		retryGateOK := true
+		for _, r := range tail {
+			if !r.RetryExhausted() {
+				retryExhausted = false
+			}
+			if r.RetriesEnabled() && !r.RetryExhausted() {
+				retryGateOK = false
+			}
+		}
+
+		confidence := ConfidenceSuspected
+		if sigStable && retryGateOK {
+			confidence = ConfidenceConfirmed
 		}
 
 		sourceIDs := make([]string, 0, len(tail))
@@ -271,6 +306,7 @@ func evaluateTest(recs []TestRunRecord, cfg RuleConfig, window time.Duration, no
 			Confidence:           confidence,
 			ConfidenceRuns:       len(tail),
 			PriorPassingRuns:     priorPassing,
+			RetryExhausted:       retryExhausted,
 			ExitMessageCanonical: truncate(canonicalSample, 500),
 			ExitMessageSample:    truncate(rawSample, 200),
 			FirstFailureTime:     tail[0].Time,

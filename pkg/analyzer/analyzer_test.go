@@ -152,6 +152,108 @@ func TestAnalyzeRunStageScoping(t *testing.T) {
 	}
 }
 
+// mkRetryRun is mkRun plus the retry-budget fields added in #1005.
+func mkRetryRun(offset time.Duration, version, status, exitMsg, runID string, attempts, maxAttempts int) TestRunRecord {
+	r := mkRun(offset, version, status, exitMsg, runID)
+	r.Attempts = attempts
+	r.MaxAttempts = maxAttempts
+	return r
+}
+
+func TestAnalyzeRetryExhaustedStaysConfirmed(t *testing.T) {
+	// Retries enabled (maxAttempts=3) and every failure burned the full budget:
+	// stable signature + exhausted budget => confirmed, retryExhausted=true.
+	records := []TestRunRecord{
+		mkRetryRun(0, versionGood, "passed", "", "run-1", 1, 3),
+		mkRetryRun(1*time.Hour, versionGood, "passed", "", "run-2", 1, 3),
+		mkRetryRun(2*time.Hour, versionBad, "failed", "check rate expected 1 got 0.87 pid=4711", "run-3", 3, 3),
+		mkRetryRun(3*time.Hour, versionBad, "failed", "check rate expected 1 got 0.87 pid=9001", "run-4", 3, 3),
+		mkRetryRun(4*time.Hour, versionBad, "failed", "check rate expected 1 got 0.87 pid=1234", "run-5", 3, 3),
+	}
+
+	defects := Analyze(records, RuleConfig{}, 24*time.Hour, baseTime)
+	if len(defects) != 1 {
+		t.Fatalf("expected 1 defect, got %d: %+v", len(defects), defects)
+	}
+	if defects[0].Confidence != ConfidenceConfirmed {
+		t.Errorf("expected confirmed, got %q", defects[0].Confidence)
+	}
+	if !defects[0].RetryExhausted {
+		t.Errorf("expected retryExhausted=true when the whole tail burned its budget")
+	}
+}
+
+func TestAnalyzeRetryNotExhaustedDowngradesToSuspected(t *testing.T) {
+	// Signature is stable, but one tail failure gave up before spending the
+	// retry budget (attempts=1 < maxAttempts=3). The failure isn't reliably
+	// reproducing through the full budget, so confidence drops to suspected.
+	records := []TestRunRecord{
+		mkRetryRun(0, versionGood, "passed", "", "run-1", 1, 3),
+		mkRetryRun(1*time.Hour, versionGood, "passed", "", "run-2", 1, 3),
+		mkRetryRun(2*time.Hour, versionBad, "failed", "check rate expected 1 got 0.87 pid=4711", "run-3", 3, 3),
+		mkRetryRun(3*time.Hour, versionBad, "failed", "check rate expected 1 got 0.87 pid=9001", "run-4", 1, 3),
+		mkRetryRun(4*time.Hour, versionBad, "failed", "check rate expected 1 got 0.87 pid=1234", "run-5", 3, 3),
+	}
+
+	defects := Analyze(records, RuleConfig{}, 24*time.Hour, baseTime)
+	if len(defects) != 1 {
+		t.Fatalf("expected 1 defect, got %d: %+v", len(defects), defects)
+	}
+	if defects[0].Confidence != ConfidenceSuspected {
+		t.Errorf("expected suspected when a tail failure didn't exhaust its retry budget, got %q", defects[0].Confidence)
+	}
+	if defects[0].RetryExhausted {
+		t.Errorf("expected retryExhausted=false when a tail failure left budget unspent")
+	}
+}
+
+func TestAnalyzeRetriesOffPreservesV1Confidence(t *testing.T) {
+	// Retries off (maxAttempts=1) is indistinguishable from legacy records with
+	// no retry data: the retry gate must not fire, so a stable-signature
+	// regression stays confirmed exactly as it did under v1.
+	records := []TestRunRecord{
+		mkRetryRun(0, versionGood, "passed", "", "run-1", 1, 1),
+		mkRetryRun(1*time.Hour, versionGood, "passed", "", "run-2", 1, 1),
+		mkRetryRun(2*time.Hour, versionBad, "failed", "check rate expected 1 got 0.87 pid=4711", "run-3", 1, 1),
+		mkRetryRun(3*time.Hour, versionBad, "failed", "check rate expected 1 got 0.87 pid=9001", "run-4", 1, 1),
+		mkRetryRun(4*time.Hour, versionBad, "failed", "check rate expected 1 got 0.87 pid=1234", "run-5", 1, 1),
+	}
+
+	defects := Analyze(records, RuleConfig{}, 24*time.Hour, baseTime)
+	if len(defects) != 1 {
+		t.Fatalf("expected 1 defect, got %d: %+v", len(defects), defects)
+	}
+	if defects[0].Confidence != ConfidenceConfirmed {
+		t.Errorf("expected confirmed with retries off, got %q", defects[0].Confidence)
+	}
+	if defects[0].RetryExhausted {
+		t.Errorf("expected retryExhausted=false when retries are off (no real budget)")
+	}
+}
+
+func TestAnalyzeSignatureDriftNotRescuedByRetries(t *testing.T) {
+	// Exhausting the retry budget can't rescue a drifting signature: rule (3)
+	// still downgrades to suspected even though retryExhausted is true.
+	records := []TestRunRecord{
+		mkRetryRun(0, versionGood, "passed", "", "run-1", 1, 3),
+		mkRetryRun(1*time.Hour, versionGood, "passed", "", "run-2", 1, 3),
+		mkRetryRun(2*time.Hour, versionBad, "failed", "folder.get failed", "run-3", 3, 3),
+		mkRetryRun(3*time.Hour, versionBad, "failed", "dashboard.get failed", "run-4", 3, 3),
+		mkRetryRun(4*time.Hour, versionBad, "failed", "alert.get failed", "run-5", 3, 3),
+	}
+
+	defects := Analyze(records, RuleConfig{}, 24*time.Hour, baseTime)
+	if len(defects) != 1 {
+		t.Fatalf("expected 1 defect, got %d: %+v", len(defects), defects)
+	}
+	if defects[0].Confidence != ConfidenceSuspected {
+		t.Errorf("expected suspected on signature drift even with exhausted retries, got %q", defects[0].Confidence)
+	}
+	if !defects[0].RetryExhausted {
+		t.Errorf("expected retryExhausted=true — the tail did burn its budget even though the signature drifted")
+	}
+}
+
 func TestAnalyzeInsufficientPersistence(t *testing.T) {
 	// Only 2 consecutive failures — under the default MinFailures=3.
 	records := []TestRunRecord{

@@ -7,7 +7,7 @@ A disposable, real-Loki playground for validating `grafana-bench analyze` end-to
 1. Brings up a single-node Loki (filesystem storage, no auth) on `localhost:3100`.
 2. Pushes a fixture that replays the 2026-03-26 `permissions.ts` regression: 3 green runs on the last-known-good build, 4 failing runs on the first-bad build, with varying `pid` in the exit message.
 3. Runs `grafana-bench analyze` against that Loki.
-4. Expected output: **exactly one** `msg=defectConfirmed` line on stdout, with `confidence=confirmed`, `grafanaVersion=13.0.0-23542128402`, `priorPassingVersion=13.0.0-23563050832`.
+4. Expected output: **exactly one** `msg=defectConfirmed` line on stdout, with `confidence=confirmed`, `retryExhausted=true` (the seeded failures burn a `maxAttempts=2` retry budget), `grafanaVersion=13.0.0-23542128402`, `priorPassingVersion=13.0.0-23563050832`.
 
 ## Requirements
 

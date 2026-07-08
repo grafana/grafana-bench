@@ -53,6 +53,7 @@ func (e *Emitter) EmitDefectConfirmed(d ConfirmedDefect) {
 		"confidence", d.Confidence,
 		"confidenceRuns", d.ConfidenceRuns,
 		"priorPassingRuns", d.PriorPassingRuns,
+		"retryExhausted", d.RetryExhausted,
 		"exitMessageCanonical", d.ExitMessageCanonical,
 		"exitMessageSample", d.ExitMessageSample,
 		"firstFailureTime", d.FirstFailureTime.Format(time.RFC3339),

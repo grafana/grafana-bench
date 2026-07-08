@@ -47,6 +47,10 @@ func main() {
 
 	waitForLoki(*lokiURL)
 
+	// maxAttempts=2 simulates `--k6-retries 1`. Passing runs succeed on the
+	// first attempt; failing runs burn the whole budget (attempts == maxAttempts)
+	// so the analyzer's v2 retry rule labels them retryExhausted=true.
+	const maxAttempts = 2
 	start := time.Now().Add(-2 * time.Hour)
 	var fixtures []fixtureRecord
 	for i := 0; i < 3; i++ {
@@ -54,7 +58,7 @@ func main() {
 			ts:     start.Add(time.Duration(i) * 10 * time.Minute),
 			status: "passed",
 			attrs: commonAttrs(*service, *runStage, *testFile, *goodVersion,
-				"passed", "", fmt.Sprintf("run-good-%d", i)),
+				"passed", "", fmt.Sprintf("run-good-%d", i), 1, maxAttempts),
 		})
 	}
 	for i := 0; i < 4; i++ {
@@ -65,7 +69,7 @@ func main() {
 				"failed",
 				fmt.Sprintf("check rate expected 1 got 0.87 pid=%d at %s",
 					1000+i, time.Now().Format(time.RFC3339)),
-				fmt.Sprintf("run-bad-%d", i)),
+				fmt.Sprintf("run-bad-%d", i), maxAttempts, maxAttempts),
 		})
 	}
 
@@ -83,7 +87,7 @@ func main() {
 	fmt.Fprintf(os.Stdout, "seeded %d records into %s\n", len(fixtures), *lokiURL)
 }
 
-func commonAttrs(svc, stage, file, version, status, exitMsg, runID string) []any {
+func commonAttrs(svc, stage, file, version, status, exitMsg, runID string, attempts, maxAttempts int) []any {
 	return []any{
 		"tool", "bench",
 		"service", svc,
@@ -94,6 +98,8 @@ func commonAttrs(svc, stage, file, version, status, exitMsg, runID string) []any
 		"grafanaSlug", "k6testinstant1",
 		"grafanaUrl", "k6testinstant1.grafana-dev.net",
 		"status", status,
+		"attempts", attempts,
+		"maxAttempts", maxAttempts,
 		"exitMessage", exitMsg,
 		"runId", runID,
 	}
