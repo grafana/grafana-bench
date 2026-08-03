@@ -2,11 +2,12 @@ package analyzer
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
-	"math/rand"
+	"math/big"
 	"net/http"
 	"net/url"
 	"sort"
@@ -33,7 +34,6 @@ type LokiClient struct {
 	cfg   LokiConfig
 	http  *http.Client
 	log   *slog.Logger
-	rng   *rand.Rand
 	chunk time.Duration
 	tries int
 	sleep func(time.Duration)
@@ -54,7 +54,6 @@ func NewLokiClient(cfg LokiConfig, log *slog.Logger) *LokiClient {
 		cfg:   cfg,
 		http:  &http.Client{Timeout: cfg.HTTPTimeout},
 		log:   log,
-		rng:   rand.New(rand.NewSource(time.Now().UnixNano())),
 		chunk: cfg.ChunkSize,
 		tries: cfg.MaxRetries,
 		sleep: time.Sleep,
@@ -195,6 +194,22 @@ func (c *LokiClient) applyAuth(req *http.Request) {
 
 func (c *LokiClient) backoff(attempt int) {
 	base := time.Duration(1<<attempt) * 500 * time.Millisecond
-	jitter := time.Duration(c.rng.Int63n(int64(250 * time.Millisecond)))
-	c.sleep(base + jitter)
+	c.sleep(base + jitter(250*time.Millisecond))
+}
+
+// jitter returns a uniformly random duration in [0, max) to de-synchronise
+// retries against a rate-limited Loki. It uses crypto/rand rather than
+// math/rand: the value isn't security-sensitive, but keeping math/rand out of
+// the tree avoids the security scanner's weak-RNG finding without an inline
+// suppression. A crypto/rand read failure (practically impossible) yields no
+// jitter, which is harmless.
+func jitter(span time.Duration) time.Duration {
+	if span <= 0 {
+		return 0
+	}
+	n, err := rand.Int(rand.Reader, big.NewInt(int64(span)))
+	if err != nil {
+		return 0
+	}
+	return time.Duration(n.Int64())
 }
