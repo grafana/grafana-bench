@@ -39,13 +39,29 @@ func DefaultEmitter(svc string) (*Emitter, error) {
 	return NewEmitter(os.Stdout, "json", []any{"tool", "bench", "service", svc})
 }
 
-// EmitDefectConfirmed writes a single msg=defectConfirmed event.
+// EmitDefectConfirmed writes a single msg=defectConfirmed event. The version
+// the rule fired on is carried under an axis-appropriate key — grafanaVersion
+// on the grafana axis (unchanged from v2, so existing RRC dashboards keep
+// working) and serviceVersion on the service axis — with versionAxis emitted
+// as the discriminator. Defects that predate the axis fields emit as the
+// grafana axis.
 func (e *Emitter) EmitDefectConfirmed(d ConfirmedDefect) {
+	axis := d.VersionAxis
+	if axis == "" {
+		axis = VersionAxisGrafana
+	}
 	attrs := []any{
 		"runStage", d.RunStage,
 		"testFile", d.TestFile,
 		"testFolder", d.TestFolder,
-		"grafanaVersion", d.GrafanaVersion,
+		"versionAxis", axis,
+	}
+	if axis == VersionAxisService {
+		attrs = append(attrs, "serviceVersion", d.Version)
+	} else {
+		attrs = append(attrs, "grafanaVersion", d.GrafanaVersion)
+	}
+	attrs = append(attrs,
 		"priorPassingVersion", d.PriorPassingVersion,
 		"grafanaSlug", d.GrafanaSlug,
 		"grafanaUrl", d.GrafanaURL,
@@ -62,7 +78,7 @@ func (e *Emitter) EmitDefectConfirmed(d ConfirmedDefect) {
 		"analyzeWindowSeconds", int(d.AnalyzeWindow.Seconds()),
 		"analyzedAt", d.AnalyzedAt.Format(time.RFC3339),
 		"ruleVersion", d.RuleVersion,
-	}
+	)
 	// The second positional arg to Info mirrors LogReporter.Report's
 	// "suiteRun", "anyFailures", … idiom — slog uses it as the first attribute.
 	e.log.With(attrs...).Info("defectConfirmed", "defectConfirmed", d.SignatureHash)

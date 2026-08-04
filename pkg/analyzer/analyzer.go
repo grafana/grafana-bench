@@ -20,18 +20,31 @@ const (
 	ConfidenceSuspected = "suspected"
 )
 
+// Version axes for RuleConfig.VersionAxis: which testRun field the rule
+// bisects on. Grafana is the RRC/core path and the default; Service keys on
+// the plugin's own version (--service-version), which moves independently of
+// the Grafana version it runs against.
+const (
+	VersionAxisGrafana = "grafanaVersion"
+	VersionAxisService = "serviceVersion"
+)
+
 // RuleConfig tunes the detection rule. Zero values fall back to the v1
 // defaults inside Analyze().
 type RuleConfig struct {
 	// MinFailures is the persistence threshold: how many consecutive failing
-	// runs on a (service, runStage, testFile, grafanaVersion) are required
-	// before we'll consider the failure persistent.
+	// runs on a (service, runStage, testFile, version) are required before
+	// we'll consider the failure persistent.
 	MinFailures int
 
 	// MinPriorPassing is the regression-boundary threshold: how many passing
-	// runs are required on the most recent prior distinct grafanaVersion for
-	// us to treat it as "known-good".
+	// runs are required on the most recent prior distinct version for us to
+	// treat it as "known-good".
 	MinPriorPassing int
+
+	// VersionAxis selects the version field the rule groups and bisects on:
+	// VersionAxisGrafana or VersionAxisService. Empty means VersionAxisGrafana.
+	VersionAxis string
 }
 
 func (r RuleConfig) withDefaults() RuleConfig {
@@ -41,17 +54,34 @@ func (r RuleConfig) withDefaults() RuleConfig {
 	if r.MinPriorPassing <= 0 {
 		r.MinPriorPassing = 2
 	}
+	if r.VersionAxis == "" {
+		r.VersionAxis = VersionAxisGrafana
+	}
 	return r
+}
+
+// versionOf returns the record's version on the configured axis.
+func (r RuleConfig) versionOf(rec TestRunRecord) string {
+	if r.VersionAxis == VersionAxisService {
+		return rec.ServiceVersion
+	}
+	return rec.GrafanaVersion
 }
 
 // ConfirmedDefect is the output of the rule engine — one per confirmed or
 // suspected defect. Emitters translate these into the msg=defectConfirmed
 // logfmt schema.
 type ConfirmedDefect struct {
-	Service              string
-	RunStage             string
-	TestFile             string
-	TestFolder           string
+	Service    string
+	RunStage   string
+	TestFile   string
+	TestFolder string
+	// Version is the value on the analysis axis the rule fired on (the bad
+	// version); VersionAxis records which axis that was. GrafanaVersion
+	// carries the same value only on the grafanaVersion axis, kept for
+	// consumers that predate VersionAxis.
+	Version              string
+	VersionAxis          string
 	GrafanaVersion       string
 	PriorPassingVersion  string
 	GrafanaSlug          string
@@ -77,7 +107,7 @@ type ConfirmedDefect struct {
 
 // Analyze applies the v1 defect-confirmation rule to a set of testRun records
 // and returns one ConfirmedDefect per detection. The returned slice is sorted
-// by (service, runStage, testFile, grafanaVersion) for deterministic output.
+// by (service, runStage, testFile, version) for deterministic output.
 func Analyze(records []TestRunRecord, cfg RuleConfig, window time.Duration, now time.Time) []ConfirmedDefect {
 	cfg = cfg.withDefaults()
 
@@ -89,7 +119,7 @@ func Analyze(records []TestRunRecord, cfg RuleConfig, window time.Duration, now 
 		}
 	}
 
-	// Group by (service, runStage, testFile). grafanaVersion is NOT part of
+	// Group by (service, runStage, testFile). The version axis is NOT part of
 	// the group key here — we need to see all versions for a test so we can
 	// locate the regression boundary.
 	type perTestKey struct {
@@ -123,16 +153,17 @@ func Analyze(records []TestRunRecord, cfg RuleConfig, window time.Duration, now 
 		if a.TestFile != b.TestFile {
 			return a.TestFile < b.TestFile
 		}
-		return a.GrafanaVersion < b.GrafanaVersion
+		return a.Version < b.Version
 	})
 
 	return defects
 }
 
 // evaluateTest runs the three-part rule for a single (service, runStage,
-// testFile) group, returning a defect per grafanaVersion that breaches it.
+// testFile) group, returning a defect per version on the configured axis
+// that breaches it.
 func evaluateTest(recs []TestRunRecord, cfg RuleConfig, window time.Duration, now time.Time) []ConfirmedDefect {
-	// Collapse runs per grafanaVersion in time order, so we can identify the
+	// Collapse runs per version in time order, so we can identify the
 	// "most recent prior distinct version" deterministically.
 	type versionBlock struct {
 		Version string
@@ -140,14 +171,15 @@ func evaluateTest(recs []TestRunRecord, cfg RuleConfig, window time.Duration, no
 	}
 	var blocks []versionBlock
 	for _, r := range recs {
-		if r.GrafanaVersion == "" {
+		version := cfg.versionOf(r)
+		if version == "" {
 			continue
 		}
-		if n := len(blocks); n > 0 && blocks[n-1].Version == r.GrafanaVersion {
+		if n := len(blocks); n > 0 && blocks[n-1].Version == version {
 			blocks[n-1].Records = append(blocks[n-1].Records, r)
 			continue
 		}
-		blocks = append(blocks, versionBlock{Version: r.GrafanaVersion, Records: []TestRunRecord{r}})
+		blocks = append(blocks, versionBlock{Version: version, Records: []TestRunRecord{r}})
 	}
 
 	// Aggregate per-version stats separately for the regression-boundary
@@ -163,13 +195,14 @@ func evaluateTest(recs []TestRunRecord, cfg RuleConfig, window time.Duration, no
 	}
 	stats := map[string]*versionStats{}
 	for _, r := range recs {
-		if r.GrafanaVersion == "" {
+		version := cfg.versionOf(r)
+		if version == "" {
 			continue
 		}
-		s := stats[r.GrafanaVersion]
+		s := stats[version]
 		if s == nil {
 			s = &versionStats{FirstSeen: r.Time, LastSeen: r.Time}
-			stats[r.GrafanaVersion] = s
+			stats[version] = s
 		}
 		if r.Time.Before(s.FirstSeen) {
 			s.FirstSeen = r.Time
@@ -293,12 +326,13 @@ func evaluateTest(recs []TestRunRecord, cfg RuleConfig, window time.Duration, no
 			sourceIDs = append(sourceIDs, r.RunID)
 		}
 
-		defects = append(defects, ConfirmedDefect{
+		defect := ConfirmedDefect{
 			Service:              blk.Records[0].Service,
 			RunStage:             blk.Records[0].RunStage,
 			TestFile:             blk.Records[0].TestFile,
 			TestFolder:           blk.Records[0].Folder,
-			GrafanaVersion:       blk.Version,
+			Version:              blk.Version,
+			VersionAxis:          cfg.VersionAxis,
 			PriorPassingVersion:  priorVersion,
 			GrafanaSlug:          tail[len(tail)-1].GrafanaSlug,
 			GrafanaURL:           tail[len(tail)-1].GrafanaURL,
@@ -315,7 +349,11 @@ func evaluateTest(recs []TestRunRecord, cfg RuleConfig, window time.Duration, no
 			AnalyzeWindow:        window,
 			AnalyzedAt:           now,
 			RuleVersion:          RuleVersion,
-		})
+		}
+		if cfg.VersionAxis == VersionAxisGrafana {
+			defect.GrafanaVersion = blk.Version
+		}
+		defects = append(defects, defect)
 		seenBadVersions[blk.Version] = true
 	}
 

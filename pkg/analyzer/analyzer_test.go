@@ -254,6 +254,180 @@ func TestAnalyzeSignatureDriftNotRescuedByRetries(t *testing.T) {
 	}
 }
 
+// mkSvcRun mirrors mkRun for the datasource E2E path: serviceVersion is set
+// (from --service-version) and grafanaVersion is absent, exactly as on real
+// datasource testRun lines.
+func mkSvcRun(offset time.Duration, svcVersion, status, exitMsg, runID string) TestRunRecord {
+	return TestRunRecord{
+		Time:           baseTime.Add(offset),
+		Msg:            "testRun",
+		Service:        "grafana-clickhouse-datasource",
+		RunStage:       stageCI,
+		TestFile:       testFile,
+		Folder:         "tests/e2e",
+		ServiceVersion: svcVersion,
+		Status:         status,
+		ExitMessage:    exitMsg,
+		RunID:          runID,
+	}
+}
+
+func TestAnalyzeServiceVersionAxisCleanRegression(t *testing.T) {
+	records := []TestRunRecord{
+		mkSvcRun(0, "1.27.0", "passed", "", "run-1"),
+		mkSvcRun(1*time.Hour, "1.27.0", "passed", "", "run-2"),
+		mkSvcRun(2*time.Hour, "1.27.1", "failed", "query editor timeout pid=4711", "run-3"),
+		mkSvcRun(3*time.Hour, "1.27.1", "failed", "query editor timeout pid=9001", "run-4"),
+		mkSvcRun(4*time.Hour, "1.27.1", "failed", "query editor timeout pid=1234", "run-5"),
+	}
+
+	defects := Analyze(records, RuleConfig{VersionAxis: VersionAxisService}, 24*time.Hour, baseTime)
+	if len(defects) != 1 {
+		t.Fatalf("expected 1 confirmed defect on the service axis, got %d: %+v", len(defects), defects)
+	}
+	d := defects[0]
+	if d.Version != "1.27.1" {
+		t.Errorf("expected version %q, got %q", "1.27.1", d.Version)
+	}
+	if d.VersionAxis != VersionAxisService {
+		t.Errorf("expected versionAxis %q, got %q", VersionAxisService, d.VersionAxis)
+	}
+	if d.PriorPassingVersion != "1.27.0" {
+		t.Errorf("expected prior version %q, got %q", "1.27.0", d.PriorPassingVersion)
+	}
+	if d.GrafanaVersion != "" {
+		t.Errorf("expected empty grafanaVersion on the service axis, got %q", d.GrafanaVersion)
+	}
+	if d.Confidence != ConfidenceConfirmed {
+		t.Errorf("expected confirmed, got %q", d.Confidence)
+	}
+}
+
+func TestAnalyzeDefaultAxisSkipsRecordsWithoutGrafanaVersion(t *testing.T) {
+	// The M1 gap this change closes: datasource testRun lines carry no
+	// grafanaVersion, so on the default axis every record is skipped and no
+	// defect can ever confirm.
+	records := []TestRunRecord{
+		mkSvcRun(0, "1.27.0", "passed", "", "run-1"),
+		mkSvcRun(1*time.Hour, "1.27.0", "passed", "", "run-2"),
+		mkSvcRun(2*time.Hour, "1.27.1", "failed", "boom", "run-3"),
+		mkSvcRun(3*time.Hour, "1.27.1", "failed", "boom", "run-4"),
+		mkSvcRun(4*time.Hour, "1.27.1", "failed", "boom", "run-5"),
+	}
+
+	defects := Analyze(records, RuleConfig{}, 24*time.Hour, baseTime)
+	if len(defects) != 0 {
+		t.Fatalf("expected 0 defects on the default axis for records without grafanaVersion, got %d: %+v", len(defects), defects)
+	}
+}
+
+func TestAnalyzeServiceVersionAxisSingleVersionNoBoundary(t *testing.T) {
+	// Pre-W1.3 situation: --service-version carries a channel label, so every
+	// run shares one version and no regression boundary can form.
+	records := []TestRunRecord{
+		mkSvcRun(0, "rrc-fast", "passed", "", "run-1"),
+		mkSvcRun(1*time.Hour, "rrc-fast", "passed", "", "run-2"),
+		mkSvcRun(2*time.Hour, "rrc-fast", "failed", "boom", "run-3"),
+		mkSvcRun(3*time.Hour, "rrc-fast", "failed", "boom", "run-4"),
+		mkSvcRun(4*time.Hour, "rrc-fast", "failed", "boom", "run-5"),
+	}
+
+	defects := Analyze(records, RuleConfig{VersionAxis: VersionAxisService}, 24*time.Hour, baseTime)
+	if len(defects) != 0 {
+		t.Fatalf("expected 0 defects when all runs share one serviceVersion, got %d: %+v", len(defects), defects)
+	}
+}
+
+func TestAnalyzeServiceVersionAxisIgnoresGrafanaVersionChanges(t *testing.T) {
+	// The plugin version moves independently of the Grafana version. Bisecting
+	// on serviceVersion must pool passing runs across a Grafana bump; the
+	// grafana axis would see two thin blocks and find no boundary here.
+	mk := func(offset time.Duration, svcVersion, grafanaVersion, status, exitMsg, runID string) TestRunRecord {
+		r := mkSvcRun(offset, svcVersion, status, exitMsg, runID)
+		r.GrafanaVersion = grafanaVersion
+		return r
+	}
+	records := []TestRunRecord{
+		mk(0, "1.27.0", "13.0.0-100", "passed", "", "run-1"),
+		mk(1*time.Hour, "1.27.0", "13.0.0-200", "passed", "", "run-2"),
+		mk(2*time.Hour, "1.27.1", "13.0.0-200", "failed", "boom", "run-3"),
+		mk(3*time.Hour, "1.27.1", "13.0.0-200", "failed", "boom", "run-4"),
+		mk(4*time.Hour, "1.27.1", "13.0.0-200", "failed", "boom", "run-5"),
+	}
+
+	defects := Analyze(records, RuleConfig{VersionAxis: VersionAxisService}, 24*time.Hour, baseTime)
+	if len(defects) != 1 {
+		t.Fatalf("expected 1 defect keyed on serviceVersion, got %d: %+v", len(defects), defects)
+	}
+	if defects[0].Version != "1.27.1" {
+		t.Errorf("expected version %q, got %q", "1.27.1", defects[0].Version)
+	}
+	if defects[0].PriorPassingVersion != "1.27.0" {
+		t.Errorf("expected prior version %q pooled across the Grafana bump, got %q", "1.27.0", defects[0].PriorPassingVersion)
+	}
+}
+
+func TestAnalyzeServiceVersionAxisSkipsRecordsWithoutServiceVersion(t *testing.T) {
+	// On the service axis, records carrying only a grafanaVersion (e.g. RRC
+	// lines that predate --service-version stamping) must be skipped, not fall
+	// back to the grafana axis. If the failing grafana-only records below
+	// leaked into the block sequence they would sit between the plugin
+	// versions and disqualify the regression boundary, so a fallback flips
+	// this from 1 defect to 0.
+	mkGrafanaOnly := func(offset time.Duration, status, runID string) TestRunRecord {
+		r := mkSvcRun(offset, "", status, "infra noise", runID)
+		r.GrafanaVersion = "13.0.0-999"
+		return r
+	}
+	records := []TestRunRecord{
+		mkSvcRun(0, "1.27.0", "passed", "", "run-1"),
+		mkSvcRun(1*time.Hour, "1.27.0", "passed", "", "run-2"),
+		mkGrafanaOnly(2*time.Hour, "failed", "run-3"),
+		mkGrafanaOnly(3*time.Hour, "failed", "run-4"),
+		mkSvcRun(4*time.Hour, "1.27.1", "failed", "boom", "run-5"),
+		mkSvcRun(5*time.Hour, "1.27.1", "failed", "boom", "run-6"),
+		mkSvcRun(6*time.Hour, "1.27.1", "failed", "boom", "run-7"),
+	}
+
+	defects := Analyze(records, RuleConfig{VersionAxis: VersionAxisService}, 24*time.Hour, baseTime)
+	if len(defects) != 1 {
+		t.Fatalf("expected 1 defect with grafana-only records skipped, got %d: %+v", len(defects), defects)
+	}
+	if defects[0].Version != "1.27.1" {
+		t.Errorf("expected version %q, got %q", "1.27.1", defects[0].Version)
+	}
+	if defects[0].PriorPassingVersion != "1.27.0" {
+		t.Errorf("expected prior version %q, got %q", "1.27.0", defects[0].PriorPassingVersion)
+	}
+}
+
+func TestAnalyzeGrafanaAxisBackCompatFields(t *testing.T) {
+	// Defects on the default axis carry the new axis-neutral fields too, and
+	// GrafanaVersion stays populated for existing consumers.
+	records := []TestRunRecord{
+		mkRun(0, versionGood, "passed", "", "run-1"),
+		mkRun(1*time.Hour, versionGood, "passed", "", "run-2"),
+		mkRun(2*time.Hour, versionBad, "failed", "sig", "run-3"),
+		mkRun(3*time.Hour, versionBad, "failed", "sig", "run-4"),
+		mkRun(4*time.Hour, versionBad, "failed", "sig", "run-5"),
+	}
+
+	defects := Analyze(records, RuleConfig{}, 24*time.Hour, baseTime)
+	if len(defects) != 1 {
+		t.Fatalf("expected 1 defect, got %d: %+v", len(defects), defects)
+	}
+	d := defects[0]
+	if d.GrafanaVersion != versionBad {
+		t.Errorf("expected grafanaVersion %q, got %q", versionBad, d.GrafanaVersion)
+	}
+	if d.Version != versionBad {
+		t.Errorf("expected axis-neutral version %q, got %q", versionBad, d.Version)
+	}
+	if d.VersionAxis != VersionAxisGrafana {
+		t.Errorf("expected versionAxis %q, got %q", VersionAxisGrafana, d.VersionAxis)
+	}
+}
+
 func TestAnalyzeInsufficientPersistence(t *testing.T) {
 	// Only 2 consecutive failures — under the default MinFailures=3.
 	records := []TestRunRecord{
