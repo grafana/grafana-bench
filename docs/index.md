@@ -70,6 +70,7 @@ These labels are the same across every test runner, so you can query and compare
 
 - [Metrics](metrics.md) - Prometheus metrics configuration
 - [Notifications](notifications.md) - Slack integration
+- [Analyzing defects](analyzing_defects.md) - Detecting regressions across runs with `bench analyze`
 
 
 ### Reference

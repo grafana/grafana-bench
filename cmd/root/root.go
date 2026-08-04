@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/grafana/grafana-bench/cmd/analyze"
 	"github.com/grafana/grafana-bench/cmd/checkout"
 	"github.com/grafana/grafana-bench/cmd/report"
 	"github.com/grafana/grafana-bench/cmd/test"
@@ -68,6 +69,7 @@ func NewCmd(log *logger.Logger) *cobra.Command {
 	rootCmd.AddCommand(report.NewCmd(log.Log()))
 	rootCmd.AddCommand(validate.NewCmd(log.Log()))
 	rootCmd.AddCommand(checkout.NewCmd(log.Log()))
+	rootCmd.AddCommand(analyze.NewCmd(log.Log()))
 
 	return rootCmd
 }

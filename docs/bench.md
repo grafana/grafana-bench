@@ -19,6 +19,7 @@ bench provides a CLI interface for executing diverse actions for running tests
 
 ### SEE ALSO
 
+* [bench analyze](bench_analyze.md)	 - analyze testRun events in Loki and emit defectConfirmed events
 * [bench checkout](bench_checkout.md)	 - bench test source checkout
 * [bench report](bench_report.md)	 - report test suite execution results
 * [bench test](bench_test.md)	 - bench test runner

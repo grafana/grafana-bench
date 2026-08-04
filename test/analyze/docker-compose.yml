@@ -1,0 +1,14 @@
+services:
+  loki:
+    image: grafana/loki:3.2.0
+    container_name: bench-analyze-loki
+    command: -config.file=/etc/loki/local-config.yaml
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki-config.yaml:/etc/loki/local-config.yaml:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3100/ready"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
