@@ -37,7 +37,7 @@ RUN go get github.com/boxboat/fixuid@${FIXUID_VERSION} && \
 FROM grafana/k6:2.0.0 AS k6
 
 # Use Playwright base image which includes all browser dependencies
-FROM mcr.microsoft.com/playwright:v1.58.2-noble AS runtime
+FROM mcr.microsoft.com/playwright:v1.62.1-noble AS runtime
 
 USER root
 
@@ -70,10 +70,10 @@ RUN installed="$(npm --version)" && latest="$(npm view npm version)" \
 
 # Symlink the Playwright-managed chromium binary to stable names so k6's browser
 # module can auto-detect it via PATH. The Playwright path is version-pinned
-# (e.g. /ms-playwright/chromium-1208/chrome-linux/chrome), so resolving the glob
+# (e.g. /ms-playwright/chromium-1234/chrome-linux64/chrome), so resolving the glob
 # at build time avoids hardcoding it in K6_BROWSER_EXECUTABLE_PATH downstream.
-RUN ln -s /ms-playwright/chromium-*/chrome-linux/chrome /usr/bin/chromium-browser && \
-  ln -s /ms-playwright/chromium-*/chrome-linux/chrome /usr/bin/chromium
+RUN ln -s /ms-playwright/chromium-*/chrome-linux64/chrome /usr/bin/chromium-browser && \
+  ln -s /ms-playwright/chromium-*/chrome-linux64/chrome /usr/bin/chromium
 
 # Copy binaries
 COPY --from=k6 /usr/bin/k6 /usr/local/bin/k6
