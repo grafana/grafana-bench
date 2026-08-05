@@ -1,6 +1,11 @@
 # Detecting defects across runs with `bench analyze`
 
-`bench analyze` turns the logs that bench already emits into a signal about whether a failing test has caught a real defect. It queries Loki for `msg=testRun` events over a time window, applies a multi-part rule to each `(service, runStage, testFile, grafanaVersion)` tuple, and emits a new `msg=defectConfirmed` event on stdout for every tuple that breaches the rule.
+`bench analyze` turns the logs that bench already emits into a signal about whether a failing test has caught a real defect. It queries Loki for `msg=testRun` events over a time window, applies a multi-part rule to each `(service, runStage, testFile, version)` tuple, and emits a new `msg=defectConfirmed` event on stdout for every tuple that breaches the rule.
+
+The version the rule bisects on is chosen by `--analyze-version-axis`:
+
+- **`grafanaVersion`** (default) keys on the Grafana build under test — the RRC/core path, unchanged from earlier releases.
+- **`serviceVersion`** keys on the data source plugin's own version, carried from `--service-version` onto every `testRun` line. Plugin versions move independently of the Grafana version they run against, and datasource `testRun` lines carry no `grafanaVersion` at all — so this axis is the one that makes the analyzer produce results for plugin rollouts.
 
 This is the automated, pre-deploy counterpart to the `invest:tests` label on `grafana/support-escalations`: `invest:tests` says "a human decided this should have been caught by tests," and `msg=defectConfirmed` says "bench flagged this as a regression before a customer escalated it." Put together, they give Defect Escape Rate (DER) a precision side — *of the defects that escaped to customers, how many did bench catch first?*
 
@@ -10,7 +15,8 @@ This is the automated, pre-deploy counterpart to the `invest:tests` label on `gr
 
 Use `bench analyze` when you want to:
 
-- **Answer "did bench see this coming?"** after a customer escalation — run the analyzer over the escalation window and check whether a `msg=defectConfirmed` for the same `grafanaVersion` already exists in Loki.
+- **Answer "did bench see this coming?"** after a customer escalation — run the analyzer over the escalation window and check whether a `msg=defectConfirmed` for the same version already exists in Loki.
+- **Confirm plugin-version regressions on the progressive-delivery path** — run with `--analyze-version-axis serviceVersion` so a bad plugin promotion is bisected against the last plugin version with a clean green, regardless of which Grafana build it ran on.
 - **Feed DER dashboards** with an automated bench-emitted signal alongside the manual `invest:tests` tag.
 - **Replace ad-hoc bisection runs** against `grafana-dev.net` slugs. The analyzer already has every `(version, outcome, exitMessage)` triple it needs in Loki; there is no reason to re-run suites to produce the timeline by hand.
 
@@ -23,7 +29,7 @@ Don't use it for:
 
 ## How the rule works
 
-A `(service, runStage, testFile, grafanaVersion)` tuple breaches the rule and produces an event when the first two conditions hold; it is labelled a **confirmed defect** (rather than **suspected**) only when all four conditions hold.
+A `(service, runStage, testFile, version)` tuple breaches the rule and produces an event when the first two conditions hold; it is labelled a **confirmed defect** (rather than **suspected**) only when all four conditions hold. "Version" throughout means the value on the configured `--analyze-version-axis`; records with an empty value on that axis are skipped.
 
 ### 1. Persistence
 
@@ -33,7 +39,9 @@ The tail requirement — not "any 3 failures in the window" — prevents a histo
 
 ### 2. Regression boundary
 
-Walking back through prior `grafanaVersion`s **in the same `runStage`**, the most recent distinct version must have at least `--analyze-min-prior-passing` passing runs and **zero** failures. Default: **2**. If the prior version itself had any failures, the tuple doesn't clear the boundary and the defect is not confirmed.
+Walking back through prior versions **in the same `runStage`**, the most recent distinct version must have at least `--analyze-min-prior-passing` passing runs and **zero** failures. Default: **2**. If the prior version itself had any failures, the tuple doesn't clear the boundary and the defect is not confirmed.
+
+Ordering is by run time, not by semver comparison — correct as long as promotions arrive in release order, which they do on the wave pipeline.
 
 Scoping by `runStage` is load-bearing: it prevents a clean CI stream from being contaminated by a persistently-failing `nightly` or `rrc` stream running on the same build.
 
@@ -77,8 +85,10 @@ Every confirmed or suspected defect produces one `msg=defectConfirmed` line. It 
 | `runStage` | CI/nightly/rrc/local — the scoping axis from rule (2) |
 | `testFile` | Unit of regression |
 | `testFolder` | Folder the test lives in |
-| `grafanaVersion` | The version the rule fired on (the bad version) |
-| `priorPassingVersion` | The most recent distinct prior grafanaVersion with ≥ `min_prior_passing` green runs (the last-known-good) |
+| `versionAxis` | The axis the rule ran on: `grafanaVersion` or `serviceVersion` |
+| `grafanaVersion` | The version the rule fired on (the bad version). Present only on the `grafanaVersion` axis |
+| `serviceVersion` | The plugin version the rule fired on (the bad version). Present only on the `serviceVersion` axis |
+| `priorPassingVersion` | The most recent distinct prior version on the axis with ≥ `min_prior_passing` green runs (the last-known-good) |
 | `grafanaSlug` | Cluster identity for RRC dashboard joins |
 | `grafanaUrl` | Cluster URL |
 | `signatureHash` | 12-hex signature used to dedupe across runs |
@@ -127,7 +137,7 @@ Sample debug output:
 time=... level=DEBUG msg="querying loki for testRun events" selector="{service_name=~\".+\"} |= \"tool=bench\" |= \"msg=testRun\"" start=... end=...
 time=... level=DEBUG msg="loaded testRun records" pulled=184 after_filter=41
 time=... level=DEBUG msg="analysis complete" defects=1
-time=... level=INFO  msg="dry-run defect" testFile=permissions.ts grafanaVersion=13.0.0-23542128402 priorPassingVersion=13.0.0-23563050832 confidence=confirmed retryExhausted=true signatureHash=a9c0f1b2d345 confidenceRuns=4
+time=... level=INFO  msg="dry-run defect" testFile=permissions.ts versionAxis=grafanaVersion version=13.0.0-23542128402 priorPassingVersion=13.0.0-23563050832 confidence=confirmed retryExhausted=true signatureHash=a9c0f1b2d345 confidenceRuns=4
 ```
 
 ### Real emission
@@ -159,6 +169,7 @@ Because events land on stdout in the same shape as every other bench event, the 
 
 | Flag | Default | Use when |
 |---|---|---|
+| `--analyze-version-axis` | `grafanaVersion` | Set to `serviceVersion` for data source plugins on the progressive-delivery path. The plugin version comes from `--service-version`, so it is only meaningful once the CI job passes the real promoted plugin version through (a shared channel label like `rrc-fast` gives every run one version and no boundary can ever form). |
 | `--analyze-min-failures` | `3` | Raise (e.g. `5`) for noisy test suites — buys precision at the cost of catching slow-burn regressions later. Lower (e.g. `2`) only for low-frequency/nightly streams where waiting for 3 is >24h. |
 | `--analyze-min-prior-passing` | `2` | Raise to demand more confidence that the prior version was really green. Lower for streams with sparse per-version coverage. |
 | `--analyze-window` | `24h` | Match to your test cadence. For RRC-style streams running every 5 minutes, `24h` is plenty; for nightly-only streams, `7d` is more appropriate. |
@@ -222,7 +233,7 @@ Suggested additions:
   )
   ```
 
-- **Annotations** on the DER timeseries, one per `grafanaVersion`, so reviewers can see which deploys bench flagged before they escalated.
+- **Annotations** on the DER timeseries, one per version on the analysis axis (`grafanaVersion` for RRC panels, `serviceVersion` for plugin panels), so reviewers can see which deploys bench flagged before they escalated.
 
 - **A drill-down row** showing the `sourceRunIds`, `signatureHash`, and `exitMessageSample` for any defect in the current window — enabling one-click navigation to the raw `msg=testRun` lines.
 
@@ -234,8 +245,9 @@ Suggested additions:
 Start with `--analyze-emit=false --log-level DEBUG` and check:
 1. `pulled=N` — is the selector finding records at all? If `pulled=0`, your selector is wrong or the window is wrong.
 2. `after_filter=N` — is your `--analyze-service` value the canonical slug? Typos here silently filter everything out.
-3. The failing tail must be the **last** `min_failures` records for that `(testFile, grafanaVersion)`. A single green run at the tail resets the persistence check.
+3. The failing tail must be the **last** `min_failures` records for that `(testFile, version)`. A single green run at the tail resets the persistence check.
 4. The prior version needs **zero failures**, not just "enough passes." Check for flakes on the supposed last-known-good version — they disqualify it.
+5. On the `serviceVersion` axis, records with an empty `serviceVersion` are skipped — and if every run carries the same value (e.g. a channel label instead of the real plugin version), no regression boundary can form.
 
 **"Confidence is `suspected` but I think it's the same defect."**
 The canonicaliser is conservative — it won't normalise fragments it doesn't recognise. Inspect the raw `exitMessage` samples in the `msg=testRun` events for the failing runs and check what's varying. If it's a new category (e.g. a test-framework version number, a hostname), open an issue so the canonicalisation table can learn it.

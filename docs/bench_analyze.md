@@ -6,13 +6,18 @@ analyze testRun events in Loki and emit defectConfirmed events
 
 
 analyze subcommand queries Loki for msg=testRun events and emits msg=defectConfirmed
-events for (service, runStage, testFile, grafanaVersion) tuples that breach the
+events for (service, runStage, testFile, version) tuples that breach the
 defect-confirmation rule.
+
+The version axis is selected by --analyze-version-axis: 'grafanaVersion'
+(default) bisects on the Grafana build under test (the RRC/core path), while
+'serviceVersion' bisects on the data source plugin version carried from
+--service-version, which moves independently of the Grafana version.
 
 Rule (v2):
   1. Persistence:       ≥ --analyze-min-failures consecutive failing testRun
-                        events on the target grafanaVersion.
-  2. Regression boundary: the most recent prior grafanaVersion in the same
+                        events on the target version.
+  2. Regression boundary: the most recent prior distinct version in the same
                         runStage has ≥ --analyze-min-prior-passing passing
                         runs and 0 failures.
   3. Deterministic signature: the canonicalised exitMessage is stable across
@@ -54,6 +59,13 @@ grafana-bench analyze \
   --analyze-service grafana-athena-datasource \
   --analyze-run-stage ci
 
+# bisect on the plugin version instead of the Grafana version:
+grafana-bench analyze \
+  --analyze-loki-url https://logs-prod-xxx.grafana.net \
+  --analyze-service grafana-clickhouse-datasource \
+  --analyze-version-axis serviceVersion \
+  --analyze-run-stage ci
+
 ```
 
 ### Options
@@ -68,10 +80,12 @@ grafana-bench analyze \
                                            Overridden by the BENCH_LOKI_URL environment variable.
       --analyze-loki-username string       Basic-auth username for Loki. Overridden by BENCH_LOKI_USERNAME.
       --analyze-min-failures int           Persistence threshold: consecutive failing testRun events required to confirm a defect. (default 3)
-      --analyze-min-prior-passing int      Regression-boundary threshold: passing runs required on the most recent prior grafanaVersion. (default 2)
+      --analyze-min-prior-passing int      Regression-boundary threshold: passing runs required on the most recent prior distinct version on the analysis axis. (default 2)
       --analyze-output string              Output format for emitted defectConfirmed events ('json' or 'text'). (default "json")
       --analyze-run-stage string           Restrict analysis to a single runStage. Empty evaluates each observed stage independently.
       --analyze-service string             REQUIRED. Restrict analysis to testRun records with this service value.
+      --analyze-version-axis string        Version axis the rule groups and bisects on: 'grafanaVersion' (RRC/core Grafana builds)
+                                           or 'serviceVersion' (the data source plugin version carried from --service-version). (default "grafanaVersion")
       --analyze-window duration            Lookback window for the Loki query_range request. (default 24h0m0s)
   -h, --help                               help for analyze
 ```

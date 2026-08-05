@@ -642,6 +642,7 @@ type AnalyzeConfig struct {
 	Window          time.Duration
 	Service         string
 	RunStage        string
+	VersionAxis     string
 	MinFailures     int
 	MinPriorPassing int
 	Emit            bool
@@ -705,11 +706,18 @@ func AddAnalyzeFlags(fs *pflag.FlagSet, cfg *AnalyzeConfig) {
 		3,
 		"Persistence threshold: consecutive failing testRun events required to confirm a defect.",
 	)
+	fs.StringVar(
+		&cfg.VersionAxis,
+		"analyze-version-axis",
+		"grafanaVersion",
+		"Version axis the rule groups and bisects on: 'grafanaVersion' (RRC/core Grafana builds)"+
+			"\nor 'serviceVersion' (the data source plugin version carried from --service-version).",
+	)
 	fs.IntVar(
 		&cfg.MinPriorPassing,
 		"analyze-min-prior-passing",
 		2,
-		"Regression-boundary threshold: passing runs required on the most recent prior grafanaVersion.",
+		"Regression-boundary threshold: passing runs required on the most recent prior distinct version on the analysis axis.",
 	)
 	fs.BoolVar(
 		&cfg.Emit,

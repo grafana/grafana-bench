@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 )
@@ -155,6 +156,135 @@ func TestAnalyzeCommandDryRunSuppressesEmission(t *testing.T) {
 	}
 	if stdout.Len() != 0 {
 		t.Errorf("expected empty stdout in dry-run mode, got:\n%s", stdout.String())
+	}
+}
+
+// TestAnalyzeCommandServiceVersionAxis is the acceptance test for the M1
+// plugin-version axis: datasource testRun fixtures carry serviceVersion (from
+// --service-version) and no grafanaVersion at all. With
+// --analyze-version-axis=serviceVersion the analyzer must confirm the seeded
+// plugin-version regression and emit the serviceVersion-keyed schema.
+func TestAnalyzeCommandServiceVersionAxis(t *testing.T) {
+	const (
+		svc         = "grafana-clickhouse-datasource"
+		goodVersion = "1.27.0"
+		badVersion  = "1.27.1"
+	)
+
+	start := time.Now().Add(-6 * time.Hour)
+	mk := func(offset time.Duration, version, status, exitMsg, runID string) map[string]any {
+		return map[string]any{
+			"time":           start.Add(offset).Format(time.RFC3339Nano),
+			"level":          "INFO",
+			"msg":            "testRun",
+			"service":        svc,
+			"runStage":       "ci",
+			"testFile":       "queries.spec.ts",
+			"folder":         "tests/e2e",
+			"serviceVersion": version,
+			"status":         status,
+			"exitMessage":    exitMsg,
+			"runId":          runID,
+		}
+	}
+	fixture := []map[string]any{
+		mk(0, goodVersion, "passed", "", "g-1"),
+		mk(10*time.Minute, goodVersion, "passed", "", "g-2"),
+		mk(20*time.Minute, badVersion, "failed", "query editor timeout pid=4711", "b-1"),
+		mk(30*time.Minute, badVersion, "failed", "query editor timeout pid=9001", "b-2"),
+		mk(40*time.Minute, badVersion, "failed", "query editor timeout pid=1234", "b-3"),
+	}
+
+	srv := startFakeLoki(t, fixture)
+	defer srv.Close()
+
+	var stdout bytes.Buffer
+	cmd := NewCmd(slog.New(slog.NewTextHandler(io.Discard, nil)))
+	cmd.SetOut(&stdout)
+	cmd.SetErr(io.Discard)
+	cmd.SetArgs([]string{
+		"--analyze-loki-url", srv.URL,
+		"--analyze-service", svc,
+		"--analyze-version-axis", "serviceVersion",
+	})
+
+	if err := cmd.ExecuteContext(context.Background()); err != nil {
+		t.Fatalf("analyze command failed: %v", err)
+	}
+
+	events := parseJSONL(t, stdout.Bytes())
+	if len(events) != 1 {
+		t.Fatalf("expected 1 defectConfirmed event, got %d:\n%s", len(events), stdout.String())
+	}
+	d := events[0]
+
+	assertString(t, d, "msg", "defectConfirmed")
+	assertString(t, d, "service", svc)
+	assertString(t, d, "versionAxis", "serviceVersion")
+	assertString(t, d, "serviceVersion", badVersion)
+	assertString(t, d, "priorPassingVersion", goodVersion)
+	assertString(t, d, "confidence", "confirmed")
+	if v, ok := d["grafanaVersion"]; ok {
+		t.Errorf("expected no grafanaVersion field on the service axis, got %v", v)
+	}
+}
+
+// TestAnalyzeCommandDefaultAxisEmitsVersionAxis verifies the RRC path emits
+// the versionAxis discriminator without any other schema change.
+func TestAnalyzeCommandDefaultAxisEmitsVersionAxis(t *testing.T) {
+	start := time.Now().Add(-6 * time.Hour)
+	fixture := []map[string]any{
+		mkTestRun(start, "grafana-pro", "ci", "permissions.ts", "13.0.0-good", "passed", "", "g-1"),
+		mkTestRun(start.Add(10*time.Minute), "grafana-pro", "ci", "permissions.ts", "13.0.0-good", "passed", "", "g-2"),
+		mkTestRun(start.Add(20*time.Minute), "grafana-pro", "ci", "permissions.ts", "13.0.0-bad", "failed", "boom", "b-1"),
+		mkTestRun(start.Add(30*time.Minute), "grafana-pro", "ci", "permissions.ts", "13.0.0-bad", "failed", "boom", "b-2"),
+		mkTestRun(start.Add(40*time.Minute), "grafana-pro", "ci", "permissions.ts", "13.0.0-bad", "failed", "boom", "b-3"),
+	}
+
+	srv := startFakeLoki(t, fixture)
+	defer srv.Close()
+
+	var stdout bytes.Buffer
+	cmd := NewCmd(slog.New(slog.NewTextHandler(io.Discard, nil)))
+	cmd.SetOut(&stdout)
+	cmd.SetErr(io.Discard)
+	cmd.SetArgs([]string{
+		"--analyze-loki-url", srv.URL,
+		"--analyze-service", "grafana-pro",
+	})
+
+	if err := cmd.ExecuteContext(context.Background()); err != nil {
+		t.Fatalf("analyze command failed: %v", err)
+	}
+
+	events := parseJSONL(t, stdout.Bytes())
+	if len(events) != 1 {
+		t.Fatalf("expected 1 defectConfirmed event, got %d:\n%s", len(events), stdout.String())
+	}
+	assertString(t, events[0], "versionAxis", "grafanaVersion")
+	assertString(t, events[0], "grafanaVersion", "13.0.0-bad")
+	if v, ok := events[0]["serviceVersion"]; ok {
+		t.Errorf("expected no serviceVersion field on the default axis, got %v", v)
+	}
+}
+
+// TestAnalyzeCommandRejectsInvalidVersionAxis verifies the flag only accepts
+// the two known axes.
+func TestAnalyzeCommandRejectsInvalidVersionAxis(t *testing.T) {
+	cmd := NewCmd(slog.New(slog.NewTextHandler(io.Discard, nil)))
+	cmd.SetOut(io.Discard)
+	cmd.SetErr(io.Discard)
+	cmd.SetArgs([]string{
+		"--analyze-loki-url", "http://localhost:3100",
+		"--analyze-service", "grafana-pro",
+		"--analyze-version-axis", "buildNumber",
+	})
+	err := cmd.ExecuteContext(context.Background())
+	if err == nil {
+		t.Fatal("expected validation error for invalid version axis, got nil")
+	}
+	if !strings.Contains(err.Error(), "--analyze-version-axis") {
+		t.Errorf("expected error to mention --analyze-version-axis, got: %v", err)
 	}
 }
 

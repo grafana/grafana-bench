@@ -14,13 +14,18 @@ import (
 
 const longDescription = `
 analyze subcommand queries Loki for msg=testRun events and emits msg=defectConfirmed
-events for (service, runStage, testFile, grafanaVersion) tuples that breach the
+events for (service, runStage, testFile, version) tuples that breach the
 defect-confirmation rule.
+
+The version axis is selected by --analyze-version-axis: 'grafanaVersion'
+(default) bisects on the Grafana build under test (the RRC/core path), while
+'serviceVersion' bisects on the data source plugin version carried from
+--service-version, which moves independently of the Grafana version.
 
 Rule (v2):
   1. Persistence:       ≥ --analyze-min-failures consecutive failing testRun
-                        events on the target grafanaVersion.
-  2. Regression boundary: the most recent prior grafanaVersion in the same
+                        events on the target version.
+  2. Regression boundary: the most recent prior distinct version in the same
                         runStage has ≥ --analyze-min-prior-passing passing
                         runs and 0 failures.
   3. Deterministic signature: the canonicalised exitMessage is stable across
@@ -53,6 +58,13 @@ grafana-bench analyze \
   --analyze-loki-url https://logs-prod-xxx.grafana.net \
   --analyze-loki-bearer-token "$BENCH_LOKI_BEARER_TOKEN" \
   --analyze-service grafana-athena-datasource \
+  --analyze-run-stage ci
+
+# bisect on the plugin version instead of the Grafana version:
+grafana-bench analyze \
+  --analyze-loki-url https://logs-prod-xxx.grafana.net \
+  --analyze-service grafana-clickhouse-datasource \
+  --analyze-version-axis serviceVersion \
   --analyze-run-stage ci
 `
 
@@ -100,6 +112,7 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			defects := analyzer.Analyze(filtered, analyzer.RuleConfig{
 				MinFailures:     cfg.MinFailures,
 				MinPriorPassing: cfg.MinPriorPassing,
+				VersionAxis:     cfg.VersionAxis,
 			}, cfg.Window, time.Now())
 
 			log.Debug("analysis complete", "defects", len(defects))
@@ -108,7 +121,8 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 				for _, d := range defects {
 					log.Info("dry-run defect",
 						"testFile", d.TestFile,
-						"grafanaVersion", d.GrafanaVersion,
+						"versionAxis", d.VersionAxis,
+						"version", d.Version,
 						"priorPassingVersion", d.PriorPassingVersion,
 						"confidence", d.Confidence,
 						"retryExhausted", d.RetryExhausted,
@@ -151,6 +165,12 @@ func validateConfig(cfg *config.AnalyzeConfig) error {
 	}
 	if cfg.Window <= 0 {
 		return fmt.Errorf("--analyze-window must be positive")
+	}
+	switch cfg.VersionAxis {
+	case "", analyzer.VersionAxisGrafana, analyzer.VersionAxisService:
+	default:
+		return fmt.Errorf("--analyze-version-axis must be %q or %q, got %q",
+			analyzer.VersionAxisGrafana, analyzer.VersionAxisService, cfg.VersionAxis)
 	}
 	return nil
 }
