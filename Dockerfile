@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.23.0-labs@sha256:7eca9451d94f9b8ad22e44988b92d595d3e4d65163794237949a8c3413fbed5d
 
-FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.26-alpine@sha256:ce864e7223ac17b1775e6fd0b4c0db580c2eb50e7953a427916379e4b92a1628 AS builder
 
 ARG BENCH_REVISION
 ARG TARGETOS
@@ -33,8 +33,8 @@ RUN CGO_ENABLED=0 go build \
 
 # Production slim image - no fixuid needed
 
-FROM grafana/k6:2.0.0 AS k6
-FROM alpine:3.23 AS runtime
+FROM grafana/k6:2.0.0@sha256:a33a0cfdc4d2483d6b7a3a22e726a499ff2831a671a49239104cd34a9937523c AS k6
+FROM alpine:3.23@sha256:fd791d74b68913cbb027c6546007b3f0d3bc45125f797758156952bc2d6daf40 AS runtime
 
 USER root
 RUN apk add --no-cache ca-certificates git wget

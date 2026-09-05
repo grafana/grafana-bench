@@ -11,7 +11,7 @@
     tslib "2.8.1"
     typescript "5.9.2"
 
-"@grafana/plugin-e2e@^3.4.12":
+"@grafana/plugin-e2e@3.4.13":
   version "3.4.13"
   resolved "https://registry.yarnpkg.com/@grafana/plugin-e2e/-/plugin-e2e-3.4.13.tgz#e99983f96fff15c8ce5b53b6d6a2af4bf1460f57"
   integrity sha512-d+aMyBgS3+FnxVbKwx2kb0HwCbkQsH9Do66liwuQ6s4tQ/Y1stxochY2mR+fqyn1BwupSevvKhjvVxmTjoJ9RQ==
