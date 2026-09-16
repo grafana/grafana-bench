@@ -6,6 +6,7 @@ import (
 	"io"
 	"log/slog"
 	"path"
+	"regexp"
 	"strings"
 	"time"
 
@@ -36,7 +37,15 @@ func ParseJsonOutput(log *slog.Logger, report io.Reader) (executor.SuiteRunSumma
 		testDirs[project.ID] = project.TestDir
 	}
 
-	testRuns := parseSuites(output.Suites, testDirs, nil)
+	setup := setupProjects(output)
+	testRuns := parseSuites(output.Suites, testDirs, setup, nil)
+
+	setupFailed := int32(0)
+	for _, r := range testRuns {
+		if r.Status == executor.TestFailed && r.Attributes["setup"] == "true" {
+			setupFailed++
+		}
+	}
 
 	totalTestAmount := int32(output.Stats.Unexpected) + int32(output.Stats.Expected)
 	suiteStatus := executor.SuitePassed
@@ -53,7 +62,8 @@ func ParseJsonOutput(log *slog.Logger, report io.Reader) (executor.SuiteRunSumma
 		StartTime:         output.Stats.StartTime,
 		ScenariosDuration: scenarioDuration,
 		TestsExecuted:     totalTestAmount,
-		TestsFailed:       int32(output.Stats.Unexpected),
+		TestsFailed:       int32(output.Stats.Unexpected) - setupFailed,
+		TestsSetupFailed:  setupFailed,
 		TestsPassed:       int32(output.Stats.Expected),
 		TestsError:        0,
 		TotalDuration:     time.Duration(output.Stats.Duration * float64(time.Millisecond)),
@@ -64,7 +74,31 @@ func ParseJsonOutput(log *slog.Logger, report io.Reader) (executor.SuiteRunSumma
 
 }
 
-func parseSuites(suites []Suite, testDirs map[string]string, testRuns []executor.TestRunSummary) []executor.TestRunSummary {
+// setupProjects returns the projects that other projects depend on or use as
+// teardown. Playwright runs them around the dependants, so their tests prepare
+// the environment rather than exercise the service.
+func setupProjects(output PlaywrightJsonOutput) map[string]bool {
+	setup := map[string]bool{}
+	for _, project := range output.Config.Projects {
+		for _, dep := range project.Dependencies {
+			setup[dep] = true
+		}
+		if project.Teardown != "" {
+			setup[project.Teardown] = true
+		}
+	}
+	return setup
+}
+
+var setupFilePattern = regexp.MustCompile(`\.setup\.[cm]?[jt]sx?$`)
+
+// isSetupTest reports whether a test belongs to a setup project or follows the
+// Playwright *.setup.* file convention, such as plugin-e2e's auth.setup.js.
+func isSetupTest(test Test, file string, setup map[string]bool) bool {
+	return setup[test.ProjectName] || setup[test.ProjectID] || setupFilePattern.MatchString(path.Base(file))
+}
+
+func parseSuites(suites []Suite, testDirs map[string]string, setup map[string]bool, testRuns []executor.TestRunSummary) []executor.TestRunSummary {
 	for _, suite := range suites {
 		for _, spec := range suite.Specs {
 			folder := "unknown"
@@ -72,19 +106,19 @@ func parseSuites(suites []Suite, testDirs map[string]string, testRuns []executor
 				folder = testDirs[spec.Tests[0].ProjectID]
 			}
 
-			run := parseTestRun(spec, folder)
+			run := parseTestRun(spec, folder, setup)
 			if run.Status != executor.TestSkipped {
 				testRuns = append(testRuns, run)
 			}
 		}
 
-		testRuns = parseSuites(suite.Suites, testDirs, testRuns)
+		testRuns = parseSuites(suite.Suites, testDirs, setup, testRuns)
 	}
 
 	return testRuns
 }
 
-func parseTestRun(spec Specs, folder string) executor.TestRunSummary {
+func parseTestRun(spec Specs, folder string, setup map[string]bool) executor.TestRunSummary {
 	run := executor.TestRunSummary{
 		TestFolder: folder,
 		TestFile:   path.Base(spec.File),
@@ -94,6 +128,9 @@ func parseTestRun(spec Specs, folder string) executor.TestRunSummary {
 			"line":   fmt.Sprint(spec.Line),
 			"column": fmt.Sprint(spec.Column),
 		},
+	}
+	if isSetupTest(spec.Tests[0], spec.File, setup) {
+		run.Attributes["setup"] = "true"
 	}
 
 	switch spec.Tests[0].Status {

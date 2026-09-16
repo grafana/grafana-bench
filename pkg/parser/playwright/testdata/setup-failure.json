@@ -1,0 +1,85 @@
+{
+  "config": {
+    "projects": [
+      {
+        "outputDir": "/tests/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "id": "auth",
+        "name": "auth",
+        "testDir": "/tests",
+        "testIgnore": [],
+        "testMatch": ["/.*\\.js/"],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/tests/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "id": "run-tests",
+        "name": "run-tests",
+        "testDir": "/tests",
+        "testIgnore": [],
+        "testMatch": ["**/*.@(spec|test).?(c|m)[jt]s?(x)"],
+        "timeout": 30000,
+        "dependencies": ["auth"]
+      }
+    ],
+    "version": "1.62.1",
+    "workers": 1
+  },
+  "suites": [
+    {
+      "title": "auth.setup.js",
+      "file": "../node_modules/@grafana/plugin-e2e/dist/auth/auth.setup.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "authenticate",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "auth",
+              "projectName": "auth",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "status": "failed",
+                  "duration": 1200,
+                  "error": {
+                    "message": "Error: Could not login to Grafana using user 'e2e-user': {\"code\":\"Loading\",\"message\":\"Your instance is loading, and will be ready shortly.\"}"
+                  },
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-16T21:18:00.000Z",
+                  "attachments": []
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "auth-setup",
+          "file": "../node_modules/@grafana/plugin-e2e/dist/auth/auth.setup.js",
+          "line": 5,
+          "column": 7
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-09-16T21:18:00.000Z",
+    "duration": 1200,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 1,
+    "flaky": 0
+  }
+}

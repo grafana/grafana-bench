@@ -88,7 +88,7 @@ func (r *LogReporter) Report(
 		log.With(testRunAttrs...).Info("testRun", "testRun", testRunId)
 	}
 
-	var anyFailures = (summary.TestsFailed + summary.TestsError) > 0
+	var anyFailures = (summary.TestsFailed + summary.TestsSetupFailed + summary.TestsError) > 0
 
 	suiteRunAttrs := []any{
 		"startTime", summary.StartTime.Format(time.RFC3339),
@@ -98,6 +98,7 @@ func (r *LogReporter) Report(
 		"testsPassed", summary.TestsPassed,
 		"testsFlaky", summary.TestsFlaky,
 		"testsFailed", summary.TestsFailed,
+		"testsSetupFailed", summary.TestsSetupFailed,
 		"testsError", summary.TestsError,
 	}
 
