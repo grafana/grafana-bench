@@ -89,7 +89,8 @@ Identifies **what service is being tested** and how to connect to it.
 | `--service-version` | ✅* | Version being tested (e.g., `11.0.0`) |
 | `--service-url` | | Service URL (default: `http://localhost:3000`) |
 | `--service-timeout` | | Timeout for health checks (default: `1m`) |
-| `--service-health-check` | | Perform TCP health check before tests |
+| `--service-health-check` | | Perform a health check before tests: a GET of `--service-health-path` when set, otherwise a TCP dial |
+| `--service-health-path` | | Path to GET for the health check, for example `/api/health`. Passes on 2xx only, so a loading page keeps it waiting. Implies `--service-health-check` |
 | `--fetch-grafana-version` | ✅* | Alternative to `--service-version`: fetch from Grafana API (`user:pass`) |
 
 *Either `--service-version` or `--fetch-grafana-version` is required.

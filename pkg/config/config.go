@@ -78,6 +78,7 @@ type ServiceConfig struct {
 	Timeout      time.Duration
 	FetchVersion string // Optional credentials for fetching Grafana version (user:password format)
 	HealthCheck  bool   // Whether to perform health check before running tests
+	HealthPath   string // Path to GET for the health check; empty means a TCP dial
 }
 
 func AddServiceFlags(fs *pflag.FlagSet, config *ServiceConfig) {
@@ -112,7 +113,13 @@ func AddServiceFlags(fs *pflag.FlagSet, config *ServiceConfig) {
 		&config.HealthCheck,
 		"service-health-check",
 		false,
-		"Perform a TCP health check on the service before running tests. Uses --service-url and --service-timeout.",
+		"Perform a health check on the service before running tests: a GET of --service-health-path when set, otherwise a TCP dial. Uses --service-url and --service-timeout.",
+	)
+	fs.StringVar(
+		&config.HealthPath,
+		"service-health-path",
+		"",
+		"Path to GET on the service for the health check, for example /api/health. The check passes on a 2xx response, so a gateway that serves a loading page keeps it waiting. Implies --service-health-check.",
 	)
 
 	// Grafana-specific convenience flag for fetching version
@@ -882,6 +889,7 @@ func (benchConfig *BenchConfig) BuildSuiteRun(log *slog.Logger) (executor.SuiteR
 		healthCheckOpts := service.HealthCheckOptions{
 			Timeout: benchConfig.Service.Timeout,
 			Backoff: 1 * time.Second,
+			Path:    benchConfig.Service.HealthPath,
 		}
 		err := service.WaitForServiceLive(context.TODO(), benchConfig.Service.Url, healthCheckOpts)
 		if err != nil {

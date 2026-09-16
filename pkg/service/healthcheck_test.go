@@ -2,8 +2,12 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
+	"net/http"
+	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -169,5 +173,87 @@ func TestIsServiceLive(t *testing.T) {
 				t.Errorf("isServiceLive(%s) = %v, expected %v", tt.host, result, tt.expected)
 			}
 		})
+	}
+}
+
+func TestWaitForServiceLive_HTTPPath(t *testing.T) {
+	tests := []struct {
+		name          string
+		failFirst     int32 // requests answered 503 before the first 200
+		alwaysFail    bool
+		path          string
+		expectErr     error
+		expectMinHits int32
+	}{
+		{
+			name:          "passes once the health path answers 200",
+			failFirst:     2,
+			path:          "/api/health",
+			expectMinHits: 3,
+		},
+		{
+			name:       "times out while the health path keeps answering 503",
+			alwaysFail: true,
+			path:       "/api/health",
+			expectErr:  ServiceNotAvailableError,
+		},
+		{
+			name:          "joins the path without a leading slash",
+			path:          "api/health",
+			expectMinHits: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var hits atomic.Int32
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != "/api/health" {
+					t.Errorf("expected path /api/health, got %s", r.URL.Path)
+				}
+				n := hits.Add(1)
+				if tt.alwaysFail || n <= tt.failFirst {
+					w.WriteHeader(http.StatusServiceUnavailable)
+					_, _ = w.Write([]byte(`{"code":"Loading","message":"Your instance is loading, and will be ready shortly."}`))
+					return
+				}
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write([]byte(`{"database":"ok"}`))
+			}))
+			defer server.Close()
+
+			opts := HealthCheckOptions{
+				Timeout: 700 * time.Millisecond,
+				Backoff: 50 * time.Millisecond,
+				Path:    tt.path,
+			}
+			err := WaitForServiceLive(context.Background(), server.URL+"/", opts)
+
+			if tt.expectErr != nil {
+				if !errors.Is(err, tt.expectErr) {
+					t.Fatalf("expected %v, got %v", tt.expectErr, err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("expected no error, got %v", err)
+			}
+			if hits.Load() < tt.expectMinHits {
+				t.Errorf("expected at least %d probes, got %d", tt.expectMinHits, hits.Load())
+			}
+		})
+	}
+}
+
+func TestWaitForServiceLive_TCPIgnoresStatus(t *testing.T) {
+	// Without a path the check is a TCP dial, so a gateway serving 503 passes it.
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	defer server.Close()
+
+	opts := HealthCheckOptions{Timeout: 500 * time.Millisecond, Backoff: 50 * time.Millisecond}
+	if err := WaitForServiceLive(context.Background(), server.URL, opts); err != nil {
+		t.Fatalf("expected the TCP check to pass, got %v", err)
 	}
 }

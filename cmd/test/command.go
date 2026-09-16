@@ -350,15 +350,16 @@ func NewCmd(log *slog.Logger) *cobra.Command {
 			}
 
 			// Perform health check if requested
-			if benchConfig.Service.HealthCheck {
+			if benchConfig.Service.HealthCheck || benchConfig.Service.HealthPath != "" {
 				if benchConfig.Service.Url == "" {
 					return fmt.Errorf("--service-url is required when using --service-health-check")
 				}
 
-				log.Info("performing service health check...", "url", benchConfig.Service.Url, "timeout", benchConfig.Service.Timeout)
+				log.Info("performing service health check...", "url", benchConfig.Service.Url, "path", benchConfig.Service.HealthPath, "timeout", benchConfig.Service.Timeout)
 				healthCheckOpts := service.HealthCheckOptions{
 					Timeout: benchConfig.Service.Timeout,
 					Backoff: 1 * time.Second,
+					Path:    benchConfig.Service.HealthPath,
 				}
 				err := service.WaitForServiceLive(cmd.Context(), benchConfig.Service.Url, healthCheckOpts)
 				if err != nil {
