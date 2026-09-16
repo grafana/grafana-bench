@@ -146,6 +146,7 @@ func (r *TextReporter) Report(
 	fmt.Fprintf(tw, "Passed:\t%d\n", suiteRunSummary.TestsPassed)
 	fmt.Fprintf(tw, "Flaky:\t%d\n", suiteRunSummary.TestsFlaky)
 	fmt.Fprintf(tw, "Failed:\t%d\n", suiteRunSummary.TestsFailed)
+	fmt.Fprintf(tw, "Setup failed:\t%d\n", suiteRunSummary.TestsSetupFailed)
 	fmt.Fprintf(tw, "Errors:\t%d\n", suiteRunSummary.TestsError)
 	fmt.Fprintf(tw, "Suite:\t%s\n", suiteRunSummary.Status)
 	fmt.Fprintf(tw, "Total Run Time:\t%.2f sec\n", suiteRunSummary.TotalDuration.Seconds())
