@@ -41,6 +41,24 @@ func TestAppendReporterToCommand(t *testing.T) {
 			suitePath:  "tests",
 			want:       "playwright test --reporter=json tests",
 		},
+		{
+			name:       "npm run with its own separator keeps a single one",
+			executeCmd: "npm run e2e -- --grep-invert @quarantine",
+			suitePath:  "/tests",
+			want:       "npm run e2e -- --grep-invert @quarantine --reporter=json /tests",
+		},
+		{
+			name:       "npm run ending in a separator",
+			executeCmd: "npm run e2e --",
+			suitePath:  "tests",
+			want:       "npm run e2e -- --reporter=json tests",
+		},
+		{
+			name:       "npm run with a double dash inside a flag value",
+			executeCmd: "npm run e2e:cloud --if-present",
+			suitePath:  "tests",
+			want:       "npm run e2e:cloud --if-present -- --reporter=json tests",
+		},
 	}
 
 	for _, tt := range tests {
@@ -49,6 +67,49 @@ func TestAppendReporterToCommand(t *testing.T) {
 			if got != tt.want {
 				t.Fatalf("appendReporterToCommand(%q, %q) = %q, want %q",
 					tt.executeCmd, tt.suitePath, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestWorkDir(t *testing.T) {
+	tests := []struct {
+		name      string
+		baseDir   string
+		suitePath string
+		want      string
+	}{
+		{
+			name:      "relative suite path joins the base directory",
+			baseDir:   "/work",
+			suitePath: "tests",
+			want:      "/work/tests",
+		},
+		{
+			name:      "current directory for both",
+			baseDir:   ".",
+			suitePath: ".",
+			want:      ".",
+		},
+		{
+			name:      "absolute suite path stands alone",
+			baseDir:   ".",
+			suitePath: "/tests",
+			want:      "/tests",
+		},
+		{
+			name:      "absolute suite path ignores an absolute base directory",
+			baseDir:   "/work",
+			suitePath: "/tests",
+			want:      "/tests",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := workDir(tt.baseDir, tt.suitePath)
+			if got != tt.want {
+				t.Fatalf("workDir(%q, %q) = %q, want %q", tt.baseDir, tt.suitePath, got, tt.want)
 			}
 		})
 	}
