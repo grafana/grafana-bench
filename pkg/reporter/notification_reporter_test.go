@@ -30,6 +30,7 @@ func (f *fakeNotifier) Notify(
 	recipient string,
 	suiteRunId string,
 	testRuns []executor.TestRunSummary,
+	attributes map[string]string,
 ) error {
 	if f.err != nil {
 		return f.err
