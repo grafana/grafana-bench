@@ -158,7 +158,7 @@ func TestNotify(t *testing.T) {
 			},
 			)
 
-			err := notifier.Notify(context.Background(), tc.recipient, "123", tc.testRuns)
+			err := notifier.Notify(context.Background(), tc.recipient, "123", tc.testRuns, nil)
 			if !errors.Is(err, tc.expectedErr) {
 				t.Fatalf("expected error %v got %v", tc.expectedErr, err)
 			}
@@ -170,5 +170,33 @@ func TestNotify(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestFormatTestResultsRunbook(t *testing.T) {
+	testRuns := []executor.TestRunSummary{
+		{TestFolder: "test-suite", TestFile: "failed.js", Status: executor.TestFailed},
+	}
+
+	blocks, err := FormatTestResults("", "123", executor.TestSuite{}, testRuns, "")
+	if err != nil {
+		t.Fatalf("unexpected error %v", err)
+	}
+	// header + one test run
+	if len(blocks) != 2 {
+		t.Fatalf("expected 2 blocks without runbook got %d", len(blocks))
+	}
+
+	blocks, err = FormatTestResults("", "123", executor.TestSuite{}, testRuns, "https://example.com/runbook?a=1&b=2#section")
+	if err != nil {
+		t.Fatalf("unexpected error %v", err)
+	}
+	if len(blocks) != 3 {
+		t.Fatalf("expected 3 blocks with runbook got %d", len(blocks))
+	}
+	expected := ":book: *Runbook:* <https://example.com/runbook?a=1&amp;b=2#section>"
+	section, ok := blocks[2].(*slack.SectionBlock)
+	if !ok || section.Text == nil || section.Text.Text != expected {
+		t.Fatalf("expected last block to be a section with text %q got %#v", expected, blocks[2])
 	}
 }

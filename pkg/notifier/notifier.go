@@ -15,5 +15,7 @@ type Notifier interface {
 		recipient string,
 		suiteRunId string,
 		testRuns []executor.TestRunSummary,
+		// attributes are the suite run attributes (--run-attribute)
+		attributes map[string]string,
 	) error
 }

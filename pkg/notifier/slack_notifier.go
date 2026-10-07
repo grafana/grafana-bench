@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/grafana/grafana-bench/pkg/dashboard"
 	"github.com/grafana/grafana-bench/pkg/executor"
@@ -19,11 +20,18 @@ var (
 	ErrPostingMessage      = errors.New("posting message")
 )
 
+// RunbookAttribute is the suite run attribute (--run-attribute runbook=<url>) linked in notifications
+const RunbookAttribute = "runbook"
+
+// slackEscaper escapes the control characters of Slack mrkdwn
+var slackEscaper = strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;")
+
 func FormatTestResults(
 	dashboardURL string,
 	suiteRunId string,
 	suite executor.TestSuite,
 	testRuns []executor.TestRunSummary,
+	runbookURL string,
 ) ([]slack.Block, error) {
 	blocks := []slack.Block{}
 
@@ -68,6 +76,16 @@ func FormatTestResults(
 		)
 
 		blocks = append(blocks, testRunSection)
+	}
+
+	if runbookURL != "" {
+		runbookText := slack.NewTextBlockObject(
+			"mrkdwn",
+			fmt.Sprintf(":book: *Runbook:* <%s>", slackEscaper.Replace(runbookURL)),
+			false,
+			false,
+		)
+		blocks = append(blocks, slack.NewSectionBlock(runbookText, nil, nil))
 	}
 
 	return blocks, nil
@@ -130,13 +148,14 @@ func (s *SlackNotifier) Notify(
 	recipient string,
 	suiteRunId string,
 	testRuns []executor.TestRunSummary,
+	attributes map[string]string,
 ) error {
 	channelID, err := s.mapping.GetChannel(recipient)
 	if err != nil {
 		return err
 	}
 
-	blocks, err := FormatTestResults(s.dashboardURL, suiteRunId, executor.TestSuite{}, testRuns)
+	blocks, err := FormatTestResults(s.dashboardURL, suiteRunId, executor.TestSuite{}, testRuns, attributes[RunbookAttribute])
 	if err != nil {
 		return err
 	}
