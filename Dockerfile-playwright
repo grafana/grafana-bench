@@ -32,7 +32,7 @@ RUN CGO_ENABLED=0 go build \
 
 # Production playwright image - no fixuid needed
 
-FROM grafana/k6:2.0.0 AS k6
+FROM grafana/k6:2.0.0@sha256:a33a0cfdc4d2483d6b7a3a22e726a499ff2831a671a49239104cd34a9937523c AS k6
 
 # Use Playwright base image which includes all browser dependencies
 FROM mcr.microsoft.com/playwright:v1.62.1-noble AS runtime
