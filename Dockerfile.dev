@@ -34,8 +34,8 @@ RUN CGO_ENABLED=0 go build \
 RUN go get github.com/boxboat/fixuid@${FIXUID_VERSION} && \
   CGO_ENABLED=0 go build -o build/fixuid github.com/boxboat/fixuid
 
-FROM grafana/k6:2.0.0 AS k6
-FROM alpine:3.23 AS runtime
+FROM grafana/k6:2.0.0@sha256:a33a0cfdc4d2483d6b7a3a22e726a499ff2831a671a49239104cd34a9937523c AS k6
+FROM alpine:3.23@sha256:85fe1e81d6758c208f3e1eed4338a1997e19d4be002d4dd32d3100c9a8c010a0 AS runtime
 
 USER root
 RUN apk add --no-cache ca-certificates git wget
