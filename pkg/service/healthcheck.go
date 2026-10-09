@@ -3,10 +3,10 @@ package service
 import (
 	"context"
 	"errors"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 )
 
@@ -19,9 +19,10 @@ var (
 type HealthCheckOptions struct {
 	Timeout time.Duration
 	Backoff time.Duration
-	// Path, when set, turns the check into an HTTP GET of serviceURL+Path that
-	// must answer 2xx. A gateway that accepts connections but serves a loading
-	// page (503) passes the TCP dial and fails this one. Empty keeps the TCP dial.
+	// Path, when set, turns the check into an HTTP GET of Path joined onto the
+	// service URL that must answer 2xx; a redirect is not followed. A gateway that
+	// accepts connections but serves a loading page (503) passes the TCP dial and
+	// fails this one. Empty keeps the TCP dial.
 	Path string
 }
 
@@ -35,6 +36,12 @@ func DefaultHealthCheckOptions() HealthCheckOptions {
 
 // httpProbeTimeout bounds one GET of the health path. The overall wait is opts.Timeout.
 const httpProbeTimeout = 10 * time.Second
+
+// probeClient is shared across attempts so connections are reused, and it returns a
+// redirect as the response instead of following it: only the probed path's own status counts.
+var probeClient = &http.Client{
+	CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
+}
 
 // WaitForServiceLive performs a health check on the given service URL. It repeatedly
 // dials the service, or GETs opts.Path on it when set, until it is available or the
@@ -50,7 +57,7 @@ func WaitForServiceLive(ctx context.Context, serviceURL string, opts HealthCheck
 
 	probe := func() bool { return isServiceLive(hostWithPort(parsedURL)) }
 	if opts.Path != "" {
-		healthURL := strings.TrimRight(serviceURL, "/") + "/" + strings.TrimLeft(opts.Path, "/")
+		healthURL := parsedURL.JoinPath(opts.Path).String()
 		probe = func() bool { return isServiceHealthy(ctxTimeout, healthURL) }
 	}
 
@@ -100,11 +107,12 @@ func isServiceHealthy(ctx context.Context, healthURL string) bool {
 	if err != nil {
 		return false
 	}
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := probeClient.Do(req)
 	if err != nil {
 		return false
 	}
 	defer resp.Body.Close()
+	_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 64<<10))
 	return resp.StatusCode >= 200 && resp.StatusCode < 300
 }
 
