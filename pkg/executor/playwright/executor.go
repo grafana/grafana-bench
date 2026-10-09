@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/grafana/grafana-bench/pkg/executor"
@@ -74,7 +75,7 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 			if cmd == "" {
 				continue
 			}
-			if err := t.executeCommand(filepath.Join(suite.BaseDir, suite.Path), playwrightEnv, cmd); err != nil {
+			if err := t.executeCommand(workDir(suite.BaseDir, suite.Path), playwrightEnv, cmd); err != nil {
 				return executor.SuiteRunSummary{}, fmt.Errorf("failed to prepare codebase: %w", err)
 			}
 		}
@@ -96,7 +97,7 @@ func (t *PlaywrightTestExecutor) ExecTestSuite(
 	execCmd := appendReporterToCommand(t.ExecuteCmd, suite.Path)
 	t.Log.Debug("playwright command", "cmd", execCmd)
 
-	if err := t.executeCommand(filepath.Join(suite.BaseDir, suite.Path), playwrightEnv, execCmd); err != nil {
+	if err := t.executeCommand(workDir(suite.BaseDir, suite.Path), playwrightEnv, execCmd); err != nil {
 		// we can't tell if there was a error executing the test or the test command was wrong (e.g. misspelled)
 		// so we check if there's any report. If not, we assume the test was not executed and return
 		// otherwise we are trying to process the report with parseJsonOutput below
@@ -156,9 +157,21 @@ func (t *PlaywrightTestExecutor) executeCommand(execDir string, env map[string]s
 }
 
 func appendReporterToCommand(executeCmd string, suitePath string) string {
-	if strings.Contains(executeCmd, "npm run") {
+	// npm forwards arguments to the script only after a "--", and it consumes that first "--"
+	// itself. Add one when the command has none, so the reporter flag reaches Playwright. When the
+	// command already carries a "--", a second one would make Playwright ignore the reporter.
+	// yarn, pnpm and direct invocations forward flags as they are.
+	if strings.Contains(executeCmd, "npm run") && !slices.Contains(strings.Fields(executeCmd), "--") {
 		return fmt.Sprintf("%s -- --reporter=json %s", executeCmd, suitePath)
 	}
-	// if using yarn/pnpm or others, just append normally
 	return fmt.Sprintf("%s --reporter=json %s", executeCmd, suitePath)
+}
+
+// workDir is the directory the prepare and execute commands run in. An absolute suite path is
+// used as it is. A relative one is joined to the suite base directory.
+func workDir(baseDir string, suitePath string) string {
+	if filepath.IsAbs(suitePath) {
+		return suitePath
+	}
+	return filepath.Join(baseDir, suitePath)
 }
