@@ -181,25 +181,42 @@ func TestWaitForServiceLive_HTTPPath(t *testing.T) {
 		name          string
 		failFirst     int32 // requests answered 503 before the first 200
 		alwaysFail    bool
+		base          string // appended to the server URL as the --service-url
 		path          string
+		wantPath      string
+		wantQuery     string
 		expectErr     error
 		expectMinHits int32
 	}{
 		{
 			name:          "passes once the health path answers 200",
 			failFirst:     2,
+			base:          "/",
 			path:          "/api/health",
+			wantPath:      "/api/health",
 			expectMinHits: 3,
 		},
 		{
 			name:       "times out while the health path keeps answering 503",
 			alwaysFail: true,
+			base:       "/",
 			path:       "/api/health",
+			wantPath:   "/api/health",
 			expectErr:  ServiceNotAvailableError,
 		},
 		{
 			name:          "joins the path without a leading slash",
+			base:          "/",
 			path:          "api/health",
+			wantPath:      "/api/health",
+			expectMinHits: 1,
+		},
+		{
+			name:          "keeps the base path and query string of the service URL",
+			base:          "/base?tenant=blue",
+			path:          "/api/health",
+			wantPath:      "/base/api/health",
+			wantQuery:     "tenant=blue",
 			expectMinHits: 1,
 		},
 	}
@@ -208,8 +225,11 @@ func TestWaitForServiceLive_HTTPPath(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var hits atomic.Int32
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if r.URL.Path != "/api/health" {
-					t.Errorf("expected path /api/health, got %s", r.URL.Path)
+				if r.URL.Path != tt.wantPath {
+					t.Errorf("expected path %s, got %s", tt.wantPath, r.URL.Path)
+				}
+				if r.URL.RawQuery != tt.wantQuery {
+					t.Errorf("expected query %q, got %q", tt.wantQuery, r.URL.RawQuery)
 				}
 				n := hits.Add(1)
 				if tt.alwaysFail || n <= tt.failFirst {
@@ -227,7 +247,7 @@ func TestWaitForServiceLive_HTTPPath(t *testing.T) {
 				Backoff: 50 * time.Millisecond,
 				Path:    tt.path,
 			}
-			err := WaitForServiceLive(context.Background(), server.URL+"/", opts)
+			err := WaitForServiceLive(context.Background(), server.URL+tt.base, opts)
 
 			if tt.expectErr != nil {
 				if !errors.Is(err, tt.expectErr) {
@@ -255,5 +275,29 @@ func TestWaitForServiceLive_TCPIgnoresStatus(t *testing.T) {
 	opts := HealthCheckOptions{Timeout: 500 * time.Millisecond, Backoff: 50 * time.Millisecond}
 	if err := WaitForServiceLive(context.Background(), server.URL, opts); err != nil {
 		t.Fatalf("expected the TCP check to pass, got %v", err)
+	}
+}
+
+func TestWaitForServiceLive_HTTPPathRedirectIsNotHealthy(t *testing.T) {
+	// A health path that redirects, for example to a login or loading page, is not 2xx.
+	// The probe must not follow it to a 200 elsewhere.
+	var followed atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/ok" {
+			followed.Add(1)
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		http.Redirect(w, r, "/ok", http.StatusFound)
+	}))
+	defer server.Close()
+
+	opts := HealthCheckOptions{Timeout: 400 * time.Millisecond, Backoff: 50 * time.Millisecond, Path: "/api/health"}
+	err := WaitForServiceLive(context.Background(), server.URL, opts)
+	if !errors.Is(err, ServiceNotAvailableError) {
+		t.Fatalf("expected %v, got %v", ServiceNotAvailableError, err)
+	}
+	if followed.Load() != 0 {
+		t.Errorf("the probe followed the redirect %d times; it must evaluate the first response", followed.Load())
 	}
 }
