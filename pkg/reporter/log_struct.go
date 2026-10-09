@@ -108,6 +108,7 @@ type TestSuiteLine struct {
 	TestsExecuted          int     `json:"testsExecuted" validate:"required"`
 	TestsPassed            int     `json:"testsPassed"   validate:"required"`
 	TestsFailed            int     `json:"testsFailed"   validate:"required"`
+	TestsSetupFailed       int     `json:"testsSetupFailed"`
 	TestsError             int     `json:"testsError"    validate:"required"`
 	AnyFailures            bool    `json:"anyFailures"   validate:"required"`
 }

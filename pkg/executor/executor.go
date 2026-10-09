@@ -55,7 +55,11 @@ type TestRunSummary struct {
 	Attributes map[string]string `json:"attributes"`
 }
 
-// TestSuiteSummary summarizes the execution of  a test suite
+// TestSuiteSummary summarizes the execution of  a test suite.
+//
+// TestsSetupFailed counts failed tests in a setup project or a *.setup.* file.
+// They are excluded from TestsFailed, because a failed setup says the environment
+// was not ready, not that the service has a defect.
 type SuiteRunSummary struct {
 	SuiteName         string
 	SuiteRevision     string
@@ -63,6 +67,7 @@ type SuiteRunSummary struct {
 	Status            SuiteStatus
 	TestsExecuted     int32
 	TestsFailed       int32
+	TestsSetupFailed  int32
 	TestsFlaky        int32
 	TestsPassed       int32
 	TestsError        int32

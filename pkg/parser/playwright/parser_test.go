@@ -89,6 +89,7 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 						TotalDuration:    time.Millisecond * 104,
 						Attributes: map[string]string{
 							"title": "authenticate",
+							"setup": "true",
 						},
 					},
 					{
@@ -173,6 +174,7 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 						TotalDuration:    time.Millisecond * 101,
 						Attributes: map[string]string{
 							"title": "authenticate",
+							"setup": "true",
 						},
 					},
 					{
@@ -259,6 +261,7 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 						ExitMessage:      "success",
 						Attributes: map[string]string{
 							"title": "authenticate",
+							"setup": "true",
 						},
 					},
 					{
@@ -300,6 +303,32 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 				TestsError:        0,
 			},
 		},
+		{
+			title: "count a failed setup project separately from failed tests",
+			file:  "./testdata/setup-failure.json",
+			expected: executor.SuiteRunSummary{
+				TestRuns: []executor.TestRunSummary{
+					{
+						TestFile:         "auth.setup.js",
+						Status:           executor.TestFailed,
+						ExitMessage:      "../node_modules/@grafana/plugin-e2e/dist/auth/auth.setup.js:5:7 => Error: Could not login to Grafana using user 'e2e-user': {\"code\":\"Loading\",\"message\":\"Your instance is loading, and will be ready shortly.\"}",
+						ScenarioDuration: time.Millisecond * 1200,
+						TotalDuration:    time.Millisecond * 1200,
+						Attributes: map[string]string{
+							"title": "authenticate",
+							"setup": "true",
+						},
+					},
+				},
+				ScenariosDuration: time.Millisecond * 1200,
+				TotalDuration:     time.Millisecond * 1200,
+				TestsExecuted:     1,
+				TestsPassed:       0,
+				TestsFailed:       0,
+				TestsSetupFailed:  1,
+				TestsError:        0,
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -318,6 +347,7 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 			assert.Equal(t, "tests passed", tc.expected.TestsPassed, summary.TestsPassed)
 			assert.Equal(t, "tests error", tc.expected.TestsError, summary.TestsError)
 			assert.Equal(t, "tests failed", tc.expected.TestsFailed, summary.TestsFailed)
+			assert.Equal(t, "tests setup failed", tc.expected.TestsSetupFailed, summary.TestsSetupFailed)
 			assert.Equal(t, "scenario duration", tc.expected.ScenariosDuration, summary.ScenariosDuration)
 			assert.Equal(t, "total duration", tc.expected.TotalDuration, summary.TotalDuration)
 
@@ -329,7 +359,60 @@ func TestParsePlaywrightJSONReport(t *testing.T) {
 				assert.Equal(t, "test scenario duration", tr.ScenarioDuration, summary.TestRuns[i].ScenarioDuration)
 				assert.Equal(t, "exit message", tr.ExitMessage, summary.TestRuns[i].ExitMessage)
 				assert.Equal(t, "test title", tr.Attributes["title"], summary.TestRuns[i].Attributes["title"])
+				assert.Equal(t, "setup attribute", tr.Attributes["setup"], summary.TestRuns[i].Attributes["setup"])
 			}
+		})
+	}
+}
+
+func TestIsSetupTest(t *testing.T) {
+	testCases := []struct {
+		title    string
+		test     Test
+		file     string
+		setup    map[string]bool
+		expected bool
+	}{
+		{
+			title:    "project that another project depends on",
+			test:     Test{ProjectID: "prepare", ProjectName: "prepare"},
+			file:     "seed.spec.ts",
+			setup:    map[string]bool{"prepare": true},
+			expected: true,
+		},
+		{
+			title:    "setup file without project dependencies in the report",
+			test:     Test{ProjectID: "auth", ProjectName: "auth"},
+			file:     "../node_modules/@grafana/plugin-e2e/dist/auth/auth.setup.js",
+			setup:    map[string]bool{},
+			expected: true,
+		},
+		{
+			title:    "typescript setup file",
+			test:     Test{ProjectID: "run-tests", ProjectName: "run-tests"},
+			file:     "tests/global.setup.ts",
+			setup:    map[string]bool{},
+			expected: true,
+		},
+		{
+			title:    "ordinary spec",
+			test:     Test{ProjectID: "run-tests", ProjectName: "run-tests"},
+			file:     "tests/queryEditor.spec.ts",
+			setup:    map[string]bool{"auth": true},
+			expected: false,
+		},
+		{
+			title:    "spec whose name only contains the word setup",
+			test:     Test{ProjectID: "run-tests", ProjectName: "run-tests"},
+			file:     "tests/setup-wizard.spec.ts",
+			setup:    map[string]bool{},
+			expected: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.title, func(t *testing.T) {
+			assert.Equal(t, "setup", tc.expected, isSetupTest(tc.test, tc.file, tc.setup))
 		})
 	}
 }

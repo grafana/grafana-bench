@@ -36,6 +36,9 @@ type PlaywrightJsonOutput struct {
 			TestIgnore []string `json:"testIgnore"`
 			TestMatch  []string `json:"testMatch"`
 			Timeout    int      `json:"timeout"`
+			// Projects that Playwright runs before or after this one. Older reports omit both.
+			Dependencies []string `json:"dependencies"`
+			Teardown     string   `json:"teardown"`
 		} `json:"projects"`
 		Shard           any    `json:"shard"`
 		UpdateSnapshots string `json:"updateSnapshots"`

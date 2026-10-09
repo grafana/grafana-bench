@@ -212,6 +212,35 @@ func TestLogReporter_Report(t *testing.T) {
 				"serviceVersion": "main-def456",
 			},
 		},
+		{
+			name: "a failed setup test counts as a failure of the run",
+			suiteRun: executor.SuiteRun{
+				Id:             "test-run-1000",
+				RunStage:       "dev0",
+				Service:        "clickhouse-datasource",
+				TestExecutor:   "playwright",
+				BenchRevision:  "v1.2.0",
+				ServiceURL:     "https://datasourcese2e.grafana-dev.net",
+				ServiceVersion: "4.22.1",
+			},
+			summary: executor.SuiteRunSummary{
+				SuiteName:        "e2e",
+				SuiteRevision:    "abc123",
+				StartTime:        time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC),
+				TotalDuration:    900 * time.Millisecond,
+				TestRuns:         []executor.TestRunSummary{},
+				TestsExecuted:    1,
+				TestsPassed:      0,
+				TestsFailed:      0,
+				TestsSetupFailed: 1,
+				TestsError:       0,
+			},
+			expected: map[string]any{
+				"anyFailures":      true,
+				"testsFailed":      float64(0),
+				"testsSetupFailed": float64(1),
+			},
+		},
 	}
 
 	for _, tt := range tests {

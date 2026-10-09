@@ -41,7 +41,8 @@ Built-in metrics are prefixed with `bench_` and describe your test suite.
 **Test Suite Metrics:**
 - `bench_tests_error` - Number of tests with errors
 - `bench_tests_executed` - Total number of tests executed
-- `bench_tests_failed` - Number of failed tests
+- `bench_tests_failed` - Number of failed tests, excluding setup tests
+- `bench_tests_setup_failed` - Number of failed setup tests: tests in a project that other projects depend on or use as teardown, or in a `*.setup.*` file
 - `bench_tests_flaky` - Number of flaky tests (passed after retry)
 - `bench_tests_passed` - Number of passed tests
 - `bench_test_retries_total` - Total retry attempts across the suite (extra runs beyond each test's first attempt)
