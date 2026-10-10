@@ -113,3 +113,4 @@ Look in pkg/parsers to see a current list of parsers we can support
    git status  # MUST show "up to date with origin"
    ```
 4. **Verify** - All changes committed AND pushed
+- Security issues should be reported via [Grafana's security issue reporting page](https://grafana.com/legal/report-a-security-issue/) and not directly in this repository.
