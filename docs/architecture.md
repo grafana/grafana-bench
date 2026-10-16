@@ -218,6 +218,7 @@ Only checks out specified directories.
 bench_tests_executed
 bench_tests_passed
 bench_tests_failed
+bench_tests_setup_failed
 bench_tests_error
 bench_tests_flaky
 bench_total_duration_seconds

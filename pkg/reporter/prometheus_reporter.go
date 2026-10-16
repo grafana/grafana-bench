@@ -106,6 +106,10 @@ func (p *PrometheusReporter) Report(
 		{Name: "bench_tests_executed", Value: float64(summary.TestsExecuted), Labels: labels},
 		{Name: "bench_tests_passed", Value: float64(summary.TestsPassed), Labels: labels},
 		{Name: "bench_tests_failed", Value: float64(summary.TestsFailed), Labels: labels},
+		// bench_tests_setup_failed counts failed setup tests (a setup project or a
+		// *.setup.* file). They are not in bench_tests_failed, so an alert on
+		// failed tests reads a service defect, not an environment that was not ready.
+		{Name: "bench_tests_setup_failed", Value: float64(summary.TestsSetupFailed), Labels: labels},
 		{Name: "bench_tests_error", Value: float64(summary.TestsError), Labels: labels},
 		{Name: "bench_tests_flaky", Value: float64(summary.TestsFlaky), Labels: labels},
 		// bench_test_retries_total counts retry attempts across the suite (the
