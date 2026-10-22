@@ -13,7 +13,7 @@ require (
 	github.com/olekukonko/tablewriter v1.1.4
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/client_model v0.6.2
-	github.com/slack-go/slack v0.20.0
+	github.com/slack-go/slack v0.23.1
 	github.com/spf13/pflag v1.0.10
 	golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f
 	golang.org/x/text v0.36.0
