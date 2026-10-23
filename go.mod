@@ -7,14 +7,22 @@ require (
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
 	github.com/go-git/go-git/v5 v5.19.1
 	github.com/go-logfmt/logfmt v0.6.1
+	github.com/go-playground/validator/v10 v10.30.2
 	github.com/golang/snappy v1.0.0
+	github.com/google/go-cmp v0.7.0
+	github.com/grafana/k6pack v0.2.4
 	github.com/grafana/nanogit v0.13.1
+	github.com/hairyhenderson/go-codeowners v0.7.0
 	github.com/joho/godotenv v1.5.1
+	github.com/julienschmidt/httprouter v1.3.0
 	github.com/olekukonko/tablewriter v1.1.4
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/client_model v0.6.2
 	github.com/slack-go/slack v0.23.1
+	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
+	github.com/spf13/viper v1.21.0
+	github.com/testcontainers/testcontainers-go v0.41.0
 	golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f
 	golang.org/x/text v0.42.0
 	google.golang.org/protobuf v1.36.11
@@ -47,7 +55,7 @@ require (
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/ebitengine/purego v0.10.0 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
-	github.com/evanw/esbuild v0.24.2 // indirect
+	github.com/evanw/esbuild v0.28.2 // indirect
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
@@ -60,6 +68,7 @@ require (
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
+	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
@@ -115,20 +124,8 @@ require (
 	go.opentelemetry.io/proto/otlp v1.9.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.57.0 // indirect
-	golang.org/x/sync v0.23.0 // indirect
-	gopkg.in/warnings.v0 v0.1.2 // indirect
-)
-
-require (
-	github.com/go-playground/validator/v10 v10.30.2
-	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
-	github.com/google/go-cmp v0.7.0
-	github.com/grafana/k6pack v0.2.4
-	github.com/hairyhenderson/go-codeowners v0.7.0
-	github.com/julienschmidt/httprouter v1.3.0
-	github.com/spf13/cobra v1.10.2
-	github.com/spf13/viper v1.21.0
-	github.com/testcontainers/testcontainers-go v0.41.0
 	golang.org/x/net v0.60.0 // indirect
+	golang.org/x/sync v0.23.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
+	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
