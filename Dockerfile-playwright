@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.23.0-labs@sha256:7eca9451d94f9b8ad22e44988b92d595d3e4d65163794237949a8c3413fbed5d
+# syntax=docker/dockerfile:1.28.0-labs@sha256:ad43eec41369d9ef94412c0d1eb3203d12218d01da225afc92a3aeba3a0e7796
 
 FROM --platform=$BUILDPLATFORM golang:1.27.3-alpine AS builder
 
