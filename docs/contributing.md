@@ -4,7 +4,7 @@ Thank you for your interest in contributing! This guide covers how to build, tes
 
 ## Prerequisites
 
-- [Go](https://go.dev/dl/) 1.26+
+- [Go](https://go.dev/dl/) 1.27.3+
 - [Docker](https://docs.docker.com/get-docker/) (for container tests)
 - [Make](https://www.gnu.org/software/make/)
 
