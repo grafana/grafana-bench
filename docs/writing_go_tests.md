@@ -205,7 +205,7 @@ jobs:
           go-version: stable
 
       - name: Setup Grafana Bench
-        uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@e3d7f77d929678993eb152fd92ecf1570b67d9ab
+        uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@0fcdeb4649d65bc4b2eb8995e8251f934b5f8780
         with:
           version: 'v1.2.1'
 
