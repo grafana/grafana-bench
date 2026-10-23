@@ -34,7 +34,7 @@ jobs:
           go-version: 'stable'
 
       - name: Setup bench + Prometheus secrets
-        uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@8378935874aed527e7a5f4e505d67b61b582a9ea
+        uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@e3d7f77d929678993eb152fd92ecf1570b67d9ab
         with:
           version: latest
 
