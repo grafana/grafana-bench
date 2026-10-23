@@ -3,7 +3,7 @@ module github.com/grafana/grafana-bench
 go 1.27.3
 
 require (
-	buf.build/gen/go/prometheus/prometheus/protocolbuffers/go v1.36.11-20260331160422-eae785f0a21d.1
+	buf.build/gen/go/prometheus/prometheus/protocolbuffers/go v1.36.12-20261001224011-d7f6cfecf2b8.2
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
 	github.com/go-git/go-git/v5 v5.19.2
 	github.com/go-logfmt/logfmt v0.6.1
@@ -30,7 +30,7 @@ require (
 )
 
 require (
-	buf.build/gen/go/gogo/protobuf/protocolbuffers/go v1.36.11-20240617172848-e1dbca2775a7.1 // indirect
+	buf.build/gen/go/gogo/protobuf/protocolbuffers/go v1.36.12-20240617172848-e1dbca2775a7.2 // indirect
 	dario.cat/mergo v1.0.2 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
