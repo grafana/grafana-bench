@@ -10,7 +10,7 @@ The `setup-grafana-bench` action downloads and installs the pre-built binary for
 
 ```yaml
 - name: Setup Grafana Bench
-  uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@8378935874aed527e7a5f4e505d67b61b582a9ea
+  uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@0fcdeb4649d65bc4b2eb8995e8251f934b5f8780
   with:
     version: 'v1.2.1'
 ```
@@ -51,7 +51,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup Grafana Bench
-        uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@8378935874aed527e7a5f4e505d67b61b582a9ea
+        uses: grafana/grafana-bench/.github/actions/setup-grafana-bench@0fcdeb4649d65bc4b2eb8995e8251f934b5f8780
         with:
           version: 'v1.2.1'
 
