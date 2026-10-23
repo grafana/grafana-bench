@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.23.0-labs@sha256:7eca9451d94f9b8ad22e44988b92d595d3e4d65163794237949a8c3413fbed5d
 
-FROM --platform=$BUILDPLATFORM golang:1.27-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.27.3-alpine AS builder
 
 ARG BENCH_REVISION
 ARG TARGETOS
