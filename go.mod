@@ -1,6 +1,6 @@
 module github.com/grafana/grafana-bench
 
-go 1.26.0
+go 1.27.3
 
 require (
 	buf.build/gen/go/prometheus/prometheus/protocolbuffers/go v1.36.11-20260331160422-eae785f0a21d.1
