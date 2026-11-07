@@ -99,8 +99,8 @@ github.com/go-playground/universal-translator v0.18.1 h1:Bcnm0ZwsGyWbCzImXv+pAJn
 github.com/go-playground/universal-translator v0.18.1/go.mod h1:xekY+UJKNuX9WP91TpwSH2VMlDf28Uj24BCp08ZFTUY=
 github.com/go-playground/validator/v10 v10.30.5 h1:YyCXvVShZbs2Sm3Mb53eNOlhRXctSOzW5QJAouCTZL4=
 github.com/go-playground/validator/v10 v10.30.5/go.mod h1:wEqiaov48pXX1kjhc3Da8y0M0Dtg/BK7gurFBLgwFrQ=
-github.com/go-test/deep v1.1.1 h1:0r/53hagsehfO4bzD2Pgr/+RgHqhmf+k1Bpse2cTu1U=
-github.com/go-test/deep v1.1.1/go.mod h1:5C2ZWiW0ErCdrYzpqxLbTX7MG14M9iiw8DgHncVwcsE=
+github.com/go-test/deep v1.1.2 h1:JUuyv17rKrqYfLFnP9A4Yh6hw0635ugB93bMg2bwuDQ=
+github.com/go-test/deep v1.1.2/go.mod h1:lwVFiFFWPjydTsV3xGJ/YTQsnWwi8zxBFM+gOVcwINE=
 github.com/go-viper/mapstructure/v2 v2.4.0 h1:EBsztssimR/CONLSZZ04E8qAkxNYq4Qp9LvH92wZUgs=
 github.com/go-viper/mapstructure/v2 v2.4.0/go.mod h1:oJDH3BJKyqBA2TXFhDsKDGDTlndYOZ6rGS0BRZIxGhM=
 github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 h1:f+oWsMOmNPc8JmEHVZIycC7hBoQxHH9pNKQORJNozsQ=
@@ -212,8 +212,8 @@ github.com/sirupsen/logrus v1.9.4 h1:TsZE7l11zFCLZnZ+teH4Umoq5BhEIfIzfRDZ1Uzql2w
 github.com/sirupsen/logrus v1.9.4/go.mod h1:ftWc9WdOfJ0a92nsE2jF5u5ZwH8Bv2zdeOC42RjbV2g=
 github.com/skeema/knownhosts v1.3.1 h1:X2osQ+RAjK76shCbvhHHHVl3ZlgDm8apHEHFqRjnBY8=
 github.com/skeema/knownhosts v1.3.1/go.mod h1:r7KTdC8l4uxWRyK2TpQZ/1o5HaSzh06ePQNxPwTcfiY=
-github.com/slack-go/slack v0.23.1 h1:ZS5B96wxxYQRwvJ3/vJFtqtUZi3tXhsZCyT44Nv7M80=
-github.com/slack-go/slack v0.23.1/go.mod h1:H0yR/YBuRJ39RkE+JpV/d/oEsbanzTRowR82bCN0cEs=
+github.com/slack-go/slack v0.34.0 h1:qt8BsCUCQso9ZfHVL05i3xdWvn0BM26yEFXm1lOBKRo=
+github.com/slack-go/slack v0.34.0/go.mod h1:swfK2lWHa2StZ3TXdUdK9sBzcC+oDXpW+jsHd5PoPRM=
 github.com/smallstep/pkcs7 v0.2.3 h1:bhoQ3TeZmdoXTatcwxCbk+FMcdsyr0gYrrW2Xq2qr+s=
 github.com/smallstep/pkcs7 v0.2.3/go.mod h1:7STkdKhZaZe4xNEXTtY4j1NGeST1gYM4GA40kC5iqr8=
 github.com/sourcegraph/conc v0.3.1-0.20240121214520-5f936abd7ae8 h1:+jumHNA0Wrelhe64i8F6HNlS8pkoyMv5sreGx2Ry5Rw=
