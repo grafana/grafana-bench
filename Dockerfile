@@ -34,7 +34,7 @@ RUN CGO_ENABLED=0 go build \
 # Production slim image - no fixuid needed
 
 FROM grafana/k6:2.3.0@sha256:9c2dee7f8ed74d317e4027c06a10f169b625638189de8d4555d0b3486a5aeb34 AS k6
-FROM alpine:3.23 AS runtime
+FROM alpine:3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf AS runtime
 
 USER root
 RUN apk add --no-cache ca-certificates git wget
