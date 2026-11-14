@@ -187,7 +187,7 @@ jobs:
 
   publish-to-enghub:
     if: github.event_name == 'push'
-    uses: grafana/shared-workflows/.github/workflows/publish-techdocs.yaml@main
+    uses: grafana/shared-workflows/.github/workflows/publish-techdocs.yaml@6a943082408bb241a26b14661e446220c3e62b16 # main
     secrets: inherit
     permissions:
       contents: read
