@@ -219,10 +219,10 @@ jobs:
       - name: --slack-notifier-permissions should fail if we don't have permissions on a channel
         run: |
           mv codeowners-mapping.yaml codeowners-mapping.yaml.tmp
-          cat > codeowner-mapping.yaml << 'EOF'
+          cat > codeowners-mapping.yaml << 'EOF'
           mapping:
             - slack_channel: "grafana-bench-private"
-              github_team: "@grafana/grafana-developer-enablement-squad"
+              github_team: "@grafana/grafana-backend-services-squad"
           EOF
 
           if ! grafana-bench validate --check-slack-permissions; then
