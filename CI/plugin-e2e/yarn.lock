@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@grafana/plugin-e2e@3.15.2":
-  version "3.15.2"
-  resolved "https://registry.yarnpkg.com/@grafana/plugin-e2e/-/plugin-e2e-3.15.2.tgz#b06a7208bfa939c3e864ac6fb7cb54a62533538d"
-  integrity sha512-HtmBHZxkQ09fzLAz+p4sexLyDHei5/FSNByP5aNT4Yfmu8aytaw+/SC0kojQRuYzR7fr63N9GX5RQhIt3OyFNA==
+"@grafana/plugin-e2e@3.15.4":
+  version "3.15.4"
+  resolved "https://registry.yarnpkg.com/@grafana/plugin-e2e/-/plugin-e2e-3.15.4.tgz#102c8289c08da0c5582ddfff0af5e6877f85cdb1"
+  integrity sha512-NC/AA3lajw6OLvi26TMSOkkaOl8uP+Ax5eiRmraZdUbaDKF0FLxBwuKz2qgYCbK7PrWuDoIHrBJ3n1VMGmyjMw==
   dependencies:
     yaml "^2.3.4"
 
