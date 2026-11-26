@@ -11,7 +11,7 @@ require (
 	github.com/golang/snappy v1.0.0
 	github.com/google/go-cmp v0.7.0
 	github.com/grafana/k6pack v0.2.4
-	github.com/grafana/nanogit v1.7.4
+	github.com/grafana/nanogit v1.7.7
 	github.com/hairyhenderson/go-codeowners v0.7.2
 	github.com/joho/godotenv v1.5.1
 	github.com/julienschmidt/httprouter v1.3.0
@@ -71,7 +71,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
-	github.com/klauspost/compress v1.20.3 // indirect
+	github.com/klauspost/compress v1.20.5 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/leodido/go-urn v1.5.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20260330125221-c963978e514e // indirect
