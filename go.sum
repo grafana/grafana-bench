@@ -115,8 +115,8 @@ github.com/gorilla/websocket v1.5.3 h1:saDtZ6Pbx/0u+bgYQ3q96pZgCzfhKXGPqt7kZ72aN
 github.com/gorilla/websocket v1.5.3/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
 github.com/grafana/k6pack v0.2.4 h1:JzbaO/NnLBaM2Shbn59WynaGAYL+jMvnjsoj/VTr3es=
 github.com/grafana/k6pack v0.2.4/go.mod h1:JTG8lQRU4U4WNKkznSL6zYokviiFVIp1I9W7z7NmrLA=
-github.com/grafana/nanogit v1.7.4 h1:8Vlbcv3zlWa635CKiBlDySVtnpar0m4Rum1Nm3f8GZ0=
-github.com/grafana/nanogit v1.7.4/go.mod h1:bRVX9FZlWEwGsazn/jokJa0iRopMiiR6JZqpVilNbFI=
+github.com/grafana/nanogit v1.7.7 h1:VsA6F2EgniUPOojJC5wyO8RqgIgWnaFXzDdWn0mjUig=
+github.com/grafana/nanogit v1.7.7/go.mod h1:k8I2iuKcGiqJEtN8GpzCD/kOKuEVAdP+01tIorNibGk=
 github.com/hairyhenderson/go-codeowners v0.7.2 h1:FFoahR2kVATI3WsFAFfpY07mbMMCz6dvz85sGTgHmpc=
 github.com/hairyhenderson/go-codeowners v0.7.2/go.mod h1:gmbRf2wE0YE3X9xR31FoP5jfun9gvBnAaw+FGeyd4C4=
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
@@ -129,8 +129,8 @@ github.com/julienschmidt/httprouter v1.3.0 h1:U0609e9tgbseu3rBINet9P48AI/D3oJs4d
 github.com/julienschmidt/httprouter v1.3.0/go.mod h1:JR6WtHb+2LUe8TCKY3cZOxFyyO8IZAc4RVcycCCAKdM=
 github.com/kevinburke/ssh_config v1.2.0 h1:x584FjTGwHzMwvHx18PXxbBVzfnxogHaAReU4gf13a4=
 github.com/kevinburke/ssh_config v1.2.0/go.mod h1:CT57kijsi8u/K/BOFA39wgDQJ9CxiF4nAY/ojJ6r6mM=
-github.com/klauspost/compress v1.20.3 h1:zWNoFqq/lSuYQRim3dUXlXeA0IqwuZGicdG5ZTfY5j4=
-github.com/klauspost/compress v1.20.3/go.mod h1:LUdAzn7YLVvxLpc7y3V1m40wESHTgc1422pwwBSKYuI=
+github.com/klauspost/compress v1.20.5 h1:rJj5VjH4xQxbnLphg6eqUcDxRFCw1jpMdDY9qXlrwSs=
+github.com/klauspost/compress v1.20.5/go.mod h1:LUdAzn7YLVvxLpc7y3V1m40wESHTgc1422pwwBSKYuI=
 github.com/klauspost/cpuid/v2 v2.3.0 h1:S4CRMLnYUhGeDFDqkGriYKdfoFlDnMtqTiI/sFzhA9Y=
 github.com/klauspost/cpuid/v2 v2.3.0/go.mod h1:hqwkgyIinND0mEev00jJYCxPNVRVXFQeu1XKlok6oO0=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
