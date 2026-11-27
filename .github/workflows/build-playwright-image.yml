@@ -14,7 +14,7 @@ jobs:
         ports:
           - 5000:5000
       grafana:
-        image: grafana/grafana:13.2.4@sha256:dbbc38ea21103cefb50396340cd88afec779c7e070b0a7bf5a75b4ce46651d3f
+        image: grafana/grafana:13.3.2@sha256:81556409ba48b2b922e0adb69a2511337d8ba7578f11962eefa6149a2d815101
         ports:
           - 3000:3000
 
